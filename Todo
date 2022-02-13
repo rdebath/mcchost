@@ -1,0 +1,12 @@
+Features:
+
+Physics
+
+Command line routine to convert level files into *.cw --> for backups.
+
+Command line routine to convert *.cw into level files ?
+
+Model *.cw file for new unspecified level.
+
+On Block queue, if user count < 2 && no-physics don't use queue ?
+    --> *256 blocks packet? Clear queue?
