@@ -27,7 +27,7 @@
 
 #if INTERFACE
 
-#ifndef _REENTRANT
+#ifndef _REENTRANT	// Is -pthreads option provided.
 #define USE_FCNTL
 #endif
 
@@ -110,7 +110,7 @@ start_shared(char * levelname)
 		.magic_no = MAP_MAGIC,
 		.cells_x = 128, .cells_y = 64, .cells_z = 128,
 		.weather = 0, -1, -1, -1, -1, -1, 7, 8, -1,
-		.spawn = { 64, 96, 64 }
+		.spawn = { 64*32+16, 48*32+51, 64*32+16 }
 	    };
 
 	*level_prop = def;

@@ -35,3 +35,5 @@ void send_ping_pkt(int ofd);
 LOCAL int nb_string_write(uint8_t *pkt,char *str);
 #define PKID_IDENT      0x00
 void send_server_id_pkt(int ofd,char *servername,char *servermotd);
+void fatal(char *emsg);
+void fatal(char *emsg);

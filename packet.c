@@ -1,4 +1,7 @@
 
+/* These are the structures for received packets after conversion from
+ * the line format.
+ */
 #include "packet.h"
 
 #if INTERFACE

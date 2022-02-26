@@ -7,20 +7,10 @@
 
 #include "send_map_file.h"
 
-#define ABORT_ZLIB(x) {                                                  \
-        int status;                                                     \
-        status = x;                                                     \
-        if (status < 0) {                                               \
-            fprintf (stderr,                                            \
-                     "%s:%d: %s returned a bad status of %d.\n",        \
-                     __FILE__, __LINE__, #x, status);                   \
-            exit (EXIT_FAILURE);                                        \
-        }                                                               \
-    }
-
 static inline int
 block_convert(int in)
 {
+    // Convert from Map block numbers to ones the client will understand.
     return in;
 }
 

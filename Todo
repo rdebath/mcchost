@@ -1,12 +1,24 @@
 Features:
 
+Everything in level prop file into *.cw file.
+    -- Use makeheaders main2.c lib1.c lib2.c
+       to compile the same export/import routines as used by the
+       automatic backup/restore.
+
+    Command line routine to convert level files into *.cw --> for backups.
+    Command line routine to convert *.cw into level files ?
+
+Routine to export/import level prop and server prop binary files (INI file).
+    -- External program?
+    -- Should automatic backup export server properties?
+
 Physics
-
-Command line routine to convert level files into *.cw --> for backups.
-
-Command line routine to convert *.cw into level files ?
 
 Model *.cw file for new unspecified level.
 
 On Block queue, if user count < 2 && no-physics don't use queue ?
     --> *256 blocks packet? Clear queue?
+
+More blocks modified than will fit in queue?
+    --> Can only see for "me" so generation number will wrap and reload.
+

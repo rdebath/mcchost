@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "sendpacket.h"
 
@@ -14,6 +15,17 @@ nb_short(uint8_t **ptr, int v)
     *ptr = p;
 }
 
+static void writepk(int fd, uint8_t * buf, int buflen)
+{
+    int rv = write(fd, buf, buflen);
+    if (rv < 0)
+	perror("Write error");
+    if (rv == 0)
+	fatal("End of file on packet pipe");
+    if (rv != buflen)
+	fatal("Packet write failed full write");
+}
+
 void
 send_server_id_pkt(int ofd, char * servername, char * servermotd)
 {
@@ -24,7 +36,7 @@ send_server_id_pkt(int ofd, char * servername, char * servermotd)
     p += nb_string_write(p, servername);
     p += nb_string_write(p, servermotd);
     *p++ = 0; // Normal user.
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -33,7 +45,7 @@ send_ping_pkt(int ofd)
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_PING;
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -42,7 +54,7 @@ send_lvlinit_pkt(int ofd)
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_LVLINIT;
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -57,7 +69,7 @@ send_lvldata_pkt(int ofd, char *block, int len, int percent)
     if (l<1024) memset(p+l, 0, 1024-l);
     p += 1024;
     *p++ = percent;
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -69,7 +81,7 @@ send_lvldone_pkt(int ofd, int x, int y, int z)
     nb_short(&p, x);
     nb_short(&p, y);
     nb_short(&p, z);
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -85,7 +97,7 @@ send_spawn_pkt(int ofd, int player_id, char * playername, xyzhv_t posn)
     nb_short(&p, posn.z);
     *p++ = posn.h;
     *p++ = posn.v;
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -101,7 +113,7 @@ send_posn_pkt(int ofd, xyzhv_t *oldpos, xyzhv_t posn)
 	    return;
 	todo = 3;
     }
-    // else is Delta (x,y,z) useful?
+    // else TODO: is Delta (x,y,z) useful?
 
     if (oldpos) {*oldpos = posn; oldpos->valid = 1; }
 
@@ -121,7 +133,7 @@ send_posn_pkt(int ofd, xyzhv_t *oldpos, xyzhv_t posn)
 	break;
     }
 
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -131,7 +143,7 @@ send_despawn_pkt(int ofd, int player_id)
     uint8_t *p = packetbuf;
     *p++ = PKID_DESPAWN;
     *p++ = player_id;
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -142,7 +154,7 @@ send_message_pkt(int ofd, int player_id, char * message)
     *p++ = PKID_MESSAGE;
     *p++ = player_id;
     p += nb_string_write(p, message);
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -152,7 +164,7 @@ send_discon_msg_pkt(int ofd, char * message)
     uint8_t *p = packetbuf;
     *p++ = PKID_DISCON;
     p += nb_string_write(p, message);
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 void
@@ -162,7 +174,7 @@ send_op_pkt(int ofd, int opflg)
     uint8_t *p = packetbuf;
     *p++ = PKID_OPER;
     *p++ = opflg?100:0;
-    write(ofd, packetbuf, p-packetbuf);
+    writepk(ofd, packetbuf, p-packetbuf);
 }
 
 LOCAL int
