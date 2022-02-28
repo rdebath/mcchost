@@ -17,8 +17,8 @@
 #define NB_SLEN	(MB_STRLEN+1)
 #endif
 
-int ofd = 1;
-int ifd = 0;
+int line_ofd = 1;
+int line_ifd = 0;
 char inbuf[4096];
 int insize = 0, inptr = 0;
 
@@ -42,35 +42,33 @@ char * level_name = "main";
 int
 main(int argc, char **argv)
 {
+    (void)argc; (void)argv;
+
     login();
 
-    if (cpe_requested && cpe_enabled)
-	cpe_requested = 0; // processextinfo();
-
-    send_server_id_pkt(ofd, server_name, server_motd);
+    send_server_id_pkt(server_name, server_motd, cpe_requested);
 
     // Open system mmap files.
 
     // Open level mmap files.
     start_shared(level_name);
 
-    send_map_file(ofd);
-    send_spawn_pkt(ofd, 255, user_id, level_prop->spawn);
+    send_map_file();
+    send_spawn_pkt(255, user_id, level_prop->spawn);
 
-    sleep(30);
-    // run_request_loop();
+    run_request_loop();
 
-    fatal("This server is broken.");
+    return 0;
 }
 
 void
 login()
 {
     time_t startup = time(0);
-    fcntl(ifd, F_SETFL, (int)O_NONBLOCK);
+    fcntl(line_ifd, F_SETFL, (int)O_NONBLOCK);
     while(insize-inptr < 131)
     {
-	int cc = read(ifd, inbuf+insize, sizeof(inbuf)-insize);
+	int cc = read(line_ifd, inbuf+insize, sizeof(inbuf)-insize);
 	if (cc>0) insize += cc;
 	if (cc<=0 && errno != EINTR) {
 	    if (errno != EAGAIN)
@@ -86,7 +84,7 @@ login()
 	if (insize >= 2 && inbuf[inptr+1] != 7)
 	    fatal("Only protocol version seven is supported (with CPE)");
     }
-    fcntl(ifd, F_SETFL, 0);
+    fcntl(line_ifd, F_SETFL, 0);
 
     cpy_nbstring(user_id, inbuf+2);
     if (*user_id == 0 || strlen(user_id) > 16)
@@ -127,9 +125,9 @@ login()
 void
 fatal(char * emsg)
 {
-    send_discon_msg_pkt(ofd, emsg);
-    shutdown(ofd, SHUT_RDWR);
-    shutdown(ifd, SHUT_RDWR);
+    send_discon_msg_pkt(emsg);
+    shutdown(line_ofd, SHUT_RDWR);
+    shutdown(line_ifd, SHUT_RDWR);
     exit(1);
 }
 

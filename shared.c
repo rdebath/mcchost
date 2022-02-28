@@ -27,7 +27,8 @@
 
 #if INTERFACE
 
-#ifndef _REENTRANT	// Is -pthreads option provided.
+// Is -pthreads option provided.
+#ifndef _REENTRANT
 #define USE_FCNTL
 #endif
 

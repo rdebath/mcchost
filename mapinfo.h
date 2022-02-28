@@ -1,6 +1,8 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
 #include <stdint.h>
+#define Block_Cust 66
+#define Block_CPE 50
 #define Block_Crate 64
 #define Block_Ice 60
 #define Block_Turquoise 59
@@ -36,8 +38,6 @@
 #define Block_Grass 2
 #define Block_Stone 1
 #define Block_Air 0
-#define Block_CPE 50
-#define Block_Cust 66
 typedef struct block_defn block_defn;
 struct block_defn {
     char * name;

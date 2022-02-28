@@ -1,7 +1,6 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-extern int ofd;
-void send_discon_msg_pkt(int ofd,char *message);
+void send_discon_msg_pkt(char *message);
 typedef struct MD5_CTX MD5_CTX;
 typedef unsigned int UINT4;
 struct MD5_CTX {
@@ -13,6 +12,7 @@ struct MD5_CTX {
 void MD5Final(MD5_CTX *mdContext);
 void MD5Update(MD5_CTX *mdContext,unsigned char *inBuf,unsigned int inLen);
 void MD5Init(MD5_CTX *mdContext);
+void run_request_loop();
 #if !defined(_REENTRANT)
 #define USE_FCNTL
 #endif
@@ -94,10 +94,10 @@ struct map_info_t {
 
 };
 extern volatile map_info_t *level_prop;
-void send_spawn_pkt(int ofd,int player_id,char *playername,xyzhv_t posn);
-void send_map_file(int ofd);
+void send_spawn_pkt(int player_id,char *playername,xyzhv_t posn);
+void send_map_file();
 void start_shared(char *levelname);
-void send_server_id_pkt(int ofd,char *servername,char *servermotd);
+void send_server_id_pkt(char *servername,char *servermotd,int user_type);
 extern char *level_name;
 void cpy_nbstring(char *buf,char *str);
 void cpy_nbstring(char *buf,char *str);
@@ -116,5 +116,6 @@ extern int user_authenticated;
 extern char user_id[NB_SLEN];
 extern int insize;
 extern char inbuf[4096];
-extern int ifd;
+extern int line_ifd;
+extern int line_ofd;
 #define INTERFACE 0

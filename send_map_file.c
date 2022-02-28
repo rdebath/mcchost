@@ -15,10 +15,10 @@ block_convert(int in)
 }
 
 void
-send_map_file(int ofd)
+send_map_file()
 {
     int zrv = 0;
-    send_lvlinit_pkt(ofd);
+    send_lvlinit_pkt();
 
     uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
     unsigned char blockbuffer[4096];
@@ -74,7 +74,7 @@ send_map_file(int ofd)
 	}
 
 	if (strm.avail_out == 0 || (zrv == Z_STREAM_END && sizeof(zblockbuffer) != strm.avail_out)) {
-	    send_lvldata_pkt(ofd, zblockbuffer, sizeof(zblockbuffer)-strm.avail_out, percent);
+	    send_lvldata_pkt(zblockbuffer, sizeof(zblockbuffer)-strm.avail_out, percent);
 	    strm.avail_out = sizeof(zblockbuffer);
 	    strm.next_out = zblockbuffer;
 	    percent = level_blocks_used * 100 / level_len;
@@ -84,5 +84,5 @@ send_map_file(int ofd)
 
     deflateEnd(&strm);
 
-    send_lvldone_pkt(ofd, level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
+    send_lvldone_pkt(level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
 }

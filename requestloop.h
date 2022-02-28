@@ -1,16 +1,13 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-void send_lvldone_pkt(int x,int y,int z);
-void send_lvldata_pkt(char *block,int len,int percent);
+#include <stdint.h>
+#define Block_Air 0
 #if !defined(_REENTRANT)
 #define USE_FCNTL
 #endif
 #if !defined(USE_FCNTL)
 #include <semaphore.h>
 #endif
-#include <stdint.h>
-typedef uint16_t block_t;
-extern volatile block_t *level_blocks;
 typedef struct map_info_t map_info_t;
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
@@ -85,5 +82,31 @@ struct map_info_t {
 
 };
 extern volatile map_info_t *level_prop;
-void send_lvlinit_pkt();
-void send_map_file();
+#define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
+typedef uint16_t block_t;
+extern volatile block_t *level_blocks;
+#define IntBE16(x) ((int16_t)(*(uint8_t*)((x)+1) + *(uint8_t*)(x)*256))
+typedef struct pkt_setblock pkt_setblock;
+typedef struct xyz_t xyz_t;
+struct xyz_t { int x, y, z; };
+struct pkt_setblock {
+    struct xyz_t coord;
+    int mode;
+    block_t block;
+};
+#define PKID_SETBLOCK   0x05
+#define PKID_SETBLOCK   0x05
+void process_client_message(int cmd,char *pkt,int len);
+extern int msglen[256];
+void remote_received(char *str,int len);
+void on_select_timeout();
+extern int line_ofd;
+extern int line_ifd;
+void fatal(char *emsg);
+void fatal(char *emsg);
+void write_to_remote(char *str,int len);
+int do_select();
+void run_request_loop();
+extern int in_rcvd;
+#define PKBUF		8192
+extern int64_t bytes_sent;

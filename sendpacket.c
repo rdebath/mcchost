@@ -15,7 +15,8 @@ nb_short(uint8_t **ptr, int v)
     *ptr = p;
 }
 
-static void writepk(int fd, uint8_t * buf, int buflen)
+#if 0
+static void write_to_remote(int fd, uint8_t * buf, int buflen)
 {
     int rv = write(fd, buf, buflen);
     if (rv < 0)
@@ -25,9 +26,10 @@ static void writepk(int fd, uint8_t * buf, int buflen)
     if (rv != buflen)
 	fatal("Packet write failed full write");
 }
+#endif
 
 void
-send_server_id_pkt(int ofd, char * servername, char * servermotd)
+send_server_id_pkt(char * servername, char * servermotd, int user_type)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -35,30 +37,30 @@ send_server_id_pkt(int ofd, char * servername, char * servermotd)
     *p++ = 7; // Protocol version
     p += nb_string_write(p, servername);
     p += nb_string_write(p, servermotd);
-    *p++ = 0; // Normal user.
-    writepk(ofd, packetbuf, p-packetbuf);
+    *p++ = user_type?100:0; // Is operator?
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_ping_pkt(int ofd)
+send_ping_pkt()
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_PING;
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_lvlinit_pkt(int ofd)
+send_lvlinit_pkt()
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_LVLINIT;
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_lvldata_pkt(int ofd, char *block, int len, int percent)
+send_lvldata_pkt(char *block, int len, int percent)
 {
     uint8_t packetbuf[2048];
     uint8_t *p = packetbuf;
@@ -69,11 +71,11 @@ send_lvldata_pkt(int ofd, char *block, int len, int percent)
     if (l<1024) memset(p+l, 0, 1024-l);
     p += 1024;
     *p++ = percent;
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_lvldone_pkt(int ofd, int x, int y, int z)
+send_lvldone_pkt(int x, int y, int z)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -81,11 +83,11 @@ send_lvldone_pkt(int ofd, int x, int y, int z)
     nb_short(&p, x);
     nb_short(&p, y);
     nb_short(&p, z);
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_spawn_pkt(int ofd, int player_id, char * playername, xyzhv_t posn)
+send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -97,11 +99,11 @@ send_spawn_pkt(int ofd, int player_id, char * playername, xyzhv_t posn)
     nb_short(&p, posn.z);
     *p++ = posn.h;
     *p++ = posn.v;
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_posn_pkt(int ofd, xyzhv_t *oldpos, xyzhv_t posn)
+send_posn_pkt(xyzhv_t *oldpos, xyzhv_t posn)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -133,48 +135,48 @@ send_posn_pkt(int ofd, xyzhv_t *oldpos, xyzhv_t posn)
 	break;
     }
 
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_despawn_pkt(int ofd, int player_id)
+send_despawn_pkt(int player_id)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_DESPAWN;
     *p++ = player_id;
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_message_pkt(int ofd, int player_id, char * message)
+send_message_pkt(int player_id, char * message)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_MESSAGE;
     *p++ = player_id;
     p += nb_string_write(p, message);
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_discon_msg_pkt(int ofd, char * message)
+send_discon_msg_pkt(char * message)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_DISCON;
     p += nb_string_write(p, message);
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 void
-send_op_pkt(int ofd, int opflg)
+send_op_pkt(int opflg)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_OPER;
     *p++ = opflg?100:0;
-    writepk(ofd, packetbuf, p-packetbuf);
+    write_to_remote(packetbuf, p-packetbuf);
 }
 
 LOCAL int

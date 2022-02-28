@@ -37,8 +37,8 @@
  **********************************************************************
  */
 
-#include "md5.h"
-#if INTERFACE
+#include "lib_md5.h"
+#if EXPORT_INTERFACE
 /* typedef a 32 bit type */
 typedef unsigned int UINT4;
 
@@ -142,6 +142,7 @@ static unsigned char PADDING[64] = {
    (a) += (b); \
   }
 
+EXPORT
 void MD5Init (MD5_CTX *mdContext)
 {
   mdContext->i[0] = mdContext->i[1] = (UINT4)0;
@@ -154,6 +155,7 @@ void MD5Init (MD5_CTX *mdContext)
   mdContext->buf[3] = (UINT4)0x10325476;
 }
 
+EXPORT
 void MD5Update (MD5_CTX *mdContext, unsigned char *inBuf, unsigned int inLen)
 {
   UINT4 in[16];
@@ -186,6 +188,7 @@ void MD5Update (MD5_CTX *mdContext, unsigned char *inBuf, unsigned int inLen)
   }
 }
 
+EXPORT
 void MD5Final (MD5_CTX *mdContext)
 {
   UINT4 in[16];
