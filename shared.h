@@ -145,6 +145,18 @@ extern intptr_t level_blocks_len;
 typedef uint16_t block_t;
 extern volatile block_t *level_blocks;
 extern intptr_t level_prop_len;
+#if !defined(USE_FCNTL)
+#define unlock_chat_shared()
+#endif
+#if defined(USE_FCNTL)
+void unlock_chat_shared(void);
+#endif
+#if !defined(USE_FCNTL)
+#define lock_chat_shared()
+#endif
+#if defined(USE_FCNTL)
+void lock_chat_shared(void);
+#endif
 #if !(defined(USE_FCNTL))
 extern sem_t *shared_global_mutex;
 #endif

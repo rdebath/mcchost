@@ -35,7 +35,7 @@ update_chat(pkt_message pkt)
 {
     if (!level_chat_queue) create_chat_queue();
 
-    lock_shared();
+    lock_chat_shared();
     int id = level_chat_queue->curr_offset++;
     if (level_chat_queue->curr_offset >= level_chat_queue->queue_len) {
 	level_chat_queue->curr_offset = 0;
@@ -45,7 +45,7 @@ update_chat(pkt_message pkt)
     level_chat_queue->updates[id].to_player_id = 0;
     level_chat_queue->updates[id].to_team_id = 0;
     level_chat_queue->updates[id].msg = pkt;
-    unlock_shared();
+    unlock_chat_shared();
 }
 
 void
@@ -53,10 +53,10 @@ set_last_chat_queue_id()
 {
     if (!level_chat_queue) create_chat_queue();
 
-    lock_shared();
+    lock_chat_shared();
     last_id = level_chat_queue->curr_offset;
     last_generation = level_chat_queue->generation;
-    unlock_shared();
+    unlock_chat_shared();
 }
 
 void
@@ -75,7 +75,7 @@ send_queued_chats()
     for(;counter < 128; counter++)
     {
 	chat_entry_t upd;
-	lock_shared();
+	lock_chat_shared();
 	if (last_generation != level_chat_queue->generation)
 	{
 	    int isok = 0;
@@ -84,14 +84,14 @@ send_queued_chats()
 		    isok = 1;
 	    }
 	    if (!isok) {
-		unlock_shared();
+		unlock_chat_shared();
 		set_last_chat_queue_id(); // Skip to end.
 		return;
 	    }
 	}
 	if (last_id == level_chat_queue->curr_offset) {
 	    // Nothing more to send.
-	    unlock_shared();
+	    unlock_chat_shared();
 	    return;
 	}
 	upd = level_chat_queue->updates[last_id++];
@@ -99,7 +99,7 @@ send_queued_chats()
 	    last_generation ++;
 	    last_id = 0;
 	}
-	unlock_shared();
+	unlock_chat_shared();
 
 	send_message_pkt(upd.msg.msg_flag, upd.msg.message);
     }

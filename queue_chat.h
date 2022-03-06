@@ -9,21 +9,16 @@ void set_last_chat_queue_id();
 #endif
 #if !defined(USE_FCNTL)
 #include <semaphore.h>
-#endif
-#if !(defined(USE_FCNTL))
-extern sem_t *shared_global_mutex;
-#endif
-#if !defined(USE_FCNTL)
-#define unlock_shared() sem_post(shared_global_mutex);
+#define unlock_chat_shared()
 #endif
 #if defined(USE_FCNTL)
-void unlock_shared(void);
+void unlock_chat_shared(void);
 #endif
 #if !defined(USE_FCNTL)
-#define lock_shared() sem_wait(shared_global_mutex);
+#define lock_chat_shared()
 #endif
 #if defined(USE_FCNTL)
-void lock_shared(void);
+void lock_chat_shared(void);
 #endif
 void create_chat_queue();
 typedef struct pkt_message pkt_message;

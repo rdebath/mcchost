@@ -37,6 +37,8 @@
 #include <semaphore.h>
 #define lock_shared() sem_wait(shared_global_mutex);
 #define unlock_shared() sem_post(shared_global_mutex);
+#define lock_chat_shared()
+#define unlock_chat_shared()
 #endif
 
 #endif
@@ -49,6 +51,7 @@ intptr_t level_blocks_len = 0;
 
 #ifdef USE_FCNTL
 static int fcntl_fd = -1;
+static int fcntl_chat_fd = -1;
 #else
 sem_t* shared_global_mutex = 0;
 #endif
@@ -239,14 +242,22 @@ create_chat_queue()
     level_chat_queue_len = sizeof(*level_chat_queue) + queue_count * sizeof(xyzb_t);
     level_chat_queue = allocate_shared(sharename, level_chat_queue_len, &level_chat_queue_len);
 
-    lock_shared();
+#ifdef USE_FCNTL
+    fcntl_chat_fd = open(sharename, O_RDWR|O_NOFOLLOW);
+    if (fcntl_chat_fd < 0) {
+	fprintf(stderr, "Cannot open \"%s\" for locking\n", sharename);
+	exit(2);
+    }
+#endif
+
+    lock_chat_shared();
     if (level_chat_queue->generation == 0 || level_chat_queue->queue_len != queue_count) {
 	level_chat_queue->generation += 2;
 	level_chat_queue->curr_offset = 0;
 	level_chat_queue->queue_len = queue_count;
-	unlock_shared();
+	unlock_chat_shared();
     } else
-	unlock_shared();
+	unlock_chat_shared();
 
     set_last_chat_queue_id();
 }
@@ -261,6 +272,12 @@ stop_chat_queue()
 	level_chat_queue = 0;
 	wipe_last_chat_queue_id();
     }
+#ifdef USE_FCNTL
+    if (fcntl_chat_fd != -1) {
+	close(fcntl_chat_fd);
+	fcntl_chat_fd = -1;
+    }
+#endif
 }
 
 LOCAL void *
@@ -312,7 +329,7 @@ allocate_shared(char * share_name, int share_size, intptr_t *shared_len)
 
 #ifdef USE_FCNTL
 static void
-share_lock(int mode, int l_type)
+share_lock(int fd, int mode, int l_type)
 {
    struct flock lck;
    int rv;
@@ -324,7 +341,7 @@ share_lock(int mode, int l_type)
       lck.l_start = 0;
       lck.l_len = 0;
 
-      rv = fcntl(fcntl_fd, mode, &lck);
+      rv = fcntl(fd, mode, &lck);
       if (rv >= 0) return;
       if (rv < 0 && errno != EINTR) {
 	 perror("Problem locking shared area");
@@ -336,12 +353,24 @@ share_lock(int mode, int l_type)
 void
 lock_shared(void)
 {
-   share_lock(F_SETLKW, F_WRLCK);
+   share_lock(fcntl_fd, F_SETLKW, F_WRLCK);
 }
 
 void
 unlock_shared(void)
 {
-   share_lock(F_SETLK, F_UNLCK);
+   share_lock(fcntl_fd, F_SETLK, F_UNLCK);
+}
+
+void
+lock_chat_shared(void)
+{
+   share_lock(fcntl_chat_fd, F_SETLKW, F_WRLCK);
+}
+
+void
+unlock_chat_shared(void)
+{
+   share_lock(fcntl_chat_fd, F_SETLK, F_UNLCK);
 }
 #endif
