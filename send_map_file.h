@@ -63,6 +63,10 @@ struct map_info_t {
 
     xyzhv_t spawn;
 
+    int hacks_flags;
+    int queue_len;
+    int last_map_download_size;
+
     // Init together til side_level.
     int weather;
     int sky_colour;
@@ -81,9 +85,17 @@ struct map_info_t {
     int invt_order[BLOCKMAX];
 
     unsigned char block_perms[BLOCKMAX];
-    int hacks_flags;
 
 };
 extern volatile map_info_t *level_prop;
 void send_lvlinit_pkt();
+void set_last_block_queue_id();
 void send_map_file();
+extern block_t cpe_conv[];
+#if !defined(FILTER_BLOCKS)
+#define block_convert(inblock) (inblock)
+#endif
+#if defined(FILTER_BLOCKS)
+int block_convert(int in);
+#endif
+#define INTERFACE 0

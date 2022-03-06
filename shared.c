@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -12,7 +13,7 @@
  *
  * BEWARE: Need semaphore that clears if the process holding the lock dies.
  *
- *       fcntl() does this, but is slow.
+ *       fcntl() does this, but is likely slow.
  *
  *       pthread_mutex_lock() appears to do this.
  *		pthread_mutexattr_setrobust to use "robust futexes"
@@ -81,6 +82,7 @@ start_shared(char * levelname)
     if (level_prop && level_blocks) return;
 
     stop_shared();
+    stop_block_queue();
 
     sprintf(sharename, "level.%s.prop", levelname);
     level_prop = allocate_shared(sharename, sizeof(*level_prop), &level_prop_len);
@@ -161,12 +163,104 @@ stop_shared(void)
 	level_blocks = 0;
     }
 
+    if (level_block_queue)
+	stop_block_queue();
+
 #ifdef USE_FCNTL
     if (fcntl_fd != -1) {
 	close(fcntl_fd);
 	fcntl_fd = -1;
     }
 #endif
+}
+
+void
+create_block_queue(char * levelname)
+{
+    char sharename[256];
+    int queue_count = (level_prop->queue_len + 1024) / 1024 * 1024;
+    if (queue_count < 2048) queue_count = 2048;
+
+    if (level_prop->last_map_download_size / msglen[PKID_SRVBLOCK] > queue_count) {
+	queue_count = level_prop->last_map_download_size / msglen[PKID_SRVBLOCK];
+	queue_count = (queue_count + 1024) / 1024 * 1024;
+	level_prop->queue_len = queue_count;
+    }
+
+    stop_block_queue();
+    wipe_last_block_queue_id();
+
+    sprintf(sharename, "level.%s.queue", levelname);
+    level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
+    level_block_queue = allocate_shared(sharename, level_block_queue_len, &level_block_queue_len);
+
+    lock_shared();
+    if (level_block_queue->generation == 0 || level_block_queue->queue_len != queue_count) {
+	if (queue_count > level_block_queue->queue_len) {
+	    level_block_queue->generation += 2;
+	    level_block_queue->curr_offset = 0;
+	    level_block_queue->queue_len = queue_count;
+	}
+	else queue_count = level_block_queue->queue_len;
+
+	unlock_shared();
+
+	stop_block_queue();
+	level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
+	level_block_queue = allocate_shared(sharename, level_block_queue_len, &level_block_queue_len);
+
+    } else
+	unlock_shared();
+}
+
+void
+stop_block_queue()
+{
+    if (level_block_queue) {
+	intptr_t sz = level_block_queue_len;
+	(void)munmap((void*)level_block_queue, sz);
+	level_block_queue_len = 0;
+	level_block_queue = 0;
+	wipe_last_block_queue_id();
+    }
+}
+
+void
+create_chat_queue()
+{
+    char sharename[256];
+    int queue_count = 128;
+    if (queue_count < 128) queue_count = 128;
+
+    stop_chat_queue();
+    wipe_last_chat_queue_id();
+
+    sprintf(sharename, "chat.queue");
+    level_chat_queue_len = sizeof(*level_chat_queue) + queue_count * sizeof(xyzb_t);
+    level_chat_queue = allocate_shared(sharename, level_chat_queue_len, &level_chat_queue_len);
+
+    lock_shared();
+    if (level_chat_queue->generation == 0 || level_chat_queue->queue_len != queue_count) {
+	level_chat_queue->generation += 2;
+	level_chat_queue->curr_offset = 0;
+	level_chat_queue->queue_len = queue_count;
+	unlock_shared();
+    } else
+	unlock_shared();
+
+    set_last_chat_queue_id();
+}
+
+void
+stop_chat_queue()
+{
+    if (level_chat_queue) {
+	intptr_t sz = level_chat_queue_len;
+	(void)munmap((void*)level_chat_queue, sz);
+	level_chat_queue_len = 0;
+	level_chat_queue = 0;
+	wipe_last_chat_queue_id();
+    }
 }
 
 LOCAL void *
@@ -196,8 +290,8 @@ allocate_shared(char * share_name, int share_size, intptr_t *shared_len)
 	sz -= sz % p;
     }
 
-    if (ftruncate(shared_fd, sz) < 0)
-	perror("ftruncate");
+    if (posix_fallocate(shared_fd, 0, sz) < 0)
+	fatal("fallocate cannot allocate disk space");
 
     shm_p = (void*) mmap(0,
 		    sz,

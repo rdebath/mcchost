@@ -49,12 +49,14 @@ main(int argc, char **argv)
     send_server_id_pkt(server_name, server_motd, cpe_requested);
 
     // Open system mmap files.
+    create_chat_queue();
 
     // Open level mmap files.
     start_shared(level_name);
-
     send_map_file();
+
     send_spawn_pkt(255, user_id, level_prop->spawn);
+    send_message_pkt(0, "&eWelcome to this broken server");
 
     run_request_loop();
 

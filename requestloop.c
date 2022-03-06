@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "requestloop.h"
 
@@ -14,12 +15,19 @@ static int ttl_size = 0;
 static char rcvdpkt[PKBUF];
 int in_rcvd = 0;
 
+int pending_marks = 0;
+
 void
 run_request_loop()
 {
     int flg;
     while(!(flg = do_select()));
+}
 
+int
+bytes_queued_to_send()
+{
+    return ttl_start != ttl_end;
 }
 
 void write_to_remote(char * str, int len)
@@ -120,6 +128,9 @@ do_select()
 void
 on_select_timeout()
 {
+    send_queued_chats();
+    send_queued_blocks();
+    pending_marks = 0;
 }
 
 void
@@ -131,7 +142,7 @@ remote_received(char *str, int len)
 	cmd = (*str & 0xFF);
 	clen = msglen[cmd];
 	if (clen == len) {
-	    process_client_message(cmd, str, len);
+	    process_client_message(cmd, str);
 	    return;
 	}
     }
@@ -139,37 +150,41 @@ remote_received(char *str, int len)
     for(i = 0; i < len; i++) {
 	rcvdpkt[in_rcvd++] = str[i];
 	if (msglen[rcvdpkt[0] & 0xFF] <= in_rcvd) {
-	    process_client_message(rcvdpkt[0] & 0xFF, rcvdpkt, in_rcvd);
+	    process_client_message(rcvdpkt[0] & 0xFF, rcvdpkt);
 	    in_rcvd = 0;
 	}
     }
 }
 
 void
-process_client_message(int cmd, char * pkt, int len)
+process_client_message(int cmd, char * pktbuf)
 {
     switch(cmd)
     {
     case PKID_SETBLOCK:
 	{
-	    char * p = pkt+1;
+	    char * p = pktbuf+1;
 	    pkt_setblock pkt;
 	    pkt.coord.x = IntBE16(p); p+=2;
 	    pkt.coord.y = IntBE16(p); p+=2;
 	    pkt.coord.z = IntBE16(p); p+=2;
 	    pkt.mode = *p++;
-	    pkt.block = *p++;
+	    pkt.heldblock = *p++;
 
-	    if (pkt.coord.x < 0 || pkt.coord.x >= level_prop->cells_x) return;
-	    if (pkt.coord.y < 0 || pkt.coord.y >= level_prop->cells_y) return;
-	    if (pkt.coord.z < 0 || pkt.coord.z >= level_prop->cells_z) return;
+	    pkt.block = pkt.mode?pkt.heldblock:Block_Air;
 
-	    if (pkt.mode)
-		level_blocks[World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z)] =
-		    pkt.block;
-	    else
-		level_blocks[World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z)] = Block_Air;
-
+	    update_block(pkt);
+	    if (++pending_marks > 999)
+		send_queued_blocks();
+	}
+	break;
+    case PKID_MESSAGE:
+	{
+	    char * p = pktbuf+1;
+	    pkt_message pkt;
+	    pkt.msg_flag = *p++;
+	    cpy_nbstring(pkt.message, p); p+=64;
+	    update_chat(pkt);
 	}
 	break;
     }

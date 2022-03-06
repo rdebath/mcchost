@@ -52,6 +52,7 @@ struct pkt_setblock {
     struct xyz_t coord;
     int mode;
     block_t block;
+    block_t heldblock;
 };
 
 typedef struct pkt_player_posn pkt_player_posn;

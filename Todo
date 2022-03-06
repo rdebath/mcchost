@@ -12,13 +12,34 @@ Routine to export/import level prop and server prop binary files (INI file).
     -- External program?
     -- Should automatic backup export server properties?
 
-Physics
-
 Model *.cw file for new unspecified level.
 
+Physics:
+
+Implementation:
+
+Place maximum number of blocks in byte tx queue.
+    Remainder wait on shared block queue.
+
+    Text messages may jump this.
+	-- Make sure text anti-spam is in place.
+		(Only echo duplicates back to self?)
+		Ghost the player? (for a short time?)
+
 On Block queue, if user count < 2 && no-physics don't use queue ?
-    --> *256 blocks packet? Clear queue?
+    --> *256 blocks packet need queue? Clear queue on overload?
 
 More blocks modified than will fit in queue?
     --> Can only see for "me" so generation number will wrap and reload.
+
+    Mass change can pre-supress block queue and force generation rollover.
+
+Logging:
+
+Add log_printf()
+Add user_command_log_print()
+Add chat_log_print()
+
+    --> Automatic log file cleanup?
+
 

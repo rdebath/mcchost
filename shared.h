@@ -3,16 +3,61 @@
 void fatal(char *emsg);
 void fatal(char *emsg);
 #define LOCAL static
-#include <stdint.h>
-#define VALID_MAGIC	0x057FFF00
-#define Block_Dirt 3
-#define Block_Grass 2
+void set_last_chat_queue_id();
+typedef struct chat_queue_t chat_queue_t;
+typedef struct chat_entry_t chat_entry_t;
+typedef struct pkt_message pkt_message;
+#define MB_STRLEN 64
+#define NB_SLEN	(MB_STRLEN+1)
+struct pkt_message {
+    int msg_flag;
+    char message[NB_SLEN];
+};
+struct chat_entry_t {
+    int to_level_id;
+    int to_player_id;
+    int to_team_id;
+    pkt_message msg;
+};
+struct chat_queue_t {
+    uint32_t generation;	// uint so GCC doesn't fuck it up.
+    int curr_offset;
+    int queue_len;
+
+    chat_entry_t updates[1];
+};
+extern volatile chat_queue_t *level_chat_queue;
+extern intptr_t level_chat_queue_len;
+void wipe_last_chat_queue_id();
 #if !defined(_REENTRANT)
 #define USE_FCNTL
 #endif
 #if !defined(USE_FCNTL)
 #include <semaphore.h>
 #endif
+void stop_chat_queue();
+void create_chat_queue();
+typedef struct xyzb_t xyzb_t;
+#include <stdint.h>
+struct xyzb_t { uint16_t x, y, z, b; };
+extern intptr_t level_block_queue_len;
+void wipe_last_block_queue_id();
+#define PKID_SRVBLOCK   0x06
+#define PKID_SRVBLOCK   0x06
+extern int msglen[256];
+void create_block_queue(char *levelname);
+typedef struct block_queue_t block_queue_t;
+struct block_queue_t {
+    uint32_t generation;	// uint so GCC doesn't fuck it up.
+    int curr_offset;
+    int queue_len;
+
+    xyzb_t updates[1];
+};
+extern volatile block_queue_t *level_block_queue;
+#define VALID_MAGIC	0x057FFF00
+#define Block_Dirt 3
+#define Block_Grass 2
 typedef struct map_info_t map_info_t;
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
@@ -65,6 +110,10 @@ struct map_info_t {
 
     xyzhv_t spawn;
 
+    int hacks_flags;
+    int queue_len;
+    int last_map_download_size;
+
     // Init together til side_level.
     int weather;
     int sky_colour;
@@ -83,13 +132,13 @@ struct map_info_t {
     int invt_order[BLOCKMAX];
 
     unsigned char block_perms[BLOCKMAX];
-    int hacks_flags;
 
 };
 extern volatile map_info_t *level_prop;
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
 #define MAP_MAGIC	0x1A7FFF00
 LOCAL void *allocate_shared(char *share_name,int share_size,intptr_t *shared_len);
+void stop_block_queue();
 void stop_shared(void);
 void start_shared(char *levelname);
 extern intptr_t level_blocks_len;

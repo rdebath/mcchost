@@ -9,6 +9,8 @@
 
 typedef struct xyz_t xyz_t;
 struct xyz_t { int x, y, z; };
+typedef struct xyzb_t xyzb_t;
+struct xyzb_t { uint16_t x, y, z, b; };
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 
@@ -24,6 +26,10 @@ struct map_info_t {
     int valid_blocks;
 
     xyzhv_t spawn;
+
+    int hacks_flags;
+    int queue_len;
+    int last_map_download_size;
 
     // Init together til side_level.
     int weather;
@@ -43,7 +49,6 @@ struct map_info_t {
     int invt_order[BLOCKMAX];
 
     unsigned char block_perms[BLOCKMAX];
-    int hacks_flags;
 
 };
 

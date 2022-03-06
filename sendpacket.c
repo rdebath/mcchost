@@ -87,6 +87,19 @@ send_lvldone_pkt(int x, int y, int z)
 }
 
 void
+send_setblock_pkt(int x, int y, int z, int block)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_SRVBLOCK;
+    nb_short(&p, x);
+    nb_short(&p, y);
+    nb_short(&p, z);
+    *p++ = block_convert(block);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
 send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 {
     uint8_t packetbuf[1024];
@@ -149,12 +162,12 @@ send_despawn_pkt(int player_id)
 }
 
 void
-send_message_pkt(int player_id, char * message)
+send_message_pkt(int id, char * message)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_MESSAGE;
-    *p++ = player_id;
+    *p++ = id;
     p += nb_string_write(p, message);
     write_to_remote(packetbuf, p-packetbuf);
 }

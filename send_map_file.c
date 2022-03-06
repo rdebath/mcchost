@@ -7,17 +7,34 @@
 
 #include "send_map_file.h"
 
-static inline int
+#if INTERFACE
+#ifndef FILTER_BLOCKS
+#define block_convert(inblock) (inblock)
+#endif
+#endif
+
+block_t cpe_conv[] =
+{
+    0x2C, 0x27, 0x0C, 0x00, 0x0A, 0x21, 0x19, 0x03,
+    0x1d, 0x1c, 0x14, 0x2a, 0x31, 0x24, 0x05, 0x01
+};
+
+#ifdef FILTER_BLOCKS
+int
 block_convert(int in)
 {
     // Convert from Map block numbers to ones the client will understand.
+
+    if (in >= 50 && in < 66) in = cpe_conv[in-50];
     return in;
 }
+#endif
 
 void
 send_map_file()
 {
     int zrv = 0;
+    set_last_block_queue_id(); // Send updates from now.
     send_lvlinit_pkt();
 
     uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
@@ -47,6 +64,7 @@ send_map_file()
     intptr_t level_blocks_used = 0;
     unsigned char zblockbuffer[1024];
     int percent = 0;
+    uintptr_t blocks_sent = 0;
 
     strm.avail_out = sizeof(zblockbuffer);
     strm.next_out = zblockbuffer;
@@ -75,6 +93,7 @@ send_map_file()
 
 	if (strm.avail_out == 0 || (zrv == Z_STREAM_END && sizeof(zblockbuffer) != strm.avail_out)) {
 	    send_lvldata_pkt(zblockbuffer, sizeof(zblockbuffer)-strm.avail_out, percent);
+	    blocks_sent += 1;
 	    strm.avail_out = sizeof(zblockbuffer);
 	    strm.next_out = zblockbuffer;
 	    percent = level_blocks_used * 100 / level_len;
@@ -85,4 +104,7 @@ send_map_file()
     deflateEnd(&strm);
 
     send_lvldone_pkt(level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
+
+    // Record for next time.
+    level_prop->last_map_download_size = blocks_sent * 1028 + 8;
 }
