@@ -199,6 +199,10 @@ create_block_queue(char * levelname)
 
     lock_shared();
     if (level_block_queue->generation == 0 || level_block_queue->queue_len != queue_count) {
+
+	if (level_block_queue->curr_offset < 0 || level_block_queue->curr_offset >= level_block_queue->queue_len)
+	    level_block_queue->queue_len = 0;
+
 	if (queue_count > level_block_queue->queue_len) {
 	    level_block_queue->generation += 2;
 	    level_block_queue->curr_offset = 0;
@@ -239,7 +243,7 @@ create_chat_queue()
     wipe_last_chat_queue_id();
 
     sprintf(sharename, "chat.queue");
-    level_chat_queue_len = sizeof(*level_chat_queue) + queue_count * sizeof(xyzb_t);
+    level_chat_queue_len = sizeof(*level_chat_queue) + queue_count * sizeof(chat_entry_t);
     level_chat_queue = allocate_shared(sharename, level_chat_queue_len, &level_chat_queue_len);
 
 #ifdef USE_FCNTL
@@ -251,7 +255,10 @@ create_chat_queue()
 #endif
 
     lock_chat_shared();
-    if (level_chat_queue->generation == 0 || level_chat_queue->queue_len != queue_count) {
+    if (    level_chat_queue->generation == 0 ||
+	    level_chat_queue->queue_len != queue_count ||
+	    level_chat_queue->curr_offset < 0 ||
+	    level_chat_queue->curr_offset >= queue_count) {
 	level_chat_queue->generation += 2;
 	level_chat_queue->curr_offset = 0;
 	level_chat_queue->queue_len = queue_count;

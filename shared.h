@@ -4,7 +4,6 @@ void fatal(char *emsg);
 void fatal(char *emsg);
 #define LOCAL static
 void set_last_chat_queue_id();
-typedef struct chat_queue_t chat_queue_t;
 typedef struct chat_entry_t chat_entry_t;
 typedef struct pkt_message pkt_message;
 #define MB_STRLEN 64
@@ -19,6 +18,7 @@ struct chat_entry_t {
     int to_team_id;
     pkt_message msg;
 };
+typedef struct chat_queue_t chat_queue_t;
 struct chat_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
     int curr_offset;
@@ -42,7 +42,6 @@ typedef struct xyzb_t xyzb_t;
 struct xyzb_t { uint16_t x, y, z, b; };
 extern intptr_t level_block_queue_len;
 void wipe_last_block_queue_id();
-#define PKID_SRVBLOCK   0x06
 #define PKID_SRVBLOCK   0x06
 extern int msglen[256];
 void create_block_queue(char *levelname);

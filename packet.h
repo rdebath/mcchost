@@ -14,7 +14,7 @@ struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 typedef struct pkt_player_posn pkt_player_posn;
 struct pkt_player_posn {
     int player_id;
-    struct xyzhv_t player_pos;
+    struct xyzhv_t pos;
 };
 typedef uint16_t block_t;
 typedef struct xyz_t xyz_t;
@@ -34,36 +34,20 @@ struct pkt_player_id {
     char unused;
 };
 #define PKID_OPER       0x0F
-#define PKID_OPER       0x0F
-#define PKID_DISCON     0x0E
 #define PKID_DISCON     0x0E
 #define PKID_MESSAGE    0x0D
-#define PKID_MESSAGE    0x0D
-#define PKID_DESPAWN    0x0C
 #define PKID_DESPAWN    0x0C
 #define PKID_POSN3      0x0B
-#define PKID_POSN3      0x0B
-#define PKID_POSN2      0x0A
 #define PKID_POSN2      0x0A
 #define PKID_POSN1      0x09
-#define PKID_POSN1      0x09
-#define PKID_POSN0      0x08
-#define PKID_POSN0      0x08
-#define PKID_SPAWN      0x07
+#define PKID_POSN       0x08
 #define PKID_SPAWN      0x07
 #define PKID_SRVBLOCK   0x06
-#define PKID_SRVBLOCK   0x06
-#define PKID_SETBLOCK   0x05
 #define PKID_SETBLOCK   0x05
 #define PKID_LVLDONE    0x04
-#define PKID_LVLDONE    0x04
-#define PKID_LVLDATA    0x03
 #define PKID_LVLDATA    0x03
 #define PKID_LVLINIT    0x02
-#define PKID_LVLINIT    0x02
 #define PKID_PING       0x01
-#define PKID_PING       0x01
-#define PKID_IDENT      0x00
 #define PKID_IDENT      0x00
 #define PKBUF		8192
 #define BIT20      0x100000

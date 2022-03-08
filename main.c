@@ -55,6 +55,12 @@ main(int argc, char **argv)
     start_shared(level_name);
     send_map_file();
 
+    {
+	char buf[256];
+	sprintf(buf, "&a+ &7%s &econnected", user_id);
+	post_chat(buf, strlen(buf));
+    }
+
     send_spawn_pkt(255, user_id, level_prop->spawn);
     send_message_pkt(0, "&eWelcome to this broken server");
 
@@ -136,8 +142,9 @@ fatal(char * emsg)
 void
 cpy_nbstring(char *buf, char *str)
 {
-    memcpy(buf, str, NB_SLEN-1);
-    buf[NB_SLEN-1] = 0;
-    char * p = buf+NB_SLEN-1;
-    while (p>buf && (p[-1] == 0 || p[-1] == ' ')) *(--p) = 0;
+    memcpy(buf, str, MB_STRLEN);
+    for(int i = 0; i<MB_STRLEN; i++) if (buf[i] == 0) buf[i] = ' ';
+    buf[MB_STRLEN] = 0;
+    char * p = buf+MB_STRLEN;
+    while (p>buf && p[-1] == ' ') *(--p) = 0;
 }

@@ -27,7 +27,7 @@
 #define PKID_SETBLOCK   0x05
 #define PKID_SRVBLOCK   0x06
 #define PKID_SPAWN      0x07
-#define PKID_POSN0      0x08
+#define PKID_POSN       0x08
 #define PKID_POSN1      0x09
 #define PKID_POSN2      0x0A
 #define PKID_POSN3      0x0B
@@ -58,7 +58,7 @@ struct pkt_setblock {
 typedef struct pkt_player_posn pkt_player_posn;
 struct pkt_player_posn {
     int player_id;
-    struct xyzhv_t player_pos;
+    struct xyzhv_t pos;
 };
 
 typedef struct pkt_message pkt_message;
@@ -92,7 +92,7 @@ int msglen[256] = {
     /* 0x06 */ 8,
 #define PKID_SPAWN	0x07
     /* 0x07 */ 2+64+6+2,
-#define PKID_POSN0	0x08	/*ClientSend as PKID_POSN */
+#define PKID_POSN	0x08	/*ClientSend as PKID_POSN */
     /* 0x08 */ 2+6+2,
 #define PKID_POSN1	0x09
     /* 0x09 */ 7,

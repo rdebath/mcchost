@@ -99,6 +99,7 @@ struct map_info_t {
 };
 extern volatile map_info_t *level_prop;
 void send_spawn_pkt(int player_id,char *playername,xyzhv_t posn);
+void post_chat(char *chat,int chat_len);
 void send_map_file();
 void start_shared(char *levelname);
 void create_chat_queue();

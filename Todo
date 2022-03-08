@@ -1,12 +1,15 @@
 Features:
 
 Everything in level prop file into *.cw file.
+    -- CW file also contains pending physics operations.
+
     -- Use makeheaders main2.c lib1.c lib2.c
        to compile the same export/import routines as used by the
        automatic backup/restore.
 
-    Command line routine to convert level files into *.cw --> for backups.
-    Command line routine to convert *.cw into level files ?
+    Routine to convert level files into *.cw --> for backups.
+    Routine to convert *.cw into level files ?
+	-- Command line routines?
 
 Routine to export/import level prop and server prop binary files (INI file).
     -- External program?
@@ -14,24 +17,70 @@ Routine to export/import level prop and server prop binary files (INI file).
 
 Model *.cw file for new unspecified level.
 
+When are cw files saved?
+    Only at "backup" time.
+    Part 1
+	Save new cw file to maps/levelname.tmp
+	Rename to maps/levelname.cw
+    Part 2
+	copy maps/levelname.cw to backups/levelname.tmp
+	Rename to backups/levelname/...
+
+
 Physics:
+
+Physics queue is a *.level.* file which can be extended at any time.
+
+Basic
+    Grass
+    Falling sand/gravel
+    Finite? Water/Lava
+    Sponge (Lava Sponge?)
+
+Extra
+    Leaves removed if !Log
+    Shrub grows to tree
+
+Advanced
+    Lava(Sand) -> Glass
+    Water(Lava) -> Stone
+    Fire(...) -> Fire
+    Time(Fire) -> Air
+
+
 
 Implementation:
 
-Place maximum number of blocks in byte tx queue.
-    Remainder wait on shared block queue.
+Build as distinct components.
+    -- tcpserver opens port and starts programs.
+    -- livepoll sends request to classicube.net
+    -- server process runs maps for client
+    -- physics process does non-trivial physics.
+    -- crash catcher restarts server process without dropping connection.
+    -- oneclient mode opens port and runs server on connection. (nofork)
+    -- command to save level to *.cw file.
+	-- All lock or copy/update modes.
 
-    Text messages may jump this.
-	-- Make sure text anti-spam is in place.
-		(Only echo duplicates back to self?)
-		Ghost the player? (for a short time?)
+All files in subdirectories.
+    maps/*.cw
+    system/*.mmap.*
+    levels/*.levelname.*
+    conf/*.txt
+    models/main.cw -- others too?
+    blockdb/levelname.bdb
+    logs ?
+    plugins ?
+    backups ?  deleted ?
+
+Make sure text anti-spam is in place.
+    (Only echo duplicates back to self?)
+    Ghost the player? (for a short time?)
 
 On Block queue, if user count < 2 && no-physics don't use queue ?
     --> *256 blocks packet need queue? Clear queue on overload?
 
 More blocks modified than will fit in queue?
     --> Can only see for "me" so generation number will wrap and reload.
-
     Mass change can pre-supress block queue and force generation rollover.
 
 Logging:
@@ -43,3 +92,8 @@ Add chat_log_print()
     --> Automatic log file cleanup?
 
 
+DONE:
+
+Place maximum number of blocks in byte tx queue.
+    Remainder wait on shared block queue.
+    Text messages in distinct queue.

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
@@ -22,6 +23,12 @@ run_request_loop()
 {
     int flg;
     while(!(flg = do_select()));
+
+    {
+        char buf[256];
+        sprintf(buf, "&c- &7%s &edisconnected", user_id);
+        post_chat(buf, strlen(buf));
+    }
 }
 
 int
@@ -178,13 +185,27 @@ process_client_message(int cmd, char * pktbuf)
 		send_queued_blocks();
 	}
 	break;
+    case PKID_POSN:
+	{
+	    char * p = pktbuf+1;
+	    pkt_player_posn pkt;
+	    pkt.player_id = (uint8_t)(*p++);
+	    pkt.pos.x = IntBE16(p); p+=2;
+	    pkt.pos.y = IntBE16(p); p+=2;
+	    pkt.pos.z = IntBE16(p); p+=2;
+	    pkt.pos.h = *p++;
+	    pkt.pos.v = *p++;
+
+	    
+	}
+	break;
     case PKID_MESSAGE:
 	{
 	    char * p = pktbuf+1;
 	    pkt_message pkt;
 	    pkt.msg_flag = *p++;
 	    cpy_nbstring(pkt.message, p); p+=64;
-	    update_chat(pkt);
+	    convert_chat_message(pkt);
 	}
 	break;
     }

@@ -134,7 +134,7 @@ send_posn_pkt(xyzhv_t *oldpos, xyzhv_t posn)
 
     switch(todo) {
     default:
-	*p++ = PKID_POSN0;
+	*p++ = PKID_POSN;
 	nb_short(&p, posn.x);
 	nb_short(&p, posn.y);
 	nb_short(&p, posn.z);
@@ -205,22 +205,3 @@ nb_string_write(uint8_t *pkt, char * str)
 
     return MB_STRLEN;
 }
-
-#if INTERFACE
-#define PKID_IDENT      0x00
-#define PKID_PING       0x01
-#define PKID_LVLINIT    0x02
-#define PKID_LVLDATA    0x03
-#define PKID_LVLDONE    0x04
-#define PKID_SETBLOCK   0x05
-#define PKID_SRVBLOCK   0x06
-#define PKID_SPAWN      0x07
-#define PKID_POSN0      0x08
-#define PKID_POSN1      0x09
-#define PKID_POSN2      0x0A
-#define PKID_POSN3      0x0B
-#define PKID_DESPAWN    0x0C
-#define PKID_MESSAGE    0x0D
-#define PKID_DISCON     0x0E
-#define PKID_OPER       0x0F
-#endif
