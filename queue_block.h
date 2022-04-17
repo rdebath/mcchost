@@ -12,29 +12,10 @@ int bytes_queued_to_send();
 void send_queued_blocks();
 void wipe_last_block_queue_id();
 extern char *level_name;
-#if !defined(_REENTRANT)
-#define USE_FCNTL
-#endif
-#if !defined(USE_FCNTL)
-#include <semaphore.h>
-#endif
 void create_block_queue(char *levelname);
 void set_last_block_queue_id();
-#if !(defined(USE_FCNTL))
-extern sem_t *shared_global_mutex;
-#endif
-#if !defined(USE_FCNTL)
-#define unlock_shared() sem_post(shared_global_mutex);
-#endif
-#if defined(USE_FCNTL)
 void unlock_shared(void);
-#endif
-#if !defined(USE_FCNTL)
-#define lock_shared() sem_wait(shared_global_mutex);
-#endif
-#if defined(USE_FCNTL)
 void lock_shared(void);
-#endif
 #include <stdint.h>
 #define Block_Air 0
 typedef struct map_info_t map_info_t;

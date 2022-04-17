@@ -14,12 +14,6 @@ void MD5Update(MD5_CTX *mdContext,unsigned char *inBuf,unsigned int inLen);
 void MD5Init(MD5_CTX *mdContext);
 void run_request_loop();
 void send_message_pkt(int id,char *message);
-#if !defined(_REENTRANT)
-#define USE_FCNTL
-#endif
-#if !defined(USE_FCNTL)
-#include <semaphore.h>
-#endif
 typedef struct map_info_t map_info_t;
 #include <stdint.h>
 typedef struct xyzhv_t xyzhv_t;

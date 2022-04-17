@@ -4,22 +4,8 @@ void send_message_pkt(int id,char *message);
 void send_queued_chats();
 void wipe_last_chat_queue_id();
 void set_last_chat_queue_id();
-#if !defined(_REENTRANT)
-#define USE_FCNTL
-#endif
-#if !defined(USE_FCNTL)
-#include <semaphore.h>
-#define unlock_chat_shared()
-#endif
-#if defined(USE_FCNTL)
 void unlock_chat_shared(void);
-#endif
-#if !defined(USE_FCNTL)
-#define lock_chat_shared()
-#endif
-#if defined(USE_FCNTL)
 void lock_chat_shared(void);
-#endif
 void create_chat_queue();
 typedef struct pkt_message pkt_message;
 #define MB_STRLEN 64

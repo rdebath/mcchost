@@ -119,12 +119,6 @@ typedef struct xyzb_t xyzb_t;
 struct xyzb_t { uint16_t x, y, z, b; };
 typedef struct xyz_t xyz_t;
 struct xyz_t { int x, y, z; };
-#if !defined(_REENTRANT)
-#define USE_FCNTL
-#endif
-#if !defined(USE_FCNTL)
-#include <semaphore.h>
-#endif
 extern volatile map_info_t *level_prop;
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
 #define VALID_MAGIC	0x057FFF00

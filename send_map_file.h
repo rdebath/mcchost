@@ -2,12 +2,6 @@
 #undef INTERFACE
 void send_lvldone_pkt(int x,int y,int z);
 void send_lvldata_pkt(char *block,int len,int percent);
-#if !defined(_REENTRANT)
-#define USE_FCNTL
-#endif
-#if !defined(USE_FCNTL)
-#include <semaphore.h>
-#endif
 #include <stdint.h>
 typedef uint16_t block_t;
 extern volatile block_t *level_blocks;

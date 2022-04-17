@@ -1,9 +1,12 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-void fatal(char *emsg);
-void fatal(char *emsg);
 #define LOCAL static
+LOCAL void share_lock(int fd,int mode,int l_type);
+void fatal(char *emsg);
+void fatal(char *emsg);
 void set_last_chat_queue_id();
+void unlock_chat_shared(void);
+void lock_chat_shared(void);
 typedef struct chat_entry_t chat_entry_t;
 typedef struct pkt_message pkt_message;
 #define MB_STRLEN 64
@@ -29,12 +32,6 @@ struct chat_queue_t {
 extern volatile chat_queue_t *level_chat_queue;
 extern intptr_t level_chat_queue_len;
 void wipe_last_chat_queue_id();
-#if !defined(_REENTRANT)
-#define USE_FCNTL
-#endif
-#if !defined(USE_FCNTL)
-#include <semaphore.h>
-#endif
 void stop_chat_queue();
 void create_chat_queue();
 typedef struct xyzb_t xyzb_t;
@@ -54,6 +51,7 @@ struct block_queue_t {
     xyzb_t updates[1];
 };
 extern volatile block_queue_t *level_block_queue;
+void unlock_shared(void);
 #define VALID_MAGIC	0x057FFF00
 #define Block_Dirt 3
 #define Block_Grass 2
@@ -136,6 +134,7 @@ struct map_info_t {
 extern volatile map_info_t *level_prop;
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
 #define MAP_MAGIC	0x1A7FFF00
+void lock_shared(void);
 LOCAL void *allocate_shared(char *share_name,int share_size,intptr_t *shared_len);
 void stop_block_queue();
 void stop_shared(void);
@@ -144,31 +143,3 @@ extern intptr_t level_blocks_len;
 typedef uint16_t block_t;
 extern volatile block_t *level_blocks;
 extern intptr_t level_prop_len;
-#if !defined(USE_FCNTL)
-#define unlock_chat_shared()
-#endif
-#if defined(USE_FCNTL)
-void unlock_chat_shared(void);
-#endif
-#if !defined(USE_FCNTL)
-#define lock_chat_shared()
-#endif
-#if defined(USE_FCNTL)
-void lock_chat_shared(void);
-#endif
-#if !(defined(USE_FCNTL))
-extern sem_t *shared_global_mutex;
-#endif
-#if !defined(USE_FCNTL)
-#define unlock_shared() sem_post(shared_global_mutex);
-#endif
-#if defined(USE_FCNTL)
-void unlock_shared(void);
-#endif
-#if !defined(USE_FCNTL)
-#define lock_shared() sem_wait(shared_global_mutex);
-#endif
-#if defined(USE_FCNTL)
-void lock_shared(void);
-#endif
-#define INTERFACE 0

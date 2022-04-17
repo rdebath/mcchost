@@ -2,9 +2,9 @@ mapinfo.o: mapinfo.c mapinfo.h
 packet.o: packet.c packet.h
 requestloop.o: requestloop.c requestloop.h
 chat_message.o: chat_message.c chat_message.h
+queue_chat.o: queue_chat.c queue_chat.h
 shared.o: shared.c shared.h
 main.o: main.c main.h
-queue_chat.o: queue_chat.c queue_chat.h
 sendpacket.o: sendpacket.c sendpacket.h
 send_map_file.o: send_map_file.c send_map_file.h
 queue_block.o: queue_block.c queue_block.h
