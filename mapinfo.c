@@ -4,6 +4,7 @@
 
 #define BLOCKMAX 1024
 #define MAP_MAGIC	0x1A7FFF00
+#define MAP_VERSION	0xA0000100
 #define VALID_MAGIC	0x057FFF00
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
 
@@ -19,11 +20,10 @@ typedef uint16_t block_t;
 typedef struct map_info_t map_info_t;
 struct map_info_t {
     int magic_no;
-    int version_no;
     unsigned int cells_x;
     unsigned int cells_y;
     unsigned int cells_z;
-    int valid_blocks;
+    int64_t valid_blocks;
 
     xyzhv_t spawn;
 
@@ -38,8 +38,8 @@ struct map_info_t {
     int fog_colour;
     int ambient_colour;
     int sunlight_colour;
-    int side_block;
-    int edge_block;
+    block_t side_block;
+    block_t edge_block;
     int side_level;
 
     char texname[65];
@@ -50,44 +50,42 @@ struct map_info_t {
 
     unsigned char block_perms[BLOCKMAX];
 
+    int version_no;
 };
 
 struct block_defn {
-    char * name;
+    char name[64];
 
-    int collide;
-    int transparent;
-    int walksound;
-    int light;
-    int shape;
-    int draw;
+    uint8_t collide;
+    uint8_t transparent;
+    uint8_t walksound;
+    uint8_t blockslight;
+    uint8_t shape;
+    uint8_t draw;
     float speed;
-    int textures[6];
+    uint16_t textures[6];
     uint8_t fog[4];
     int8_t cords[6];
 
-    int fallback;
-    int inventory_order;
+    block_t fallback;
+    block_t inventory_order;
 
-    int defined;
-    int changed;
-    int dup_name;
-    int fix_name;
-    int used;
+    uint8_t defined;
 
-    int door_flag;
-    int mblock_flag;
-    int portal_flag;
-    int lava_flag;
-    int water_flag;
-    int tdoor_flag;
-    int rails_flag;
-    int opblock_flag;
+    uint8_t fire_flag;
+    uint8_t door_flag;
+    uint8_t mblock_flag;
+    uint8_t portal_flag;
+    uint8_t lavakills_flag;
+    uint8_t waterkills_flag;
+    uint8_t tdoor_flag;
+    uint8_t rails_flag;
+    uint8_t opblock_flag;
 
-    int stack_block;
-    int odoor_block;
-    int grass_block;
-    int dirt_block;
+    block_t stack_block;
+    block_t odoor_block;
+    block_t grass_block;
+    block_t dirt_block;
 };
 
 
@@ -110,22 +108,37 @@ struct block_defn {
 #define Block_Sponge 19
 #define Block_Glass 20
 #define Block_Red 21
+#define Block_Green 25
 #define Block_Cyan 28
+#define Block_Blue 29
+#define Block_Pink 33
 #define Block_White 36
 #define Block_Dandelion 37
 #define Block_Rose 38
 #define Block_BrownMushroom 39
 #define Block_RedMushroom 40
 #define Block_Gold 41
+#define Block_Iron 42
 #define Block_DoubleSlab 43
 #define Block_Slab 44
 #define Block_Bookshelf 47
+#define Block_Obsidian 49
 #define Block_CobbleSlab 50
+#define Block_Rope 51
+#define Block_Sandstone 52
+#define Block_Snow 53
 #define Block_Fire 54
 #define Block_LightPink 55
+#define Block_ForestGreen 56
+#define Block_Brown 57
+#define Block_DeepBlue 58
 #define Block_Turquoise 59
 #define Block_Ice 60
+#define Block_CeramicTile 61
+#define Block_Magma 62
+#define Block_Pillar 63
 #define Block_Crate 64
+#define Block_StoneBrick 65
 
 #define Block_CPE 50
 #define Block_Cust 66

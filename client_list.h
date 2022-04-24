@@ -1,12 +1,23 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-void send_lvldone_pkt(int x,int y,int z);
-void send_lvldata_pkt(char *block,int len,int percent);
+void stop_user();
+extern int user_authenticated;
+void send_message_pkt(int id,char *message);
+void fatal(char *emsg);
+void fatal(char *emsg);
+void kicked(char *emsg);
+void start_user();
+typedef struct pkt_player_posn pkt_player_posn;
+typedef struct xyzhv_t xyzhv_t;
+#include <stdint.h>
+struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
+struct pkt_player_posn {
+    int player_id;
+    struct xyzhv_t pos;
+};
+void update_player_pos(pkt_player_posn pkt);
 typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
-#include <stdint.h>
-typedef struct xyzhv_t xyzhv_t;
-struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 typedef uint16_t block_t;
 typedef struct block_defn block_defn;
 struct block_defn {
@@ -142,13 +153,13 @@ struct shared_data_t {
     shmem_t dat[SHMID_COUNT];
 };
 extern struct shared_data_t shdat;
-#define level_blocks shdat.blocks
-void fatal(char *emsg);
-void fatal(char *emsg);
-void send_lvlinit_pkt();
-void set_last_block_queue_id();
-void send_map_file();
-#define Block_Bedrock 7
 #define level_prop shdat.prop
-extern block_t max_blockno_to_send;
-block_t block_convert(block_t in);
+extern char user_id[NB_SLEN];
+void reset_player_list();
+void send_posn_pkt(int player_id,xyzhv_t *oldpos,xyzhv_t posn);
+void send_despawn_pkt(int player_id);
+void send_spawn_pkt(int player_id,char *playername,xyzhv_t posn);
+void logout(char *emsg);
+void check_user();
+#define MAGIC_USR	0x0012FF7E
+#define INTERFACE 0

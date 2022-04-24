@@ -116,37 +116,71 @@ send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 }
 
 void
-send_posn_pkt(xyzhv_t *oldpos, xyzhv_t posn)
+send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
-    int todo = -1;
+    int todo = 0;
     if (!oldpos || !oldpos->valid) {
 	todo = 0;
-    } else if (oldpos->x == posn.x && oldpos->y == posn.y && oldpos->y == posn.z) {
+    } else if (oldpos->x == posn.x && oldpos->y == posn.y && oldpos->z == posn.z) {
 	if (oldpos->h == posn.h && oldpos->v == posn.v)
 	    return;
 	todo = 3;
+    } else {
+	// Is Delta (x,y,z) useful?
+	int diff_ok = 1;
+	if (oldpos->x - posn.x > 127 || oldpos->x - posn.x < -127) diff_ok = 0;
+	if (oldpos->y - posn.y > 127 || oldpos->y - posn.y < -127) diff_ok = 0;
+	if (oldpos->z - posn.z > 127 || oldpos->z - posn.z < -127) diff_ok = 0;
+	if (diff_ok) {
+	    if (oldpos->h == posn.h && oldpos->v == posn.v)
+		todo = 2;
+	    else
+		todo = 1;
+	}
     }
-    // else TODO: is Delta (x,y,z) useful?
 
-    if (oldpos) {*oldpos = posn; oldpos->valid = 1; }
+// #define PKID_POSN       0x08 /* 0x08 */ 2+6+2, 	Pabs+O
+// #define PKID_POSN1      0x09 /* 0x09 */ 7,		PRel+O
+// #define PKID_POSN2      0x0A /* 0x0a */ 5,		PRel
+// #define PKID_POSN3      0x0B /* 0x0b */ 4,		Or
 
     switch(todo) {
     default:
 	*p++ = PKID_POSN;
+	*p++ = player_id;
 	nb_short(&p, posn.x);
 	nb_short(&p, posn.y);
 	nb_short(&p, posn.z);
 	*p++ = posn.h;
 	*p++ = posn.v;
 	break;
+    case 1:
+	*p++ = PKID_POSN1;
+	*p++ = player_id;
+	*p++ = posn.x - oldpos->x;
+	*p++ = posn.y - oldpos->y;
+	*p++ = posn.z - oldpos->z;
+	*p++ = posn.h;
+	*p++ = posn.v;
+	break;
+    case 2:
+	*p++ = PKID_POSN2;
+	*p++ = player_id;
+	*p++ = posn.x - oldpos->x;
+	*p++ = posn.y - oldpos->y;
+	*p++ = posn.z - oldpos->z;
+	break;
     case 3:
 	*p++ = PKID_POSN3;
+	*p++ = player_id;
 	*p++ = posn.h;
 	*p++ = posn.v;
 	break;
     }
+
+    if (oldpos) {*oldpos = posn; oldpos->valid = 1; }
 
     write_to_remote(packetbuf, p-packetbuf);
 }
@@ -167,6 +201,8 @@ send_message_pkt(int id, char * message)
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_MESSAGE;
+    /* 0..127 prefix line with &f */
+    /* 128..255 prefix line with &e */
     *p++ = id;
     p += nb_string_write(p, message);
     write_to_remote(packetbuf, p-packetbuf);

@@ -24,8 +24,8 @@ struct chat_entry_t {
 }
 #endif
 
-volatile chat_queue_t *level_chat_queue = 0;
-intptr_t level_chat_queue_len = 0;
+//volatile chat_queue_t *level_chat_queue = 0;
+//intptr_t level_chat_queue_len = 0;
 
 static int last_id = -1;
 static uint32_t last_generation;
@@ -100,6 +100,26 @@ send_queued_chats()
 	    last_id = 0;
 	}
 	unlock_chat_shared();
+
+	if (!enable_cp437)
+	{
+	    static char cp437_asc[] =
+		"CueaaaaceeeiiiAAE**ooouuyOUc$YPs"
+		"aiounNao?++**!<>###||||++||+++++"
+		"+--|-+||++--|-+----++++++++##||#"
+		"aBTPEsyt******EN=+><++-=... n2* ";
+
+	    char *s, *d;
+	    for(s=d=upd.msg.message; *s; s++) {
+		if (*s >= ' ' && *s <= '~')
+		    *d++ = *s;
+		else if (*s & 0x80)
+		    *d++ = cp437_asc[*s & 0x7f];
+		else
+		    *d++ = '*';
+	    }
+	    *d++ = 0;
+	}
 
 	send_message_pkt(upd.msg.msg_flag, upd.msg.message);
     }

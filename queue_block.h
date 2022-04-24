@@ -1,72 +1,68 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-#if !defined(FILTER_BLOCKS)
-#define block_convert(inblock) (inblock)
-#endif
-#if defined(FILTER_BLOCKS)
-int block_convert(int in);
-#endif
-void send_setblock_pkt(int x,int y,int z,int block);
+#include <stdint.h>
+typedef uint16_t block_t;
+block_t block_convert(block_t in);
+void reset_player_list();
 void send_map_file();
 int bytes_queued_to_send();
 void send_queued_blocks();
+void send_map_reload();
 void wipe_last_block_queue_id();
 extern char *level_name;
 void create_block_queue(char *levelname);
 void set_last_block_queue_id();
 void unlock_shared(void);
 void lock_shared(void);
-#include <stdint.h>
+void send_setblock_pkt(int x,int y,int z,int block);
+void send_update(int x,int y,int z,int b);
+#define BLOCKMAX 1024
 #define Block_Air 0
+typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 typedef struct block_defn block_defn;
 struct block_defn {
-    char * name;
+    char name[64];
 
-    int collide;
-    int transparent;
-    int walksound;
-    int light;
-    int shape;
-    int draw;
+    uint8_t collide;
+    uint8_t transparent;
+    uint8_t walksound;
+    uint8_t blockslight;
+    uint8_t shape;
+    uint8_t draw;
     float speed;
-    int textures[6];
+    uint16_t textures[6];
     uint8_t fog[4];
     int8_t cords[6];
 
-    int fallback;
-    int inventory_order;
+    block_t fallback;
+    block_t inventory_order;
 
-    int defined;
-    int changed;
-    int dup_name;
-    int fix_name;
-    int used;
+    uint8_t defined;
 
-    int door_flag;
-    int mblock_flag;
-    int portal_flag;
-    int lava_flag;
-    int water_flag;
-    int tdoor_flag;
-    int rails_flag;
-    int opblock_flag;
+    uint8_t fire_flag;
+    uint8_t door_flag;
+    uint8_t mblock_flag;
+    uint8_t portal_flag;
+    uint8_t lavakills_flag;
+    uint8_t waterkills_flag;
+    uint8_t tdoor_flag;
+    uint8_t rails_flag;
+    uint8_t opblock_flag;
 
-    int stack_block;
-    int odoor_block;
-    int grass_block;
-    int dirt_block;
+    block_t stack_block;
+    block_t odoor_block;
+    block_t grass_block;
+    block_t dirt_block;
 };
-#define BLOCKMAX 1024
 struct map_info_t {
     int magic_no;
-    int version_no;
     unsigned int cells_x;
     unsigned int cells_y;
     unsigned int cells_z;
-    int valid_blocks;
+    int64_t valid_blocks;
 
     xyzhv_t spawn;
 
@@ -81,8 +77,8 @@ struct map_info_t {
     int fog_colour;
     int ambient_colour;
     int sunlight_colour;
-    int side_block;
-    int edge_block;
+    block_t side_block;
+    block_t edge_block;
     int side_level;
 
     char texname[65];
@@ -93,22 +89,8 @@ struct map_info_t {
 
     unsigned char block_perms[BLOCKMAX];
 
+    int version_no;
 };
-extern volatile map_info_t *level_prop;
-#define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
-typedef uint16_t block_t;
-extern volatile block_t *level_blocks;
-typedef struct pkt_setblock pkt_setblock;
-typedef struct xyz_t xyz_t;
-struct xyz_t { int x, y, z; };
-struct pkt_setblock {
-    struct xyz_t coord;
-    int mode;
-    block_t block;
-    block_t heldblock;
-};
-void update_block(pkt_setblock pkt);
-extern intptr_t level_block_queue_len;
 typedef struct block_queue_t block_queue_t;
 typedef struct xyzb_t xyzb_t;
 struct xyzb_t { uint16_t x, y, z, b; };
@@ -119,5 +101,72 @@ struct block_queue_t {
 
     xyzb_t updates[1];
 };
-extern volatile block_queue_t *level_block_queue;
+typedef struct chat_queue_t chat_queue_t;
+typedef struct chat_entry_t chat_entry_t;
+typedef struct pkt_message pkt_message;
+#define MB_STRLEN 64
+#define NB_SLEN	(MB_STRLEN+1)
+struct pkt_message {
+    int msg_flag;
+    char message[NB_SLEN];
+};
+struct chat_entry_t {
+    int to_level_id;
+    int to_player_id;
+    int to_team_id;
+    pkt_message msg;
+};
+struct chat_queue_t {
+    uint32_t generation;	// uint so GCC doesn't fuck it up.
+    int curr_offset;
+    int queue_len;
+
+    chat_entry_t updates[1];
+};
+typedef struct client_data_t client_data_t;
+typedef struct client_entry_t client_entry_t;
+struct client_entry_t {
+    char name[65];
+    xyzhv_t posn;
+    uint8_t active;
+    pid_t session_id;
+};
+#define MAX_USER	255
+struct client_data_t {
+    int magic1;
+    uint32_t generation;
+    client_entry_t user[MAX_USER];
+    int magic2;
+};
+typedef struct shmem_t shmem_t;
+struct shmem_t {
+    void * ptr;
+    intptr_t len;
+    int lock_fd;
+};
+#define SHMID_COUNT	5
+struct shared_data_t {
+    volatile map_info_t *prop;
+    volatile block_t *blocks;
+    volatile block_queue_t* blockq;
+    volatile chat_queue_t *chat;
+    volatile client_data_t *client;
+
+    shmem_t dat[SHMID_COUNT];
+};
+extern struct shared_data_t shdat;
+#define level_prop shdat.prop
+#define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
+#define level_blocks shdat.blocks
+#define level_block_queue shdat.blockq
+typedef struct pkt_setblock pkt_setblock;
+typedef struct xyz_t xyz_t;
+struct xyz_t { int x, y, z; };
+struct pkt_setblock {
+    struct xyz_t coord;
+    int mode;
+    block_t block;
+    block_t heldblock;
+};
+void update_block(pkt_setblock pkt);
 #define INTERFACE 0

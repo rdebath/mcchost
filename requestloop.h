@@ -19,6 +19,7 @@ struct pkt_player_posn {
     int player_id;
     struct xyzhv_t pos;
 };
+void update_player_pos(pkt_player_posn pkt);
 #define PKID_POSN       0x08
 typedef struct pkt_setblock pkt_setblock;
 typedef struct xyz_t xyz_t;
@@ -38,18 +39,23 @@ void process_client_message(int cmd,char *pktbuf);
 extern int msglen[256];
 void send_queued_blocks();
 void send_queued_chats();
+void check_user();
+void send_ping_pkt();
 void remote_received(char *str,int len);
 void on_select_timeout();
-extern int line_ofd;
 extern int line_ifd;
+extern int line_ofd;
+void flush_to_remote();
 void fatal(char *emsg);
 void fatal(char *emsg);
 void write_to_remote(char *str,int len);
 int bytes_queued_to_send();
+void print_logfile(char *s);
 void post_chat(char *chat,int chat_len);
 extern char user_id[NB_SLEN];
 int do_select();
 void run_request_loop();
+extern time_t last_ping;
 extern int pending_marks;
 extern int in_rcvd;
 #define PKBUF		8192

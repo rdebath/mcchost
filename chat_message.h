@@ -8,8 +8,12 @@ struct pkt_message {
     char message[NB_SLEN];
 };
 void update_chat(pkt_message pkt);
+void write_logfile(char *str,int len);
 void post_chat(char *chat,int chat_len);
 #define PKBUF		8192
 extern char user_id[NB_SLEN];
+void send_map_reload();
+void kicked(char *emsg);
+void logout(char *emsg);
 void send_message_pkt(int id,char *message);
 void convert_chat_message(pkt_message pkt);

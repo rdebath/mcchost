@@ -1,10 +1,8 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-void send_lvldone_pkt(int x,int y,int z);
-void send_lvldata_pkt(char *block,int len,int percent);
+#include <stdint.h>
 typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
-#include <stdint.h>
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 typedef uint16_t block_t;
@@ -142,13 +140,51 @@ struct shared_data_t {
     shmem_t dat[SHMID_COUNT];
 };
 extern struct shared_data_t shdat;
-#define level_blocks shdat.blocks
-void fatal(char *emsg);
-void fatal(char *emsg);
-void send_lvlinit_pkt();
-void set_last_block_queue_id();
-void send_map_file();
-#define Block_Bedrock 7
 #define level_prop shdat.prop
-extern block_t max_blockno_to_send;
-block_t block_convert(block_t in);
+#define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
+#define level_blocks shdat.blocks
+void open_blocks(char *levelname);
+#define Block_Stone 1
+#define Block_StoneBrick 65
+#define Block_Wood 5
+#define Block_Crate 64
+#define Block_White 36
+#define Block_Pillar 63
+#define Block_Obsidian 49
+#define Block_Magma 62
+#define Block_Iron 42
+#define Block_CeramicTile 61
+#define Block_Ice 60
+#define Block_Cyan 28
+#define Block_Turquoise 59
+#define Block_Blue 29
+#define Block_DeepBlue 58
+#define Block_Brown 57
+#define Block_Green 25
+#define Block_ForestGreen 56
+#define Block_Pink 33
+#define Block_LightPink 55
+#define Block_ActiveLava 10
+#define Block_Snow 53
+#define Block_Sand 12
+#define Block_Sandstone 52
+#define Block_Cobble 4
+#define Block_CobbleSlab 50
+#define Block_DoubleSlab 43
+#define Block_Slab 44
+#define Block_Fire 54
+#define Block_Rope 51
+#define Block_RedMushroom 40
+#define Block_BrownMushroom 39
+#define Block_Rose 38
+#define Block_Dandelion 37
+#define Block_Glass 20
+#define Block_Leaves 18
+#define Block_Sapling 6
+#define Block_Air 0
+#define Block_Grass 2
+#define Block_Dirt 3
+#define MAP_MAGIC	0x1A7FFF00
+void send_message_pkt(int id,char *message);
+#define MAP_VERSION	0xA0000100
+void createmap(char *levelname);

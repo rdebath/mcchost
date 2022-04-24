@@ -7,28 +7,26 @@
 
 #include "send_map_file.h"
 
-#if INTERFACE
-#ifndef FILTER_BLOCKS
-#define block_convert(inblock) (inblock)
-#endif
-#endif
-
-block_t cpe_conv[] =
+// Convert from Map block numbers to ones the client will understand.
+block_t
+block_convert(block_t in)
 {
-    0x2C, 0x27, 0x0C, 0x00, 0x0A, 0x21, 0x19, 0x03,
-    0x1d, 0x1c, 0x14, 0x2a, 0x31, 0x24, 0x05, 0x01
-};
+    // CPE defined translations.
+    static block_t cpe_conv[] = {
+	0x2C, 0x27, 0x0C, 0x00, 0x0A, 0x21, 0x19, 0x03,
+	0x1d, 0x1c, 0x14, 0x2a, 0x31, 0x24, 0x05, 0x01
+    };
 
-#ifdef FILTER_BLOCKS
-int
-block_convert(int in)
-{
-    // Convert from Map block numbers to ones the client will understand.
+    if (in >= BLOCKMAX) in = BLOCKMAX-1;
+    if (in <= max_blockno_to_send) return in;
 
-    if (in >= 50 && in < 66) in = cpe_conv[in-50];
-    return in;
+    if (level_prop->blockdef[in].defined)
+	in = level_prop->blockdef[in].fallback;
+
+    if (in > max_blockno_to_send && in >= 50 && in < 66) in = cpe_conv[in-50];
+
+    return in > max_blockno_to_send ? Block_Bedrock : in;
 }
-#endif
 
 void
 send_map_file()
@@ -52,10 +50,9 @@ send_map_file()
                              MAX_WBITS | 16, 8,
                              Z_DEFAULT_STRATEGY);
     if (zrv != Z_OK) {
-	fprintf(stderr,
-		 "%s:%d: deflateInit2() returned a bad status of %d.\n",
-		 __FILE__, __LINE__, zrv);
-	exit(1);
+	char buf[256];
+	sprintf(buf, "ZLib:deflateInit2() failed RV=%d.\n", zrv);
+	fatal(buf);
     }
 
     strm.next_in = blockbuffer;
@@ -85,10 +82,9 @@ send_map_file()
 
         zrv = deflate(&strm, strm.avail_in != 0?Z_NO_FLUSH:Z_FINISH);
 	if (zrv != Z_OK && zrv != Z_STREAM_END && zrv != Z_BUF_ERROR) {
-	    fprintf(stderr,
-		     "%s:%d: deflate() returned a bad status of %d.\n",
-		     __FILE__, __LINE__, zrv);
-	    exit(1);
+	    char buf[256];
+	    sprintf(buf, "ZLib:deflate() failed RV=%d.\n", zrv);
+	    fatal(buf);
 	}
 
 	if (strm.avail_out == 0 || (zrv == Z_STREAM_END && sizeof(zblockbuffer) != strm.avail_out)) {

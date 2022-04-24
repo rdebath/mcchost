@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
@@ -17,18 +18,21 @@ static char rcvdpkt[PKBUF];
 int in_rcvd = 0;
 
 int pending_marks = 0;
+time_t last_ping = 0;
 
 void
 run_request_loop()
 {
     int flg;
+    time(&last_ping);
+
     while(!(flg = do_select()));
 
-    {
-        char buf[256];
-        sprintf(buf, "&c- &7%s &edisconnected", user_id);
-        post_chat(buf, strlen(buf));
-    }
+    char buf[256];
+    sprintf(buf, "&c- &7%s &edisconnected", user_id);
+    post_chat(buf, strlen(buf));
+    sprintf(buf, "Connection dropped for %s", user_id);
+    print_logfile(buf);
 }
 
 int
@@ -39,6 +43,8 @@ bytes_queued_to_send()
 
 void write_to_remote(char * str, int len)
 {
+    time(&last_ping);
+
     bytes_sent += len;
 
     for(int i = 0; i < len; i++) {
@@ -51,6 +57,13 @@ void write_to_remote(char * str, int len)
 	}
 	ttl_buf[ttl_end++] = str[i];
     }
+}
+
+void
+flush_to_remote()
+{
+    int tosend = ttl_end-ttl_start;
+    (void)write(line_ofd, ttl_buf+ttl_start, tosend);
 }
 
 int
@@ -135,6 +148,16 @@ do_select()
 void
 on_select_timeout()
 {
+    time_t now;
+    time(&now);
+    int secs = ((now-last_ping) & 0xFF);
+    if (secs > 5) {
+	// Send keepalive.
+	send_ping_pkt();
+	time(&last_ping);
+    }
+
+    check_user();
     send_queued_chats();
     send_queued_blocks();
     pending_marks = 0;
@@ -144,6 +167,7 @@ void
 remote_received(char *str, int len)
 {
     int i, cmd, clen;
+    time(&last_ping);
 
     if (!in_rcvd) {
 	cmd = (*str & 0xFF);
@@ -176,7 +200,7 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt.coord.y = IntBE16(p); p+=2;
 	    pkt.coord.z = IntBE16(p); p+=2;
 	    pkt.mode = *p++;
-	    pkt.heldblock = *p++;
+	    pkt.heldblock = *(uint8_t*)p++;
 
 	    pkt.block = pkt.mode?pkt.heldblock:Block_Air;
 
@@ -195,8 +219,9 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt.pos.z = IntBE16(p); p+=2;
 	    pkt.pos.h = *p++;
 	    pkt.pos.v = *p++;
+	    pkt.pos.valid = 1;
 
-	    
+	    update_player_pos(pkt);
 	}
 	break;
     case PKID_MESSAGE:

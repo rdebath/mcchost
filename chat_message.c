@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string.h>
 
 #include "chat_message.h"
 
@@ -22,6 +23,25 @@ convert_chat_message(pkt_message pkt)
 	    if (msg[1] == 0) return; //TODO: Repeat command.
 
 	    // TODO: Commands.
+	    if (strcasecmp(msg, "/help") == 0) {
+		send_message_pkt(0, "Help command: TODO ...");
+		return;
+	    }
+
+	    if (strcasecmp(msg, "/quit") == 0) logout("Left the game.");
+	    if (strcasecmp(msg, "/rq") == 0) logout("RAGEQUIT!!");
+
+	    if (strcasecmp(msg, "/hax") == 0 || strcasecmp(msg, "/hacks") == 0)
+		kicked("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
+
+	    if (strcasecmp(msg, "/crash") == 0)
+		abort(), logout("Server crash! Error code 42");
+	    if (strcasecmp(msg, "/reload") == 0)
+	    {
+		send_map_reload();
+		//level_block_queue->generation += 2;
+		return;
+	    }
 
 	    strcpy(buf, "&eUnknown command \"");
 	    sscanf(msg+1, "%s", buf+strlen(buf));
@@ -70,6 +90,8 @@ post_chat(char * chat, int chat_len)
     pkt_message pkt;
     pkt.msg_flag = 0;
     if (chat_len <= 0) chat_len = strlen(chat);
+
+    write_logfile(chat, chat_len);
 
     for(d = s = 0; s<chat_len; s++) {
 	char c = chat[s];

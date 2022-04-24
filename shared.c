@@ -13,7 +13,7 @@
  *
  * BEWARE: Need semaphore that clears if the process holding the lock dies.
  *
- *       fcntl() does this, but is likely slow.
+ *       fcntl() does this, is very simple, but is likely slow.
  *
  *       pthread_mutex_lock() appears to do this.
  *		pthread_mutexattr_setrobust to use "robust futexes"
@@ -31,39 +31,77 @@
 // ...
 #endif
 
-volatile map_info_t *level_prop = 0;
-intptr_t level_prop_len = 0;
+#if INTERFACE
+#define SHMID_PROP	0
+#define SHMID_BLOCKS	1
+#define SHMID_BLOCKQ	2
+#define SHMID_CHAT	3
+#define SHMID_CLIENTS	4
+#define SHMID_COUNT	5
 
-volatile block_t *level_blocks = 0;
-intptr_t level_blocks_len = 0;
+typedef struct shmem_t shmem_t;
+struct shmem_t {
+    void * ptr;
+    intptr_t len;
+    int lock_fd;
+};
 
-static int fcntl_fd = -1;
-static int fcntl_chat_fd = -1;
+typedef struct shared_data_t shared_data_t;
+struct shared_data_t {
+    volatile map_info_t *prop;
+    volatile block_t *blocks;
+    volatile block_queue_t* blockq;
+    volatile chat_queue_t *chat;
+    volatile client_data_t *client;
 
+    shmem_t dat[SHMID_COUNT];
+};
+
+#define level_prop shdat.prop
+#define level_prop_len shdat.dat[SHMID_PROP].len
+#define fcntl_fd shdat.dat[SHMID_PROP].lock_fd
+
+#define level_blocks shdat.blocks
+#define level_blocks_len shdat.dat[SHMID_BLOCKS].len
+
+#define level_block_queue shdat.blockq
+#define level_block_queue_len shdat.dat[SHMID_BLOCKQ].len
+
+#define client_list shdat.client
+#define client_list_len shdat.dat[SHMID_CLIENTS].len
+#define client_fd shdat.dat[SHMID_CLIENTS].lock_fd
+
+#define level_chat_queue shdat.chat
+#define level_chat_queue_len shdat.dat[SHMID_CHAT].len
+#define fcntl_chat_fd shdat.dat[SHMID_CHAT].lock_fd
+#endif
+
+struct shared_data_t shdat;
 
 /*****************************************************************************
  * Shared resources.
  */
 
 /*
-    TODO:
+    Items:
 	level_queue -- recent block changes broadcast
 
 	chat_queue -- chat messages broadcast
+
 	user_chat_queue -- chat messages for one user
 	level_chat_queue -- chat messages for one level broadcast
 	team_chat_queue -- chat messages for one team broadcast
 	    --> Are these all in same queue, just filtered?
 
 	server_prop -- properties of server, not linked to user or level.
-	    --> Is this a text file?
+	    --> Is this a text config file?
 
 	user_prop -- User properties
 	    --> Text file? Blob in data table?
  */
 
 void
-start_shared(char * levelname)
+open_level_files(char * levelname)
 {
     char sharename[256];
     if (level_prop && level_blocks) return;
@@ -72,13 +110,8 @@ start_shared(char * levelname)
     stop_block_queue();
 
     sprintf(sharename, "level.%s.prop", levelname);
-    level_prop = allocate_shared(sharename, sizeof(*level_prop), &level_prop_len);
-
-    fcntl_fd = open(sharename, O_RDWR|O_NOFOLLOW);
-    if (fcntl_fd < 0) {
-	fprintf(stderr, "Cannot open \"%s\" for locking\n", sharename);
-	exit(2);
-    }
+    allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP);
+    level_prop = shdat.dat[SHMID_PROP].ptr;
 
     lock_shared();
 
@@ -87,42 +120,34 @@ start_shared(char * levelname)
     // If level missing -- extract a model *.cw file
 
     // If level missing -- make a flat.
-    if (level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0) {
-	map_info_t def = {
-		.magic_no = MAP_MAGIC,
-		.cells_x = 128, .cells_y = 64, .cells_z = 128,
-		.weather = 0, -1, -1, -1, -1, -1, 7, 8, -1,
-		.spawn = { 64*32+16, 48*32+51, 64*32+16 }
-	    };
+    if (level_prop->version_no != MAP_VERSION || level_prop->magic_no != MAP_MAGIC
+	|| level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
+	createmap(levelname);
+    else
+        // NB: Missing file here makes an Air map.
+        open_blocks(levelname);
 
-	*level_prop = def;
+    unlock_shared();
+}
 
-	// Should write() blocks here so that file can be dropped on ENOSPACE
+void
+open_blocks(char * levelname)
+{
+    char sharename[256];
+    if (level_blocks) {
+	intptr_t sz = level_blocks_len;
+	(void)munmap((void*)level_blocks, sz);
+	level_blocks_len = 0;
+	level_blocks = 0;
     }
 
     sprintf(sharename, "level.%s.blks", levelname);
-    level_blocks_len = level_prop->cells_x * level_prop->cells_y * level_prop->cells_z * sizeof(*level_blocks);
-    level_blocks = allocate_shared(sharename, level_blocks_len, &level_blocks_len);
+    level_blocks_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z * sizeof(*level_blocks);
+    allocate_shared(sharename, level_blocks_len, shdat.dat+SHMID_BLOCKS);
+    level_blocks = shdat.dat[SHMID_BLOCKS].ptr;
 
-    // If level not valid wipe to flat.
-    if (level_prop->valid_blocks == 0) {
-	int x, y, z, y1;
-	y1 = level_prop->cells_y/2;
-	for(y=0; y<level_prop->cells_y; y++)
-	    for(z=0; z<level_prop->cells_z; z++)
-		for(x=0; x<level_prop->cells_x; x++)
-		{
-		    if (y>y1)
-			level_blocks[World_Pack(x,y,z)] = 0;
-		    else if (y==y1)
-			level_blocks[World_Pack(x,y,z)] = Block_Grass;
-		    else
-			level_blocks[World_Pack(x,y,z)] = Block_Dirt;
-		}
-	level_prop->valid_blocks = VALID_MAGIC;
-    }
-
-    unlock_shared();
+    close(shdat.dat[SHMID_BLOCKS].lock_fd);
+    shdat.dat[SHMID_BLOCKS].lock_fd = 0;
 }
 
 void
@@ -169,7 +194,8 @@ create_block_queue(char * levelname)
 
     sprintf(sharename, "level.%s.queue", levelname);
     level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
-    level_block_queue = allocate_shared(sharename, level_block_queue_len, &level_block_queue_len);
+    allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ);
+    level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
 
     lock_shared();
     if (level_block_queue->generation == 0 || level_block_queue->queue_len != queue_count) {
@@ -188,7 +214,11 @@ create_block_queue(char * levelname)
 
 	stop_block_queue();
 	level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
-	level_block_queue = allocate_shared(sharename, level_block_queue_len, &level_block_queue_len);
+	allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ);
+	level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
+
+	close(shdat.dat[SHMID_BLOCKQ].lock_fd);
+	shdat.dat[SHMID_BLOCKQ].lock_fd = 0;
 
     } else
 	unlock_shared();
@@ -207,6 +237,39 @@ stop_block_queue()
 }
 
 void
+open_client_list()
+{
+    char sharename[256];
+
+    if (client_list) stop_client_list();
+
+    sprintf(sharename, "client.data");
+    client_list_len = sizeof(*client_list);
+    allocate_shared(sharename, client_list_len, shdat.dat+SHMID_CLIENTS);
+    client_list = shdat.dat[SHMID_CLIENTS].ptr;
+    if (client_list->magic1 != MAGIC_USR || client_list->magic2 != MAGIC_USR) {
+	client_data_t d = { .magic1 = MAGIC_USR, .magic2 = MAGIC_USR };
+	*client_list = d;
+    }
+}
+
+void
+stop_client_list()
+{
+    if (client_list) {
+	intptr_t sz = client_list_len;
+	(void)munmap((void*)client_list, sz);
+	client_list_len = 0;
+	client_list = 0;
+    }
+
+    if (client_fd > 0) {
+	close(client_fd);
+	client_fd = 0;
+    }
+}
+
+void
 create_chat_queue()
 {
     char sharename[256];
@@ -218,13 +281,8 @@ create_chat_queue()
 
     sprintf(sharename, "chat.queue");
     level_chat_queue_len = sizeof(*level_chat_queue) + queue_count * sizeof(chat_entry_t);
-    level_chat_queue = allocate_shared(sharename, level_chat_queue_len, &level_chat_queue_len);
-
-    fcntl_chat_fd = open(sharename, O_RDWR|O_NOFOLLOW);
-    if (fcntl_chat_fd < 0) {
-	fprintf(stderr, "Cannot open \"%s\" for locking\n", sharename);
-	exit(2);
-    }
+    allocate_shared(sharename, level_chat_queue_len, shdat.dat+SHMID_CHAT);
+    level_chat_queue = shdat.dat[SHMID_CHAT].ptr;
 
     lock_chat_shared();
     if (    level_chat_queue->generation == 0 ||
@@ -252,30 +310,30 @@ stop_chat_queue()
 	wipe_last_chat_queue_id();
     }
 
-    if (fcntl_chat_fd != -1) {
+    if (fcntl_chat_fd > 0) {
 	close(fcntl_chat_fd);
-	fcntl_chat_fd = -1;
+	fcntl_chat_fd = 0;
     }
 }
 
-LOCAL void *
-allocate_shared(char * share_name, int share_size, intptr_t *shared_len)
+LOCAL void
+allocate_shared(char * share_name, int share_size, shmem_t *shm)
 {
     intptr_t sz;
-    void *shared_mem = 0;
     void * shm_p;
     int shared_fd = -1;
 
-    /* GLobal file for global locking. */
     if (strchr(share_name, '/') != 0 || strlen(share_name) > 128) {
-	fprintf(stderr, "Illegal share name \"%s\"\n", share_name);
-	exit(2);
+	char buf[256];
+	sprintf(buf, "Can't open mapfile \"%.40s\"", share_name);
+	fatal(buf);
     }
 
     shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW, 0600);
     if (shared_fd < 0) {
-	fprintf(stderr, "Cannot open \"%s\" for mmap\n", share_name);
-	exit(2);
+	char buf[256];
+	sprintf(buf, "Cannot open mapfile \"%.40s\"", share_name);
+	fatal(buf);
     }
 
     {
@@ -297,12 +355,9 @@ allocate_shared(char * share_name, int share_size, intptr_t *shared_len)
     if ((intptr_t)shm_p == -1)
 	fatal("Cannot allocate shared area");
 
-    shared_mem = shm_p;
-    *shared_len = sz;
-
-    close(shared_fd);
-
-    return shared_mem;
+    shm->ptr = shm_p;
+    shm->len = sz;
+    shm->lock_fd = shared_fd;
 }
 
 void

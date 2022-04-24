@@ -22,16 +22,18 @@ int line_ifd = 0;
 char inbuf[4096];
 int insize = 0, inptr = 0;
 
-
 char user_id[NB_SLEN];
 int user_authenticated = 0;
+int server_id_op_flag = 1;
 int cpe_requested = 0;
 
-char server_name[NB_SLEN] = "Broken Server";
+char server_name[NB_SLEN] = "Some Random Server";
 char server_motd[NB_SLEN] = "Welcome";
-
 char server_salt[NB_SLEN] = "";
+
 int cpe_enabled = 0;
+block_t max_blockno_to_send = 49;
+int enable_cp437 = 0;
 
 void login(void);
 void fatal(char * emsg);
@@ -42,18 +44,29 @@ char * level_name = "main";
 int
 main(int argc, char **argv)
 {
-    (void)argc; (void)argv;
+    process_args(argc, argv);
+
+    open_client_list();
 
     login();
 
-    send_server_id_pkt(server_name, server_motd, cpe_requested);
+    send_server_id_pkt(server_name, server_motd, server_id_op_flag);
 
-    // Open system mmap files.
+    if (cpe_requested && max_blockno_to_send < 65)
+	max_blockno_to_send = 65;
+
+    // List of users
+    start_user();
+
+    // Chat to users
     create_chat_queue();
 
     // Open level mmap files.
-    start_shared(level_name);
+    open_level_files(level_name);
     send_map_file();
+
+    send_spawn_pkt(255, user_id, level_prop->spawn);
+    send_message_pkt(0, "&eWelcome to this broken server");
 
     {
 	char buf[256];
@@ -61,10 +74,9 @@ main(int argc, char **argv)
 	post_chat(buf, strlen(buf));
     }
 
-    send_spawn_pkt(255, user_id, level_prop->spawn);
-    send_message_pkt(0, "&eWelcome to this broken server");
-
     run_request_loop();
+
+    stop_user();
 
     return 0;
 }
@@ -78,19 +90,19 @@ login()
     {
 	int cc = read(line_ifd, inbuf+insize, sizeof(inbuf)-insize);
 	if (cc>0) insize += cc;
-	if (cc<=0 && errno != EINTR) {
-	    if (errno != EAGAIN)
+	if (cc<=0) {
+	    if (errno != EAGAIN && errno != EINTR)
 		fatal("Error reading client startup");
 	    time_t now = time(0);
 	    if (now-startup > 4)
 		fatal("Short logon packet received");
-	    usleep(100000); // Should never happen.
+	    usleep(50000);
 	}
 
 	if (insize >= 1 && inbuf[inptr] != 0) // Special exit for weird caller.
-	    fatal("418 I'm a teapot\n");
+	    fatal("418 I'm a teapot\n\n");
 	if (insize >= 2 && inbuf[inptr+1] != 7)
-	    fatal("Only protocol version seven is supported (with CPE)");
+	    fatal("Only protocol version seven is supported");
     }
     fcntl(line_ifd, F_SETFL, 0);
 
@@ -128,15 +140,57 @@ login()
 
 	user_authenticated = 1;
     }
+
+    {
+	char buf[256];
+	sprintf(buf, "Logged in user: %s", user_id);
+	print_logfile(buf);
+    }
 }
 
 void
 fatal(char * emsg)
 {
+    if (level_chat_queue) {
+	char buf[256];
+	sprintf(buf, "&c- &7%s &cCrashed: &e%s", user_id, emsg);
+	post_chat(buf, strlen(buf));
+    }
+    disconnect(emsg);
+}
+
+void
+kicked(char * emsg)
+{
+    char buf[256];
+    sprintf(buf, "&c- &7%s &ekicked (%s)", user_id, emsg);
+    post_chat(buf, strlen(buf));
+    disconnect(emsg);
+}
+
+void
+logout(char * emsg)
+{
+    char buf[256];
+    sprintf(buf, "&c- &7%s &e%s", user_id, emsg);
+    post_chat(buf, strlen(buf));
+    disconnect(emsg);
+}
+
+void
+disconnect(char * emsg)
+{
+    {
+	char buf[256];
+	sprintf(buf, "Disconnect user %s", user_id);
+	print_logfile(buf);
+    }
+    stop_user();
     send_discon_msg_pkt(emsg);
+    flush_to_remote();
     shutdown(line_ofd, SHUT_RDWR);
     shutdown(line_ifd, SHUT_RDWR);
-    exit(1);
+    exit(0);
 }
 
 void
