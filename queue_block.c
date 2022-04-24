@@ -127,7 +127,7 @@ wipe_last_block_queue_id()
 void
 send_map_reload()
 {
-    reload_pending = 1;
+    reload_pending = 2;
 }
 
 void
@@ -135,8 +135,9 @@ send_queued_blocks()
 {
     int counter = 0;
     if (reload_pending && !bytes_queued_to_send()) {
+	if (reload_pending == 1)
+	    usleep(500000);  // Half a second leeway to allow network to clear.
 	reload_pending = 0;
-	usleep(500000);  // Half a second leeway to allow network to clear.
 	send_map_file();
 	reset_player_list();
 	return;

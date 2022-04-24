@@ -1,9 +1,10 @@
 
-#include <sys/types.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
 #include <errno.h>
+#include <sys/types.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -175,4 +176,23 @@ stop_user()
 	shdat.client->user[user_no].active = 0;
 	shdat.client->user[user_no].session_id = 0;
     }
+}
+
+void
+delete_session_id(int pid)
+{
+    open_client_list();
+    if (!shdat.client) return;
+    for(int i=0; i<MAX_USER; i++)
+    {
+	if (shdat.client->user[i].active == 1 &&
+	    shdat.client->user[i].session_id == pid)
+	{
+	    fprintf(stderr, "Wiped session %d (%.32s)\n", i, shdat.client->user[i].name);
+	    shdat.client->user[i].session_id = 0;
+	    shdat.client->user[i].active = 0;
+	    break;
+	}
+    }
+    stop_client_list();
 }

@@ -1,5 +1,8 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
+void stop_client_list();
+void open_client_list();
+void delete_session_id(int pid);
 void stop_user();
 extern int user_authenticated;
 void send_message_pkt(int id,char *message);

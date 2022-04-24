@@ -247,6 +247,8 @@ open_client_list()
     client_list_len = sizeof(*client_list);
     allocate_shared(sharename, client_list_len, shdat.dat+SHMID_CLIENTS);
     client_list = shdat.dat[SHMID_CLIENTS].ptr;
+    if (!client_list) return;
+
     if (client_list->magic1 != MAGIC_USR || client_list->magic2 != MAGIC_USR) {
 	client_data_t d = { .magic1 = MAGIC_USR, .magic2 = MAGIC_USR };
 	*client_list = d;
@@ -327,6 +329,7 @@ allocate_shared(char * share_name, int share_size, shmem_t *shm)
 	char buf[256];
 	sprintf(buf, "Can't open mapfile \"%.40s\"", share_name);
 	fatal(buf);
+        return;
     }
 
     shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW, 0600);
@@ -334,6 +337,7 @@ allocate_shared(char * share_name, int share_size, shmem_t *shm)
 	char buf[256];
 	sprintf(buf, "Cannot open mapfile \"%.40s\"", share_name);
 	fatal(buf);
+        return;
     }
 
     {
@@ -343,8 +347,10 @@ allocate_shared(char * share_name, int share_size, shmem_t *shm)
 	sz -= sz % p;
     }
 
-    if (posix_fallocate(shared_fd, 0, sz) < 0)
+    if (posix_fallocate(shared_fd, 0, sz) < 0) {
 	fatal("fallocate cannot allocate disk space");
+        return;
+    }
 
     shm_p = (void*) mmap(0,
 		    sz,
@@ -352,8 +358,10 @@ allocate_shared(char * share_name, int share_size, shmem_t *shm)
 		    MAP_SHARED,
 		    shared_fd, 0);
 
-    if ((intptr_t)shm_p == -1)
+    if ((intptr_t)shm_p == -1) {
 	fatal("Cannot allocate shared area");
+        return;
+    }
 
     shm->ptr = shm_p;
     shm->len = sz;

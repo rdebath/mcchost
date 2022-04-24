@@ -12,8 +12,5 @@ void write_logfile(char *str,int len);
 void post_chat(char *chat,int chat_len);
 #define PKBUF		8192
 extern char user_id[NB_SLEN];
-void send_map_reload();
-void kicked(char *emsg);
-void logout(char *emsg);
-void send_message_pkt(int id,char *message);
+void run_command(char *msg);
 void convert_chat_message(pkt_message pkt);

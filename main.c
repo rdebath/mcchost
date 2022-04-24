@@ -17,8 +17,8 @@
 #define NB_SLEN	(MB_STRLEN+1)
 #endif
 
-int line_ofd = 1;
-int line_ifd = 0;
+int line_ofd = -1;
+int line_ifd = -1;
 char inbuf[4096];
 int insize = 0, inptr = 0;
 
@@ -26,6 +26,8 @@ char user_id[NB_SLEN];
 int user_authenticated = 0;
 int server_id_op_flag = 1;
 int cpe_requested = 0;
+int start_tcp_server = 0;
+int tcp_port_no = 25565;
 
 char server_name[NB_SLEN] = "Some Random Server";
 char server_motd[NB_SLEN] = "Welcome";
@@ -41,19 +43,47 @@ void cpy_nbstring(char *buf, char *str);
 
 char * level_name = "main";
 
+char * proc_args_mem = 0;
+int    proc_args_len = 0;
+
 int
 main(int argc, char **argv)
 {
     process_args(argc, argv);
+    proc_args_mem = argv[0];
+    proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0];
+    memset(proc_args_mem, 0, proc_args_len);
 
+    if (start_tcp_server) {
+	memset(proc_args_mem, 0, proc_args_len);
+	snprintf(proc_args_mem, proc_args_len, "MC server port %d", tcp_port_no);
+	tcpserver();
+    } else {
+	line_ofd = 1; line_ifd = 0;
+	process_connection();
+    }
+
+    return 0;
+}
+
+void
+process_connection()
+{
     open_client_list();
 
     login();
 
-    send_server_id_pkt(server_name, server_motd, server_id_op_flag);
+    memset(proc_args_mem, 0, proc_args_len);
+    snprintf(proc_args_mem, proc_args_len, "MC server (%s)", user_id);
 
+    // If in classic mode, don't allow place of bedrock.
+    if (!cpe_requested) server_id_op_flag = 0;
+
+    // If client requests CPE, assume it'll be okay to send CPE blocks.
     if (cpe_requested && max_blockno_to_send < 65)
 	max_blockno_to_send = 65;
+
+    send_server_id_pkt(server_name, server_motd, server_id_op_flag);
 
     // List of users
     start_user();
@@ -66,10 +96,11 @@ main(int argc, char **argv)
     send_map_file();
 
     send_spawn_pkt(255, user_id, level_prop->spawn);
-    send_message_pkt(0, "&eWelcome to this broken server");
 
     {
 	char buf[256];
+	sprintf(buf, "&eWelcome &7%s", user_id);
+	send_message_pkt(0, buf);
 	sprintf(buf, "&a+ &7%s &econnected", user_id);
 	post_chat(buf, strlen(buf));
     }
@@ -77,8 +108,6 @@ main(int argc, char **argv)
     run_request_loop();
 
     stop_user();
-
-    return 0;
 }
 
 void
@@ -180,16 +209,18 @@ logout(char * emsg)
 void
 disconnect(char * emsg)
 {
-    {
-	char buf[256];
-	sprintf(buf, "Disconnect user %s", user_id);
-	print_logfile(buf);
-    }
+    if (line_ofd < 0) return;
+
+    char buf[256];
+    sprintf(buf, "Disconnect user %s", user_id);
+    print_logfile(buf);
+
     stop_user();
     send_discon_msg_pkt(emsg);
     flush_to_remote();
     shutdown(line_ofd, SHUT_RDWR);
-    shutdown(line_ifd, SHUT_RDWR);
+    if (line_ofd != line_ifd)
+	shutdown(line_ifd, SHUT_RDWR);
     exit(0);
 }
 

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "args.h"
@@ -34,7 +35,15 @@ process_args(int argc, char **argv)
 	    }
 
 	    if (strcmp(argv[ar], "-salt") == 0) {
-		strncpy(server_salt, argv[ar+1], sizeof(server_salt)-1);
+		ar++;
+		strncpy(server_salt, argv[ar], sizeof(server_salt)-1);
+		// Hide the argument used as salt from ps(1)
+		for(char * p = argv[ar]; *p; p++) *p = 'X';
+		continue;
+	    }
+
+	    if (strcmp(argv[ar], "-port") == 0) {
+		tcp_port_no = atoi(argv[ar+1]);
 		ar++;
 		continue;
 	    }
@@ -52,5 +61,9 @@ process_args(int argc, char **argv)
 	    continue;
 	}
 
+	if (strcmp(argv[ar], "-tcp") == 0) {
+	    start_tcp_server = 1;
+	    continue;
+	}
     }
 }
