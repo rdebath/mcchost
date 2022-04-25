@@ -51,13 +51,9 @@ Advanced
 
 Implementation:
 
-Build as distinct components.
-    -- tcpserver opens port and starts programs.
-    -- livepoll sends request to classicube.net
-    -- server process runs maps for client
+Other components
     -- physics process does non-trivial physics.
     -- crash catcher restarts server process without dropping connection.
-    -- oneclient mode opens port and runs server on connection. (nofork)
     -- command to save level to *.cw file.
 	-- All lock or copy/update modes.
 
@@ -90,10 +86,3 @@ Add user_command_log_print()
 Add chat_log_print()
 
     --> Automatic log file cleanup?
-
-
-DONE:
-
-Place maximum number of blocks in byte tx queue.
-    Remainder wait on shared block queue.
-    Text messages in distinct queue.

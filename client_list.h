@@ -1,5 +1,6 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
+int current_user_count();
 void stop_client_list();
 void open_client_list();
 void delete_session_id(int pid);

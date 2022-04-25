@@ -196,3 +196,18 @@ delete_session_id(int pid)
     }
     stop_client_list();
 }
+
+int
+current_user_count()
+{
+    int flg = (shdat.client == 0);
+    if(flg) open_client_list();
+    if (!shdat.client) return 0;
+    int users = 0;
+    for(int i=0; i<MAX_USER; i++) {
+	if (shdat.client->user[i].active == 1)
+	    users ++;
+    }
+    if(flg) stop_client_list();
+    return users;
+}

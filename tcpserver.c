@@ -7,14 +7,18 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <time.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/select.h>
 
 #include "tcpserver.h"
 
 static int listen_socket = -1;
+static time_t last_heartbeat = 0;
 
 static inline
 int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
@@ -67,25 +71,11 @@ tcpserver()
                 break;
         }
 
-        // Clean up any zombies.
-        int status = 0, pid;
-        while ((pid = waitpid(-1, &status, WNOHANG)) != 0)
-        {
-            if (pid < 0) {
-                if (errno == ECHILD || errno == EINTR)
-                    break;
-                perror("waitpid()");
-                exit(1);
-            }
-            // No complaints about normal processes.
-            if (WIFEXITED(status)) continue;
-            if (WIFSIGNALED(status)) {
-                fprintf(stderr, "Process %d was killed by signal %d\n",
-                    pid, WTERMSIG(status));
+	cleanup_zombies();
 
-               delete_session_id(pid); 
-            }
-        }
+	if (enable_heartbeat_poll)
+	    send_heartbeat_poll();
+
     }
 }
 
@@ -131,4 +121,88 @@ accept_new_connection()
     fprintf(stderr, "Incoming connection from %s:%d.\n", client_ipv4_str, client_addr.sin_port);
 
     return new_client_sock;
+}
+
+LOCAL void
+cleanup_zombies()
+{
+    // Clean up any zombies.
+    int status = 0, pid;
+    while ((pid = waitpid(-1, &status, WNOHANG)) != 0)
+    {
+	if (pid < 0) {
+	    if (errno == ECHILD || errno == EINTR)
+		break;
+	    perror("waitpid()");
+	    exit(1);
+	}
+	// No complaints about normal processes.
+	if (WIFEXITED(status)) continue;
+	if (WIFSIGNALED(status)) {
+	    fprintf(stderr, "Process %d was killed by signal %d\n",
+		pid, WTERMSIG(status));
+
+	   delete_session_id(pid);
+	}
+    }
+}
+
+LOCAL void
+send_heartbeat_poll()
+{
+    time_t now;
+    time(&now);
+    if (last_heartbeat != 0) {
+	if ((now-last_heartbeat) < 45)
+	    return;
+    }
+    last_heartbeat = now;
+
+    char cmdbuf[4096];
+    char namebuf[256];
+    char softwarebuf[256];
+    int valid_salt = (*server_salt != 0 && *server_salt != '-');
+
+    snprintf(cmdbuf, sizeof(cmdbuf),
+	"%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s",
+	heartbeat_url,
+	"port=",tcp_port_no,
+	"max=",255,
+	"public=",server_private?"False":"True",
+	"version=",7,
+	"users=",current_user_count(),
+	"salt=",valid_salt?server_salt:"0000000000000000",
+	"name=",quoteurl(server_name, namebuf, sizeof(namebuf)),
+	"software=",quoteurl("Custom", softwarebuf, sizeof(softwarebuf))
+	);
+
+    if (fork() == 0) {
+	close(listen_socket);
+	// SHUT UP CURL!!
+	E(execlp("curl", "curl", "-s", "-S", "-o", "/dev/null", cmdbuf, (char*)0), "exec of curl failed");
+	// Note: Returned string is web client URL
+	exit(0);
+    }
+}
+
+LOCAL char *
+quoteurl(char *s, char *dest, int len)
+{
+    char * d = dest;
+    for(; *s && d<dest+len-1; s++) {
+	if ( (*s >= 'a' && *s <= 'z') || (*s >= 'A' && *s <= 'Z') ||
+	     (*s >= '0' && *s <= '9') ||
+	     (*s == '-') || (*s == '_') || (*s == '.') || (*s == '~'))
+	    *d++ = *s;
+	else {
+	    char lb[4];
+	    if (d>dest+len-4) break;
+	    *d++ = '%';
+	    sprintf(lb, "%02x", *s & 0xFF);
+	    *d++ = lb[0];
+	    *d++ = lb[1];
+	}
+    }
+    *d = 0;
+    return dest;
 }

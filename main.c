@@ -27,11 +27,14 @@ int user_authenticated = 0;
 int server_id_op_flag = 1;
 int cpe_requested = 0;
 int start_tcp_server = 0;
+int enable_heartbeat_poll = 0;
 int tcp_port_no = 25565;
 
 char server_name[NB_SLEN] = "Some Random Server";
 char server_motd[NB_SLEN] = "Welcome";
 char server_salt[NB_SLEN] = "";
+char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
+int server_private = 0;
 
 int cpe_enabled = 0;
 block_t max_blockno_to_send = 49;
@@ -121,7 +124,7 @@ login()
 	if (cc>0) insize += cc;
 	if (cc<=0) {
 	    if (errno != EAGAIN && errno != EINTR)
-		fatal("Error reading client startup");
+		fatal("Short connection received");
 	    time_t now = time(0);
 	    if (now-startup > 4)
 		fatal("Short logon packet received");
@@ -135,21 +138,25 @@ login()
     }
     fcntl(line_ifd, F_SETFL, 0);
 
+    char mppass[NB_SLEN];
+    cpy_nbstring(mppass, inbuf+64+2);
+
+    if (*server_salt != 0 && *server_salt != '-' && strlen(mppass) != 32)
+	fatal("Login failed!");
+
     cpy_nbstring(user_id, inbuf+2);
-    if (*user_id == 0 || strlen(user_id) > 16)
+//    if (*user_id == 0) fatal("Username must be entered");
+    if (strlen(user_id) > 16)
 	fatal("Usernames must be between 1 and 16 characters");
 
     for(int i = 0; user_id[i]; i++)
 	if (!isascii(user_id[i]) ||
 	    (!isalnum(user_id[i]) && user_id[i] != '.' && user_id[i] != '_'))
-		fatal("Invalid player name");
-
-    char mppass[NB_SLEN];
-    cpy_nbstring(mppass, inbuf+64+2);
+		fatal("Invalid user name");
 
     cpe_requested = inbuf[inptr+128+2] == 0x42;
 
-    if (*server_salt != 0) {
+    if (*server_salt != 0 && *server_salt != '-') {
 	char hashbuf[NB_SLEN*2];
 	strcpy(hashbuf, server_salt);
 	strcat(hashbuf, user_id);
