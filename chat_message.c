@@ -9,10 +9,11 @@ static int pending_chat_size = 0;
 static int pending_chat_len = 0;
 
 void
-convert_chat_message(pkt_message pkt)
+convert_chat_message(int msg_flag, char * msg)
 {
-    char * msg = pkt.message;
     char buf[256];
+
+    if (msg_flag != -1) return; // TODO:
 
     // TODO: Message concat.
 
@@ -49,17 +50,21 @@ convert_chat_message(pkt_message pkt)
     }
     *p = 0;
 
-    if (!pending_chat) {
-	pending_chat = malloc(PKBUF);
-	pending_chat_size = PKBUF;
+    if (pending_chat_len == 0 || pending_chat == 0) {
+	post_chat(buf, p-buf);
+    } else {
+	if (!pending_chat) {
+	    pending_chat = malloc(PKBUF);
+	    pending_chat_size = PKBUF;
+	    pending_chat_len = 0;
+	}
+
+	strcpy(pending_chat, buf);
+	pending_chat_len = p-buf;
+
+	post_chat(pending_chat, pending_chat_len);
 	pending_chat_len = 0;
     }
-
-    strcpy(pending_chat, buf);
-    pending_chat_len = p-buf;
-
-    post_chat(pending_chat, pending_chat_len);
-    pending_chat_len = 0;
 }
 
 void
@@ -112,4 +117,7 @@ post_chat(char * chat, int chat_len)
 	while(d<MB_STRLEN) pkt.message[d++] = ' ';
 	update_chat(pkt);
     }
+
+    // If someone spams they get it all back.
+    send_queued_chats();
 }

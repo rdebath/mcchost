@@ -1,65 +1,22 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
+#define LOCAL static
+LOCAL void bc_ent_float(FILE *ofd,char *name,double fval);
+LOCAL void bc_ent_label(FILE *ofd,char *name);
+LOCAL void bc_string(FILE *ofd,char *str,int len);
+LOCAL void bc_ent_bytes_header(FILE *ofd,char *name,int len);
+typedef struct shared_data_t shared_data_t;
+typedef struct map_info_t map_info_t;
 #include <stdint.h>
-#define Block_Cust 66
-#define Block_CPE 50
-#define Block_StoneBrick 65
-#define Block_Crate 64
-#define Block_Pillar 63
-#define Block_Magma 62
-#define Block_CeramicTile 61
-#define Block_Ice 60
-#define Block_Turquoise 59
-#define Block_DeepBlue 58
-#define Block_Brown 57
-#define Block_ForestGreen 56
-#define Block_LightPink 55
-#define Block_Fire 54
-#define Block_Snow 53
-#define Block_Sandstone 52
-#define Block_Rope 51
-#define Block_CobbleSlab 50
-#define Block_Obsidian 49
-#define Block_Bookshelf 47
-#define Block_Slab 44
-#define Block_DoubleSlab 43
-#define Block_Iron 42
-#define Block_Gold 41
-#define Block_RedMushroom 40
-#define Block_BrownMushroom 39
-#define Block_Rose 38
-#define Block_Dandelion 37
-#define Block_White 36
-#define Block_Pink 33
-#define Block_Blue 29
-#define Block_Cyan 28
-#define Block_Green 25
-#define Block_Red 21
-#define Block_Glass 20
-#define Block_Sponge 19
-#define Block_Leaves 18
-#define Block_Log 17
-#define Block_Gravel 13
-#define Block_Sand 12
-#define Block_StillLava 11
-#define Block_ActiveLava 10
-#define Block_StillWater 9
-#define Block_Water 8
-#define Block_Bedrock 7
-#define Block_Sapling 6
-#define Block_Wood 5
-#define Block_Cobble 4
-#define Block_Dirt 3
-#define Block_Grass 2
-#define Block_Stone 1
-#define Block_Air 0
-typedef struct blockdef_t blockdef_t;
+typedef struct xyzhv_t xyzhv_t;
+struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
+typedef uint16_t block_t;
 #define MB_STRLEN 64
 #define NB_SLEN	(MB_STRLEN+1)
+typedef struct blockdef_t blockdef_t;
 #define BLK_NUM_TEX	6
 #define BLK_NUM_FOG	4
 #define BLK_NUM_COORD	6
-typedef uint16_t block_t;
 struct blockdef_t {
     char name[NB_SLEN];
 
@@ -94,9 +51,6 @@ struct blockdef_t {
     block_t grass_block;
     block_t dirt_block;
 };
-typedef struct map_info_t map_info_t;
-typedef struct xyzhv_t xyzhv_t;
-struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 #define BLOCKMAX 1024
 struct map_info_t {
     int magic_no;
@@ -131,12 +85,9 @@ struct map_info_t {
 
     int version_no;
 };
+typedef struct block_queue_t block_queue_t;
 typedef struct xyzb_t xyzb_t;
 struct xyzb_t { uint16_t x, y, z, b; };
-typedef struct xyz_t xyz_t;
-struct xyz_t { int x, y, z; };
-typedef struct shared_data_t shared_data_t;
-typedef struct block_queue_t block_queue_t;
 struct block_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
     uint32_t curr_offset;
@@ -196,9 +147,14 @@ struct shared_data_t {
     shmem_t dat[SHMID_COUNT];
 };
 extern struct shared_data_t shdat;
+#define level_blocks shdat.blocks
+LOCAL void bc_ent_string(FILE *ofd,char *name,char *str,int len);
+void bc_colour(FILE *ofd,char *name,int colour);
+LOCAL void bc_end(FILE *ofd);
+LOCAL void bc_ent_int8(FILE *ofd,char *name,int val);
 #define level_prop shdat.prop
-#define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
-#define VALID_MAGIC	0x057FFF00
-#define MAP_VERSION	0xA0000100
-#define MAP_MAGIC	0x1A7FFF00
-#define INTERFACE 0
+LOCAL void bc_ent_int16(FILE *ofd,char *name,int val);
+LOCAL void bc_ent_bytes(FILE *ofd,char *name,char *bstr,int len);
+LOCAL void bc_ent_int(FILE *ofd,char *name,int val);
+LOCAL void bc_compound(FILE *ofd,char *name);
+void save_map_to_file(char *fn);

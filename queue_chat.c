@@ -9,8 +9,8 @@
 typedef chat_queue_t chat_queue_t;
 struct chat_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
-    int curr_offset;
-    int queue_len;
+    uint32_t curr_offset;
+    uint32_t queue_len;
 
     chat_entry_t updates[1];
 };
@@ -33,18 +33,19 @@ static uint32_t last_generation;
 void
 update_chat(pkt_message pkt)
 {
-    if (!level_chat_queue) create_chat_queue();
+    if (!level_chat_queue || level_chat_queue->curr_offset >= level_chat_queue->queue_len)
+	create_chat_queue();
 
     lock_chat_shared();
-    int id = level_chat_queue->curr_offset++;
-    if (level_chat_queue->curr_offset >= level_chat_queue->queue_len) {
-	level_chat_queue->curr_offset = 0;
-	level_chat_queue->generation ++;
-    }
+    int id = level_chat_queue->curr_offset;
     level_chat_queue->updates[id].to_level_id = 0;
     level_chat_queue->updates[id].to_player_id = 0;
     level_chat_queue->updates[id].to_team_id = 0;
     level_chat_queue->updates[id].msg = pkt;
+    if (++level_chat_queue->curr_offset >= level_chat_queue->queue_len) {
+	level_chat_queue->curr_offset = 0;
+	level_chat_queue->generation ++;
+    }
     unlock_chat_shared();
 }
 
@@ -69,10 +70,9 @@ wipe_last_chat_queue_id()
 void
 send_queued_chats()
 {
-    int counter = 0;
     if (last_id < 0) return; // Hmmm.
 
-    for(;counter < 128; counter++)
+    for(;;)
     {
 	chat_entry_t upd;
 	lock_chat_shared();
@@ -84,8 +84,10 @@ send_queued_chats()
 		    isok = 1;
 	    }
 	    if (!isok) {
+		// Buffer wrapped too far; generation incremented twice.
+		// Skip everything and try again next tick.
 		unlock_chat_shared();
-		set_last_chat_queue_id(); // Skip to end.
+		set_last_chat_queue_id();
 		return;
 	    }
 	}

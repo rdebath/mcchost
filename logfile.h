@@ -8,4 +8,5 @@ void close_logfile();
 #define LOCAL static
 LOCAL void check_reopen_logfile(struct tm *tm);
 LOCAL void reopen_logfile();
-void open_logfile(char *logfile_name,int logfile_raw_p);
+void open_logfile();
+void set_logfile(char *logfile_name);

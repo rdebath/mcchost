@@ -230,7 +230,7 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt_message pkt;
 	    pkt.msg_flag = *p++;
 	    cpy_nbstring(pkt.message, p); p+=64;
-	    convert_chat_message(pkt);
+	    convert_chat_message(pkt.msg_flag, pkt.message);
 	}
 	break;
     }

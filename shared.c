@@ -109,7 +109,14 @@ open_level_files(char * levelname)
     stop_shared();
     stop_block_queue();
 
-    sprintf(sharename, "level.%s.prop", levelname);
+    if (strchr(levelname, '/') != 0 || strlen(levelname) > 128) {
+	char buf[256];
+	snprintf(buf, sizeof(buf), "Illegal level name \"%.40s\"", levelname);
+	fatal(buf);
+        return;
+    }
+
+    sprintf(sharename, LEVEL_PROPS_NAME, levelname);
     allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP);
     level_prop = shdat.dat[SHMID_PROP].ptr;
 
@@ -141,7 +148,7 @@ open_blocks(char * levelname)
 	level_blocks = 0;
     }
 
-    sprintf(sharename, "level.%s.blks", levelname);
+    sprintf(sharename, LEVEL_BLOCKS_NAME, levelname);
     level_blocks_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z * sizeof(*level_blocks);
     allocate_shared(sharename, level_blocks_len, shdat.dat+SHMID_BLOCKS);
     level_blocks = shdat.dat[SHMID_BLOCKS].ptr;
@@ -192,18 +199,21 @@ create_block_queue(char * levelname)
     stop_block_queue();
     wipe_last_block_queue_id();
 
-    sprintf(sharename, "level.%s.queue", levelname);
+    sprintf(sharename, LEVEL_QUEUE_NAME, levelname);
     level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
     allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ);
     level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
 
     lock_shared();
-    if (level_block_queue->generation == 0 || level_block_queue->queue_len != queue_count) {
+    if (level_block_queue->generation == 0 ||
+	level_block_queue->curr_offset >= level_block_queue->queue_len ||
+	level_block_queue->queue_len != queue_count) {
 
-	if (level_block_queue->curr_offset < 0 || level_block_queue->curr_offset >= level_block_queue->queue_len)
+	if (level_block_queue->curr_offset >= level_block_queue->queue_len)
 	    level_block_queue->queue_len = 0;
 
-	if (queue_count > level_block_queue->queue_len) {
+	if (queue_count > level_block_queue->queue_len ||
+		level_block_queue->queue_len > level_prop->valid_blocks) {
 	    level_block_queue->generation += 2;
 	    level_block_queue->curr_offset = 0;
 	    level_block_queue->queue_len = queue_count;
@@ -243,7 +253,7 @@ open_client_list()
 
     if (client_list) stop_client_list();
 
-    sprintf(sharename, "client.data");
+    sprintf(sharename, SYS_USER_LIST_NAME);
     client_list_len = sizeof(*client_list);
     allocate_shared(sharename, client_list_len, shdat.dat+SHMID_CLIENTS);
     client_list = shdat.dat[SHMID_CLIENTS].ptr;
@@ -275,13 +285,14 @@ void
 create_chat_queue()
 {
     char sharename[256];
-    int queue_count = 128;
+    int queue_count = 0;
     if (queue_count < 128) queue_count = 128;
+    if (queue_count > 65536) queue_count = 65536;
 
     stop_chat_queue();
     wipe_last_chat_queue_id();
 
-    sprintf(sharename, "chat.queue");
+    sprintf(sharename, CHAT_QUEUE_NAME);
     level_chat_queue_len = sizeof(*level_chat_queue) + queue_count * sizeof(chat_entry_t);
     allocate_shared(sharename, level_chat_queue_len, shdat.dat+SHMID_CHAT);
     level_chat_queue = shdat.dat[SHMID_CHAT].ptr;
@@ -289,7 +300,6 @@ create_chat_queue()
     lock_chat_shared();
     if (    level_chat_queue->generation == 0 ||
 	    level_chat_queue->queue_len != queue_count ||
-	    level_chat_queue->curr_offset < 0 ||
 	    level_chat_queue->curr_offset >= queue_count) {
 	level_chat_queue->generation += 2;
 	level_chat_queue->curr_offset = 0;
@@ -325,13 +335,6 @@ allocate_shared(char * share_name, int share_size, shmem_t *shm)
     void * shm_p;
     int shared_fd = -1;
 
-    if (strchr(share_name, '/') != 0 || strlen(share_name) > 128) {
-	char buf[256];
-	sprintf(buf, "Can't open mapfile \"%.40s\"", share_name);
-	fatal(buf);
-        return;
-    }
-
     shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW, 0600);
     if (shared_fd < 0) {
 	char buf[256];
@@ -348,6 +351,7 @@ allocate_shared(char * share_name, int share_size, shmem_t *shm)
     }
 
     if (posix_fallocate(shared_fd, 0, sz) < 0) {
+	perror("posix_fallocate");
 	fatal("fallocate cannot allocate disk space");
         return;
     }
@@ -359,6 +363,7 @@ allocate_shared(char * share_name, int share_size, shmem_t *shm)
 		    shared_fd, 0);
 
     if ((intptr_t)shm_p == -1) {
+	perror("mmap");
 	fatal("Cannot allocate shared area");
         return;
     }

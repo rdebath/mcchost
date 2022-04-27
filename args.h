@@ -4,9 +4,10 @@ extern int enable_cp437;
 #include <stdint.h>
 typedef uint16_t block_t;
 extern block_t max_blockno_to_send;
+extern int server_runonce;
 extern int server_private;
 extern int start_tcp_server;
-void open_logfile(char *logfile_name,int logfile_raw_p);
+void set_logfile(char *logfile_name);
 extern int tcp_port_no;
 extern int enable_heartbeat_poll;
 extern char heartbeat_url[1024];

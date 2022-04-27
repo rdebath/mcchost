@@ -10,21 +10,26 @@
 
 static FILE * logfile = 0;
 static int logfile_raw;
-static char * file_name = 0;
+static char * file_name = "log/%s.log";
 static struct tm file_tm;
 
 void
-open_logfile(char * logfile_name, int logfile_raw_p)
+set_logfile(char * logfile_name)
 {
-    if (strstr(logfile_name, "%d") != 0) {
-	file_name = logfile_name;
-	logfile_raw = logfile_raw_p;
+    file_name = logfile_name;
+}
+
+void
+open_logfile()
+{
+    if (!file_name) return;
+
+    if (strstr(file_name, "%s") != 0) {
 	reopen_logfile();
     } else {
 	if (logfile) fclose(logfile);
-	logfile = fopen(logfile_name, "a");
+	logfile = fopen(file_name, "a");
 	setlinebuf(logfile);
-	logfile_raw = logfile_raw_p;
     }
 }
 
@@ -33,7 +38,7 @@ reopen_logfile()
 {
     char * fname = malloc(strlen(file_name) + 16);
     strcpy(fname, file_name);
-    char * p = strstr(fname, "%d");
+    char * p = strstr(fname, "%s");
     if (p) {
 	time_t now;
 	time(&now);

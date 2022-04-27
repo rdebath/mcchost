@@ -7,8 +7,8 @@
 typedef block_queue_t block_queue_t;
 struct block_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
-    int curr_offset;
-    int queue_len;
+    uint32_t curr_offset;
+    uint32_t queue_len;
 
     xyzb_t updates[1];
 };
@@ -93,24 +93,22 @@ void
 send_update(int x, int y, int z, int b)
 {
     lock_shared();
-    int id = level_block_queue->curr_offset++;
-    if (level_block_queue->curr_offset >= level_block_queue->queue_len) {
-	level_block_queue->curr_offset = 0;
-	level_block_queue->generation ++;
-    }
+    int id = level_block_queue->curr_offset;
     level_block_queue->updates[id].x = x;
     level_block_queue->updates[id].y = y;
     level_block_queue->updates[id].z = z;
     level_block_queue->updates[id].b = b;
+    if (++level_block_queue->curr_offset >= level_block_queue->queue_len) {
+	level_block_queue->curr_offset = 0;
+	level_block_queue->generation ++;
+    }
     unlock_shared();
 }
 
 void
 set_last_block_queue_id()
 {
-    if (!level_block_queue)
-	create_block_queue(level_name);
-
+    create_block_queue(level_name);
     lock_shared();
     last_id = level_block_queue->curr_offset;
     last_generation = level_block_queue->generation;

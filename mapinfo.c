@@ -17,12 +17,17 @@ struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 
 typedef uint16_t block_t;
 
+#define BLK_NUM_TEX	6
+#define BLK_NUM_FOG	4
+#define BLK_NUM_COORD	6
+
+//MARKSTRUCT
 typedef struct map_info_t map_info_t;
 struct map_info_t {
     int magic_no;
-    unsigned int cells_x;
-    unsigned int cells_y;
-    unsigned int cells_z;
+    unsigned cells_x;
+    unsigned cells_y;
+    unsigned cells_z;
     int64_t valid_blocks;
 
     xyzhv_t spawn;
@@ -32,7 +37,7 @@ struct map_info_t {
     int last_map_download_size;
 
     // Init together til side_level.
-    int weather;
+    uint8_t weather;
     int sky_colour;
     int cloud_colour;
     int fog_colour;
@@ -42,19 +47,18 @@ struct map_info_t {
     block_t edge_block;
     int side_level;
 
-    char texname[65];
-    char motd[65];
+    char texname[NB_SLEN];
+    char motd[NB_SLEN];
 
-    struct block_defn blockdef[BLOCKMAX];
+    struct blockdef_t blockdef[BLOCKMAX];
     int invt_order[BLOCKMAX];
-
-    unsigned char block_perms[BLOCKMAX];
+    uint8_t block_perms[BLOCKMAX];
 
     int version_no;
 };
 
-struct block_defn {
-    char name[64];
+struct blockdef_t {
+    char name[NB_SLEN];
 
     uint8_t collide;
     uint8_t transparent;
@@ -63,9 +67,9 @@ struct block_defn {
     uint8_t shape;
     uint8_t draw;
     float speed;
-    uint16_t textures[6];
-    uint8_t fog[4];
-    int8_t cords[6];
+    uint16_t textures[BLK_NUM_TEX];
+    uint8_t fog[BLK_NUM_FOG];
+    int8_t cords[BLK_NUM_COORD];
 
     block_t fallback;
     block_t inventory_order;
@@ -87,7 +91,7 @@ struct block_defn {
     block_t grass_block;
     block_t dirt_block;
 };
-
+//ENDSTRUCT
 
 #define Block_Air 0
 #define Block_Stone 1

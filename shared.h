@@ -2,8 +2,6 @@
 #undef INTERFACE
 #define LOCAL static
 LOCAL void share_lock(int fd,int mode,int l_type);
-void fatal(char *emsg);
-void fatal(char *emsg);
 void set_last_chat_queue_id();
 void unlock_chat_shared(void);
 void lock_chat_shared(void);
@@ -21,19 +19,23 @@ struct chat_entry_t {
     int to_team_id;
     pkt_message msg;
 };
+#define CHAT_QUEUE_NAME "system/chat.queue"
 void wipe_last_chat_queue_id();
 void stop_chat_queue();
 void create_chat_queue();
 #define MAGIC_USR	0x0012FF7E
+#define SYS_USER_LIST_NAME "system/user.list"
 void stop_client_list();
 void open_client_list();
 typedef struct xyzb_t xyzb_t;
 #include <stdint.h>
 struct xyzb_t { uint16_t x, y, z, b; };
+#define LEVEL_QUEUE_NAME "level/%s.queue"
 void wipe_last_block_queue_id();
 #define PKID_SRVBLOCK   0x06
 extern int msglen[256];
 void create_block_queue(char *levelname);
+#define LEVEL_BLOCKS_NAME "level/%s.blocks"
 void unlock_shared(void);
 void open_blocks(char *levelname);
 void createmap(char *levelname);
@@ -47,6 +49,9 @@ struct shmem_t {
     int lock_fd;
 };
 LOCAL void allocate_shared(char *share_name,int share_size,shmem_t *shm);
+#define LEVEL_PROPS_NAME "level/%s.props"
+void fatal(char *emsg);
+void fatal(char *emsg);
 void stop_block_queue();
 void stop_shared(void);
 void open_level_files(char *levelname);
@@ -55,9 +60,12 @@ typedef struct map_info_t map_info_t;
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 typedef uint16_t block_t;
-typedef struct block_defn block_defn;
-struct block_defn {
-    char name[64];
+typedef struct blockdef_t blockdef_t;
+#define BLK_NUM_TEX	6
+#define BLK_NUM_FOG	4
+#define BLK_NUM_COORD	6
+struct blockdef_t {
+    char name[NB_SLEN];
 
     uint8_t collide;
     uint8_t transparent;
@@ -66,9 +74,9 @@ struct block_defn {
     uint8_t shape;
     uint8_t draw;
     float speed;
-    uint16_t textures[6];
-    uint8_t fog[4];
-    int8_t cords[6];
+    uint16_t textures[BLK_NUM_TEX];
+    uint8_t fog[BLK_NUM_FOG];
+    int8_t cords[BLK_NUM_COORD];
 
     block_t fallback;
     block_t inventory_order;
@@ -93,9 +101,9 @@ struct block_defn {
 #define BLOCKMAX 1024
 struct map_info_t {
     int magic_no;
-    unsigned int cells_x;
-    unsigned int cells_y;
-    unsigned int cells_z;
+    unsigned cells_x;
+    unsigned cells_y;
+    unsigned cells_z;
     int64_t valid_blocks;
 
     xyzhv_t spawn;
@@ -105,7 +113,7 @@ struct map_info_t {
     int last_map_download_size;
 
     // Init together til side_level.
-    int weather;
+    uint8_t weather;
     int sky_colour;
     int cloud_colour;
     int fog_colour;
@@ -115,29 +123,28 @@ struct map_info_t {
     block_t edge_block;
     int side_level;
 
-    char texname[65];
-    char motd[65];
+    char texname[NB_SLEN];
+    char motd[NB_SLEN];
 
-    struct block_defn blockdef[BLOCKMAX];
+    struct blockdef_t blockdef[BLOCKMAX];
     int invt_order[BLOCKMAX];
-
-    unsigned char block_perms[BLOCKMAX];
+    uint8_t block_perms[BLOCKMAX];
 
     int version_no;
 };
 typedef struct block_queue_t block_queue_t;
 struct block_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
-    int curr_offset;
-    int queue_len;
+    uint32_t curr_offset;
+    uint32_t queue_len;
 
     xyzb_t updates[1];
 };
 typedef struct chat_queue_t chat_queue_t;
 struct chat_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
-    int curr_offset;
-    int queue_len;
+    uint32_t curr_offset;
+    uint32_t queue_len;
 
     chat_entry_t updates[1];
 };

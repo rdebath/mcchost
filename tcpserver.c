@@ -23,6 +23,10 @@ static time_t last_heartbeat = 0;
 static inline
 int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
 
+char client_ipv4_str[INET_ADDRSTRLEN];
+int client_ipv4_port = 0;
+int client_ipv4_localhost = 0;
+
 void
 tcpserver()
 {
@@ -30,46 +34,48 @@ tcpserver()
 
     while(1)
     {
-        int max_sock = listen_socket;
-        fd_set read_fds;
-        fd_set write_fds;
-        fd_set except_fds;
-        struct timeval tv;
+	int max_sock = listen_socket;
+	fd_set read_fds;
+	fd_set write_fds;
+	fd_set except_fds;
+	struct timeval tv;
 
-        FD_ZERO(&read_fds);
-        FD_ZERO(&write_fds);
-        FD_ZERO(&except_fds);
+	FD_ZERO(&read_fds);
+	FD_ZERO(&write_fds);
+	FD_ZERO(&except_fds);
 
-        FD_SET(listen_socket, &read_fds);
-        FD_SET(listen_socket, &except_fds);
-        // ... stdin?
+	FD_SET(listen_socket, &read_fds);
+	FD_SET(listen_socket, &except_fds);
+	// ... stdin?
 
-        tv.tv_sec = 1; tv.tv_usec = 0;
-        int rv = select(max_sock+1, &read_fds, &write_fds, &except_fds, &tv);
-        if (rv < 0 && errno != EINTR) { perror("select()"); exit(1); }
+	tv.tv_sec = 1; tv.tv_usec = 0;
+	int rv = select(max_sock+1, &read_fds, &write_fds, &except_fds, &tv);
+	if (rv < 0 && errno != EINTR) { perror("select()"); exit(1); }
 
-        if (rv > 0)
-        {
-            if (FD_ISSET(listen_socket, &read_fds))
-            {
-                int socket = accept_new_connection();
+	if (rv > 0)
+	{
+	    if (FD_ISSET(listen_socket, &read_fds))
+	    {
+		int socket = accept_new_connection();
 
-                int pid = E(fork(), "Forking failure");
-                if (pid == 0)
-                {
-                    setsid();
-                    E(close(listen_socket), "close(listen)");
-                    line_ofd = 1; line_ifd = 0;
-                    E(dup2(socket, line_ifd), "dup2(S,0)");
-                    E(dup2(socket, line_ofd), "dup2(S,1)");
-                    process_connection();
-                    exit(0);
-                }
-                close(socket);
-            }
-            if (FD_ISSET(listen_socket, &except_fds))
-                break;
-        }
+		int pid = 0;
+		if (!server_runonce)
+		    pid = E(fork(), "Forking failure");
+		if (pid == 0)
+		{
+		    setsid();
+		    E(close(listen_socket), "close(listen)");
+		    line_ofd = 1; line_ifd = 0;
+		    E(dup2(socket, line_ifd), "dup2(S,0)");
+		    E(dup2(socket, line_ofd), "dup2(S,1)");
+		    process_connection();
+		    exit(0);
+		}
+		close(socket);
+	    }
+	    if (FD_ISSET(listen_socket, &except_fds))
+		break;
+	}
 
 	cleanup_zombies();
 
@@ -101,7 +107,10 @@ start_listen_socket(char * listen_addr, int port)
     // start accept client connections (queue 10)
     E(listen(listen_sock, 10), "listen");
 
-    fprintf(stderr, "Accepting connections on port %d.\n", (int)port);
+    if (server_runonce)
+	fprintf(stderr, "Waiting for connection on port %d.\n", (int)port);
+    else
+	fprintf(stderr, "Accepting connections on port %d.\n", (int)port);
 
     return listen_sock;
 }
@@ -115,10 +124,15 @@ accept_new_connection()
     int new_client_sock;
     new_client_sock = E(accept(listen_socket, (struct sockaddr *)&client_addr, &client_len), "accept()");
 
-    char client_ipv4_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &client_addr.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
+    client_ipv4_port = client_addr.sin_port;
 
-    fprintf(stderr, "Incoming connection from %s:%d.\n", client_ipv4_str, client_addr.sin_port);
+    if (server_runonce)
+	fprintf(stderr, "Connected, closing listen socket.\n");
+    else
+	fprintf(stderr, "Incoming connection from %s:%d.\n", client_ipv4_str, client_addr.sin_port);
+
+    client_ipv4_localhost = !strcmp("127.0.0.1", client_ipv4_str);
 
     return new_client_sock;
 }
@@ -173,7 +187,7 @@ send_heartbeat_poll()
 	"users=",current_user_count(),
 	"salt=",valid_salt?server_salt:"0000000000000000",
 	"name=",quoteurl(server_name, namebuf, sizeof(namebuf)),
-	"software=",quoteurl("Custom", softwarebuf, sizeof(softwarebuf))
+	"software=",quoteurl("MCCHost", softwarebuf, sizeof(softwarebuf))
 	);
 
     if (fork() == 0) {

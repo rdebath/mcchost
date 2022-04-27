@@ -1,5 +1,8 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
+void convert_chat_message(int msg_flag,char *msg);
+void cpy_nbstring(char *buf,char *str);
+void cpy_nbstring(char *buf,char *str);
 typedef struct pkt_message pkt_message;
 #define MB_STRLEN 64
 #define NB_SLEN	(MB_STRLEN+1)
@@ -7,9 +10,6 @@ struct pkt_message {
     int msg_flag;
     char message[NB_SLEN];
 };
-void convert_chat_message(pkt_message pkt);
-void cpy_nbstring(char *buf,char *str);
-void cpy_nbstring(char *buf,char *str);
 #define PKID_MESSAGE    0x0D
 typedef struct pkt_player_posn pkt_player_posn;
 typedef struct xyzhv_t xyzhv_t;

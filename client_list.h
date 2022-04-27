@@ -23,9 +23,14 @@ void update_player_pos(pkt_player_posn pkt);
 typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
 typedef uint16_t block_t;
-typedef struct block_defn block_defn;
-struct block_defn {
-    char name[64];
+#define MB_STRLEN 64
+#define NB_SLEN	(MB_STRLEN+1)
+typedef struct blockdef_t blockdef_t;
+#define BLK_NUM_TEX	6
+#define BLK_NUM_FOG	4
+#define BLK_NUM_COORD	6
+struct blockdef_t {
+    char name[NB_SLEN];
 
     uint8_t collide;
     uint8_t transparent;
@@ -34,9 +39,9 @@ struct block_defn {
     uint8_t shape;
     uint8_t draw;
     float speed;
-    uint16_t textures[6];
-    uint8_t fog[4];
-    int8_t cords[6];
+    uint16_t textures[BLK_NUM_TEX];
+    uint8_t fog[BLK_NUM_FOG];
+    int8_t cords[BLK_NUM_COORD];
 
     block_t fallback;
     block_t inventory_order;
@@ -61,9 +66,9 @@ struct block_defn {
 #define BLOCKMAX 1024
 struct map_info_t {
     int magic_no;
-    unsigned int cells_x;
-    unsigned int cells_y;
-    unsigned int cells_z;
+    unsigned cells_x;
+    unsigned cells_y;
+    unsigned cells_z;
     int64_t valid_blocks;
 
     xyzhv_t spawn;
@@ -73,7 +78,7 @@ struct map_info_t {
     int last_map_download_size;
 
     // Init together til side_level.
-    int weather;
+    uint8_t weather;
     int sky_colour;
     int cloud_colour;
     int fog_colour;
@@ -83,13 +88,12 @@ struct map_info_t {
     block_t edge_block;
     int side_level;
 
-    char texname[65];
-    char motd[65];
+    char texname[NB_SLEN];
+    char motd[NB_SLEN];
 
-    struct block_defn blockdef[BLOCKMAX];
+    struct blockdef_t blockdef[BLOCKMAX];
     int invt_order[BLOCKMAX];
-
-    unsigned char block_perms[BLOCKMAX];
+    uint8_t block_perms[BLOCKMAX];
 
     int version_no;
 };
@@ -98,16 +102,14 @@ typedef struct xyzb_t xyzb_t;
 struct xyzb_t { uint16_t x, y, z, b; };
 struct block_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
-    int curr_offset;
-    int queue_len;
+    uint32_t curr_offset;
+    uint32_t queue_len;
 
     xyzb_t updates[1];
 };
 typedef struct chat_queue_t chat_queue_t;
 typedef struct chat_entry_t chat_entry_t;
 typedef struct pkt_message pkt_message;
-#define MB_STRLEN 64
-#define NB_SLEN	(MB_STRLEN+1)
 struct pkt_message {
     int msg_flag;
     char message[NB_SLEN];
@@ -120,8 +122,8 @@ struct chat_entry_t {
 };
 struct chat_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
-    int curr_offset;
-    int queue_len;
+    uint32_t curr_offset;
+    uint32_t queue_len;
 
     chat_entry_t updates[1];
 };
@@ -165,5 +167,6 @@ void send_despawn_pkt(int player_id);
 void send_spawn_pkt(int player_id,char *playername,xyzhv_t posn);
 void logout(char *emsg);
 void check_user();
+extern xyzhv_t player_posn;
 #define MAGIC_USR	0x0012FF7E
 #define INTERFACE 0

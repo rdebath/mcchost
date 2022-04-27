@@ -6,6 +6,8 @@
  * This populates a default map file properties.
  */
 
+/* TODO: Need static definitions for first 66 blocks.  */
+
 void
 createmap(char * levelname)
 {
