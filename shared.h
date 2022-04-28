@@ -35,10 +35,20 @@ void wipe_last_block_queue_id();
 #define PKID_SRVBLOCK   0x06
 extern int msglen[256];
 void create_block_queue(char *levelname);
+typedef struct map_len_t map_len_t;
+struct map_len_t {
+    int magic_no;
+    unsigned cells_x;
+    unsigned cells_y;
+    unsigned cells_z;
+};
 #define LEVEL_BLOCKS_NAME "level/%s.blocks"
 void unlock_shared(void);
 void open_blocks(char *levelname);
 void createmap(char *levelname);
+#define MODEL_CW_NAME "model.cw"
+int load_map_from_file(char *filename,char *levelname);
+#define LEVEL_CW_NAME "map/%s.cw"
 #define MAP_MAGIC	0x1A7FFF00
 #define MAP_VERSION	0xA0000100
 void lock_shared(void);
@@ -54,7 +64,7 @@ void fatal(char *emsg);
 void fatal(char *emsg);
 void stop_block_queue();
 void stop_shared(void);
-void open_level_files(char *levelname);
+void open_level_files(char *levelname,int direct);
 typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
 typedef struct xyzhv_t xyzhv_t;
@@ -104,7 +114,7 @@ struct map_info_t {
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
-    int64_t valid_blocks;
+    int64_t total_blocks;
 
     xyzhv_t spawn;
 

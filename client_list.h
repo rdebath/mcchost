@@ -69,7 +69,7 @@ struct map_info_t {
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
-    int64_t valid_blocks;
+    int64_t total_blocks;
 
     xyzhv_t spawn;
 

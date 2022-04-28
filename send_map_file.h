@@ -1,6 +1,7 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
 void send_lvldone_pkt(int x,int y,int z);
+void flush_to_remote();
 void send_lvldata_pkt(char *block,int len,int percent);
 typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
@@ -54,7 +55,7 @@ struct map_info_t {
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
-    int64_t valid_blocks;
+    int64_t total_blocks;
 
     xyzhv_t spawn;
 

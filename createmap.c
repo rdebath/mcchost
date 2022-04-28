@@ -1,3 +1,4 @@
+#include <string.h>
 #include <sys/types.h>
 
 #include "createmap.h"
@@ -17,10 +18,6 @@ createmap(char * levelname)
 
     send_message_pkt(0, "&eCreating new default level");
 
-    uint64_t tv = level_prop->valid_blocks;
-    if (level_prop->version_no != 0 && level_prop->version_no != MAP_VERSION)
-	tv = 0;
-
     map_info_t def = {
 	    .magic_no = MAP_MAGIC,
 	    .version_no = MAP_VERSION,
@@ -31,10 +28,7 @@ createmap(char * levelname)
 
     *level_prop = def;
 
-    if (tv != (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z)
-	tv = 0;
-
-    level_prop->valid_blocks = tv;
+    level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
 
     for (int i = 1; i<BLOCKMAX; i++)
 	level_prop->blockdef[i].blockslight = 1;
@@ -79,9 +73,25 @@ createmap(char * levelname)
 
     open_blocks(levelname);
 
+    map_len_t test_map;
+    memcpy(&test_map, (void*)(level_blocks+level_prop->total_blocks),
+	    sizeof(map_len_t));
+
+    int blocks_valid = 1;
+    if (test_map.magic_no != MAP_MAGIC) blocks_valid = 0;
+    if (test_map.cells_x != level_prop->cells_x) blocks_valid = 0;
+    if (test_map.cells_y != level_prop->cells_y) blocks_valid = 0;
+    if (test_map.cells_z != level_prop->cells_z) blocks_valid = 0;
+
     // If level not valid wipe to flat.
-    if (level_prop->valid_blocks == 0) {
+    if (!blocks_valid) {
         int x, y, z, y1;
+
+	// Calculate normal spawn posn.
+	level_prop->spawn.x = level_prop->cells_x/2   *32+16;
+	level_prop->spawn.y = level_prop->cells_y*3/4 *32;
+	level_prop->spawn.z = level_prop->cells_z/2   *32+16;
+
 	// Calculation used for edge level in classic client.
         y1 = level_prop->cells_y/2-1;
         for(y=0; y<level_prop->cells_y; y++)
@@ -95,8 +105,13 @@ createmap(char * levelname)
                     else
                         level_blocks[World_Pack(x,y,z)] = Block_Dirt;
                 }
-        level_prop->valid_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-    }
 
+	test_map.magic_no = MAP_MAGIC;
+	test_map.cells_x = level_prop->cells_x;
+	test_map.cells_y = level_prop->cells_y;
+	test_map.cells_z = level_prop->cells_z;
+	memcpy((void*)(level_blocks+level_prop->total_blocks),
+		&test_map, sizeof(map_len_t));
+    }
 }
 

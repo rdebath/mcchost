@@ -10,6 +10,8 @@
 #define LEVEL_PROPS_NAME "level/%s.props"
 #define LEVEL_BLOCKS_NAME "level/%s.blocks"
 #define LEVEL_QUEUE_NAME "level/%s.queue"
+#define LEVEL_CW_NAME "map/%s.cw"
+#define MODEL_CW_NAME "model.cw"
 #define SYS_USER_LIST_NAME "system/user.list"
 #define CHAT_QUEUE_NAME "system/chat.queue"
 #endif
@@ -19,6 +21,7 @@ static char * dirlist[] = {
     "level",
     "backup",
     "log",
+    "map",
     0
 };
 

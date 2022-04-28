@@ -104,11 +104,9 @@ process_connection()
     create_chat_queue();
 
     // Open level mmap files.
-    open_level_files(level_name);
+    open_level_files(level_name, 0);
     send_map_file();
-
     send_spawn_pkt(255, user_id, level_prop->spawn);
-
     send_welcome_message();
 }
 

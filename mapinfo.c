@@ -28,7 +28,7 @@ struct map_info_t {
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
-    int64_t valid_blocks;
+    int64_t total_blocks;
 
     xyzhv_t spawn;
 
@@ -76,6 +76,15 @@ struct map_info_t {
     int version_no;
 };
 
+typedef map_len_t map_len_t;
+struct map_len_t {
+    int magic_no;
+    unsigned cells_x;
+    unsigned cells_y;
+    unsigned cells_z;
+};
+
+typedef blockdef_t blockdef_t;
 struct blockdef_t {
     char name[NB_SLEN];
 

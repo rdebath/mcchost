@@ -8,7 +8,7 @@
 
 /*
  * TODO:
- * +) load/save level to *.cw
+ * +) load/save level to *.cw and use for backups, restores and "unload".
  * +) /help, /faq, /news texts
  * +) CPE
  * +) Multiple Levels. (/newlvl)

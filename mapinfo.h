@@ -54,6 +54,13 @@
 #define Block_Grass 2
 #define Block_Stone 1
 #define Block_Air 0
+typedef struct map_len_t map_len_t;
+struct map_len_t {
+    int magic_no;
+    unsigned cells_x;
+    unsigned cells_y;
+    unsigned cells_z;
+};
 typedef struct blockdef_t blockdef_t;
 #define MB_STRLEN 64
 #define NB_SLEN (MB_STRLEN+1)
@@ -104,7 +111,7 @@ struct map_info_t {
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
-    int64_t valid_blocks;
+    int64_t total_blocks;
 
     xyzhv_t spawn;
 

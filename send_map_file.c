@@ -32,6 +32,7 @@ void
 send_map_file()
 {
     int zrv = 0;
+    int blocks_buffered = 0;
     set_last_block_queue_id(); // Send updates from now.
     send_lvlinit_pkt();
 
@@ -93,6 +94,10 @@ send_map_file()
 	    strm.avail_out = sizeof(zblockbuffer);
 	    strm.next_out = zblockbuffer;
 	    percent = level_blocks_used * 100 / level_len;
+
+	    blocks_buffered ++;
+	    if (blocks_buffered > 64)
+		flush_to_remote();
 	}
 
     } while(zrv != Z_STREAM_END);

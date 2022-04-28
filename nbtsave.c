@@ -220,9 +220,9 @@ save_map_to_file(char * fn)
 
     if (level_blocks) {
 	int flg = 0, flg2 = 0;
-	bc_ent_bytes_header(savefile, "BlockArray", level_prop->valid_blocks);
+	bc_ent_bytes_header(savefile, "BlockArray", level_prop->total_blocks);
 
-	for (intptr_t i = 0; i<level_prop->valid_blocks; i++) {
+	for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
 	    int b = level_blocks[i];
 	    // if (b>=BLOCKMAX) b = BLOCKMAX-1;
 	    if (b>=768) {flg2 = 1; b &= 0xFF; }
@@ -232,9 +232,9 @@ save_map_to_file(char * fn)
 
 	if (flg) {
 	    // BlockArray2 can only have 0..767 so we need BlockArray3
-	    bc_ent_bytes_header(savefile, "BlockArray2", level_prop->valid_blocks);
+	    bc_ent_bytes_header(savefile, "BlockArray2", level_prop->total_blocks);
 
-	    for (intptr_t i = 0; i<level_prop->valid_blocks; i++) {
+	    for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
 		int b = level_blocks[i];
 		// if (b>=BLOCKMAX) b = BLOCKMAX-1;
 		if (b>=768) b &= 0xFF;
@@ -246,9 +246,9 @@ save_map_to_file(char * fn)
 	    // What format should I use for this?
 	    // Currently it's a corrected high byte but this means BA2 makes
 	    // a random block in 0..767
-	    bc_ent_bytes_header(savefile, "BlockArray3", level_prop->valid_blocks);
+	    bc_ent_bytes_header(savefile, "BlockArray3", level_prop->total_blocks);
 
-	    for (intptr_t i = 0; i<level_prop->valid_blocks; i++) {
+	    for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
 		int b = level_blocks[i];
 		// if (b>=BLOCKMAX) b=BLOCKMAX-1;
 		fputc(b>>8, savefile);

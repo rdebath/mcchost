@@ -101,7 +101,7 @@ struct shared_data_t shdat;
  */
 
 void
-open_level_files(char * levelname)
+open_level_files(char * levelname, int direct)
 {
     char sharename[256];
     if (level_prop && level_blocks) return;
@@ -116,15 +116,33 @@ open_level_files(char * levelname)
         return;
     }
 
-    sprintf(sharename, LEVEL_PROPS_NAME, levelname);
+    snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, levelname);
     allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP);
     level_prop = shdat.dat[SHMID_PROP].ptr;
 
     lock_shared();
 
-    // If level missing -- extract the matching *.cw file
+    if (!direct) {
+	if (level_prop->version_no != MAP_VERSION || level_prop->magic_no != MAP_MAGIC
+	    || level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
+	{
 
-    // If level missing -- extract a model *.cw file
+	    int ok = 0;
+	    // If level missing -- extract the matching *.cw file
+	    char cwfilename[256];
+	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, levelname);
+	    if (access(cwfilename, R_OK) == 0) {
+		ok = (load_map_from_file(cwfilename, levelname) >= 0);
+	    }
+
+	    // If level missing -- extract a model *.cw file
+	    if (!ok && access(MODEL_CW_NAME, R_OK) == 0) {
+		ok = (load_map_from_file(MODEL_CW_NAME, levelname) >= 0);
+	    }
+
+	    if (!ok) level_prop->version_no = 0;
+	}
+    }
 
     // If level missing -- make a flat.
     if (level_prop->version_no != MAP_VERSION || level_prop->magic_no != MAP_MAGIC
@@ -149,7 +167,9 @@ open_blocks(char * levelname)
     }
 
     sprintf(sharename, LEVEL_BLOCKS_NAME, levelname);
-    level_blocks_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z * sizeof(*level_blocks);
+    level_blocks_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y *
+	level_prop->cells_z * sizeof(*level_blocks) +
+	sizeof(map_len_t);
     allocate_shared(sharename, level_blocks_len, shdat.dat+SHMID_BLOCKS);
     level_blocks = shdat.dat[SHMID_BLOCKS].ptr;
 
@@ -213,7 +233,7 @@ create_block_queue(char * levelname)
 	    level_block_queue->queue_len = 0;
 
 	if (queue_count > level_block_queue->queue_len ||
-		level_block_queue->queue_len > level_prop->valid_blocks) {
+		level_block_queue->queue_len > level_prop->total_blocks) {
 	    level_block_queue->generation += 2;
 	    level_block_queue->curr_offset = 0;
 	    level_block_queue->queue_len = queue_count;

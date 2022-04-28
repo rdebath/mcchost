@@ -6,8 +6,6 @@
 
 #include "nbtload.h"
 
-#if 0
-
 enum NbtTagType {
     NBT_END, NBT_I8, NBT_I16, NBT_I32, NBT_I64, NBT_F32,
     NBT_F64, NBT_I8ARRAY, NBT_STR, NBT_LIST, NBT_COMPOUND,
@@ -28,21 +26,18 @@ static int current_block = -1;
 static int inventory_block = -1;
 
 // Load into here, copy to the real one later.
-static map_info_t lvl_prop;
+static char new_level[256];
 
 int
-load_map_from_file(char * filename)
+load_map_from_file(char * filename, char * levelname)
 {
     FILE * ifd;
-    char * cmdbuf, *fn, *s, *d;
-    fn = filename;
+    char * cmdbuf, *s, *d;
 
-    { map_info_t t = {0}; lvl_prop = t; }
-
-    d = cmdbuf = calloc(1, strlen(fn)*4 + 32);
+    d = cmdbuf = calloc(1, strlen(filename)*4 + 32);
 
     d += sprintf(cmdbuf, "%s", "gzip -S .cw -cdf '");
-    for (s=fn; *s; s++) {
+    for (s=filename; *s; s++) {
 	if (*s == '\'') {
 	    *d++ = '\''; *d++ = '\\'; *d++ = '\''; *d++ = '\'';
 	} else {
@@ -51,17 +46,19 @@ load_map_from_file(char * filename)
     }
     *d++ = '\''; *d = 0;
     if ((ifd = popen(cmdbuf, "r")) == 0) {
-	perror(fn);
+	perror(filename);
 	return -1;
     }
-    load_cwfile(ifd, fn);
+    snprintf(new_level, sizeof(new_level), "%s", levelname);
+
+    load_cwfile(ifd);
     pclose(ifd);
     free(cmdbuf);
     return 0;
 }
 
 LOCAL void
-load_cwfile(FILE * ifd, char * filename)
+load_cwfile(FILE * ifd)
 {
     int ClassicWorld_found = 0;
     int ch = fgetc(ifd);
@@ -69,15 +66,19 @@ load_cwfile(FILE * ifd, char * filename)
 	*last_lbl = *last_sect = 0;
 	read_element(ifd, NBT_LABEL);
 	ClassicWorld_found = !strcmp("ClassicWorld", last_lbl);
-	if (ClassicWorld_found)
-	    fprintf(stderr, "Loading ClassicWorld map: ");
+	if (!ClassicWorld_found) {
+	    fprintf(stderr, "File format incorrect.\n");
+	    return;
+	}
+	fprintf(stderr, "Loading ClassicWorld map: ");
+	open_level_files(new_level, 1);
 	read_element(ifd, ch);
     } else {
 	fprintf(stderr, "File format incorrect.\n");
 	return;
     }
 
-    if (ClassicWorld_found || (lvl_prop.cells_x>0 && lvl_prop.cells_y>0 && lvl_prop.cells_z>0))
+    if (ClassicWorld_found || (level_prop->cells_x>0 && level_prop->cells_y>0 && level_prop->cells_z>0))
 	fprintf(stderr, "Load done.\n");
 }
 
@@ -96,8 +97,16 @@ read_element(FILE * ifd, int etype)
 
 	if (strcmp(last_lbl, "BlockArray") == 0 && len>0) {
 
-	    level_blocks = calloc(len, sizeof(*level_blocks));
-	    block_array_size = len;
+	    level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
+	    open_blocks(new_level);
+
+	    map_len_t test_map;
+	    test_map.magic_no = MAP_MAGIC;
+	    test_map.cells_x = level_prop->cells_x;
+	    test_map.cells_y = level_prop->cells_y;
+	    test_map.cells_z = level_prop->cells_z;
+	    memcpy((void*)(level_blocks+level_prop->total_blocks),
+		    &test_map, sizeof(map_len_t));
 
 	    for(i=0; i<len; i++) {
 		if ((ch = fgetc(ifd)) == EOF) return 0;
@@ -108,7 +117,7 @@ read_element(FILE * ifd, int etype)
 
 	if (strcmp(last_lbl, "BlockArray2") == 0 && len>0) {
 
-	    if (level_blocks == 0 || block_array_size < len) {
+	    if (level_blocks == 0 || level_prop->total_blocks < len) {
 		fprintf(stderr, "Incorrect BlockArray2 found\n");
 		return 0;
 	    }
@@ -122,7 +131,7 @@ read_element(FILE * ifd, int etype)
 
 	if (strcmp(last_lbl, "BlockArray3") == 0 && len>0) {
 
-	    if (level_blocks == 0 || block_array_size < len) {
+	    if (level_blocks == 0 || level_prop->total_blocks < len) {
 		fprintf(stderr, "Incorrect BlockArray3 found\n");
 		return 0;
 	    }
@@ -253,7 +262,7 @@ read_element(FILE * ifd, int etype)
 }
 
 LOCAL void
-set_colour(int *colour, int by, int value)
+set_colour(volatile int *colour, int by, int value)
 {
     if (*colour < 0 || value < 0)
 	*colour = -1;
@@ -267,119 +276,121 @@ change_int_value(char * section, char * item, long long value)
     if (*section == 0 ||
 	    strcmp(section, "ClassicWorld") == 0 ||
 	    strcmp(section, "MapSize") == 0) {
-	if (strcmp(item, "X") == 0) lvl_prop.cells_x = value;
-	if (strcmp(item, "Y") == 0) lvl_prop.cells_y = value;
-	if (strcmp(item, "Z") == 0) lvl_prop.cells_z = value;
+	if (strcmp(item, "X") == 0) level_prop->cells_x = value;
+	if (strcmp(item, "Y") == 0) level_prop->cells_y = value;
+	if (strcmp(item, "Z") == 0) level_prop->cells_z = value;
     } else if (strcmp(section, "Spawn") == 0) {
-	int c = -1;
 	// Add precise spawn?
-	if (strcmp(item, "X") == 0) lvl_prop.spawn.x = value*32+16;
-	if (strcmp(item, "Y") == 0) lvl_prop.spawn.y = value*32+16;
-	if (strcmp(item, "Z") == 0) lvl_prop.spawn.z = value*32+16;
-	if (strcmp(item, "H") == 0) lvl_prop.spawn.h = value*360/256;
-	if (strcmp(item, "P") == 0) lvl_prop.spawn.v = value*360/256;
+	if (strcmp(item, "X") == 0) level_prop->spawn.x = value*32+16;
+	if (strcmp(item, "Y") == 0) level_prop->spawn.y = value*32+16;
+	if (strcmp(item, "Z") == 0) level_prop->spawn.z = value*32+16;
+	if (strcmp(item, "H") == 0) level_prop->spawn.h = value*360/256;
+	if (strcmp(item, "P") == 0) level_prop->spawn.v = value*360/256;
     } else if (strcmp(section, "Sky") == 0) {
 	int c = -1;
 	if (strcmp(item, "R") == 0) c = 0;
 	if (strcmp(item, "G") == 0) c = 1;
 	if (strcmp(item, "B") == 0) c = 2;
-	if (c>=0) set_colour(&lvl_prop.sky_colour, c, value);
+	if (c>=0) set_colour(&level_prop->sky_colour, c, value);
     } else if (strcmp(section, "Cloud") == 0) {
 	int c = -1;
 	if (strcmp(item, "R") == 0) c = 0;
 	if (strcmp(item, "G") == 0) c = 1;
 	if (strcmp(item, "B") == 0) c = 2;
-	if (c>=0) set_colour(&lvl_prop.cloud_colour, c, value);
+	if (c>=0) set_colour(&level_prop->cloud_colour, c, value);
     } else if (strcmp(section, "Fog") == 0) {
 	int c = -1;
 	if (strcmp(item, "R") == 0) c = 0;
 	if (strcmp(item, "G") == 0) c = 1;
 	if (strcmp(item, "B") == 0) c = 2;
-	if (c>=0) set_colour(&lvl_prop.fog_colour, c, value);
+	if (c>=0) set_colour(&level_prop->fog_colour, c, value);
     } else if (strcmp(section, "Ambient") == 0) {
 	int c = -1;
 	if (strcmp(item, "R") == 0) c = 0;
 	if (strcmp(item, "G") == 0) c = 1;
 	if (strcmp(item, "B") == 0) c = 2;
-	if (c>=0) set_colour(&lvl_prop.ambient_colour, c, value);
+	if (c>=0) set_colour(&level_prop->ambient_colour, c, value);
     } else if (strcmp(section, "Sunlight") == 0) {
 	int c = -1;
 	if (strcmp(item, "R") == 0) c = 0;
 	if (strcmp(item, "G") == 0) c = 1;
 	if (strcmp(item, "B") == 0) c = 2;
-	if (c>=0) set_colour(&lvl_prop.sunlight_colour, c, value);
+	if (c>=0) set_colour(&level_prop->sunlight_colour, c, value);
     } else if (strcmp(section, "EnvMapAppearance") == 0) {
-	if (strcmp(item, "SideBlock") == 0) lvl_prop.side_block = value;
-	if (strcmp(item, "EdgeBlock") == 0) lvl_prop.edge_block = value;
-	if (strcmp(item, "SideLevel") == 0) lvl_prop.side_level = value;
-	if (strcmp(item, "SideOffset") == 0) lvl_prop.side_offset = value;
+	if (strcmp(item, "SideBlock") == 0) level_prop->side_block = value;
+	if (strcmp(item, "EdgeBlock") == 0) level_prop->edge_block = value;
+	if (strcmp(item, "SideLevel") == 0) level_prop->side_level = value;
+	if (strcmp(item, "SideOffset") == 0) level_prop->side_offset = value;
 	// String: if (strcmp(item, "TextureURL") == 0)
     } else if (strcmp(section, "EnvMapAspect") == 0) {
-	if (strcmp(item, "SideOffset") == 0) lvl_prop.side_offset = value;
-	if (strcmp(item, "CloudsHeight") == 0) lvl_prop.clouds_height = value;
+	if (strcmp(item, "SideOffset") == 0) level_prop->side_offset = value;
+	if (strcmp(item, "CloudsHeight") == 0) level_prop->clouds_height = value;
 
-	if (strcmp(item, "MapProperty0") == 0) lvl_prop.side_block = value;
-	if (strcmp(item, "MapProperty1") == 0) lvl_prop.edge_block = value;
-	if (strcmp(item, "MapProperty2") == 0) lvl_prop.side_level = value;
-	if (strcmp(item, "MapProperty3") == 0) lvl_prop.clouds_height = value;
-	if (strcmp(item, "MapProperty4") == 0) lvl_prop.max_fog = value;
-	if (strcmp(item, "MapProperty5") == 0) lvl_prop.clouds_speed = value;
-	if (strcmp(item, "MapProperty6") == 0) lvl_prop.weather_speed = value;
-	if (strcmp(item, "MapProperty7") == 0) lvl_prop.weather_fade = value;
-	if (strcmp(item, "MapProperty8") == 0) lvl_prop.exp_fog = value;
-	if (strcmp(item, "MapProperty9") == 0) lvl_prop.side_offset = value;
-	if (strcmp(item, "MapProperty10") == 0) lvl_prop.skybox_hor_speed = value;
-	if (strcmp(item, "MapProperty11") == 0) lvl_prop.skybox_ver_speed = value;
+	if (strcmp(item, "MapProperty0") == 0) level_prop->side_block = value;
+	if (strcmp(item, "MapProperty1") == 0) level_prop->edge_block = value;
+	if (strcmp(item, "MapProperty2") == 0) level_prop->side_level = value;
+	if (strcmp(item, "MapProperty3") == 0) level_prop->clouds_height = value;
+	if (strcmp(item, "MapProperty4") == 0) level_prop->max_fog = value;
+	if (strcmp(item, "MapProperty5") == 0) level_prop->clouds_speed = value;
+	if (strcmp(item, "MapProperty6") == 0) level_prop->weather_speed = value;
+	if (strcmp(item, "MapProperty7") == 0) level_prop->weather_fade = value;
+	if (strcmp(item, "MapProperty8") == 0) level_prop->exp_fog = value;
+	if (strcmp(item, "MapProperty9") == 0) level_prop->side_offset = value;
+	if (strcmp(item, "MapProperty10") == 0) level_prop->skybox_hor_speed = value;
+	if (strcmp(item, "MapProperty11") == 0) level_prop->skybox_ver_speed = value;
 
     } else if (strcmp(section, "ClickDistance") == 0) {
-	if (strcmp(item, "Distance") == 0) lvl_prop.click_distance = value;
+	if (strcmp(item, "Distance") == 0) level_prop->click_distance = value;
     } else if (strcmp(section, "EnvWeatherType") == 0) {
-	if (strcmp(item, "WeatherType") == 0) lvl_prop.weather = value;
+	if (strcmp(item, "WeatherType") == 0) level_prop->weather = value;
     } else if (strncmp(section, "inventoryorder", 14) == 0) {
 	if (strcmp(item, "block") == 0) inventory_block = value;
 	if (strcmp(item, "order") == 0) {
 	    int inventory_order = value;
 
 	    if (inventory_order >= 0 && inventory_block > 0 && inventory_block < BLOCKMAX) {
-		lvl_prop.invt_order[inventory_block] = inventory_order;
+		level_prop->invt_order[inventory_block] = inventory_order;
 	    }
 	    inventory_order = -1;
 	    inventory_block = -1;
 	}
+
+#if 0
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {
 	    current_block = value;
-	    if (current_block >= 0 && current_block<66 && !lvl_prop.blockdef[current_block].defined) {
-		lvl_prop.blockdef[current_block] = default_blocks[current_block];
+	    if (current_block >= 0 && current_block<66 && !level_prop->blockdef[current_block].defined) {
+		level_prop->blockdef[current_block] = default_blocks[current_block];
 	    }
 
-	    lvl_prop.blockdef[current_block].defined = 1;
-	    lvl_prop.blockdef[current_block].inventory_order = -1;
-	    lvl_prop.blockdef[current_block].fallback = -1;
+	    level_prop->blockdef[current_block].defined = 1;
+	    level_prop->blockdef[current_block].inventory_order = -1;
+	    level_prop->blockdef[current_block].fallback = -1;
 	} else if (current_block < 0 || current_block >= BLOCKMAX) {
 	    // Skip -- no ID2.
 	} else if (strcmp(item, "CollideType") == 0) {
-	    if (lvl_prop.blockdef[current_block].collide != value)
-	    lvl_prop.blockdef[current_block].collide = value;
+	    if (level_prop->blockdef[current_block].collide != value)
+	    level_prop->blockdef[current_block].collide = value;
 	} else if (strcmp(item, "Speed") == 0) {
-	    if (lvl_prop.blockdef[current_block].speed != value/1000.0)
-	    lvl_prop.blockdef[current_block].speed = value/1000.0;
+	    if (level_prop->blockdef[current_block].speed != value/1000.0)
+	    level_prop->blockdef[current_block].speed = value/1000.0;
 	} else if (strcmp(item, "TransmitsLight") == 0) {
-	    if (lvl_prop.blockdef[current_block].transparent != value)
-	    lvl_prop.blockdef[current_block].transparent = value;
+	    if (level_prop->blockdef[current_block].transparent != value)
+	    level_prop->blockdef[current_block].transparent = value;
 	} else if (strcmp(item, "WalkSound") == 0) {
-	    if (lvl_prop.blockdef[current_block].walksound != value)
-	    lvl_prop.blockdef[current_block].walksound = value;
+	    if (level_prop->blockdef[current_block].walksound != value)
+	    level_prop->blockdef[current_block].walksound = value;
 	} else if (strcmp(item, "FullBright") == 0) {
-	    if (lvl_prop.blockdef[current_block].light != value)
-	    lvl_prop.blockdef[current_block].light = value;
+	    if (level_prop->blockdef[current_block].light != value)
+	    level_prop->blockdef[current_block].light = value;
 	} else if (strcmp(item, "Shape") == 0) {
-	    if (lvl_prop.blockdef[current_block].shape != value)
-	    lvl_prop.blockdef[current_block].shape = value;
+	    if (level_prop->blockdef[current_block].shape != value)
+	    level_prop->blockdef[current_block].shape = value;
 	} else if (strcmp(item, "BlockDraw") == 0) {
-	    if (lvl_prop.blockdef[current_block].draw != value)
-	    lvl_prop.blockdef[current_block].draw = value;
+	    if (level_prop->blockdef[current_block].draw != value)
+	    level_prop->blockdef[current_block].draw = value;
 	}
+#endif
 
     }
 }
@@ -394,31 +405,31 @@ change_bin_value(char * section, char * item, uint8_t * value, int len)
 	    int i;
 	    if (len < 6) return;
 	    for(i=0; i<6; i++) {
-		if (lvl_prop.blockdef[current_block].textures[i] != value[i])
-		lvl_prop.blockdef[current_block].textures[i] = value[i];
+		if (level_prop->blockdef[current_block].textures[i] != value[i])
+		level_prop->blockdef[current_block].textures[i] = value[i];
 	    }
 
 	    if (len < 12) return;
 	    for(i=0; i<6; i++) {
-		int nv = lvl_prop.blockdef[current_block].textures[i] + value[i+6] * 256;
-		if (lvl_prop.blockdef[current_block].textures[i] != nv)
-		lvl_prop.blockdef[current_block].textures[i] = nv;
+		int nv = level_prop->blockdef[current_block].textures[i] + value[i+6] * 256;
+		if (level_prop->blockdef[current_block].textures[i] != nv)
+		level_prop->blockdef[current_block].textures[i] = nv;
 	    }
 
 	} else if (strcmp(item, "Fog") == 0) {
 	    int i;
 	    if (len < 4) return;
 	    for(i=0; i<4; i++) {
-		if (lvl_prop.blockdef[current_block].fog[i] != value[i])
-		lvl_prop.blockdef[current_block].fog[i] = value[i];
+		if (level_prop->blockdef[current_block].fog[i] != value[i])
+		level_prop->blockdef[current_block].fog[i] = value[i];
 	    }
 
 	} else if (strcmp(item, "Coords") == 0) {
 	    int i;
 	    if (len < 6) return;
 	    for(i=0; i<6; i++) {
-		if (lvl_prop.blockdef[current_block].cords[i] != value[i])
-		lvl_prop.blockdef[current_block].cords[i] = value[i];
+		if (level_prop->blockdef[current_block].cords[i] != value[i])
+		level_prop->blockdef[current_block].cords[i] = value[i];
 	    }
 
 	}
@@ -428,16 +439,14 @@ change_bin_value(char * section, char * item, uint8_t * value, int len)
 LOCAL void
 change_str_value(char * section, char * item, char * value)
 {
-    char * p;
-
     if (strcmp(section, "EnvMapAppearance") == 0) {
 	if (strcmp(item, "TextureURL") == 0) {
-	    strncpy(lvl_prop.texname, value, MB_STRLEN);
+	    cpy_nstr(level_prop->texname, value, MB_STRLEN);
 	}
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "Name") == 0) {
 	    if (current_block >= 0 && current_block < BLOCKMAX) {
-		strncpy(lvl_prop.blockdef[current_block].name, value, MB_STRLEN);
+		cpy_nstr(level_prop->blockdef[current_block].name, value, MB_STRLEN);
 	    }
 	}
 
@@ -470,4 +479,14 @@ change_str_value(char * section, char * item, char * value)
     }
 }
 
-#endif
+LOCAL void
+cpy_nstr(volatile char *buf, char *str, int len)
+{
+    volatile char *d = buf;
+    char * s;
+    for(s=str; s && *s; s++) {
+	*d++ = *s;
+	if (d == buf+len-1) break;
+    }
+    *d = 0;
+}

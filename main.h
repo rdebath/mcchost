@@ -57,7 +57,7 @@ struct map_info_t {
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
-    int64_t valid_blocks;
+    int64_t total_blocks;
 
     xyzhv_t spawn;
 
@@ -188,7 +188,7 @@ void send_welcome_message();
 #define level_prop shdat.prop
 void send_spawn_pkt(int player_id,char *playername,xyzhv_t posn);
 void send_map_file();
-void open_level_files(char *levelname);
+void open_level_files(char *levelname,int direct);
 void create_chat_queue();
 void start_user();
 void send_server_id_pkt(char *servername,char *servermotd,int user_type);

@@ -52,7 +52,7 @@ struct map_info_t {
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
-    int64_t valid_blocks;
+    int64_t total_blocks;
 
     xyzhv_t spawn;
 
@@ -164,6 +164,13 @@ extern struct shared_data_t shdat;
 #define level_prop shdat.prop
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
 #define level_blocks shdat.blocks
+typedef struct map_len_t map_len_t;
+struct map_len_t {
+    int magic_no;
+    unsigned cells_x;
+    unsigned cells_y;
+    unsigned cells_z;
+};
 void open_blocks(char *levelname);
 #define Block_Stone 1
 #define Block_StoneBrick 65

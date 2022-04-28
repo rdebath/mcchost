@@ -57,7 +57,14 @@ void
 flush_to_remote()
 {
     int tosend = ttl_end-ttl_start;
-    (void)write(line_ofd, ttl_buf+ttl_start, tosend);
+    int rv = write(line_ofd, ttl_buf+ttl_start, tosend);
+
+    if( rv > 0 )
+    {
+	if( rv != ttl_end-ttl_start ) ttl_start += rv;
+	else ttl_start = ttl_end = 0;
+    } else if (rv < 0)
+	fatal("write line_fd syscall");
 }
 
 int
