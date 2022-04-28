@@ -16,8 +16,6 @@ createmap(char * levelname)
 	if (level_prop->cells_x != 0 && level_prop->cells_y != 0 && level_prop->cells_z != 0)
 	    return;
 
-    send_message_pkt(0, "&eCreating new default level");
-
     map_info_t def = {
 	    .magic_no = MAP_MAGIC,
 	    .version_no = MAP_VERSION,

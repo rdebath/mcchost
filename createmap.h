@@ -213,6 +213,5 @@ void open_blocks(char *levelname);
 #define Block_Grass 2
 #define Block_Dirt 3
 #define MAP_MAGIC	0x1A7FFF00
-void send_message_pkt(int id,char *message);
 #define MAP_VERSION	0xA0000100
 void createmap(char *levelname);

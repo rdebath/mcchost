@@ -7,9 +7,13 @@
 
 #include "send_map_file.h"
 
+#if INTERFACE
+#define block_convert(_bl) ((_bl)<=max_blockno_to_send?_bl:f_block_convert(_bl))
+#endif
+
 // Convert from Map block numbers to ones the client will understand.
 block_t
-block_convert(block_t in)
+f_block_convert(block_t in)
 {
     // CPE defined translations.
     static block_t cpe_conv[] = {
@@ -17,8 +21,8 @@ block_convert(block_t in)
 	0x1d, 0x1c, 0x14, 0x2a, 0x31, 0x24, 0x05, 0x01
     };
 
-    if (in >= BLOCKMAX) in = BLOCKMAX-1;
     if (in <= max_blockno_to_send) return in;
+    if (in >= BLOCKMAX) in = BLOCKMAX-1;
 
     if (level_prop->blockdef[in].defined)
 	in = level_prop->blockdef[in].fallback;

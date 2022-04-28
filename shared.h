@@ -46,6 +46,7 @@ struct map_len_t {
 void unlock_shared(void);
 void open_blocks(char *levelname);
 void createmap(char *levelname);
+void send_message_pkt(int id,char *message);
 #define MODEL_CW_NAME "model.cw"
 int load_map_from_file(char *filename,char *levelname);
 #define LEVEL_CW_NAME "map/%s.cw"

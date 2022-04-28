@@ -19,6 +19,7 @@
 static char * dirlist[] = {
     "system",
     "level",
+    "help",
     "backup",
     "log",
     "map",

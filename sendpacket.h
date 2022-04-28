@@ -21,7 +21,9 @@ void send_posn_pkt(int player_id,xyzhv_t *oldpos,xyzhv_t posn);
 #define PKID_SPAWN      0x07
 void send_spawn_pkt(int player_id,char *playername,xyzhv_t posn);
 typedef uint16_t block_t;
-block_t block_convert(block_t in);
+extern block_t max_blockno_to_send;
+block_t f_block_convert(block_t in);
+#define block_convert(_bl) ((_bl)<=max_blockno_to_send?_bl:f_block_convert(_bl))
 #define PKID_SRVBLOCK   0x06
 void send_setblock_pkt(int x,int y,int z,int block);
 #define PKID_LVLDONE    0x04

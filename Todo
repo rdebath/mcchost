@@ -2,37 +2,47 @@ Features:
 
 Everything in level prop file into *.cw file.
     -- CW file also contains pending physics operations.
-
-    -- Use makeheaders main2.c lib1.c lib2.c
-       to compile the same export/import routines as used by the
-       automatic backup/restore.
-
-    Routine to convert level files into *.cw --> for backups.
-    Routine to convert *.cw into level files ?
-	-- Command line routines?
+    -- Command line routines to convert level files <--> cw file
 
 Routine to export/import level prop and server prop binary files (INI file).
     -- External program?
     -- Should automatic backup export server properties?
-
-Model *.cw file for new unspecified level.
+    -- Virtual edlin ?
 
 When are cw files saved?
-    Only at "backup" time.
-    Part 1
+    Part 1 -- Unload level. -- backup level
 	Save new cw file to maps/levelname.tmp
 	Rename to maps/levelname.cw
-    Part 2
+	Unload level: remove uncompressed level file.
+    Part 2 -- backup level
 	copy maps/levelname.cw to backups/levelname.tmp
 	Rename to backups/levelname/...
 
+All files in subdirectories.
+    map/*.cw
+    system/*.*
+    level/levelname.*
+    tmp/unpack.level.id.* -- museum unpacks
+    conf/*.txt
+    help/*.txt
+    model.cw
+    blockdb/levelname.bdb
+    log/YYYY-MM-DD.log
+    backup/...
+    deleted ?
+
+/Help command
+    Search through source for "/*HELP name" and "/*HELPCMD name" comments.
+    Place these in a C source file.
+    Only use if matching file does not exist.
+    ? Should the files be created ?
 
 Physics:
 
 Physics queue is a *.level.* file which can be extended at any time.
 
 Basic
-    Grass
+    Grass, Slabs
     Falling sand/gravel
     Finite? Water/Lava
     Sponge (Lava Sponge?)
@@ -57,17 +67,6 @@ Other components
     -- command to save level to *.cw file.
 	-- All lock or copy/update modes.
 
-All files in subdirectories.
-    maps/*.cw
-    system/*.mmap.*
-    levels/*.levelname.*
-    conf/*.txt
-    models/main.cw -- others too?
-    blockdb/levelname.bdb
-    logs ?
-    plugins ?
-    backups ?  deleted ?
-
 Make sure text anti-spam is in place.
     (Only echo duplicates back to self?)
     Ghost the player? (for a short time?)
@@ -80,9 +79,5 @@ More blocks modified than will fit in queue?
     Mass change can pre-supress block queue and force generation rollover.
 
 Logging:
-
-Add log_printf()
-Add user_command_log_print()
-Add chat_log_print()
-
-    --> Automatic log file cleanup?
+    -- Automatic log file cleanup?
+    -- Log run commands ?

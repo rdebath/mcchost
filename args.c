@@ -9,13 +9,15 @@
 /*
  * TODO:
  * +) load/save level to *.cw and use for backups, restores and "unload".
+ *    -- Add locking so one load at a time ?
  * +) /help, /faq, /news texts
  * +) CPE
  * +) Multiple Levels. (/newlvl)
+ * +) Config text file for arguments
  * +) /edlin for editing text files and virtual text files (blockdefs)
  *
  * +) NAME: (*) MCCHost
- * +) Perhaps use libcurl for heartbeat?
+ * +) Maybe embed commands: gzip, curl and gdb
  */
 
 void

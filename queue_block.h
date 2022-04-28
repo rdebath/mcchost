@@ -2,7 +2,9 @@
 #undef INTERFACE
 #include <stdint.h>
 typedef uint16_t block_t;
-block_t block_convert(block_t in);
+extern block_t max_blockno_to_send;
+block_t f_block_convert(block_t in);
+#define block_convert(_bl) ((_bl)<=max_blockno_to_send?_bl:f_block_convert(_bl))
 void reset_player_list();
 void send_map_file();
 int bytes_queued_to_send();

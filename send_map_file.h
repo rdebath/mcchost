@@ -172,5 +172,7 @@ void set_last_block_queue_id();
 void send_map_file();
 #define Block_Bedrock 7
 #define level_prop shdat.prop
+block_t f_block_convert(block_t in);
 extern block_t max_blockno_to_send;
-block_t block_convert(block_t in);
+#define block_convert(_bl) ((_bl)<=max_blockno_to_send?_bl:f_block_convert(_bl))
+#define INTERFACE 0

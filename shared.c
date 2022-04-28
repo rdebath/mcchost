@@ -147,8 +147,10 @@ open_level_files(char * levelname, int direct)
     // If level missing -- make a flat.
     if (level_prop->version_no != MAP_VERSION || level_prop->magic_no != MAP_MAGIC
 	|| level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
+    {
+	send_message_pkt(0, "&eCreating new default level");
 	createmap(levelname);
-    else
+    } else
         // NB: Missing file here makes an Air map.
         open_blocks(levelname);
 
