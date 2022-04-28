@@ -38,7 +38,7 @@ tcpserver()
 	fd_set read_fds;
 	fd_set write_fds;
 	fd_set except_fds;
-	struct timeval tv;
+	struct timeval timeout;
 
 	FD_ZERO(&read_fds);
 	FD_ZERO(&write_fds);
@@ -48,8 +48,8 @@ tcpserver()
 	FD_SET(listen_socket, &except_fds);
 	// ... stdin?
 
-	tv.tv_sec = 1; tv.tv_usec = 0;
-	int rv = select(max_sock+1, &read_fds, &write_fds, &except_fds, &tv);
+	timeout.tv_sec = 1; timeout.tv_usec = 0;
+	int rv = select(max_sock+1, &read_fds, &write_fds, &except_fds, &timeout);
 	if (rv < 0 && errno != EINTR) { perror("select()"); exit(1); }
 
 	if (rv > 0)
@@ -68,8 +68,7 @@ tcpserver()
 		    line_ofd = 1; line_ifd = 0;
 		    E(dup2(socket, line_ifd), "dup2(S,0)");
 		    E(dup2(socket, line_ofd), "dup2(S,1)");
-		    process_connection();
-		    exit(0);
+		    return; // Only the child returns.
 		}
 		close(socket);
 	    }
@@ -81,8 +80,8 @@ tcpserver()
 
 	if (enable_heartbeat_poll)
 	    send_heartbeat_poll();
-
     }
+    /*NOTREACHED*/
 }
 
 /* Start listening socket listen_sock. */
@@ -150,13 +149,41 @@ cleanup_zombies()
 	    perror("waitpid()");
 	    exit(1);
 	}
-	// No complaints about normal processes.
-	if (WIFEXITED(status)) continue;
+	// No complaints on clean exit
+	if (WIFEXITED(status)) {
+	    if (WEXITSTATUS(status))
+		fprintf(stderr, "Process %d had exit status %d\n",
+		    pid, WEXITSTATUS(status));
+	    continue;
+	}
 	if (WIFSIGNALED(status)) {
-	    fprintf(stderr, "Process %d was killed by signal %d\n",
-		pid, WTERMSIG(status));
+	    fprintf(stderr, "Process %d was killed by signal %s (%d)%s\n",
+		pid,
+		strsignal(WTERMSIG(status)),
+		WTERMSIG(status),
+		WCOREDUMP(status)?" (core dumped)":"");
 
-	   delete_session_id(pid);
+	    delete_session_id(pid);
+
+	    // If there was a core dump try to spit out something.
+	    if (WCOREDUMP(status)) {
+		char buf[1024];
+
+		// Are the programs and core file likely okay?
+		int pgmok = 0;
+		if (program_name[0] == '/' || strchr(program_name, '/') == 0)
+		    pgmok = 1;
+		if (pgmok && access("core", F_OK) != 0)
+		    pgmok = 0;
+		if (pgmok && access("/usr/bin/gdb", X_OK) != 0)
+		    pgmok = 0;
+
+		if (pgmok && sizeof(buf) > snprintf(buf, sizeof(buf),
+		    "/usr/bin/gdb -batch -ex 'backtrace full' -c core '%s'", program_name))
+		    system(buf);
+		else
+		    fprintf(stderr, "Skipped running /usr/bin/gdb; checking exe and core files failed.\n");
+	    }
 	}
     }
 }

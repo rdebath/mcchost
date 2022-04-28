@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <arpa/inet.h>
 
 #include "commands.h"
@@ -46,8 +47,11 @@ run_command(char * msg)
     if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
 	kicked("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
 
-    if (strcasecmp(cmd, "crash") == 0 || strcasecmp(cmd, "servercrash") == 0)
-	strtok(0,"") ? abort(): logout("Server crash! Error code 42");
+    if (strcasecmp(cmd, "crash") == 0 || strcasecmp(cmd, "servercrash") == 0) {
+	char * crash_type = strtok(0,"");
+	assert(!crash_type || strcmp(crash_type, "666"));
+	logout("Server crash! Error code 42");
+    }
 
     if (strcasecmp(cmd, "reload") == 0)
     {

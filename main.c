@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <time.h>
 #include <ctype.h>
+#include <assert.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -25,6 +26,8 @@ int cpe_requested = 0;
 int start_tcp_server = 0;
 int enable_heartbeat_poll = 0;
 int tcp_port_no = 25565;
+
+char program_name[512];
 
 char server_name[NB_SLEN] = "Some Random Server";
 char server_motd[NB_SLEN] = "Welcome";
@@ -49,6 +52,7 @@ int    proc_args_len = 0;
 int
 main(int argc, char **argv)
 {
+    snprintf(program_name, sizeof(program_name), "%s", argv[0]);
     process_args(argc, argv);
     proc_args_mem = argv[0];
     proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0];
@@ -64,9 +68,12 @@ main(int argc, char **argv)
 	tcpserver();
     } else {
 	line_ofd = 1; line_ifd = 0;
-	process_connection();
     }
 
+    process_connection();
+    run_request_loop();
+    send_disconnect_message();
+    stop_user();
     return 0;
 }
 
@@ -102,17 +109,27 @@ process_connection()
 
     send_spawn_pkt(255, user_id, level_prop->spawn);
 
-    {
-	char buf[256];
-	sprintf(buf, "&eWelcome &7%s", user_id);
-	send_message_pkt(0, buf);
-	sprintf(buf, "&a+ &7%s &econnected", user_id);
-	post_chat(buf, strlen(buf));
-    }
+    send_welcome_message();
+}
 
-    run_request_loop();
+void
+send_welcome_message()
+{
+    char buf[256];
+    sprintf(buf, "&eWelcome &7%s", user_id);
+    send_message_pkt(0, buf);
+    sprintf(buf, "&a+ &7%s &econnected", user_id);
+    post_chat(buf, strlen(buf));
+}
 
-    stop_user();
+void
+send_disconnect_message()
+{
+    char buf[256];
+    sprintf(buf, "&c- &7%s &edisconnected", user_id);
+    post_chat(buf, strlen(buf));
+    sprintf(buf, "Connection dropped for %s", user_id);
+    print_logfile(buf);
 }
 
 void
@@ -203,6 +220,10 @@ login()
 void
 fatal(char * emsg)
 {
+    static int in_fatal = 0;
+    assert(!in_fatal);
+    in_fatal = 1;
+
     if (level_chat_queue) {
 	char buf[256];
 	sprintf(buf, "&c- &7%s &cCrashed: &e%s", user_id, emsg);

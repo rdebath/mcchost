@@ -13,5 +13,6 @@ void write_logfile(char *str,int len);
 #define PKBUF		8192
 void post_chat(char *chat,int chat_len);
 extern char user_id[NB_SLEN];
+void convert_chat_message(char *msg);
 void run_command(char *msg);
-void convert_chat_message(int msg_flag,char *msg);
+void process_chat_message(int msg_flag,char *msg);

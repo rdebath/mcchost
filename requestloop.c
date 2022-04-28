@@ -14,6 +14,7 @@ static int ttl_start = 0;
 static int ttl_end = 0;
 static int ttl_size = 0;
 
+static char line_inp_buf[65536];
 static char rcvdpkt[PKBUF];
 int in_rcvd = 0;
 
@@ -25,14 +26,7 @@ run_request_loop()
 {
     int flg;
     time(&last_ping);
-
     while(!(flg = do_select()));
-
-    char buf[256];
-    sprintf(buf, "&c- &7%s &edisconnected", user_id);
-    post_chat(buf, strlen(buf));
-    sprintf(buf, "Connection dropped for %s", user_id);
-    print_logfile(buf);
 }
 
 int
@@ -131,10 +125,9 @@ do_select()
 
     if( FD_ISSET(line_ifd, &rfds) )
     {
-	char txbuf[65536];
-	rv = read(line_ifd, txbuf, sizeof(txbuf));
+	rv = read(line_ifd, line_inp_buf, sizeof(line_inp_buf));
 	if( rv > 0 )
-	    remote_received(txbuf, rv);
+	    remote_received(line_inp_buf, rv);
 	else if (rv < 0)
 	    fatal("read line_fd syscall");
 	else if (rv == 0)
@@ -233,7 +226,7 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt_message pkt;
 	    pkt.msg_flag = *p++;
 	    cpy_nbstring(pkt.message, p); p+=64;
-	    convert_chat_message(pkt.msg_flag, pkt.message);
+	    process_chat_message(pkt.msg_flag, pkt.message);
 	}
 	break;
     }

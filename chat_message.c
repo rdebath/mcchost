@@ -9,10 +9,8 @@ static int pending_chat_size = 0;
 static int pending_chat_len = 0;
 
 void
-convert_chat_message(int msg_flag, char * msg)
+process_chat_message(int msg_flag, char * msg)
 {
-    char buf[256];
-
     if (msg_flag != -1) return; // TODO:
 
     // TODO: Message concat.
@@ -25,6 +23,13 @@ convert_chat_message(int msg_flag, char * msg)
 	msg++;
     }
 
+    // if (msg_flag ... ) ?
+    convert_chat_message(msg);
+}
+
+void
+convert_chat_message(char * msg)
+{
     // if (col >= 'A' && col <= 'F') return (char)(col + ' ');
     // if (col == 'H') return Server.Config.HelpDescriptionColor[1];	&e
     // if (col == 'I') return Server.Config.IRCColor[1];		&5
@@ -33,6 +38,7 @@ convert_chat_message(int msg_flag, char * msg)
     // if (col == 'W') return Server.Config.WarningErrorColor[1];	&c
     // global chat colour &6
 
+    char buf[256];
     char * p = buf + sprintf(buf, "&e%s:&f ", user_id);
     for(char *s = msg; *s; s++) {
 	if (*s == '%' || *s == '&') {

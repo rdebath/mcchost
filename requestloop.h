@@ -1,6 +1,6 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-void convert_chat_message(int msg_flag,char *msg);
+void process_chat_message(int msg_flag,char *msg);
 void cpy_nbstring(char *buf,char *str);
 void cpy_nbstring(char *buf,char *str);
 typedef struct pkt_message pkt_message;
@@ -50,9 +50,6 @@ void fatal(char *emsg);
 void fatal(char *emsg);
 void write_to_remote(char *str,int len);
 int bytes_queued_to_send();
-void print_logfile(char *s);
-void post_chat(char *chat,int chat_len);
-extern char user_id[NB_SLEN];
 int do_select();
 void run_request_loop();
 extern time_t last_ping;
