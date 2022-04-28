@@ -175,7 +175,7 @@ send_heartbeat_poll()
     char cmdbuf[4096];
     char namebuf[256];
     char softwarebuf[256];
-    int valid_salt = (*server_salt != 0 && *server_salt != '-');
+    int valid_salt = (*server_secret != 0 && *server_secret != '-');
 
     snprintf(cmdbuf, sizeof(cmdbuf),
 	"%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s",
@@ -185,7 +185,7 @@ send_heartbeat_poll()
 	"public=",server_private?"False":"True",
 	"version=",7,
 	"users=",current_user_count(),
-	"salt=",valid_salt?server_salt:"0000000000000000",
+	"salt=",valid_salt?server_secret:"0000000000000000",
 	"name=",quoteurl(server_name, namebuf, sizeof(namebuf)),
 	"software=",quoteurl("MCCHost", softwarebuf, sizeof(softwarebuf))
 	);

@@ -2,6 +2,9 @@
 #include "packet.h"
 
 #if INTERFACE
+#define MB_STRLEN 64
+#define NB_SLEN (MB_STRLEN+1)
+
 #define IntBE16(x) ((int16_t)(*(uint8_t*)((x)+1) + *(uint8_t*)(x)*256))
 #define UIntBE16(x) ((uint16_t)(*(uint8_t*)((x)+1) + *(uint8_t*)(x)*256))
 #define UIntLE16(x) (*(uint8_t*)(x) + *(uint8_t*)((x)+1)*256)

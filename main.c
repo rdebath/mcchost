@@ -13,11 +13,6 @@
 // Currently: https://fossil-scm.org/home/file/src/makeheaders.c
 #include "main.h"
 
-#if INTERFACE
-#define MB_STRLEN 64
-#define NB_SLEN	(MB_STRLEN+1)
-#endif
-
 int line_ofd = -1;
 int line_ifd = -1;
 char inbuf[4096];
@@ -33,7 +28,7 @@ int tcp_port_no = 25565;
 
 char server_name[NB_SLEN] = "Some Random Server";
 char server_motd[NB_SLEN] = "Welcome";
-char server_salt[NB_SLEN] = "";
+char server_secret[NB_SLEN] = "";
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 int server_private = 0;
 int server_runonce = 0;
@@ -163,7 +158,7 @@ login()
 	print_logfile(buf);
     }
 
-    if (*server_salt != 0 && *server_salt != '-') {
+    if (*server_secret != 0 && *server_secret != '-') {
 	if (strlen(mppass) != 32)
 	    if (!client_ipv4_localhost)
 		fatal("Login failed!");
@@ -180,9 +175,9 @@ login()
 
     cpe_requested = inbuf[inptr+128+2] == 0x42;
 
-    if (*server_salt != 0 && *server_salt != '-') {
+    if (*server_secret != 0 && *server_secret != '-') {
 	char hashbuf[NB_SLEN*2];
-	strcpy(hashbuf, server_salt);
+	strcpy(hashbuf, server_secret);
 	strcat(hashbuf, user_id);
 
 	MD5_CTX mdContext;

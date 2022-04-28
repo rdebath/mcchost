@@ -40,9 +40,9 @@ process_args(int argc, char **argv)
 		continue;
 	    }
 
-	    if (strcmp(argv[ar], "-salt") == 0) {
+	    if (strcmp(argv[ar], "-salt") == 0 || strcmp(argv[ar], "-secret") == 0) {
 		ar++;
-		strncpy(server_salt, argv[ar], sizeof(server_salt)-1);
+		strncpy(server_secret, argv[ar], sizeof(server_secret)-1);
 		// Try to hide the argument used as salt from ps(1)
 		for(char * p = argv[ar]; *p; p++) *p = 'X';
 		continue;
@@ -108,17 +108,17 @@ process_args(int argc, char **argv)
 	exit(1);
     }
 
-    if (enable_heartbeat_poll && server_salt[0] == 0) {
+    if (enable_heartbeat_poll && server_secret[0] == 0) {
 	// A pretty trivial semi-random code.
 	struct timeval now;
 	static char base62[] =
-	    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	gettimeofday(&now, 0);
 	srandom(now.tv_sec ^ (now.tv_usec*1000));
 	for(int i=0; i<16; i++) {
-	    server_salt[i] = base62[((unsigned)random())%62];
+	    server_secret[i] = base62[((unsigned)random())%62];
 	}
-	server_salt[16] = 0;
-	fprintf(stderr, "Generated server salt %s\n", server_salt);
+	server_secret[16] = 0;
+	fprintf(stderr, "Generated server secret %s\n", server_secret);
     }
 }

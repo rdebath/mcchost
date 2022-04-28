@@ -1,26 +1,15 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
 void save_map_to_file(char *fn);
-typedef struct pkt_setblock pkt_setblock;
-typedef struct xyz_t xyz_t;
-#include <stdint.h>
-struct xyz_t { int x, y, z; };
-typedef uint16_t block_t;
-struct pkt_setblock {
-    struct xyz_t coord;
-    int mode;
-    block_t block;
-    block_t heldblock;
-};
-void update_block(pkt_setblock pkt);
-#define Block_Air 0
-typedef struct xyzhv_t xyzhv_t;
-struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
-extern xyzhv_t player_posn;
+extern int client_ipv4_localhost;
 typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
+#include <stdint.h>
+typedef struct xyzhv_t xyzhv_t;
+struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
+typedef uint16_t block_t;
 #define MB_STRLEN 64
-#define NB_SLEN	(MB_STRLEN+1)
+#define NB_SLEN (MB_STRLEN+1)
 typedef struct blockdef_t blockdef_t;
 #define BLK_NUM_TEX	6
 #define BLK_NUM_FOG	4
@@ -73,16 +62,35 @@ struct map_info_t {
     int queue_len;
     int last_map_download_size;
 
-    // Init together til side_level.
+    // Init together til side_offset.
     uint8_t weather;
     int sky_colour;
     int cloud_colour;
     int fog_colour;
     int ambient_colour;
     int sunlight_colour;
+
+    // EnvMapAppearance
     block_t side_block;
     block_t edge_block;
     int side_level;
+    int side_offset;
+
+    // EnvMapAspect properties 0..11
+    // block_t side_block;
+    // block_t edge_block;
+    // int side_level;
+    int clouds_height;
+    int max_fog;
+    int clouds_speed;
+    int weather_speed;
+    int weather_fade;
+    int exp_fog;
+    //int side_offset;
+    int skybox_hor_speed;
+    int skybox_ver_speed;
+
+    int click_distance; // Per level, Per user or both.
 
     char texname[NB_SLEN];
     char motd[NB_SLEN];
@@ -155,6 +163,19 @@ struct shared_data_t {
     shmem_t dat[SHMID_COUNT];
 };
 extern struct shared_data_t shdat;
+#define level_prop shdat.prop
+typedef struct pkt_setblock pkt_setblock;
+typedef struct xyz_t xyz_t;
+struct xyz_t { int x, y, z; };
+struct pkt_setblock {
+    struct xyz_t coord;
+    int mode;
+    block_t block;
+    block_t heldblock;
+};
+void update_block(pkt_setblock pkt);
+extern xyzhv_t player_posn;
+#define Block_Air 0
 #define level_block_queue shdat.blockq
 void send_map_reload();
 void kicked(char *emsg);

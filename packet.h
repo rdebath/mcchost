@@ -3,7 +3,7 @@
 extern int msglen[256];
 typedef struct pkt_message pkt_message;
 #define MB_STRLEN 64
-#define NB_SLEN	(MB_STRLEN+1)
+#define NB_SLEN (MB_STRLEN+1)
 struct pkt_message {
     int msg_flag;
     char message[NB_SLEN];

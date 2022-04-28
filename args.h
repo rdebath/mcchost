@@ -12,8 +12,8 @@ extern int tcp_port_no;
 extern int enable_heartbeat_poll;
 extern char heartbeat_url[1024];
 #define MB_STRLEN 64
-#define NB_SLEN	(MB_STRLEN+1)
-extern char server_salt[NB_SLEN];
+#define NB_SLEN (MB_STRLEN+1)
+extern char server_secret[NB_SLEN];
 extern char server_motd[NB_SLEN];
 extern char server_name[NB_SLEN];
 void process_args(int argc,char **argv);

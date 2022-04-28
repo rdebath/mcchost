@@ -25,8 +25,8 @@ createmap(char * levelname)
 	    .magic_no = MAP_MAGIC,
 	    .version_no = MAP_VERSION,
 	    .cells_x = 128, .cells_y = 64, .cells_z = 128,
-	    .weather = 0, -1, -1, -1, -1, -1, 7, 8, -1,
-	    .spawn = { 64*32+16, 48*32+51, 64*32+16 }
+	    .weather = 0, -1, -1, -1, -1, -1, 7, 8, -1, 2,
+	    .spawn = { 64*32+16, 48*32, 64*32+16 }
 	};
 
     *level_prop = def;

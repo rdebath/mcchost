@@ -1,14 +1,14 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
 #define MB_STRLEN 64
-#define NB_SLEN	(MB_STRLEN+1)
+#define NB_SLEN (MB_STRLEN+1)
 extern char server_name[NB_SLEN];
 #define LOCAL static
 LOCAL char *quoteurl(char *s,char *dest,int len);
 int current_user_count();
 extern int server_private;
 extern char heartbeat_url[1024];
-extern char server_salt[NB_SLEN];
+extern char server_secret[NB_SLEN];
 void delete_session_id(int pid);
 LOCAL void send_heartbeat_poll();
 extern int enable_heartbeat_poll;

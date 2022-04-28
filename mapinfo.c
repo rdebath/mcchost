@@ -36,16 +36,35 @@ struct map_info_t {
     int queue_len;
     int last_map_download_size;
 
-    // Init together til side_level.
+    // Init together til side_offset.
     uint8_t weather;
     int sky_colour;
     int cloud_colour;
     int fog_colour;
     int ambient_colour;
     int sunlight_colour;
+
+    // EnvMapAppearance
     block_t side_block;
     block_t edge_block;
     int side_level;
+    int side_offset;
+
+    // EnvMapAspect properties 0..11
+    // block_t side_block;
+    // block_t edge_block;
+    // int side_level;
+    int clouds_height;
+    int max_fog;
+    int clouds_speed;
+    int weather_speed;
+    int weather_fade;
+    int exp_fog;
+    //int side_offset;
+    int skybox_hor_speed;
+    int skybox_ver_speed;
+
+    int click_distance; // Per level, Per user or both.
 
     char texname[NB_SLEN];
     char motd[NB_SLEN];
@@ -112,6 +131,7 @@ struct blockdef_t {
 #define Block_Sponge 19
 #define Block_Glass 20
 #define Block_Red 21
+#define Block_Orange 22
 #define Block_Green 25
 #define Block_Cyan 28
 #define Block_Blue 29

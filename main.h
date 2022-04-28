@@ -1,5 +1,6 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
+#define MB_STRLEN 64
 void flush_to_remote();
 void send_discon_msg_pkt(char *message);
 void logout(char *emsg);
@@ -11,8 +12,7 @@ typedef struct map_info_t map_info_t;
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 typedef uint16_t block_t;
-#define MB_STRLEN 64
-#define NB_SLEN	(MB_STRLEN+1)
+#define NB_SLEN (MB_STRLEN+1)
 typedef struct blockdef_t blockdef_t;
 #define BLK_NUM_TEX	6
 #define BLK_NUM_FOG	4
@@ -65,16 +65,35 @@ struct map_info_t {
     int queue_len;
     int last_map_download_size;
 
-    // Init together til side_level.
+    // Init together til side_offset.
     uint8_t weather;
     int sky_colour;
     int cloud_colour;
     int fog_colour;
     int ambient_colour;
     int sunlight_colour;
+
+    // EnvMapAppearance
     block_t side_block;
     block_t edge_block;
     int side_level;
+    int side_offset;
+
+    // EnvMapAspect properties 0..11
+    // block_t side_block;
+    // block_t edge_block;
+    // int side_level;
+    int clouds_height;
+    int max_fog;
+    int clouds_speed;
+    int weather_speed;
+    int weather_fade;
+    int exp_fog;
+    //int side_offset;
+    int skybox_hor_speed;
+    int skybox_ver_speed;
+
+    int click_distance; // Per level, Per user or both.
 
     char texname[NB_SLEN];
     char motd[NB_SLEN];
@@ -195,7 +214,7 @@ extern int cpe_enabled;
 extern int server_runonce;
 extern int server_private;
 extern char heartbeat_url[1024];
-extern char server_salt[NB_SLEN];
+extern char server_secret[NB_SLEN];
 extern char server_motd[NB_SLEN];
 extern char server_name[NB_SLEN];
 extern int tcp_port_no;
@@ -209,4 +228,3 @@ extern int insize;
 extern char inbuf[4096];
 extern int line_ifd;
 extern int line_ofd;
-#define INTERFACE 0

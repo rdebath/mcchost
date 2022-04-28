@@ -221,6 +221,9 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt.pos.v = *p++;
 	    pkt.pos.valid = 1;
 
+	    // They lie! Position /reload is -22, position of feet is -51
+	    pkt.pos.y -= 51;
+
 	    update_player_pos(pkt);
 	}
 	break;
