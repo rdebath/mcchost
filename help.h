@@ -10,7 +10,6 @@ struct help_text_t {
     char ** lines;
 };
 extern help_text_t helptext[];
-#define HAS_HELP
 void post_chat(int where,char *chat,int chat_len);
 #if defined(UTFNIL)
 void convert_to_cp437(char *buf,int *l);

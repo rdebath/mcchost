@@ -72,7 +72,6 @@ cmd_help(char * prefix, char *cmdargs)
 	return;
     }
 
-#ifdef HAS_HELP
     {
 	int l = strlen(helpbuf);
 	if (l>9) {
@@ -91,7 +90,6 @@ cmd_help(char * prefix, char *cmdargs)
 	    }
 	}
     }
-#endif
 
     if (prefix == 0)
 	post_chat(1, "&cNo help found for that topic", 0);

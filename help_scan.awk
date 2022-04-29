@@ -1,9 +1,6 @@
 BEGIN{
     flg=0;count=0;
-    print "#include \"help_text.h\"\n"
-    print "#if INTERFACE"
-    print "#define HAS_HELP"
-    print "#endif"
+    print "#include \"lib_text.h\"\n"
 }
 
 /^\/\*HELP/ {

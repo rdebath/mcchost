@@ -8,5 +8,3 @@ struct help_text_t {
     char ** lines;
 };
 extern help_text_t helptext[];
-#define HAS_HELP
-#define INTERFACE 0

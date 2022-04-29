@@ -1,8 +1,5 @@
-#include "help_text.h"
+#include "lib_text.h"
 
-#if INTERFACE
-#define HAS_HELP
-#endif
 /* Help for quit */
 static char *lines_quit[] = {
     "&T/quit [reason]",

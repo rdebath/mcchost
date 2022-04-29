@@ -1,21 +1,47 @@
 
+ifneq ($(MAKECMDGOALS),clean)
+ifeq ($(findstring makeheaders,$(MAKECMDGOALS))$(findstring lib_text,$(MAKECMDGOALS)),)
+NIL:=$(shell make lib_text )
+NIL:=$(shell make makeheaders )
+endif
+endif
+
 DEFS=-g3
 CFLAGS=-O2 -Wall -Wextra -Wno-sign-compare -Wno-pointer-sign ${DEFS}
 LDFLAGS=-lz
 #TARGET_ARCH=-m64
 PROG=server
 SRC:=$(filter-out lib_%.c,$(wildcard *.c) )
-NIL:=$(shell awk -f help_scan.awk *.c > help_text.c )
-NIL:=$(shell makeheaders -H >md5.h lib_md5.c)
-NIL:=$(shell makeheaders ${SRC} md5.h)
-NIL:=$(shell makeheaders lib_md5.c)
 OBJ:=$(patsubst %.c,%.o,${SRC}) lib_md5.o
+OBJ2=lib_text.o
 
-${PROG}: ${OBJ}
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -o ${PROG} ${OBJ} $(LDFLAGS)
+${PROG}: ${OBJ} ${OBJ2}
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -o ${PROG} ${OBJ} ${OBJ2} $(LDFLAGS)
 
-include $(shell echo ${OBJ} | tr ' ' '\012' | sed 's/\(.*\)\.o/\1.o: \1.c \1.h/' > tmp.mk ; echo tmp.mk )
-
+ifeq ($(MAKECMDGOALS),clean)
 clean:
-	-rm -f ${PROG} tmp.mk *.o $(patsubst %.c,%.h,$(wildcard *.c)) md5.h
+	-rm -f ${PROG} tmp.mk *.o $(patsubst %.c,%.h,$(wildcard *.c)) md5.h lib_text.c
+else
+ifneq ($(findstring clean,$(MAKECMDGOALS)),)
+clean:
+	@echo "make: Don't mix build with clean" >&2 ; false
+endif
+endif
 
+ifneq ($(MAKECMDGOALS),clean)
+include $(shell echo ${OBJ} | tr ' ' '\012' | sed 's/\(.*\)\.o/\1.o: \1.c \1.h/' > tmp.mk ; echo tmp.mk )
+endif
+
+makeheaders:
+	makeheaders lib_md5.c
+	makeheaders -H >md5.h lib_md5.c
+	makeheaders ${SRC} lib_text.c md5.h
+
+lib_text:
+	awk -f help_scan.awk *.c > tmp.c
+	cmp -s tmp.c lib_text.c || mv tmp.c lib_text.c
+	-@rm -f tmp.c
+
+lib_text.o: lib_text.c
+
+.PHONY: clean makeheaders lib_text
