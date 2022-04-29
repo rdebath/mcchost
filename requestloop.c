@@ -149,13 +149,16 @@ void
 on_select_timeout()
 {
     time_t now;
+    int tc = 5;
+    if (cpe_pending) tc = 60;
     time(&now);
     int secs = ((now-last_ping) & 0xFF);
-    if (secs > 5) {
+    if (secs > tc) {
 	// Send keepalive.
 	send_ping_pkt();
 	time(&last_ping);
     }
+    if (cpe_pending) return;
 
     check_user();
     send_queued_chats();
@@ -180,8 +183,11 @@ remote_received(char *str, int len)
 
     for(i = 0; i < len; i++) {
 	rcvdpkt[in_rcvd++] = str[i];
-	if (msglen[rcvdpkt[0] & 0xFF] <= in_rcvd) {
-	    process_client_message(rcvdpkt[0] & 0xFF, rcvdpkt);
+	int cmd = rcvdpkt[0] & 0xFF;
+	if (msglen[cmd] <= in_rcvd) {
+	    if (msglen[cmd] == 0)
+		fatal("Unknown packet type received");
+	    process_client_message(cmd, rcvdpkt);
 	    in_rcvd = 0;
 	}
     }
@@ -190,6 +196,14 @@ remote_received(char *str, int len)
 void
 process_client_message(int cmd, char * pktbuf)
 {
+    // During the initial startup ignore (almost) everything.
+    if (cpe_pending) {
+	if (cmd != PKID_EXTINFO && cmd != PKID_EXTENTRY && cmd != PKID_CUSTBLOCK)
+	    return;
+    }
+    if (ignore_cpe && cmd > PKID_OPER)
+	return;
+
     switch(cmd)
     {
     case PKID_SETBLOCK:
@@ -236,5 +250,40 @@ process_client_message(int cmd, char * pktbuf)
 	    process_chat_message(pkt.msg_flag, pkt.message);
 	}
 	break;
+
+    case PKID_EXTINFO:
+	{
+	    char * p = pktbuf+1;
+	    int count;
+	    cpy_nbstring(client_software, p); p+=64;
+	    count = IntBE16(p); p+=2;
+	    if (cpe_pending)
+		cpe_extn_remaining = count;
+	    else
+		cpe_extn_remaining = 0;
+	}
+	break;
+    case PKID_EXTENTRY:
+	{
+	    char * p = pktbuf+1;
+	    pkt_extentry pkt;
+	    cpy_nbstring(pkt.extname, p); p+=64;
+	    pkt.version = IntBE32(p); p+=4;
+	    process_extentry(&pkt);
+	}
+	break;
+    case PKID_CUSTBLOCK:
+	{
+	    char * p = pktbuf+1;
+	    int version = *p++;
+	    if (version > 0 && max_blockno_to_send < 65)
+		max_blockno_to_send = 65;
+
+	    cpe_pending |= 2;
+	    if (cpe_pending == 3)
+		complete_connection();
+	}
+	break;
+
     }
 }

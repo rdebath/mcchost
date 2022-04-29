@@ -62,7 +62,6 @@ struct shmem_t {
 LOCAL void allocate_shared(char *share_name,int share_size,shmem_t *shm);
 #define LEVEL_PROPS_NAME "level/%s.props"
 void fatal(char *emsg);
-void fatal(char *emsg);
 void stop_block_queue();
 void stop_shared(void);
 void open_level_files(char *levelname,int direct);

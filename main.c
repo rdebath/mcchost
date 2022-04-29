@@ -22,27 +22,29 @@ int insize = 0, inptr = 0;
 char user_id[NB_SLEN];
 int user_authenticated = 0;
 int server_id_op_flag = 1;
+int ignore_cpe = 0;
 int cpe_requested = 0;
+int cpe_extn_remaining = 0;
 int start_tcp_server = 0;
 int enable_heartbeat_poll = 0;
 int tcp_port_no = 25565;
 
 char program_name[512];
 
+char server_software[NB_SLEN] = "MCCHost";
 char server_name[NB_SLEN] = "Some Random Server";
 char server_motd[NB_SLEN] = "Welcome";
 char server_secret[NB_SLEN] = "";
+char client_software[NB_SLEN] = "(unknown)";
+
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 int server_private = 0;
 int server_runonce = 0;
 
 int cpe_enabled = 0;
+int cpe_pending = 0;
 block_t max_blockno_to_send = 49;
 int enable_cp437 = 0;
-
-void login(void);
-void fatal(char * emsg);
-void cpy_nbstring(char *buf, char *str);
 
 char * level_name = "main";
 
@@ -88,16 +90,36 @@ process_connection()
     memset(proc_args_mem, 0, proc_args_len);
     snprintf(proc_args_mem, proc_args_len, "MC server (%s)", user_id);
 
-    // If in classic mode, don't allow place of bedrock.
-    if (!cpe_requested) server_id_op_flag = 0;
-
+#if 0
     // If client requests CPE, assume it'll be okay to send CPE blocks.
     if (cpe_requested && max_blockno_to_send < 65)
 	max_blockno_to_send = 65;
+    else
+	max_blockno_to_send = 49;
+    enable_cp437 = cpe_requested;
+#endif
 
-    if (!cpe_requested) { max_blockno_to_send = 49; enable_cp437 = 0; }
+    // If in classic mode, don't allow place of bedrock.
+    if (!cpe_requested) server_id_op_flag = 0;
+
+    if (cpe_requested && !ignore_cpe) {
+	send_ext_list();
+	cpe_pending = 1;
+    } else
+	cpe_requested = 0;
+
+    if (!cpe_pending)
+	complete_connection();
+}
+
+void
+complete_connection()
+{
+    if (extn_evilbastard)
+	fatal("Server is incompatible with Evil bastard extension");
 
     send_server_id_pkt(server_name, server_motd, server_id_op_flag);
+    cpe_pending = 0;
 
     // List of users
     start_user();
@@ -110,6 +132,9 @@ process_connection()
     send_map_file();
     send_spawn_pkt(255, user_id, level_prop->spawn);
     send_welcome_message();
+
+    if (extn_clickdistance && level_prop->click_distance > 0)
+	send_clickdistance_pkt(level_prop->click_distance);
 }
 
 /*HELP Welcome 0 */

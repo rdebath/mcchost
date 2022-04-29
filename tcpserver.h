@@ -2,6 +2,7 @@
 #undef INTERFACE
 #define MB_STRLEN 64
 #define NB_SLEN (MB_STRLEN+1)
+extern char server_software[NB_SLEN];
 extern char server_name[NB_SLEN];
 #define LOCAL static
 LOCAL char *quoteurl(char *s,char *dest,int len);

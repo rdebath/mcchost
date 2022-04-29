@@ -1,9 +1,14 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
 extern int msglen[256];
-typedef struct pkt_message pkt_message;
+typedef struct pkt_extentry pkt_extentry;
 #define MB_STRLEN 64
 #define NB_SLEN (MB_STRLEN+1)
+struct pkt_extentry {
+    char extname[NB_SLEN];
+    int version;
+};
+typedef struct pkt_message pkt_message;
 struct pkt_message {
     int msg_flag;
     char message[NB_SLEN];
@@ -33,6 +38,10 @@ struct pkt_player_id {
     char verify_key[NB_SLEN];
     char unused;
 };
+#define PKID_CUSTBLOCK	0x13	/*ClientSend&Rcv*/
+#define PKID_CLICKDIST	0x12
+#define PKID_EXTENTRY   0x11    /*ClientSend&Rcv*/
+#define PKID_EXTINFO    0x10    /*ClientSend&Rcv*/
 #define PKID_OPER       0x0F
 #define PKID_DISCON     0x0E
 #define PKID_MESSAGE    0x0D

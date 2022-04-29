@@ -214,7 +214,7 @@ send_heartbeat_poll()
 	"users=",current_user_count(),
 	"salt=",valid_salt?server_secret:"0000000000000000",
 	"name=",quoteurl(server_name, namebuf, sizeof(namebuf)),
-	"software=",quoteurl("MCCHost", softwarebuf, sizeof(softwarebuf))
+	"software=",quoteurl(server_software, softwarebuf, sizeof(softwarebuf))
 	);
 
     if (fork() == 0) {

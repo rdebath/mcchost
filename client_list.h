@@ -8,7 +8,6 @@ void stop_user();
 extern int user_authenticated;
 void send_message_pkt(int id,char *message);
 void fatal(char *emsg);
-void fatal(char *emsg);
 void start_user();
 typedef struct pkt_player_posn pkt_player_posn;
 typedef struct xyzhv_t xyzhv_t;

@@ -38,6 +38,10 @@
 #define PKID_MESSAGE    0x0D
 #define PKID_DISCON     0x0E
 #define PKID_OPER       0x0F
+#define PKID_EXTINFO    0x10    /*ClientSend&Rcv*/
+#define PKID_EXTENTRY   0x11    /*ClientSend&Rcv*/
+#define PKID_CLICKDIST	0x12
+#define PKID_CUSTBLOCK	0x13	/*ClientSend&Rcv*/
 
 /* These are the structures for received packets after conversion from
  * the line format.
@@ -68,6 +72,12 @@ typedef struct pkt_message pkt_message;
 struct pkt_message {
     int msg_flag;
     char message[NB_SLEN];
+};
+
+typedef struct pkt_extentry pkt_extentry;
+struct pkt_extentry {
+    char extname[NB_SLEN];
+    int version;
 };
 #endif
 

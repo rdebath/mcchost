@@ -1,7 +1,13 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-#define MB_STRLEN 64
-#define LOCAL static
+#define PKID_CUSTBLOCK	0x13	/*ClientSend&Rcv*/
+void send_customblocks_pkt();
+#define PKID_CLICKDIST	0x12
+void send_clickdistance_pkt(int dist);
+#define PKID_EXTENTRY   0x11    /*ClientSend&Rcv*/
+void send_extentry_pkt(char *extension,int version);
+#define PKID_EXTINFO    0x10    /*ClientSend&Rcv*/
+void send_extinfo_pkt(char *appname,int num_extn);
 #define PKID_OPER       0x0F
 void send_op_pkt(int opflg);
 #define PKID_DISCON     0x0E
@@ -35,6 +41,8 @@ void send_lvlinit_pkt();
 #define PKID_PING       0x01
 void send_ping_pkt();
 void write_to_remote(char *str,int len);
-LOCAL int nb_string_write(uint8_t *pkt,char *str);
 #define PKID_IDENT      0x00
 void send_server_id_pkt(char *servername,char *servermotd,int user_type);
+#define MB_STRLEN 64
+#define LOCAL static
+LOCAL int nb_string_write(uint8_t *pkt,char *str);

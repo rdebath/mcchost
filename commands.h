@@ -180,7 +180,6 @@ void send_message_pkt(int id,char *message);
 #define level_block_queue shdat.blockq
 void send_map_reload();
 void fatal(char *emsg);
-void fatal(char *emsg);
 void logout(char *emsg);
 void cmd_help(char *prefix,char *cmdargs);
 void run_command(char *msg);

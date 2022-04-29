@@ -166,7 +166,6 @@ struct shared_data_t {
 extern struct shared_data_t shdat;
 #define level_blocks shdat.blocks
 void fatal(char *emsg);
-void fatal(char *emsg);
 void send_lvlinit_pkt();
 void set_last_block_queue_id();
 void send_map_file();

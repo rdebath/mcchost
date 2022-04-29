@@ -106,11 +106,7 @@ process_args(int argc, char **argv)
 	    continue;
 	}
 
-	if (strcmp(argv[ar], "-cpe") == 0) {
-	    max_blockno_to_send = 255;
-	    enable_cp437 = 1;
-	    continue;
-	}
+	if (strcmp(argv[ar], "-nocpe") == 0) { ignore_cpe = 1; continue; }
 
 	fprintf(stderr, "Invalid argument '%s'\n", argv[ar]);
 	exit(1);

@@ -1,9 +1,6 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-extern int enable_cp437;
-#include <stdint.h>
-typedef uint16_t block_t;
-extern block_t max_blockno_to_send;
+extern int ignore_cpe;
 extern int server_runonce;
 extern int server_private;
 extern int start_tcp_server;

@@ -15,18 +15,30 @@ nb_short(uint8_t **ptr, int v)
     *ptr = p;
 }
 
-#if 0
-static void write_to_remote(int fd, uint8_t * buf, int buflen)
+LOCAL int
+nb_string_write(uint8_t *pkt, char * str)
 {
-    int rv = write(fd, buf, buflen);
-    if (rv < 0)
-	perror("Write error");
-    if (rv == 0)
-	fatal("End of file on packet pipe");
-    if (rv != buflen)
-	fatal("Packet write failed full write");
+    int l;
+    for(l=0; l<MB_STRLEN; l++) {
+	if(str[l] == 0) break;
+	pkt[l] = str[l];
+    }
+    for(; l<MB_STRLEN; l++)
+	pkt[l] = ' ';
+
+    return MB_STRLEN;
 }
-#endif
+
+static inline void
+nb_int(uint8_t **ptr, int v)
+{
+    uint8_t *p = *ptr;
+    *p++ = (v>>24);
+    *p++ = (v>>16);
+    *p++ = (v>>8);
+    *p++ = (v&0xFF);
+    *ptr = p;
+}
 
 void
 send_server_id_pkt(char * servername, char * servermotd, int user_type)
@@ -229,16 +241,45 @@ send_op_pkt(int opflg)
     write_to_remote(packetbuf, p-packetbuf);
 }
 
-LOCAL int
-nb_string_write(uint8_t *pkt, char * str)
+void
+send_extinfo_pkt(char * appname, int num_extn)
 {
-    int l;
-    for(l=0; l<MB_STRLEN; l++) {
-	if(str[l] == 0) break;
-	pkt[l] = str[l];
-    }
-    for(; l<MB_STRLEN; l++)
-	pkt[l] = ' ';
-
-    return MB_STRLEN;
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_EXTINFO;
+    p += nb_string_write(p, appname);
+    nb_short(&p, num_extn);
+    write_to_remote(packetbuf, p-packetbuf);
 }
+
+void
+send_extentry_pkt(char * extension, int version)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_EXTENTRY;
+    p += nb_string_write(p, extension);
+    nb_int(&p, version);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_clickdistance_pkt(int dist)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_CLICKDIST;
+    nb_short(&p, dist);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_customblocks_pkt()
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_CUSTBLOCK;
+    *p++ = 1;
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
