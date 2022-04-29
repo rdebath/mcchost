@@ -246,7 +246,14 @@ process_client_message(int cmd, char * pktbuf)
 	    char * p = pktbuf+1;
 	    pkt_message pkt;
 	    pkt.msg_flag = *p++;
-	    cpy_nbstring(pkt.message, p); p+=64;
+	    if (pkt.msg_flag == 1 && extn_longermessages) {
+		char * b = pkt.message;
+		memcpy(b, p, MB_STRLEN);
+		for(int i = 0; i<MB_STRLEN; i++) if (b[i] == 0) b[i] = ' ';
+		b[MB_STRLEN] = 0;
+	    } else {
+		cpy_nbstring(pkt.message, p); p+=64;
+	    }
 	    process_chat_message(pkt.msg_flag, pkt.message);
 	}
 	break;

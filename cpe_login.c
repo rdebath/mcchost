@@ -18,6 +18,7 @@ static struct ext_list_t extensions[] = {
     { .name= "ClickDistance",1, &extn_clickdistance },
     { .name= "EmoteFix"    , 1 },
     { .name= "FullCP437"   , 1, &enable_cp437 },
+    { .name= "LongerMessages",1, &extn_longermessages },
     { .name= "InstantMOTD" , 1, &extn_instantmotd },
     { .name= "SetHotbar"   , 1, &extn_sethotbar },
 //  { .name= "SetSpawnpoint",1, &extn_setspawnpoint },
@@ -31,6 +32,7 @@ int extn_instantmotd = 0;
 int extn_sethotbar = 0;
 int extn_setspawnpoint = 0;
 int extn_evilbastard = 0;
+int extn_longermessages = 0;
 
 void
 send_ext_list()

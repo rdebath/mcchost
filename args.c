@@ -17,6 +17,7 @@
  *
  * +) NAME: (*) MCCHost
  * +) Maybe embed commands: gzip, curl and gdb
+ * +) Maybe exec($0, ...) on accept()
  *
  *
  * +) /mode command (Grass, bedrock, water etc)

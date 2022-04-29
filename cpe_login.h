@@ -20,6 +20,7 @@ extern int extn_setspawnpoint;
 extern int extn_evilbastard;
 extern int extn_sethotbar;
 extern int extn_instantmotd;
+extern int extn_longermessages;
 extern int enable_cp437;
 extern int extn_clickdistance;
 extern int extn_customblocks;

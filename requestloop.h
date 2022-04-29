@@ -18,6 +18,7 @@ extern int cpe_extn_remaining;
 extern char client_software[NB_SLEN];
 void process_chat_message(int msg_flag,char *msg);
 void cpy_nbstring(char *buf,char *str);
+extern int extn_longermessages;
 typedef struct pkt_message pkt_message;
 struct pkt_message {
     int msg_flag;

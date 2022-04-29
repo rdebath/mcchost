@@ -11,9 +11,10 @@ struct pkt_message {
 void update_chat(pkt_message *pkt);
 void send_msg_pkt_filtered(int msg_flag,char *message);
 void write_logfile(char *str,int len);
-#define PKBUF		8192
 void post_chat(int where,char *chat,int chat_len);
 extern char user_id[NB_SLEN];
 void convert_chat_message(char *msg);
 void run_command(char *msg);
+#define PKBUF		8192
+extern int extn_longermessages;
 void process_chat_message(int msg_flag,char *msg);

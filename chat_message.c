@@ -12,9 +12,32 @@ static int pending_chat_len = 0;
 void
 process_chat_message(int msg_flag, char * msg)
 {
-    if (msg_flag != -1) return; // TODO:
+    // Message concat.
+    if ((msg_flag == 1 && extn_longermessages) || pending_chat_len > 0) {
+	if (pending_chat == 0) {
+	    pending_chat = malloc(PKBUF);
+	    pending_chat_size = PKBUF;
+	    pending_chat_len = 0;
+	}
+	if (pending_chat_len + MB_STRLEN >= pending_chat_size) {
+	    char * p = realloc(pending_chat, pending_chat_size*2);
+	    if (p == 0) {
+		free(pending_chat);
+		pending_chat = 0; pending_chat_size = pending_chat_len = 0;
+		return;
+	    }
+	    pending_chat_size *= 2;
+	}
+	memcpy(pending_chat+pending_chat_len, msg, MB_STRLEN);
+	pending_chat_len += MB_STRLEN;
+	pending_chat[pending_chat_len] = 0;
+	if (msg_flag == 1) return;
+    }
 
-    // TODO: Message concat.
+    if (pending_chat_len) {
+	pending_chat_len = 0;
+	msg = pending_chat;
+    }
 
     if (msg[0] == '/') {
 	if (msg[1] != '/') {
@@ -24,15 +47,18 @@ process_chat_message(int msg_flag, char * msg)
 	msg++;
     }
 
-    // if (msg_flag ... ) ?
     convert_chat_message(msg);
+
+    if (pending_chat_size >= 65536) {
+	free(pending_chat);
+	pending_chat = 0; pending_chat_size = pending_chat_len = 0;
+    }
 }
 
 void
 convert_chat_message(char * msg)
 {
-
-    char buf[256];
+    char * buf = malloc(strlen(msg) + 256);
     char * p = buf + sprintf(buf, "&e%s:&f ", user_id);
     for(char *s = msg; *s; s++) {
 	if (*s == '%' || *s == '&') {
@@ -50,21 +76,8 @@ convert_chat_message(char * msg)
     }
     *p = 0;
 
-    if (pending_chat_len == 0 || pending_chat == 0) {
-	post_chat(0, buf, p-buf);
-    } else {
-	if (!pending_chat) {
-	    pending_chat = malloc(PKBUF);
-	    pending_chat_size = PKBUF;
-	    pending_chat_len = 0;
-	}
-
-	strcpy(pending_chat, buf);
-	pending_chat_len = p-buf;
-
-	post_chat(0, pending_chat, pending_chat_len);
-	pending_chat_len = 0;
-    }
+    post_chat(0, buf, p-buf);
+    free(buf);
 }
 
 /* Post a long chat message to everyone (0) or just me (1) */
