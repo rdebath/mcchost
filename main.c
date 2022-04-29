@@ -95,6 +95,8 @@ process_connection()
     if (cpe_requested && max_blockno_to_send < 65)
 	max_blockno_to_send = 65;
 
+    if (!cpe_requested) { max_blockno_to_send = 49; enable_cp437 = 0; }
+
     send_server_id_pkt(server_name, server_motd, server_id_op_flag);
 
     // List of users
@@ -144,20 +146,20 @@ login()
 	if (cc<=0) {
 	    if (errno != EAGAIN && errno != EINTR) {
 		if (insize == 0)
-		    fatal("No data received");
+		    quiet_drop("No data received");
 		else
-		    fatal("Short connection received");
+		    quiet_drop("Short connection received");
 	    }
 	    time_t now = time(0);
 	    if (now-startup > 4)
-		fatal("Short logon packet received");
+		quiet_drop("Short logon packet received");
 	    usleep(50000);
 	}
 
 	if (insize >= 1 && inbuf[inptr] != 0) // Special exit for weird caller.
-	    fatal("418 I'm a teapot\n\n");
+	    quiet_drop("418 I'm a teapot\n\n");
 	if (insize >= 2 && inbuf[inptr+1] != 7)
-	    fatal("Only protocol version seven is supported");
+	    quiet_drop("Only protocol version seven is supported");
     }
     fcntl(line_ifd, F_SETFL, 0);
 
@@ -178,17 +180,17 @@ login()
     if (*server_secret != 0 && *server_secret != '-') {
 	if (strlen(mppass) != 32)
 	    if (!client_ipv4_localhost)
-		fatal("Login failed!");
-	if (*user_id == 0) fatal("Username must be entered");
+		quiet_drop("Login failed!");
+	if (*user_id == 0) quiet_drop("Username must be entered");
     }
 
     if (strlen(user_id) > 16)
-	fatal("Usernames must be between 1 and 16 characters");
+	quiet_drop("Usernames must be between 1 and 16 characters");
 
     for(int i = 0; user_id[i]; i++)
 	if (!isascii(user_id[i]) ||
 	    (!isalnum(user_id[i]) && user_id[i] != '.' && user_id[i] != '_'))
-		fatal("Invalid user name");
+		quiet_drop("Invalid user name");
 
     cpe_requested = inbuf[inptr+128+2] == 0x42;
 
@@ -209,7 +211,7 @@ login()
 
 	if (strcasecmp(hashbuf, mppass) != 0) {
 	    if (!client_ipv4_localhost)
-		fatal("Login failed! Close the game and sign in again.");
+		quiet_drop("Login failed! Close the game and sign in again.");
 	}
 
 	user_authenticated = 1;
@@ -229,16 +231,7 @@ fatal(char * emsg)
 	sprintf(buf, "&c- &7%s &cCrashed: &e%s", user_id, emsg);
 	post_chat(0, buf, strlen(buf));
     }
-    disconnect(emsg);
-}
-
-void
-kicked(char * emsg)
-{
-    char buf[256];
-    sprintf(buf, "&c- &7%s &ekicked (%s)", user_id, emsg);
-    post_chat(0, buf, strlen(buf));
-    disconnect(emsg);
+    disconnect(1, emsg);
 }
 
 void
@@ -247,11 +240,17 @@ logout(char * emsg)
     char buf[256];
     sprintf(buf, "&c- &7%s &e%s", user_id, emsg);
     post_chat(0, buf, strlen(buf));
-    disconnect(emsg);
+    disconnect(0, emsg);
 }
 
 void
-disconnect(char * emsg)
+quiet_drop(char * emsg)
+{
+    disconnect(0, emsg);
+}
+
+LOCAL void
+disconnect(int rv, char * emsg)
 {
     if (line_ofd < 0) return;
 
@@ -269,7 +268,7 @@ disconnect(char * emsg)
     shutdown(line_ofd, SHUT_RDWR);
     if (line_ofd != line_ifd)
 	shutdown(line_ifd, SHUT_RDWR);
-    exit(0);
+    exit(rv);
 }
 
 void

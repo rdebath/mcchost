@@ -55,7 +55,7 @@ Logout with RAGEQUIT!!
     if (strcasecmp(cmd, "rq") == 0) logout("RAGEQUIT!!");
 
     if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
-	kicked("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
+	logout("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
 
 /*HELP crash H_CMD
 &T/crash
@@ -65,7 +65,7 @@ Crash the server &T/crash 666&S really do it!
     if (strcasecmp(cmd, "crash") == 0 || strcasecmp(cmd, "servercrash") == 0) {
 	char * crash_type = strtok(0,"");
 	assert(!crash_type || strcmp(crash_type, "666"));
-	logout("Server crash! Error code 42");
+	fatal("Server crash! Error code 42");
     }
 
 /*HELP reload H_CMD

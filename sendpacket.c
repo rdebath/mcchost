@@ -211,6 +211,7 @@ send_message_pkt(int id, char * message)
 void
 send_discon_msg_pkt(char * message)
 {
+    // If the message begins with "Kicked " or "Banned " CC will not reconnect.
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_DISCON;

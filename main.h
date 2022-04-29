@@ -3,9 +3,9 @@
 #define MB_STRLEN 64
 void flush_to_remote();
 void send_discon_msg_pkt(char *message);
+#define LOCAL static
 void logout(char *emsg);
-void kicked(char *emsg);
-void disconnect(char *emsg);
+LOCAL void disconnect(int rv,char *emsg);
 typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
 #include <stdint.h>
@@ -181,6 +181,7 @@ void MD5Init(MD5_CTX *mdContext);
 extern int client_ipv4_localhost;
 extern char client_ipv4_str[INET_ADDRSTRLEN];
 extern int client_ipv4_port;
+void quiet_drop(char *emsg);
 void print_logfile(char *s);
 void cmd_help(char *prefix,char *cmdargs);
 void post_chat(int where,char *chat,int chat_len);
