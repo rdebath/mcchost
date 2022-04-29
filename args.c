@@ -10,9 +10,11 @@
  * TODO:
  * +) load/save level to *.cw and use for backups, restores and "unload".
  *    -- Add locking so one load at a time ?
- * +) CPE
+ * +) /commands -- list help subjects with H_CMD.
  * +) Multiple Levels. (/newlvl, /goto, /main, /levels)
  * +) Config text file for arguments
+ * +) User records.
+ * +) BlockDB
  * +) /edlin for editing text files and virtual text files (blockdefs)
  *
  * +) NAME: (*) MCCHost
@@ -20,6 +22,7 @@
  * +) Maybe exec($0, ...) on accept()
  *
  *
+ * +) /afk command (and auto)
  * +) /mode command (Grass, bedrock, water etc)
  * +) /info command
  * +) /about command
@@ -84,6 +87,11 @@ process_args(int argc, char **argv)
 		ar++;
 		continue;
 	    }
+	}
+
+	if (strcmp(argv[ar], "-inetd") == 0) {
+	    inetd_mode = 1;
+	    continue;
 	}
 
 	if (strcmp(argv[ar], "-tcp") == 0) {

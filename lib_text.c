@@ -96,6 +96,7 @@ static char *lines_edlin[] = {
 
 /* Help for help */
 static char *lines_help[] = {
+    "Commands can be listed with &T/commands",
     "To see help for a command type &T/help CommandName",
     0};
 

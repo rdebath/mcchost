@@ -25,6 +25,7 @@ int server_id_op_flag = 1;
 int ignore_cpe = 0;
 int cpe_requested = 0;
 int cpe_extn_remaining = 0;
+int inetd_mode = 0;
 int start_tcp_server = 0;
 int enable_heartbeat_poll = 0;
 int tcp_port_no = 25565;
@@ -55,10 +56,14 @@ int
 main(int argc, char **argv)
 {
     snprintf(program_name, sizeof(program_name), "%s", argv[0]);
+
     process_args(argc, argv);
     proc_args_mem = argv[0];
     proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0];
     memset(proc_args_mem, 0, proc_args_len);
+
+    if (!inetd_mode && !start_tcp_server && (isatty(0) || isatty(1)))
+	show_args_help();
 
     init_dirs();
 
@@ -171,26 +176,45 @@ login()
 	if (cc<=0) {
 	    if (errno != EAGAIN && errno != EINTR) {
 		if (insize == 0)
-		    quiet_drop("No data received");
+		    teapot();
 		else
 		    quiet_drop("Short connection received");
 	    }
 	    time_t now = time(0);
-	    if (now-startup > 4)
-		quiet_drop("Short logon packet received");
-	    usleep(50000);
+	    if (now-startup > 4) {
+		if (insize == 0) {
+		    teapot();
+		} else
+		    quiet_drop("Short logon packet received");
+	    } else
+		usleep(50000);
 	}
 
 	if (insize >= 1 && inbuf[inptr] != 0) // Special exit for weird caller.
-	    quiet_drop("418 I'm a teapot\n\n");
-	if (insize >= 2 && inbuf[inptr+1] != 7)
+	    teapot();
+	if (insize >= 2 && inbuf[inptr+1] != 7) {
+	    if (inbuf[inptr+1] == 0)
+		teapot();
+	    if (insize >= 66 && inbuf[inptr+1] > 0 && inbuf[inptr+1] < 7)
+		cpy_nbstring(user_id, inbuf+2);
 	    quiet_drop("Only protocol version seven is supported");
+	}
     }
     fcntl(line_ifd, F_SETFL, 0);
 
     char mppass[NB_SLEN];
     cpy_nbstring(mppass, inbuf+64+2);
     cpy_nbstring(user_id, inbuf+2);
+
+    for(int i = 0; user_id[i]; i++)
+	if (!isascii(user_id[i]) ||
+	    (!isalnum(user_id[i]) && user_id[i] != '.' && user_id[i] != '_')) {
+
+	    for(i=0; user_id[i]; i++)
+		if (user_id[i] <= ' ' || user_id[i] > '~')
+		    user_id[i] = '*';
+	    quiet_drop("Invalid user name");
+	}
 
     {
 	char buf[256];
@@ -211,11 +235,6 @@ login()
 
     if (strlen(user_id) > 16)
 	quiet_drop("Usernames must be between 1 and 16 characters");
-
-    for(int i = 0; user_id[i]; i++)
-	if (!isascii(user_id[i]) ||
-	    (!isalnum(user_id[i]) && user_id[i] != '.' && user_id[i] != '_'))
-		quiet_drop("Invalid user name");
 
     cpe_requested = inbuf[inptr+128+2] == 0x42;
 
@@ -268,10 +287,31 @@ logout(char * emsg)
     disconnect(0, emsg);
 }
 
-void
+LOCAL void
 quiet_drop(char * emsg)
 {
     disconnect(0, emsg);
+}
+
+LOCAL void
+teapot()
+{
+    if (line_ofd < 0) return;
+
+    char buf[256];
+    if (client_ipv4_port) {
+	sprintf(buf, "Failed connect %s:%d, Invalid peer process",
+	    client_ipv4_str, client_ipv4_port);
+	print_logfile(buf);
+    }
+
+    strcpy(buf, "418 I'm a teapot\n\n");
+    write_to_remote(buf, strlen(buf));
+    flush_to_remote();
+    shutdown(line_ofd, SHUT_RDWR);
+    if (line_ofd != line_ifd)
+	shutdown(line_ifd, SHUT_RDWR);
+    exit(4);
 }
 
 LOCAL void
@@ -280,11 +320,16 @@ disconnect(int rv, char * emsg)
     if (line_ofd < 0) return;
 
     char buf[256];
-    if (client_ipv4_port && *user_id == 0)
+    if (client_ipv4_port && *user_id)
+	sprintf(buf, "Disconnect %s:%d, user '%s', %s",
+	    client_ipv4_str, client_ipv4_port, user_id, emsg);
+    else if (client_ipv4_port)
 	sprintf(buf, "Disconnect %s:%d, %s",
 	    client_ipv4_str, client_ipv4_port, emsg);
-    else
+    else if (*user_id)
 	sprintf(buf, "Disconnect user '%s', %s", user_id, emsg);
+    else
+	sprintf(buf, "Disconnect %s", emsg);
     print_logfile(buf);
 
     stop_user();
@@ -294,6 +339,30 @@ disconnect(int rv, char * emsg)
     if (line_ofd != line_ifd)
 	shutdown(line_ifd, SHUT_RDWR);
     exit(rv);
+}
+
+void
+show_args_help()
+{
+    fprintf(stderr, "Usage: %s [-inetd|-tcp|-net] ...\n", program_name);
+    fprintf(stderr, "  -inetd  Assume socket is stdin/out from inetd or similar\n");
+    fprintf(stderr, "  -tcp    Open a tcp socket for listening, no default secret.\n");
+    fprintf(stderr, "  -net    Open a socket, register secret at:\n%10s%s\n", "", heartbeat_url);
+    fprintf(stderr, "  -port X Set port number listened to.\n");
+    fprintf(stderr, "  -dir X  Change to directory before opening data files.\n");
+    fprintf(stderr, "  -private -public\n");
+    fprintf(stderr, "          When registering set privacy state.\n");
+
+    fprintf(stderr, "  -name X Set server name\n");
+    fprintf(stderr, "  -motd X Set server motd\n");
+    fprintf(stderr, "  -secret X\n");
+    fprintf(stderr, "  -salt X Set server salt/secret\n");
+    fprintf(stderr, "  -heartbeat X\n");
+    fprintf(stderr, "          Change hearbeat url\n");
+    fprintf(stderr, "  -runonce Accept a connection but don't fork, for debugging.\n");
+    fprintf(stderr, "  -nocpe  Don't accept a CPE request.\n");
+
+    exit(1);
 }
 
 void

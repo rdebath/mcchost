@@ -15,6 +15,7 @@ struct help_text_t {
 #endif
 
 /*HELPTEXT help
+Commands can be listed with &T/commands
 To see help for a command type &T/help CommandName
 */
 

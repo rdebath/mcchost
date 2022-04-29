@@ -1,8 +1,9 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
 #define MB_STRLEN 64
-void flush_to_remote();
 void send_discon_msg_pkt(char *message);
+void flush_to_remote();
+void write_to_remote(char *str,int len);
 #define LOCAL static
 void logout(char *emsg);
 LOCAL void disconnect(int rv,char *emsg);
@@ -182,7 +183,8 @@ extern int client_ipv4_localhost;
 extern char client_ipv4_str[INET_ADDRSTRLEN];
 extern int client_ipv4_port;
 void cpy_nbstring(char *buf,char *str);
-void quiet_drop(char *emsg);
+LOCAL void quiet_drop(char *emsg);
+LOCAL void teapot();
 void print_logfile(char *s);
 void cmd_help(char *prefix,char *cmdargs);
 void post_chat(int where,char *chat,int chat_len);
@@ -210,6 +212,7 @@ void process_connection();
 void tcpserver();
 void open_logfile();
 void init_dirs();
+void show_args_help();
 void process_args(int argc,char **argv);
 extern int proc_args_len;
 extern char *proc_args_mem;
@@ -230,6 +233,7 @@ extern char program_name[512];
 extern int tcp_port_no;
 extern int enable_heartbeat_poll;
 extern int start_tcp_server;
+extern int inetd_mode;
 extern int cpe_extn_remaining;
 extern int cpe_requested;
 extern int ignore_cpe;
