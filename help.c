@@ -3,6 +3,7 @@
 
 #include "help.h"
 
+#if INTERFACE
 typedef struct help_text_t help_text_t;
 struct help_text_t {
     char * item;
@@ -10,18 +11,45 @@ struct help_text_t {
     char ** lines;
 };
 
+#define H_CMD	1	// Help for a command
+#endif
+
 /*HELPTEXT help
-&cHelp command help, TODO.
+To see help for a command type &T/help CommandName
+*/
+
+/*HELPTEXT view
+The view command show special files for this system,
+none are currently installed.
+*/
+
+/*HELPTEXT faq
+&cFAQ&f:
+&fExample: What does this server run on? This server runs on MCCHost
+*/
+
+/*HELPTEXT news
+No news today.
+*/
+
+/*HELPTEXT rules
+No rules found.
 */
 
 void
-cmd_help(char *cmdargs)
+cmd_help(char * prefix, char *cmdargs)
 {
     char helpbuf[BUFSIZ];
-    if (!cmdargs)
+    if (!cmdargs && !prefix)
 	strcpy(helpbuf, "help/help.txt");
     else {
-	snprintf(helpbuf, sizeof(helpbuf), "help/%.64s.txt", cmdargs);
+	while (cmdargs && *cmdargs == ' ') cmdargs++;
+	snprintf(helpbuf, sizeof(helpbuf),
+	    "help/%s%s%.64s.txt", 
+	    prefix?prefix:"",
+	    !prefix||!cmdargs?"":" ",
+	    cmdargs?cmdargs:"");
+
 	for(char * p = helpbuf; *p; p++) {
 	    if (*p <= ' ' || *p > '~' || *p == '\'' || *p == '"')
 		*p = '_';
@@ -38,7 +66,6 @@ cmd_help(char *cmdargs)
 	    if (l != 0 && p[-1] == '\n') { p[-1] = 0; l--; }
 
 	    convert_to_cp437(helpbuf, &l);
-
 	    post_chat(1, helpbuf, l);
 	}
 	fclose(hfd);
@@ -46,13 +73,30 @@ cmd_help(char *cmdargs)
     }
 
 #ifdef HAS_HELP
+    {
+	int l = strlen(helpbuf);
+	if (l>9) {
+	    helpbuf[l-4] = 0;
+	    for(int hno = 0; helptext[hno].item; hno++) {
+		if (strcasecmp(helptext[hno].item, helpbuf+5) != 0)
+		    continue;
+		char ** ln = helptext[hno].lines;
+		for(;*ln; ln++) {
+		    strcpy(helpbuf, *ln);
+		    l = strlen(helpbuf);
+		    convert_to_cp437(helpbuf, &l);
+		    post_chat(1, helpbuf, l);
+		}
+		return;
+	    }
+	}
+    }
 #endif
 
-    post_chat(1, "&cNo help found for that topic", 0);
-    // /faq -> /help faq...
-    // /news -> /help news...
-    // /view -> /help view...
-
+    if (prefix == 0)
+	post_chat(1, "&cNo help found for that topic", 0);
+    else
+	post_chat(1, "&cNo file found for that topic", 0);
 }
 
 #ifdef UTFNIL

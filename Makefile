@@ -5,6 +5,7 @@ LDFLAGS=-lz
 #TARGET_ARCH=-m64
 PROG=server
 SRC:=$(filter-out lib_%.c,$(wildcard *.c) )
+NIL:=$(shell awk -f help_scan.awk *.c > help_text.c )
 NIL:=$(shell makeheaders -H >md5.h lib_md5.c)
 NIL:=$(shell makeheaders ${SRC} md5.h)
 NIL:=$(shell makeheaders lib_md5.c)

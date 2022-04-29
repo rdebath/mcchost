@@ -181,5 +181,5 @@ void send_message_pkt(int id,char *message);
 void send_map_reload();
 void kicked(char *emsg);
 void logout(char *emsg);
-void cmd_help(char *cmdargs);
+void cmd_help(char *prefix,char *cmdargs);
 void run_command(char *msg);

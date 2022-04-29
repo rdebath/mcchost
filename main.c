@@ -110,6 +110,7 @@ process_connection()
     send_welcome_message();
 }
 
+/*HELP Welcome 0 */
 void
 send_welcome_message()
 {
@@ -118,6 +119,7 @@ send_welcome_message()
     send_message_pkt(0, buf);
     sprintf(buf, "&a+ &7%s &econnected", user_id);
     post_chat(0, buf, strlen(buf));
+    cmd_help("welcome", 0);
 }
 
 void

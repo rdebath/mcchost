@@ -24,9 +24,20 @@ run_command(char * msg)
     char * cmd = strtok(msg+1, " ");
     if (cmd == 0) return;
 
-    if (strcasecmp(cmd, "help") == 0) { cmd_help(strtok(0, "")); return; }
+    if (strcasecmp(cmd, "help") == 0) { cmd_help(0, strtok(0, "")); return; }
+    if (strcasecmp(cmd, "faq") == 0 || strcasecmp(cmd, "news") == 0 ||
+	strcasecmp(cmd, "view") == 0 || strcasecmp(cmd, "rules") == 0) {
+	cmd_help(cmd, strtok(0, ""));
+	return;
+    }
 
     // Some trivial commands.
+
+/*HELP quit H_CMD
+&T/quit [reason]
+Logout
+*/
+
     if (strcasecmp(cmd, "quit") == 0) {
 	char * arg = strtok(0, "");
 	if (arg) {
@@ -35,16 +46,33 @@ run_command(char * msg)
 	} else
 	    logout("Left the game.");
     }
+
+/*HELP rq H_CMD
+&T/rq
+Logout with RAGEQUIT!!
+*/
+
     if (strcasecmp(cmd, "rq") == 0) logout("RAGEQUIT!!");
 
     if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
 	kicked("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
+
+/*HELP crash H_CMD
+&T/crash
+Crash the server &T/crash 666&S really do it!
+*/
 
     if (strcasecmp(cmd, "crash") == 0 || strcasecmp(cmd, "servercrash") == 0) {
 	char * crash_type = strtok(0,"");
 	assert(!crash_type || strcmp(crash_type, "666"));
 	logout("Server crash! Error code 42");
     }
+
+/*HELP reload H_CMD
+&T/reload [all]
+&T/reload&S -- Reloads your session
+&T/reload all&S -- Reloads everybody on this level
+*/
 
     if (strcasecmp(cmd, "reload") == 0)
     {
@@ -57,6 +85,14 @@ run_command(char * msg)
 	    send_message_pkt(0, "&cUsage: /reload [all]");
 	return;
     }
+
+/*HELP place,pl H_CMD
+&T/place b [x y z] [X Y Z]
+Places the Block numbered &Tb&S at your feet or at &T[x y z]&S
+With both &T[x y z]&S and &T[X Y Z]&S it places a
+cuboid between those points.
+Alias: &T/pl
+*/
 
     if (strcasecmp(cmd, "place") == 0 || strcasecmp(cmd, "pl") == 0)
     {

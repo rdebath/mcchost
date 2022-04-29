@@ -31,13 +31,6 @@ process_chat_message(int msg_flag, char * msg)
 void
 convert_chat_message(char * msg)
 {
-    // if (col >= 'A' && col <= 'F') return (char)(col + ' ');
-    // if (col == 'H') return Server.Config.HelpDescriptionColor[1];	&e
-    // if (col == 'I') return Server.Config.IRCColor[1];		&5
-    // if (col == 'S') return Server.Config.DefaultColor[1];		&e
-    // if (col == 'T') return Server.Config.HelpSyntaxColor[1];		&a
-    // if (col == 'W') return Server.Config.WarningErrorColor[1];	&c
-    // global chat colour &6
 
     char buf[256];
     char * p = buf + sprintf(buf, "&e%s:&f ", user_id);
@@ -89,11 +82,21 @@ post_chat(int where, char * chat, int chat_len)
     int s, d, ws = -1, wd = -1;
     for(d = s = 0; s<chat_len; s++) {
 	uint8_t c = chat[s];
+
 	// Colours are interpreted to be regenerated later.
 	if (c == '&') {
-	    uint8_t c2 = chat[s+1];
-	    if ((c2 >= '0' && c2 <= '9') || (c2 >= 'a' && c2 <= 'f')) {
-		ncolour = c2;
+	    uint8_t col = chat[s+1];
+
+	    // MCGalaxy aliases --  // global chat colour &6
+	    if (col >= 'A' && col <= 'F') col = col - 'A' + 'a';
+	    if (col == 'H') col = 'e'; // HelpDescriptionColor
+	    if (col == 'I') col = '5'; // IRCColor
+	    if (col == 'S') col = 'e'; // DefaultColor
+	    if (col == 'T') col = 'a'; // HelpSyntaxColor
+	    if (col == 'W') col = 'c'; // WarningErrorColor
+
+	    if ((col >= '0' && col <= '9') || (col >= 'a' && col <= 'f')) {
+		ncolour = col;
 		s++;
 		continue;
 	    }

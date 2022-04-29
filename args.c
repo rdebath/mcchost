@@ -10,14 +10,20 @@
  * TODO:
  * +) load/save level to *.cw and use for backups, restores and "unload".
  *    -- Add locking so one load at a time ?
- * +) /help, /faq, /news texts
  * +) CPE
- * +) Multiple Levels. (/newlvl)
+ * +) Multiple Levels. (/newlvl, /goto, /main, /levels)
  * +) Config text file for arguments
  * +) /edlin for editing text files and virtual text files (blockdefs)
  *
  * +) NAME: (*) MCCHost
  * +) Maybe embed commands: gzip, curl and gdb
+ *
+ *
+ * +) /mode command (Grass, bedrock, water etc)
+ * +) /info command
+ * +) /about command
+ * +) /tp command
+ * +) /fly command
  */
 
 void
