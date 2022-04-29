@@ -1,7 +1,10 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
 void send_message_pkt(int id,char *message);
+#define MB_STRLEN 64
+#define NB_SLEN (MB_STRLEN+1)
 extern int enable_cp437;
+void send_msg_pkt_filtered(int msg_flag,char *message);
 void send_queued_chats();
 void wipe_last_chat_queue_id();
 void set_last_chat_queue_id();
@@ -14,8 +17,6 @@ typedef struct map_info_t map_info_t;
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 typedef uint16_t block_t;
-#define MB_STRLEN 64
-#define NB_SLEN (MB_STRLEN+1)
 typedef struct blockdef_t blockdef_t;
 #define BLK_NUM_TEX	6
 #define BLK_NUM_FOG	4
@@ -170,5 +171,5 @@ struct shared_data_t {
 };
 extern struct shared_data_t shdat;
 #define level_chat_queue shdat.chat
-void update_chat(pkt_message pkt);
+void update_chat(pkt_message *pkt);
 #define INTERFACE 0

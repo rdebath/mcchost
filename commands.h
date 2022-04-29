@@ -176,9 +176,10 @@ struct pkt_setblock {
 void update_block(pkt_setblock pkt);
 extern xyzhv_t player_posn;
 #define Block_Air 0
+void send_message_pkt(int id,char *message);
 #define level_block_queue shdat.blockq
 void send_map_reload();
 void kicked(char *emsg);
 void logout(char *emsg);
-void send_message_pkt(int id,char *message);
+void cmd_help(char *cmdargs);
 void run_command(char *msg);

@@ -182,7 +182,7 @@ extern int client_ipv4_localhost;
 extern char client_ipv4_str[INET_ADDRSTRLEN];
 extern int client_ipv4_port;
 void print_logfile(char *s);
-void post_chat(char *chat,int chat_len);
+void post_chat(int where,char *chat,int chat_len);
 void send_message_pkt(int id,char *message);
 void send_welcome_message();
 #define level_prop shdat.prop

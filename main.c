@@ -117,7 +117,7 @@ send_welcome_message()
     sprintf(buf, "&eWelcome &7%s", user_id);
     send_message_pkt(0, buf);
     sprintf(buf, "&a+ &7%s &econnected", user_id);
-    post_chat(buf, strlen(buf));
+    post_chat(0, buf, strlen(buf));
 }
 
 void
@@ -125,7 +125,7 @@ send_disconnect_message()
 {
     char buf[256];
     sprintf(buf, "&c- &7%s &edisconnected", user_id);
-    post_chat(buf, strlen(buf));
+    post_chat(0, buf, strlen(buf));
     sprintf(buf, "Connection dropped for %s", user_id);
     print_logfile(buf);
 }
@@ -225,7 +225,7 @@ fatal(char * emsg)
     if (level_chat_queue) {
 	char buf[256];
 	sprintf(buf, "&c- &7%s &cCrashed: &e%s", user_id, emsg);
-	post_chat(buf, strlen(buf));
+	post_chat(0, buf, strlen(buf));
     }
     disconnect(emsg);
 }
@@ -235,7 +235,7 @@ kicked(char * emsg)
 {
     char buf[256];
     sprintf(buf, "&c- &7%s &ekicked (%s)", user_id, emsg);
-    post_chat(buf, strlen(buf));
+    post_chat(0, buf, strlen(buf));
     disconnect(emsg);
 }
 
@@ -244,7 +244,7 @@ logout(char * emsg)
 {
     char buf[256];
     sprintf(buf, "&c- &7%s &e%s", user_id, emsg);
-    post_chat(buf, strlen(buf));
+    post_chat(0, buf, strlen(buf));
     disconnect(emsg);
 }
 

@@ -30,8 +30,9 @@ struct chat_entry_t {
 static int last_id = -1;
 static uint32_t last_generation;
 
+/* Send a single chat message to everyone (0) */
 void
-update_chat(pkt_message pkt)
+update_chat(pkt_message *pkt)
 {
     if (!level_chat_queue || level_chat_queue->curr_offset >= level_chat_queue->queue_len)
 	create_chat_queue();
@@ -41,7 +42,7 @@ update_chat(pkt_message pkt)
     level_chat_queue->updates[id].to_level_id = 0;
     level_chat_queue->updates[id].to_player_id = 0;
     level_chat_queue->updates[id].to_team_id = 0;
-    level_chat_queue->updates[id].msg = pkt;
+    level_chat_queue->updates[id].msg = *pkt;
     if (++level_chat_queue->curr_offset >= level_chat_queue->queue_len) {
 	level_chat_queue->curr_offset = 0;
 	level_chat_queue->generation ++;
@@ -103,26 +104,33 @@ send_queued_chats()
 	}
 	unlock_chat_shared();
 
-	if (!enable_cp437)
-	{
-	    static char cp437_asc[] =
-		"CueaaaaceeeiiiAAE**ooouuyOUc$YPs"
-		"aiounNao?++**!<>###||||++||+++++"
-		"+--|-+||++--|-+----++++++++##||#"
-		"aBTPEsyt******EN=+><++-=... n2* ";
-
-	    char *s, *d;
-	    for(s=d=upd.msg.message; *s; s++) {
-		if (*s >= ' ' && *s <= '~')
-		    *d++ = *s;
-		else if (*s & 0x80)
-		    *d++ = cp437_asc[*s & 0x7f];
-		else
-		    *d++ = '*';
-	    }
-	    *d++ = 0;
-	}
-
-	send_message_pkt(upd.msg.msg_flag, upd.msg.message);
+	send_msg_pkt_filtered(upd.msg.msg_flag, upd.msg.message);
     }
+}
+
+void
+send_msg_pkt_filtered(int msg_flag, char * message)
+{
+    if (!enable_cp437)
+    {
+	char msgbuf[NB_SLEN];
+	static char cp437_asc[] =
+	    "CueaaaaceeeiiiAAE**ooouuyOUc$YPs"
+	    "aiounNao?++**!<>###||||++||+++++"
+	    "+--|-+||++--|-+----++++++++##||#"
+	    "aBTPEsyt******EN=+><++-=... n2* ";
+
+	char *s=message, *d = msgbuf;
+	for(int i = 0; i<MB_STRLEN; i++, s++) {
+	    if (*s >= ' ' && *s <= '~')
+		*d++ = *s;
+	    else if (*s & 0x80)
+		*d++ = cp437_asc[*s & 0x7f];
+	    else
+		*d++ = '*';
+	}
+	*d++ = 0;
+	send_message_pkt(msg_flag, msgbuf);
+    } else
+	send_message_pkt(msg_flag, message);
 }

@@ -24,14 +24,7 @@ run_command(char * msg)
     char * cmd = strtok(msg+1, " ");
     if (cmd == 0) return;
 
-    if (strcasecmp(cmd, "help") == 0) {
-	send_message_pkt(0, "&cHelp command: TODO ...");
-	send_message_pkt(0, "&e/quit, /rq, /crash, /reload, /place, /save");
-	// /faq -> /help faq...
-	// /news -> /help news...
-	// /view -> /help view...
-	return;
-    }
+    if (strcasecmp(cmd, "help") == 0) { cmd_help(strtok(0, "")); return; }
 
     // Some trivial commands.
     if (strcasecmp(cmd, "quit") == 0) {

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "chat_message.h"
 
@@ -57,7 +58,7 @@ convert_chat_message(char * msg)
     *p = 0;
 
     if (pending_chat_len == 0 || pending_chat == 0) {
-	post_chat(buf, p-buf);
+	post_chat(0, buf, p-buf);
     } else {
 	if (!pending_chat) {
 	    pending_chat = malloc(PKBUF);
@@ -68,44 +69,73 @@ convert_chat_message(char * msg)
 	strcpy(pending_chat, buf);
 	pending_chat_len = p-buf;
 
-	post_chat(pending_chat, pending_chat_len);
+	post_chat(0, pending_chat, pending_chat_len);
 	pending_chat_len = 0;
     }
 }
 
+/* Post a long chat message to everyone (0) or just me (1) */
 void
-post_chat(char * chat, int chat_len)
+post_chat(int where, char * chat, int chat_len)
 {
-    int colour = -1, s, d, ncolour = 'e';
+    int colour = -1, ncolour = 'e';
     pkt_message pkt;
     pkt.msg_flag = 0;
     if (chat_len <= 0) chat_len = strlen(chat);
 
-    write_logfile(chat, chat_len);
+    if (where == 0)
+	write_logfile(chat, chat_len);
 
+    int s, d, ws = -1, wd = -1;
     for(d = s = 0; s<chat_len; s++) {
-	char c = chat[s];
-	if (c != '&') {
-	    if (colour != ncolour && c != ' ' && c != 0) {
-		if (d >= MB_STRLEN-3) {
-		    s--;
-		    while(d<MB_STRLEN) pkt.message[d++] = ' ';
-		} else {
-		    pkt.message[d++] = '&';
-		    pkt.message[d++] = ncolour;
-		    colour = ncolour;
-		    pkt.message[d++] = c?c:' ';
-		}
-	    } else
-		pkt.message[d++] = c?c:' ';
-	} else {
-	    char c = chat[s+1];
-	    if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
-		ncolour = c;
-	    s++;
+	uint8_t c = chat[s];
+	// Colours are interpreted to be regenerated later.
+	if (c == '&') {
+	    uint8_t c2 = chat[s+1];
+	    if ((c2 >= '0' && c2 <= '9') || (c2 >= 'a' && c2 <= 'f')) {
+		ncolour = c2;
+		s++;
+		continue;
+	    }
+	    c = 0xA8; // CP437 '¿'
 	}
+
+	c = c?c:' ';
+	if (c == ' ') { ws = s; wd = d; }
+
+	// If this won't fit, try to wordwrap.
+	int needs = 1;
+	if (colour != ncolour && c != ' ')
+	    needs = 3;
+	if (d+needs == MB_STRLEN) {
+	    if (s+1 < chat_len && chat[s+1] != ' ') {
+		if (wd > 0) { d = wd; s = ws+1; }
+		while(d<MB_STRLEN) pkt.message[d++] = ' ';
+	    }
+	} else if (d+needs > MB_STRLEN) {
+	    if (wd > 0) { d = wd; s = ws+1; }
+	    while(d<MB_STRLEN) pkt.message[d++] = ' ';
+	}
+
+	// Add it in (if we haven't filled the buffer)
+	if (d>=MB_STRLEN)
+	    s--;
+	else {
+	    if (colour != ncolour && c != ' ') {
+		pkt.message[d++] = '&';
+		pkt.message[d++] = ncolour;
+		colour = ncolour;
+		pkt.message[d++] = c;
+	    } else
+		pkt.message[d++] = c;
+	}
+
+	// Full buffer gets sent.
 	if (d >= MB_STRLEN) {
-	    update_chat(pkt);
+	    if (where == 1)
+		send_msg_pkt_filtered(pkt.msg_flag, pkt.message);
+	    else
+		update_chat(&pkt);
 	    d = 0;
 	    pkt.message[d++] = '&';
 	    pkt.message[d++] = 'f';
@@ -116,12 +146,16 @@ post_chat(char * chat, int chat_len)
 		pkt.message[d++] = ncolour;
 		colour = ncolour;
 	    }
+	    ws = wd = -1;
 	}
     }
 
     if (d>0) {
 	while(d<MB_STRLEN) pkt.message[d++] = ' ';
-	update_chat(pkt);
+	if (where == 1)
+	    send_msg_pkt_filtered(pkt.msg_flag, pkt.message);
+	else
+	    update_chat(&pkt);
     }
 
     // If someone spams they get it all back.
