@@ -8,6 +8,8 @@
 
 /*
  * TODO:
+ * +) scan for -dir first, then load defaults, then rescan command line.
+ *
  * +) load/save level to *.cw and use for backups, restores and "unload".
  *    -- Add locking so one load at a time ?
  * +) /commands -- list help subjects with H_CMD.

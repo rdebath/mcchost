@@ -1,3 +1,21 @@
+# Generated
 server
 *.o
 tmp.mk
+
+# Also generated, but I'll allow them.
+#*.h
+
+# Crashing, etc
+core
+core.*
+gmon.out
+
+# If you run it in this directory.
+server.ini
+backup/
+help/
+level/
+log/
+map/
+system/
