@@ -6,6 +6,26 @@
 
 #include "commands.h"
 
+#if INTERFACE
+typedef void (*cmd_func_t)(char * cmd, char * arg);
+typedef struct command_t command_t;
+struct command_t {
+    char * name;
+    cmd_func_t function;
+    int min_rank;
+};
+#endif
+
+#define N .name=
+command_t command_list[] =
+{
+    CMD_HELP,
+    CMD_PLACE,
+
+    {.name = 0}
+};
+#undef N
+
 // TODO:
 // Commands.
 // Command expansion/aliases
@@ -24,11 +44,11 @@ run_command(char * msg)
     char * cmd = strtok(msg+1, " ");
     if (cmd == 0) return;
 
-    if (strcasecmp(cmd, "help") == 0) { cmd_help(0, strtok(0, "")); return; }
-    if (strcasecmp(cmd, "faq") == 0 || strcasecmp(cmd, "news") == 0 ||
-	strcasecmp(cmd, "view") == 0 || strcasecmp(cmd, "rules") == 0) {
-	cmd_help(cmd, strtok(0, ""));
-	return;
+    for(int i = 0; command_list[i].name; i++) {
+	if (strcasecmp(cmd, command_list[i].name) == 0) {
+	    command_list[i].function(cmd, strtok(0, ""));
+	    return;
+	}
     }
 
     // Some trivial commands.
@@ -86,73 +106,6 @@ Crash the server &T/crash 666&S really do it!
 	return;
     }
 
-/*HELP place,pl H_CMD
-&T/place b [x y z] [X Y Z]
-Places the Block numbered &Tb&S at your feet or at &T[x y z]&S
-With both &T[x y z]&S and &T[X Y Z]&S it places a
-cuboid between those points.
-Alias: &T/pl
-*/
-
-    if (strcasecmp(cmd, "place") == 0 || strcasecmp(cmd, "pl") == 0)
-    {
-	int args[8] = {0};
-	int cnt = 0;
-	for(int i = 0; i<8; i++) {
-	    char * p = strtok(0, " ");
-	    if (p == 0) break;
-	    // if (i == 0) check block name; else
-	    // check for relative x/y/z posn
-	    args[i] = atoi(p);
-	    cnt = i+1;
-	}
-	if (cnt != 1 && cnt != 4 && cnt != 7) {
-	    send_message_pkt(0, "&cUsage: /place b [x y z] [X Y Z]");
-	    return;
-	}
-
-	pkt_setblock pkt;
-	pkt.heldblock = args[0];
-	pkt.mode = (pkt.heldblock != Block_Air);
-	pkt.block = pkt.mode?pkt.heldblock:Block_Air;
-	if (cnt == 1) {
-	    pkt.coord.x = player_posn.x/32;	// check range [0..cells_x)
-	    pkt.coord.y = (player_posn.y+16)/32;// Add half a block for slabs
-	    pkt.coord.z = player_posn.z/32;
-	    update_block(pkt);
-	} else if(cnt == 4) {
-	    pkt.coord.x = args[1];
-	    pkt.coord.y = args[2];
-	    pkt.coord.z = args[3];
-	    update_block(pkt);
-	} else {
-	    int i, x, y, z;
-	    int max[3] = { level_prop->cells_x-1, level_prop->cells_y-1, level_prop->cells_z-1};
-	    for(i=0; i<3; i++) {
-		if (args[i+1]<0 && args[i+4]<0) return; // Off the map.
-		if (args[i+1]>max[i] && args[i+4]>max[i]) return; // Off the map.
-	    }
-	    for(i=0; i<6; i++) { // Crop to map.
-		if (args[i+1]<0) args[i+1] = 0;
-		if (args[i+1]>max[i%3]) args[i+1] = max[i%3];
-	    }
-
-	    pkt.heldblock = args[0];
-	    pkt.mode = (pkt.heldblock != Block_Air);
-	    pkt.block = pkt.mode?pkt.heldblock:Block_Air;
-	    for(y=args[2]; y<=args[5]; y++)
-		for(x=args[1]; x<=args[4]; x++)
-		    for(z=args[3]; z<=args[6]; z++)
-		    {
-			pkt.coord.x = x;
-			pkt.coord.y = y;
-			pkt.coord.z = z;
-			update_block(pkt);
-		    }
-	}
-	return;
-    }
-
     if (strcasecmp(cmd, "save") == 0)
     {
 	char * arg = strtok(0, "");
@@ -171,4 +124,76 @@ Alias: &T/pl
     send_message_pkt(0, buf);
     return;
 
+}
+
+/*HELP place,pl H_CMD
+&T/place b [x y z] [X Y Z]
+Places the Block numbered &Tb&S at your feet or at &T[x y z]&S
+With both &T[x y z]&S and &T[X Y Z]&S it places a
+cuboid between those points.
+Alias: &T/pl
+*/
+#if INTERFACE
+#define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place}
+#endif
+void
+cmd_place(UNUSED char * cmd, char * arg)
+{
+    int args[8] = {0};
+    int cnt = 0;
+    char * ar = arg;
+    if (ar)
+	for(int i = 0; i<8; i++) {
+	    char * p = strtok(ar, " "); ar = 0;
+	    if (p == 0) break;
+	    // if (i == 0) check block name; else
+	    // check for relative x/y/z posn
+	    args[i] = atoi(p);
+	    cnt = i+1;
+	}
+    if (cnt != 1 && cnt != 4 && cnt != 7) {
+	send_message_pkt(0, "&cUsage: /place b [x y z] [X Y Z]");
+	return;
+    }
+
+    pkt_setblock pkt;
+    pkt.heldblock = args[0];
+    pkt.mode = (pkt.heldblock != Block_Air);
+    pkt.block = pkt.mode?pkt.heldblock:Block_Air;
+    if (cnt == 1) {
+	pkt.coord.x = player_posn.x/32;	// check range [0..cells_x)
+	pkt.coord.y = (player_posn.y+16)/32;// Add half a block for slabs
+	pkt.coord.z = player_posn.z/32;
+	update_block(pkt);
+    } else if(cnt == 4) {
+	pkt.coord.x = args[1];
+	pkt.coord.y = args[2];
+	pkt.coord.z = args[3];
+	update_block(pkt);
+    } else {
+	int i, x, y, z;
+	int max[3] = { level_prop->cells_x-1, level_prop->cells_y-1, level_prop->cells_z-1};
+	for(i=0; i<3; i++) {
+	    if (args[i+1]<0 && args[i+4]<0) return; // Off the map.
+	    if (args[i+1]>max[i] && args[i+4]>max[i]) return; // Off the map.
+	}
+	for(i=0; i<6; i++) { // Crop to map.
+	    if (args[i+1]<0) args[i+1] = 0;
+	    if (args[i+1]>max[i%3]) args[i+1] = max[i%3];
+	}
+
+	pkt.heldblock = args[0];
+	pkt.mode = (pkt.heldblock != Block_Air);
+	pkt.block = pkt.mode?pkt.heldblock:Block_Air;
+	for(y=args[2]; y<=args[5]; y++)
+	    for(x=args[1]; x<=args[4]; x++)
+		for(z=args[3]; z<=args[6]; z++)
+		{
+		    pkt.coord.x = x;
+		    pkt.coord.y = y;
+		    pkt.coord.z = z;
+		    update_block(pkt);
+		}
+    }
+    return;
 }

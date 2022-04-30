@@ -47,3 +47,17 @@ int cp437rom[256] = {
     0x2261, 0x00b1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00f7, 0x2248,
     0x00b0, 0x2219, 0x00b7, 0x221a, 0x207f, 0x00b2, 0x25a0, 0x00a0
 };
+
+
+#if INTERFACE
+#if defined(__GNUC__) \
+    && (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+#define UNUSED __attribute__ ((__unused__))
+
+#else
+#define UNUSED
+#ifndef __attribute__
+#define __attribute__(__ignored__)
+#endif
+#endif
+#endif

@@ -1,6 +1,6 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-extern int ignore_cpe;
+extern int cpe_disabled;
 extern int server_runonce;
 extern int server_private;
 extern int start_tcp_server;

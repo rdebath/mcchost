@@ -89,66 +89,26 @@ read_element(FILE * ifd, int etype)
 	// EOF
     } else if (etype == NBT_I8ARRAY) {
 	int i, len = 0, ch;
-	uint8_t bin_buf[4096];
 
 	/* NB: Only lengths 0 ..0x7FFFFFFF are valid. */
 	for(i=0; i<4; i++)
 	    len = (len<<8) + (ch = fgetc(ifd));
 
-	if (strcmp(last_lbl, "BlockArray") == 0 && len>0) {
+	if (strcmp(last_lbl, "BlockArray") == 0 && len>0)
+	    return read_blockarray(ifd, len);
 
-	    level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-	    open_blocks(new_level);
+	if (strcmp(last_lbl, "BlockArray2") == 0 && len>0)
+	    return read_blockarray2(ifd, len);
 
-	    map_len_t test_map;
-	    test_map.magic_no = MAP_MAGIC;
-	    test_map.cells_x = level_prop->cells_x;
-	    test_map.cells_y = level_prop->cells_y;
-	    test_map.cells_z = level_prop->cells_z;
-	    memcpy((void*)(level_blocks+level_prop->total_blocks),
-		    &test_map, sizeof(map_len_t));
-
-	    for(i=0; i<len; i++) {
-		if ((ch = fgetc(ifd)) == EOF) return 0;
-		level_blocks[i] = (level_blocks[i] & 0xFF00) + ch;
-	    }
-	    return 1;
-	}
-
-	if (strcmp(last_lbl, "BlockArray2") == 0 && len>0) {
-
-	    if (level_blocks == 0 || level_prop->total_blocks < len) {
-		fprintf(stderr, "Incorrect BlockArray2 found\n");
-		return 0;
-	    }
-
-	    for(i=0; i<len; i++) {
-		if ((ch = fgetc(ifd)) == EOF) return 0;
-		level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
-	    }
-	    return 1;
-	}
-
-	if (strcmp(last_lbl, "BlockArray3") == 0 && len>0) {
-
-	    if (level_blocks == 0 || level_prop->total_blocks < len) {
-		fprintf(stderr, "Incorrect BlockArray3 found\n");
-		return 0;
-	    }
-
-	    for(i=0; i<len; i++) {
-		if ((ch = fgetc(ifd)) == EOF) return 0;
-		if (ch)
-		    level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
-	    }
-	    return 1;
-	}
+	if (strcmp(last_lbl, "BlockArray3") == 0 && len>0)
+	    return read_blockarray3(ifd, len);
 
 	if (len < 0 || len > 256) {
 	    for(i=0; i<len; i++) {
 		if ((ch = fgetc(ifd)) == EOF) return 0;
 	    }
 	} else {
+	    uint8_t bin_buf[256];
 	    for(i=0; i<len; i++) {
 		if ((ch = fgetc(ifd)) == EOF) return 0;
 		if (i<sizeof(bin_buf)) bin_buf[i] = ch;
@@ -257,6 +217,63 @@ read_element(FILE * ifd, int etype)
     } else {
 	fprintf(stderr, "# UNIMPL: %s\n", NbtName[etype]);
 	return 0;
+    }
+    return 1;
+}
+
+LOCAL int
+read_blockarray(FILE *ifd, int len)
+{
+    level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
+    open_blocks(new_level);
+
+    map_len_t test_map;
+    test_map.magic_no = MAP_MAGIC;
+    test_map.cells_x = level_prop->cells_x;
+    test_map.cells_y = level_prop->cells_y;
+    test_map.cells_z = level_prop->cells_z;
+    memcpy((void*)(level_blocks+level_prop->total_blocks),
+	    &test_map, sizeof(map_len_t));
+
+    for(int i=0; i<len; i++) {
+	int ch;
+	if ((ch = getc(ifd)) == EOF) return 0;
+	level_blocks[i] = (level_blocks[i] & 0xFF00) + (ch&0xFF);
+    }
+    return 1;
+}
+
+LOCAL int
+read_blockarray2(FILE *ifd, int len)
+{
+
+    if (level_blocks == 0 || level_prop->total_blocks < len) {
+	fprintf(stderr, "Incorrect BlockArray2 found\n");
+	return 0;
+    }
+
+    for(int i=0; i<len; i++) {
+	int ch;
+	if ((ch = getc(ifd)) == EOF) return 0;
+	level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
+    }
+    return 1;
+}
+
+LOCAL int
+read_blockarray3(FILE *ifd, int len)
+{
+
+    if (level_blocks == 0 || level_prop->total_blocks < len) {
+	fprintf(stderr, "Incorrect BlockArray3 found\n");
+	return 0;
+    }
+
+    for(int i=0; i<len; i++) {
+	int ch;
+	if ((ch = getc(ifd)) == EOF) return 0;
+	if (ch)
+	    level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
     }
     return 1;
 }

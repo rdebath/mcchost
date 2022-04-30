@@ -22,9 +22,6 @@ int insize = 0, inptr = 0;
 char user_id[NB_SLEN];
 int user_authenticated = 0;
 int server_id_op_flag = 1;
-int ignore_cpe = 0;
-int cpe_requested = 0;
-int cpe_extn_remaining = 0;
 int inetd_mode = 0;
 int start_tcp_server = 0;
 int enable_heartbeat_poll = 0;
@@ -33,8 +30,8 @@ int tcp_port_no = 25565;
 char program_name[512];
 
 char server_software[NB_SLEN] = "MCCHost";
-char server_name[NB_SLEN] = "Some Random Server";
-char server_motd[NB_SLEN] = "Welcome";
+char server_name[NB_SLEN] = "MCCHost Server";
+char server_motd[NB_SLEN] = "";
 char server_secret[NB_SLEN] = "";
 char client_software[NB_SLEN] = "(unknown)";
 
@@ -42,8 +39,12 @@ char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 int server_private = 0;
 int server_runonce = 0;
 
-int cpe_enabled = 0;
-int cpe_pending = 0;
+int cpe_disabled = 0;	// Set if disabled on the server
+int cpe_enabled = 0;	// Set if this session is using CPE
+int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
+int cpe_pending = 0;	// Currently running ExtInfo process.
+int cpe_extn_remaining = 0;
+
 block_t max_blockno_to_send = 49;
 int enable_cp437 = 0;
 
@@ -69,7 +70,7 @@ main(int argc, char **argv)
 
     if (start_tcp_server) {
 	memset(proc_args_mem, 0, proc_args_len);
-	snprintf(proc_args_mem, proc_args_len, "MC server port %d", tcp_port_no);
+	snprintf(proc_args_mem, proc_args_len, "%s port %d", server_software, tcp_port_no);
 
 	open_logfile();
 	tcpserver();
@@ -93,28 +94,20 @@ process_connection()
     login();
 
     memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "MC server (%s)", user_id);
-
-#if 0
-    // If client requests CPE, assume it'll be okay to send CPE blocks.
-    if (cpe_requested && max_blockno_to_send < 65)
-	max_blockno_to_send = 65;
-    else
-	max_blockno_to_send = 49;
-    enable_cp437 = cpe_requested;
-#endif
+    snprintf(proc_args_mem, proc_args_len, "%s (%s)", server_software, user_id);
 
     // If in classic mode, don't allow place of bedrock.
     if (!cpe_requested) server_id_op_flag = 0;
 
-    if (cpe_requested && !ignore_cpe) {
+    if (cpe_requested && !cpe_disabled) {
 	send_ext_list();
 	cpe_pending = 1;
-    } else
-	cpe_requested = 0;
+    }
 
     if (!cpe_pending)
 	complete_connection();
+
+    cpe_enabled = (cpe_requested && !cpe_disabled);
 }
 
 void
@@ -305,7 +298,7 @@ teapot()
 	print_logfile(buf);
     }
 
-    strcpy(buf, "418 I'm a teapot\n\n");
+    strcpy(buf, "418 I'm a teapot\n");
     write_to_remote(buf, strlen(buf));
     flush_to_remote();
     shutdown(line_ofd, SHUT_RDWR);

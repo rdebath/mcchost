@@ -47,8 +47,9 @@ void update_block(pkt_setblock pkt);
 #define Block_Air 0
 #define IntBE16(x) ((int16_t)(*(uint8_t*)((x)+1) + *(uint8_t*)(x)*256))
 #define PKID_SETBLOCK   0x05
+void logout(char *emsg);
 #define PKID_OPER       0x0F
-extern int ignore_cpe;
+extern int cpe_enabled;
 #define PKID_CUSTBLOCK	0x13	/*ClientSend&Rcv*/
 #define PKID_EXTENTRY   0x11    /*ClientSend&Rcv*/
 #define PKID_EXTINFO    0x10    /*ClientSend&Rcv*/

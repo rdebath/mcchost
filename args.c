@@ -13,13 +13,14 @@
  * +) /commands -- list help subjects with H_CMD.
  * +) Multiple Levels. (/newlvl, /goto, /main, /levels)
  * +) Config text file for arguments
- * +) User records.
- * +) BlockDB
+ * +) User history records.
+ * +) Block history records.
  * +) /edlin for editing text files and virtual text files (blockdefs)
  *
- * +) NAME: (*) MCCHost
+ *
  * +) Maybe embed commands: gzip, curl and gdb
  * +) Maybe exec($0, ...) on accept()
+ * +) NAME: (*) MCCHost
  *
  *
  * +) /afk command (and auto)
@@ -115,7 +116,7 @@ process_args(int argc, char **argv)
 	    continue;
 	}
 
-	if (strcmp(argv[ar], "-nocpe") == 0) { ignore_cpe = 1; continue; }
+	if (strcmp(argv[ar], "-nocpe") == 0) { cpe_disabled = 1; continue; }
 
 	fprintf(stderr, "Invalid argument '%s'\n", argv[ar]);
 	exit(1);

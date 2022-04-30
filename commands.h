@@ -1,7 +1,5 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
-void save_map_to_file(char *fn);
-extern int client_ipv4_localhost;
 typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
 #include <stdint.h>
@@ -133,8 +131,10 @@ struct chat_queue_t {
 };
 typedef struct client_data_t client_data_t;
 typedef struct client_entry_t client_entry_t;
+extern char client_software[NB_SLEN];
 struct client_entry_t {
-    char name[65];
+    char name[NB_SLEN];
+    char client_software[NB_SLEN];
     xyzhv_t posn;
     uint8_t active;
     pid_t session_id;
@@ -176,10 +176,38 @@ struct pkt_setblock {
 void update_block(pkt_setblock pkt);
 extern xyzhv_t player_posn;
 #define Block_Air 0
+#if !defined(__attribute__) && !(defined(__GNUC__) \
+    && (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7))
+#define __attribute__(__ignored__)
+#endif
+#if defined(__GNUC__) \
+    && (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+#define UNUSED __attribute__ ((__unused__))
+#endif
+#if !(defined(__GNUC__) \
+    && (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7))
+#define UNUSED
+#endif
+void cmd_place(UNUSED char *cmd,char *arg);
+void save_map_to_file(char *fn);
+extern int client_ipv4_localhost;
 void send_message_pkt(int id,char *message);
 #define level_block_queue shdat.blockq
 void send_map_reload();
 void fatal(char *emsg);
 void logout(char *emsg);
-void cmd_help(char *prefix,char *cmdargs);
 void run_command(char *msg);
+#define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place}
+void cmd_help(char *prefix,char *cmdargs);
+#define CMD_HELP \
+    {N"help", &cmd_help}, {N"faq", &cmd_help}, \
+    {N"news", &cmd_help}, {N"view", &cmd_help}, {N"rules", &cmd_help}
+typedef struct command_t command_t;
+typedef void(*cmd_func_t)(char *cmd,char *arg);
+struct command_t {
+    char * name;
+    cmd_func_t function;
+    int min_rank;
+};
+extern command_t command_list[];
+#define INTERFACE 0

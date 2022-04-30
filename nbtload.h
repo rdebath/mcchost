@@ -6,9 +6,6 @@ LOCAL void cpy_nstr(volatile char *buf,char *str,int len);
 #include <stdint.h>
 #define BLOCKMAX 1024
 LOCAL void set_colour(volatile int *colour,int by,int value);
-LOCAL void change_int_value(char *section,char *item,long long value);
-LOCAL void change_str_value(char *section,char *item,char *value);
-LOCAL void change_bin_value(char *section,char *item,uint8_t *value,int len);
 typedef struct shared_data_t shared_data_t;
 typedef struct map_info_t map_info_t;
 typedef struct xyzhv_t xyzhv_t;
@@ -137,8 +134,10 @@ struct chat_queue_t {
 };
 typedef struct client_data_t client_data_t;
 typedef struct client_entry_t client_entry_t;
+extern char client_software[NB_SLEN];
 struct client_entry_t {
-    char name[65];
+    char name[NB_SLEN];
+    char client_software[NB_SLEN];
     xyzhv_t posn;
     uint8_t active;
     pid_t session_id;
@@ -177,6 +176,12 @@ struct map_len_t {
     unsigned cells_z;
 };
 void open_blocks(char *levelname);
+LOCAL void change_int_value(char *section,char *item,long long value);
+LOCAL void change_str_value(char *section,char *item,char *value);
+LOCAL void change_bin_value(char *section,char *item,uint8_t *value,int len);
+LOCAL int read_blockarray3(FILE *ifd,int len);
+LOCAL int read_blockarray2(FILE *ifd,int len);
+LOCAL int read_blockarray(FILE *ifd,int len);
 #define level_prop shdat.prop
 void open_level_files(char *levelname,int direct);
 LOCAL int read_element(FILE *ifd,int etype);

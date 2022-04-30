@@ -146,8 +146,10 @@ struct chat_queue_t {
 };
 typedef struct client_data_t client_data_t;
 typedef struct client_entry_t client_entry_t;
+extern char client_software[NB_SLEN];
 struct client_entry_t {
-    char name[65];
+    char name[NB_SLEN];
+    char client_software[NB_SLEN];
     xyzhv_t posn;
     uint8_t active;
     pid_t session_id;

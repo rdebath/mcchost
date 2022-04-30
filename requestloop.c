@@ -201,8 +201,8 @@ process_client_message(int cmd, char * pktbuf)
 	if (cmd != PKID_EXTINFO && cmd != PKID_EXTENTRY && cmd != PKID_CUSTBLOCK)
 	    return;
     }
-    if (ignore_cpe && cmd > PKID_OPER)
-	return;
+    if (!cpe_enabled && cmd > PKID_OPER)
+	logout("Unexpected packet type received"); //return;
 
     switch(cmd)
     {

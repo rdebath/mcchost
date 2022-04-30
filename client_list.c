@@ -17,13 +17,20 @@
  * will have to be filtered and renumbered. At that point it gets complicated!
  */
 
+/* TODO:
+ * NB: Add user_count == 1 --> no scan needed
+ *     Add max occupied user slot. --> minimise scan.
+ *     Generation?
+ */
+
 #if INTERFACE
 #define MAX_USER	255
 #define MAGIC_USR	0x0012FF7E
 
 typedef struct client_entry_t client_entry_t;
 struct client_entry_t {
-    char name[65];
+    char name[NB_SLEN];
+    char client_software[NB_SLEN];
     xyzhv_t posn;
     uint8_t active;
     pid_t session_id;
@@ -64,17 +71,12 @@ check_user()
 	return;
     last_check = now;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-    client_data_t *cd = shdat.client;
-#pragma GCC diagnostic pop
-
     for(int i=0; i<MAX_USER; i++)
     {
 	if (i == user_no) continue; // Me
 	// Note: slurp it so a torn struct is unlikely.
 	// But don't lock as we're not too worried.
-	client_entry_t c = cd->user[i];
+	client_entry_t c = shdat.client->user[i];
 	if (c.active && !myuser[i].active) {
 	    // New user.
 	    send_spawn_pkt(i, c.name, c.posn);

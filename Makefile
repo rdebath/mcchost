@@ -6,9 +6,10 @@ NIL:=$(shell make makeheaders )
 endif
 endif
 
-DEFS=-g3
-CFLAGS=-O2 -Wall -Wextra -Wno-sign-compare -Wno-pointer-sign ${DEFS}
+DEFS=-O2 -g3
+CFLAGS=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign ${DEFS}
 LDFLAGS=-lz
+#LDFLAGS=-Wl,-Bstatic -lz -Wl,-Bdynamic
 #TARGET_ARCH=-m64
 PROG=server
 SRC:=$(filter-out lib_%.c,$(wildcard *.c) )

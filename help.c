@@ -12,6 +12,11 @@ struct help_text_t {
 };
 
 #define H_CMD	1	// Help for a command
+
+#define CMD_HELP \
+    {N"help", &cmd_help}, {N"faq", &cmd_help}, \
+    {N"news", &cmd_help}, {N"view", &cmd_help}, {N"rules", &cmd_help}
+
 #endif
 
 /*HELPTEXT help
@@ -41,6 +46,7 @@ void
 cmd_help(char * prefix, char *cmdargs)
 {
     char helpbuf[BUFSIZ];
+    if (prefix && strcasecmp(prefix, "help") == 0) prefix = 0;
     if (!cmdargs && !prefix)
 	strcpy(helpbuf, "help/help.txt");
     else {

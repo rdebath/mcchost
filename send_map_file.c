@@ -51,7 +51,7 @@ send_map_file()
     strm.zalloc = Z_NULL;
     strm.zfree  = Z_NULL;
     strm.opaque = Z_NULL;
-    zrv = deflateInit2 (&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+    zrv = deflateInit2 (&strm, Z_BEST_SPEED, Z_DEFLATED,
                              MAX_WBITS | 16, 8,
                              Z_DEFAULT_STRATEGY);
     if (zrv != Z_OK) {

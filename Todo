@@ -1,3 +1,10 @@
+INI file
+
+Function to load or save structure.
+    Function is List of fields
+    Loop around arrays for writing
+    Skip sections for reading.
+
 Features:
 
 Everything in level prop file into *.cw file.
