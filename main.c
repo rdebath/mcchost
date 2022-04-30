@@ -38,6 +38,7 @@ char client_software[NB_SLEN] = "(unknown)";
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 int server_private = 0;
 int server_runonce = 0;
+int save_conf = 0;
 
 int cpe_disabled = 0;	// Set if disabled on the server
 int cpe_enabled = 0;	// Set if this session is using CPE
@@ -63,8 +64,13 @@ main(int argc, char **argv)
     proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0];
     memset(proc_args_mem, 0, proc_args_len);
 
+    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1);
+
     if (!inetd_mode && !start_tcp_server && (isatty(0) || isatty(1)))
 	show_args_help();
+
+    if (save_conf)
+	save_ini_file(system_ini_fields, SERVER_CONF_NAME);
 
     init_dirs();
 
@@ -74,6 +80,9 @@ main(int argc, char **argv)
 
 	open_logfile();
 	tcpserver();
+
+	// Reload, changes?
+	load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1);
     } else {
 	line_ofd = 1; line_ifd = 0;
     }

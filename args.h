@@ -5,6 +5,7 @@ extern int server_runonce;
 extern int server_private;
 extern int start_tcp_server;
 extern int inetd_mode;
+extern int save_conf;
 void set_logfile(char *logfile_name);
 extern int tcp_port_no;
 extern int enable_heartbeat_poll;

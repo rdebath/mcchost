@@ -189,6 +189,8 @@ extern xyzhv_t player_posn;
 #define UNUSED
 #endif
 void cmd_place(UNUSED char *cmd,char *arg);
+void post_chat(int where,char *chat,int chat_len);
+void cmd_commands(UNUSED char *cmd,char *arg);
 void save_map_to_file(char *fn);
 extern int client_ipv4_localhost;
 void send_message_pkt(int id,char *message);
@@ -197,7 +199,9 @@ void send_map_reload();
 void fatal(char *emsg);
 void logout(char *emsg);
 void run_command(char *msg);
-#define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place}
+#define CMD_COMMANDS  {N"commands", &cmd_commands}, \
+    {N"cmds", &cmd_commands, .dup=1}, {N"cmdlist", &cmd_commands, .dup=1}
+#define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}
 void cmd_help(char *prefix,char *cmdargs);
 #define CMD_HELP \
     {N"help", &cmd_help}, {N"faq", &cmd_help}, \
@@ -208,6 +212,7 @@ struct command_t {
     char * name;
     cmd_func_t function;
     int min_rank;
+    int dup;
 };
 extern command_t command_list[];
 #define INTERFACE 0

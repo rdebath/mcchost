@@ -12,11 +12,11 @@
  *    -- Add locking so one load at a time ?
  * +) /commands -- list help subjects with H_CMD.
  * +) Multiple Levels. (/newlvl, /goto, /main, /levels)
- * +) Config text file for arguments
  * +) User history records.
  * +) Block history records.
  * +) /edlin for editing text files and virtual text files (blockdefs)
  *
+ * +) Config file ~/.mcchost.ini
  *
  * +) Maybe embed commands: gzip, curl and gdb
  * +) Maybe exec($0, ...) on accept()
@@ -88,6 +88,11 @@ process_args(int argc, char **argv)
 		ar++;
 		continue;
 	    }
+	}
+
+	if (strcmp(argv[ar], "-saveconf") == 0) {
+	    save_conf = 1;
+	    continue;
 	}
 
 	if (strcmp(argv[ar], "-inetd") == 0) {

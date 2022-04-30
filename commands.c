@@ -13,6 +13,7 @@ struct command_t {
     char * name;
     cmd_func_t function;
     int min_rank;
+    int dup;
 };
 #endif
 
@@ -21,6 +22,7 @@ command_t command_list[] =
 {
     CMD_HELP,
     CMD_PLACE,
+    CMD_COMMANDS,
 
     {.name = 0}
 };
@@ -126,6 +128,37 @@ Crash the server &T/crash 666&S really do it!
 
 }
 
+#if INTERFACE
+#define CMD_COMMANDS  {N"commands", &cmd_commands}, \
+    {N"cmds", &cmd_commands, .dup=1}, {N"cmdlist", &cmd_commands, .dup=1}
+#endif
+void
+cmd_commands(UNUSED char * cmd, char * arg)
+{
+    char buf[BUFSIZ];
+    int len = 0;
+
+    for(int i = 0; command_list[i].name; i++) {
+	if (command_list[i].dup)
+	    continue;
+
+	int l = strlen(command_list[i].name);
+	if (l + len + 32 < sizeof(buf)) {
+	    if (len) {
+		strcpy(buf+len, ", ");
+		len += 2;
+	    } else {
+		strcpy(buf+len, "&S");
+		len += 2;
+	    }
+	    strcpy(buf+len, command_list[i].name);
+	    len += l;
+	}
+    }
+    post_chat(1, "&SAvailable commands:", 0);
+    post_chat(1, buf, 0);
+}
+
 /*HELP place,pl H_CMD
 &T/place b [x y z] [X Y Z]
 Places the Block numbered &Tb&S at your feet or at &T[x y z]&S
@@ -134,7 +167,7 @@ cuboid between those points.
 Alias: &T/pl
 */
 #if INTERFACE
-#define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place}
+#define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}
 #endif
 void
 cmd_place(UNUSED char * cmd, char * arg)
@@ -180,6 +213,10 @@ cmd_place(UNUSED char * cmd, char * arg)
 	for(i=0; i<6; i++) { // Crop to map.
 	    if (args[i+1]<0) args[i+1] = 0;
 	    if (args[i+1]>max[i%3]) args[i+1] = max[i%3];
+	}
+	for(i=0; i<3; i++) {
+	    if (args[i+4] < args[i+1])
+		{int t=args[i+1]; args[i+1]=args[i+4]; args[i+4]=t; }
 	}
 
 	pkt.heldblock = args[0];

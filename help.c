@@ -11,6 +11,17 @@ struct help_text_t {
     char ** lines;
 };
 
+/*HELPTEXT help
+Commands can be listed with &T/commands
+To see help for a command type &T/help CommandName
+Also see /faq, /news, /view and /rules
+*/
+
+/*HELPTEXT other
+Other help files: chars, inifile, edlin
+*/
+/* Other generic help texts at the end of this file */
+
 #define H_CMD	1	// Help for a command
 
 #define CMD_HELP \
@@ -18,29 +29,6 @@ struct help_text_t {
     {N"news", &cmd_help}, {N"view", &cmd_help}, {N"rules", &cmd_help}
 
 #endif
-
-/*HELPTEXT help
-Commands can be listed with &T/commands
-To see help for a command type &T/help CommandName
-*/
-
-/*HELPTEXT view
-The view command show special files for this system,
-none are currently installed.
-*/
-
-/*HELPTEXT faq
-&cFAQ&f:
-&fExample: What does this server run on? This server runs on MCCHost
-*/
-
-/*HELPTEXT news
-No news today.
-*/
-
-/*HELPTEXT rules
-No rules found.
-*/
 
 void
 cmd_help(char * prefix, char *cmdargs)
@@ -136,3 +124,21 @@ convert_to_cp437(char *buf, int *l)
     *l = d;
 }
 #endif
+
+/*HELPTEXT view
+The view command show special files for this system,
+none are currently installed.
+*/
+
+/*HELPTEXT faq
+&cFAQ&f:
+&fExample: What does this server run on? This server runs on MCCHost
+*/
+
+/*HELPTEXT news
+No news today.
+*/
+
+/*HELPTEXT rules
+No rules found.
+*/

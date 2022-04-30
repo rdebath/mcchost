@@ -98,6 +98,12 @@ static char *lines_edlin[] = {
 static char *lines_help[] = {
     "Commands can be listed with &T/commands",
     "To see help for a command type &T/help CommandName",
+    "Also see /faq, /news, /view and /rules",
+    0};
+
+/* Help for other */
+static char *lines_other[] = {
+    "Other help files: chars, inifile, edlin",
     0};
 
 /* Help for view */
@@ -122,6 +128,24 @@ static char *lines_rules[] = {
     "No rules found.",
     0};
 
+/* Help for inifile */
+static char *lines_inifile[] = {
+    "Empty lines are ignored.",
+    "Section syntax is normal [...]",
+    "    Section syntax uses \".\" as element seperator within name.",
+    "    Elements may be numeric for array index.",
+    "    Other elements are identifiers.",
+    "",
+    "Comment lines have a \"#\" or \";\" at the start of the line",
+    "Labels are followed by \"=\" or \":\"",
+    "Spaces and tabs before \"=\", \":\", \";\", \"#\" are ignored.",
+    "",
+    "Value is trimmed at both ends for spaces and tabs.",
+    "",
+    "Quotes are not special.",
+    "Backslashes are not special",
+    0};
+
 /* Help for Welcome */
 static char *lines_Welcome[] = {
     "",0};
@@ -136,10 +160,12 @@ help_text_t helptext[] = {
     { "chars", 0, lines_chars },
     { "edlin", 0, lines_edlin },
     { "help", 0, lines_help },
+    { "other", 0, lines_other },
     { "view", 0, lines_view },
     { "faq", 0, lines_faq },
     { "news", 0, lines_news },
     { "rules", 0, lines_rules },
+    { "inifile", 0, lines_inifile },
     { "Welcome", 0, lines_Welcome },
     {0,0,0}
 };

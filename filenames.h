@@ -8,4 +8,5 @@ void init_dirs();
 #define LEVEL_QUEUE_NAME "level/%s.queue"
 #define LEVEL_BLOCKS_NAME "level/%s.blocks"
 #define LEVEL_PROPS_NAME "level/%s.props"
+#define SERVER_CONF_NAME "server.ini"
 #define INTERFACE 0

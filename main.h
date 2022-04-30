@@ -214,7 +214,19 @@ void process_connection();
 void tcpserver();
 void open_logfile();
 void init_dirs();
+typedef struct ini_state_t ini_state_t;
+struct ini_state_t {
+    FILE * fd;
+    int all;	// Write all fields
+    int write;	// Set to write fields
+    char * curr_section;
+};
+typedef int(*ini_func_t)(ini_state_t *st,char *fieldname,char **value);
+void save_ini_file(ini_func_t filetype,char *filename);
 void show_args_help();
+#define SERVER_CONF_NAME "server.ini"
+int system_ini_fields(ini_state_t *st,char *fieldname,char **fieldvalue);
+int load_ini_file(ini_func_t filetype,char *filename,int quiet);
 void process_args(int argc,char **argv);
 extern int proc_args_len;
 extern char *proc_args_mem;
@@ -226,6 +238,7 @@ extern int cpe_pending;
 extern int cpe_requested;
 extern int cpe_enabled;
 extern int cpe_disabled;
+extern int save_conf;
 extern int server_runonce;
 extern int server_private;
 extern char heartbeat_url[1024];

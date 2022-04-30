@@ -16,15 +16,13 @@ createmap(char * levelname)
 	if (level_prop->cells_x != 0 && level_prop->cells_y != 0 && level_prop->cells_z != 0)
 	    return;
 
-    map_info_t def = {
+    *level_prop = (map_info_t){
 	    .magic_no = MAP_MAGIC,
 	    .version_no = MAP_VERSION,
 	    .cells_x = 128, .cells_y = 64, .cells_z = 128,
 	    .weather = 0, -1, -1, -1, -1, -1, 7, 8, -1, 2,
 	    .spawn = { 64*32+16, 48*32, 64*32+16 }
 	};
-
-    *level_prop = def;
 
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
 
