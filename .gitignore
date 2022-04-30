@@ -3,8 +3,9 @@ server
 *.o
 tmp.mk
 
-# Also generated, but I'll allow them.
-#*.h
+# Also generated
+*.h
+lib_text.c
 
 # Crashing, etc
 core
