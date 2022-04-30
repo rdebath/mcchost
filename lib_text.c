@@ -2,8 +2,9 @@
 
 /* Help for quit */
 static char *lines_quit[] = {
-    "&T/quit [reason]",
-    "Logout",
+    "&T/quit [Reason]",
+    "Logout and leave the server",
+    "Aliases: /rq",
     0};
 
 /* Help for rq */
@@ -18,20 +19,18 @@ static char *lines_crash[] = {
     "Crash the server &T/crash 666&S really do it!",
     0};
 
+/* Help for commands,cmds,cmdlist */
+static char *lines_commands[] = {
+    "&T/commands",
+    "List all available commands",
+    "Aliases: /cmds /cmdlist",
+    0};
+
 /* Help for reload */
 static char *lines_reload[] = {
     "&T/reload [all]",
     "&T/reload&S -- Reloads your session",
     "&T/reload all&S -- Reloads everybody on this level",
-    0};
-
-/* Help for place,pl */
-static char *lines_place[] = {
-    "&T/place b [x y z] [X Y Z]",
-    "Places the Block numbered &Tb&S at your feet or at &T[x y z]&S",
-    "With both &T[x y z]&S and &T[X Y Z]&S it places a",
-    "cuboid between those points.",
-    "Alias: &T/pl",
     0};
 
 /* Help for chars */
@@ -150,22 +149,34 @@ static char *lines_inifile[] = {
 static char *lines_Welcome[] = {
     "",0};
 
+/* Help for place,pl */
+static char *lines_place[] = {
+    "&T/place b [x y z] [X Y Z]",
+    "Places the Block numbered &Tb&S at your feet or at &T[x y z]&S",
+    "With both &T[x y z]&S and &T[X Y Z]&S it places a",
+    "cuboid between those points.",
+    "Alias: &T/pl",
+    0};
+
 help_text_t helptext[] = {
-    { "quit", H_CMD, lines_quit },
+    { "quit", 0, lines_quit },
     { "rq", H_CMD, lines_rq },
     { "crash", H_CMD, lines_crash },
+    { "commands", 0, lines_commands },
+    { "cmds", 0, lines_commands },
+    { "cmdlist", 0, lines_commands },
     { "reload", H_CMD, lines_reload },
-    { "place", H_CMD, lines_place },
-    { "pl", H_CMD, lines_place },
     { "chars", 0, lines_chars },
     { "edlin", 0, lines_edlin },
-    { "help", 0, lines_help },
+    { "help", H_CMD, lines_help },
     { "other", 0, lines_other },
-    { "view", 0, lines_view },
-    { "faq", 0, lines_faq },
-    { "news", 0, lines_news },
-    { "rules", 0, lines_rules },
+    { "view", H_CMD, lines_view },
+    { "faq", H_CMD, lines_faq },
+    { "news", H_CMD, lines_news },
+    { "rules", H_CMD, lines_rules },
     { "inifile", 0, lines_inifile },
     { "Welcome", 0, lines_Welcome },
+    { "place", H_CMD, lines_place },
+    { "pl", H_CMD, lines_place },
     {0,0,0}
 };

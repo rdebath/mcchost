@@ -1,10 +1,3 @@
-INI file
-
-Function to load or save structure.
-    Function is List of fields
-    Loop around arrays for writing
-    Skip sections for reading.
-
 Features:
 
 Everything in level prop file into *.cw file.
@@ -12,8 +5,7 @@ Everything in level prop file into *.cw file.
     -- Command line routines to convert level files <--> cw file
 
 Routine to export/import level prop and server prop binary files (INI file).
-    -- External program?
-    -- Should automatic backup export server properties?
+    -- Should automatic backup export server/level properties?
     -- Virtual edlin ?
 
 When are cw files saved?

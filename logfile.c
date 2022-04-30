@@ -128,21 +128,3 @@ print_logfile(char * s)
         tm->tm_hour, tm->tm_min, tm->tm_sec,
         s);
 }
-
-void
-cp437_prt(FILE* ofd, int ch)
-{
-    int uc = cp437rom[ch & 0xFF];
-    int c1, c2, c3;
-
-    c2 = (uc/64);
-    c1 = uc - c2*64;
-    c3 = (c2/64);
-    c2 = c2 - c3 * 64;
-    if (uc < 2048)
-        fprintf(ofd, "%c%c", c2+192, c1+128);
-    else if (uc < 65536)
-        fprintf(ofd, "%c%c%c", c3+224, c2+128, c1+128);
-    else
-        fprintf(ofd, "%c%c%c", 0xef, 0xbf, 0xbd);
-}

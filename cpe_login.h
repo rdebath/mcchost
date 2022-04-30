@@ -21,7 +21,7 @@ extern int extn_evilbastard;
 extern int extn_sethotbar;
 extern int extn_instantmotd;
 extern int extn_longermessages;
-extern int enable_cp437;
+extern int extn_fullcp437;
 extern int extn_clickdistance;
 extern int extn_customblocks;
 typedef struct ext_list_t ext_list_t;

@@ -11,13 +11,13 @@ struct help_text_t {
     char ** lines;
 };
 
-/*HELPTEXT help
+/*HELP help H_CMD
 Commands can be listed with &T/commands
 To see help for a command type &T/help CommandName
 Also see /faq, /news, /view and /rules
 */
 
-/*HELPTEXT other
+/*HELP other
 Other help files: chars, inifile, edlin
 */
 /* Other generic help texts at the end of this file */
@@ -92,53 +92,20 @@ cmd_help(char * prefix, char *cmdargs)
 	post_chat(1, "&cNo file found for that topic", 0);
 }
 
-#ifdef UTFNIL
-void
-convert_to_cp437(char *buf, int *l)
-{
-    int s = 0, d = 0;
-    int utfstate[1] = {0};
-
-    for(s=0; s<*l; s++)
-    {
-	int ch = -1;
-	if (*utfstate>=0) ch= (buf[s] & 0xFF); else { s--; ch = -1; }
-
-        if (ch <= 0x7F && *utfstate == 0)
-            ;
-        else {
-            ch = decodeutf8(ch, utfstate);
-            if (ch == UTFNIL)
-                continue;
-            if (ch >= 0x80) {
-                int utf = ch;
-                ch = 0xA8; // CP437 ¿
-                for(int n=0; n<256; n++) {
-                    if (cp437rom[(n+128)&0xFF] == utf) { ch=((n+128)&0xFF) | 0x100; break; }
-                }
-            }
-        }
-
-	buf[d++] = ch;
-    }
-    *l = d;
-}
-#endif
-
-/*HELPTEXT view
+/*HELP view H_CMD
 The view command show special files for this system,
 none are currently installed.
 */
 
-/*HELPTEXT faq
+/*HELP faq H_CMD
 &cFAQ&f:
 &fExample: What does this server run on? This server runs on MCCHost
 */
 
-/*HELPTEXT news
+/*HELP news H_CMD
 No news today.
 */
 
-/*HELPTEXT rules
+/*HELP rules H_CMD
 No rules found.
 */

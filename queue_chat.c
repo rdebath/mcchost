@@ -111,21 +111,15 @@ send_queued_chats()
 void
 send_msg_pkt_filtered(int msg_flag, char * message)
 {
-    if (!enable_cp437)
+    if (!extn_fullcp437)
     {
 	char msgbuf[NB_SLEN];
-	static char cp437_asc[] =
-	    "CueaaaaceeeiiiAAE**ooouuyOUc$YPs"
-	    "aiounNao?++**!<>###||||++||+++++"
-	    "+--|-+||++--|-+----++++++++##||#"
-	    "aBTPEsyt******EN=+><++-=... n2* ";
-
 	char *s=message, *d = msgbuf;
 	for(int i = 0; i<MB_STRLEN; i++, s++) {
 	    if (*s >= ' ' && *s <= '~')
 		*d++ = *s;
 	    else if (*s & 0x80)
-		*d++ = cp437_asc[*s & 0x7f];
+		*d++ = cp437_ascii[*s & 0x7f];
 	    else
 		*d++ = '*';
 	}

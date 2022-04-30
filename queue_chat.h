@@ -1,9 +1,10 @@
 /* This file was automatically generated.  Do not edit! */
 #undef INTERFACE
 void send_message_pkt(int id,char *message);
+extern char cp437_ascii[];
 #define MB_STRLEN 64
 #define NB_SLEN (MB_STRLEN+1)
-extern int enable_cp437;
+extern int extn_fullcp437;
 void send_msg_pkt_filtered(int msg_flag,char *message);
 void send_queued_chats();
 void wipe_last_chat_queue_id();

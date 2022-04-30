@@ -13,7 +13,7 @@ struct command_t {
     char * name;
     cmd_func_t function;
     int min_rank;
-    int dup;
+    int dup;		// Don't show on /cmds (usually a duplicate)
 };
 #endif
 
@@ -23,6 +23,7 @@ command_t command_list[] =
     CMD_HELP,
     CMD_PLACE,
     CMD_COMMANDS,
+    CMD_QUITS,
 
     {.name = 0}
 };
@@ -33,8 +34,6 @@ command_t command_list[] =
 // Command expansion/aliases
 //      Which way? /cuboid-walls <--> /cuboid walls
 //      /os map <--> /map
-
-// Check strtok to one that can use quotes too. 2nd arg is "use rest" ?
 
 void
 run_command(char * msg)
@@ -51,61 +50,6 @@ run_command(char * msg)
 	    command_list[i].function(cmd, strtok(0, ""));
 	    return;
 	}
-    }
-
-    // Some trivial commands.
-
-/*HELP quit H_CMD
-&T/quit [reason]
-Logout
-*/
-
-    if (strcasecmp(cmd, "quit") == 0) {
-	char * arg = strtok(0, "");
-	if (arg) {
-	    snprintf(buf, sizeof(buf), "Left the game: %s", arg);
-	    logout(buf);
-	} else
-	    logout("Left the game.");
-    }
-
-/*HELP rq H_CMD
-&T/rq
-Logout with RAGEQUIT!!
-*/
-
-    if (strcasecmp(cmd, "rq") == 0) logout("RAGEQUIT!!");
-
-    if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
-	logout("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
-
-/*HELP crash H_CMD
-&T/crash
-Crash the server &T/crash 666&S really do it!
-*/
-
-    if (strcasecmp(cmd, "crash") == 0 || strcasecmp(cmd, "servercrash") == 0) {
-	char * crash_type = strtok(0,"");
-	assert(!crash_type || strcmp(crash_type, "666"));
-	fatal("Server crash! Error code 42");
-    }
-
-/*HELP reload H_CMD
-&T/reload [all]
-&T/reload&S -- Reloads your session
-&T/reload all&S -- Reloads everybody on this level
-*/
-
-    if (strcasecmp(cmd, "reload") == 0)
-    {
-	char * arg = strtok(0, " ");
-	if (arg == 0)
-	    send_map_reload();
-	else if (strcasecmp(arg, "all") == 0)
-	    level_block_queue->generation += 2;
-	else
-	    send_message_pkt(0, "&cUsage: /reload [all]");
-	return;
     }
 
     if (strcasecmp(cmd, "save") == 0)
@@ -128,12 +72,57 @@ Crash the server &T/crash 666&S really do it!
 
 }
 
+/*HELP quit
+&T/quit [Reason]
+Logout and leave the server
+Aliases: /rq
+*/
+/*HELP rq H_CMD
+&T/rq
+Logout with RAGEQUIT!!
+*/
+/*HELP crash H_CMD
+&T/crash
+Crash the server &T/crash 666&S really do it!
+*/
+#if INTERFACE
+#define CMD_QUITS  {N"quit", &cmd_quit}, {N"rq", &cmd_quit}, \
+    {N"hax", &cmd_quit, .dup=1}, {N"hacks", &cmd_quit, .dup=1}, \
+    {N"crash", &cmd_quit, .dup=1}, {N"servercrash", &cmd_quit, .dup=1}
+#endif
+void
+cmd_quit(char * cmd, char * arg)
+{
+    if (strcasecmp(cmd, "rq") == 0) logout("RAGEQUIT!!");
+
+    if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
+	logout("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
+
+    if (strcasecmp(cmd, "crash") == 0 || strcasecmp(cmd, "servercrash") == 0) {
+	char * crash_type = arg;
+	assert(!crash_type || strcmp(crash_type, "666"));
+	fatal("Server crash! Error code 42");
+    }
+
+    char buf[256];
+    if (arg) {
+	snprintf(buf, sizeof(buf), "Left the game: %s", arg);
+	logout(buf);
+    } else
+	logout("Left the game.");
+}
+
+/*HELP commands,cmds,cmdlist
+&T/commands
+List all available commands
+Aliases: /cmds /cmdlist
+*/
 #if INTERFACE
 #define CMD_COMMANDS  {N"commands", &cmd_commands}, \
     {N"cmds", &cmd_commands, .dup=1}, {N"cmdlist", &cmd_commands, .dup=1}
 #endif
 void
-cmd_commands(UNUSED char * cmd, char * arg)
+cmd_commands(UNUSED char * cmd, UNUSED char * arg)
 {
     char buf[BUFSIZ];
     int len = 0;
@@ -159,78 +148,22 @@ cmd_commands(UNUSED char * cmd, char * arg)
     post_chat(1, buf, 0);
 }
 
-/*HELP place,pl H_CMD
-&T/place b [x y z] [X Y Z]
-Places the Block numbered &Tb&S at your feet or at &T[x y z]&S
-With both &T[x y z]&S and &T[X Y Z]&S it places a
-cuboid between those points.
-Alias: &T/pl
+/*HELP reload H_CMD
+&T/reload [all]
+&T/reload&S -- Reloads your session
+&T/reload all&S -- Reloads everybody on this level
 */
 #if INTERFACE
-#define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}
+#define CMD_RELOAD  {N"reload", &cmd_reload}
 #endif
 void
-cmd_place(UNUSED char * cmd, char * arg)
+cmd_reload(UNUSED char * cmd, char * arg)
 {
-    int args[8] = {0};
-    int cnt = 0;
-    char * ar = arg;
-    if (ar)
-	for(int i = 0; i<8; i++) {
-	    char * p = strtok(ar, " "); ar = 0;
-	    if (p == 0) break;
-	    // if (i == 0) check block name; else
-	    // check for relative x/y/z posn
-	    args[i] = atoi(p);
-	    cnt = i+1;
-	}
-    if (cnt != 1 && cnt != 4 && cnt != 7) {
-	send_message_pkt(0, "&cUsage: /place b [x y z] [X Y Z]");
-	return;
-    }
-
-    pkt_setblock pkt;
-    pkt.heldblock = args[0];
-    pkt.mode = (pkt.heldblock != Block_Air);
-    pkt.block = pkt.mode?pkt.heldblock:Block_Air;
-    if (cnt == 1) {
-	pkt.coord.x = player_posn.x/32;	// check range [0..cells_x)
-	pkt.coord.y = (player_posn.y+16)/32;// Add half a block for slabs
-	pkt.coord.z = player_posn.z/32;
-	update_block(pkt);
-    } else if(cnt == 4) {
-	pkt.coord.x = args[1];
-	pkt.coord.y = args[2];
-	pkt.coord.z = args[3];
-	update_block(pkt);
-    } else {
-	int i, x, y, z;
-	int max[3] = { level_prop->cells_x-1, level_prop->cells_y-1, level_prop->cells_z-1};
-	for(i=0; i<3; i++) {
-	    if (args[i+1]<0 && args[i+4]<0) return; // Off the map.
-	    if (args[i+1]>max[i] && args[i+4]>max[i]) return; // Off the map.
-	}
-	for(i=0; i<6; i++) { // Crop to map.
-	    if (args[i+1]<0) args[i+1] = 0;
-	    if (args[i+1]>max[i%3]) args[i+1] = max[i%3];
-	}
-	for(i=0; i<3; i++) {
-	    if (args[i+4] < args[i+1])
-		{int t=args[i+1]; args[i+1]=args[i+4]; args[i+4]=t; }
-	}
-
-	pkt.heldblock = args[0];
-	pkt.mode = (pkt.heldblock != Block_Air);
-	pkt.block = pkt.mode?pkt.heldblock:Block_Air;
-	for(y=args[2]; y<=args[5]; y++)
-	    for(x=args[1]; x<=args[4]; x++)
-		for(z=args[3]; z<=args[6]; z++)
-		{
-		    pkt.coord.x = x;
-		    pkt.coord.y = y;
-		    pkt.coord.z = z;
-		    update_block(pkt);
-		}
-    }
+    if (arg == 0)
+	send_map_reload();
+    else if (strcasecmp(arg, "all") == 0)
+	level_block_queue->generation += 2;
+    else
+	send_message_pkt(0, "&cUsage: /reload [all]");
     return;
 }

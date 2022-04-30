@@ -36,6 +36,7 @@ char server_secret[NB_SLEN] = "";
 char client_software[NB_SLEN] = "(unknown)";
 
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
+char logfile_pattern[1024] = "";
 int server_private = 0;
 int server_runonce = 0;
 int save_conf = 0;
@@ -47,7 +48,6 @@ int cpe_pending = 0;	// Currently running ExtInfo process.
 int cpe_extn_remaining = 0;
 
 block_t max_blockno_to_send = 49;
-int enable_cp437 = 0;
 
 char * level_name = "main";
 
@@ -64,10 +64,11 @@ main(int argc, char **argv)
     proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0];
     memset(proc_args_mem, 0, proc_args_len);
 
-    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1);
-
     if (!inetd_mode && !start_tcp_server && (isatty(0) || isatty(1)))
 	show_args_help();
+
+    if (*logfile_pattern)
+	set_logfile(logfile_pattern);
 
     if (save_conf)
 	save_ini_file(system_ini_fields, SERVER_CONF_NAME);

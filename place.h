@@ -163,8 +163,20 @@ struct shared_data_t {
     shmem_t dat[SHMID_COUNT];
 };
 extern struct shared_data_t shdat;
-#define level_block_queue shdat.blockq
-void send_map_reload();
+#define level_prop shdat.prop
+typedef struct pkt_setblock pkt_setblock;
+typedef struct xyz_t xyz_t;
+struct xyz_t { int x, y, z; };
+struct pkt_setblock {
+    struct xyz_t coord;
+    int mode;
+    block_t block;
+    block_t heldblock;
+};
+void update_block(pkt_setblock pkt);
+extern xyzhv_t player_posn;
+#define Block_Air 0
+void send_message_pkt(int id,char *message);
 #if !defined(__attribute__) && !(defined(__GNUC__) \
     && (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7))
 #define __attribute__(__ignored__)
@@ -177,35 +189,6 @@ void send_map_reload();
     && (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7))
 #define UNUSED
 #endif
-void cmd_reload(UNUSED char *cmd,char *arg);
-#define CMD_RELOAD  {N"reload", &cmd_reload}
-void post_chat(int where,char *chat,int chat_len);
-void cmd_commands(UNUSED char *cmd,UNUSED char *arg);
-void fatal(char *emsg);
-void logout(char *emsg);
-void cmd_quit(char *cmd,char *arg);
-void save_map_to_file(char *fn);
-void send_message_pkt(int id,char *message);
-extern int client_ipv4_localhost;
-void run_command(char *msg);
-#define CMD_QUITS  {N"quit", &cmd_quit}, {N"rq", &cmd_quit}, \
-    {N"hax", &cmd_quit, .dup=1}, {N"hacks", &cmd_quit, .dup=1}, \
-    {N"crash", &cmd_quit, .dup=1}, {N"servercrash", &cmd_quit, .dup=1}
-#define CMD_COMMANDS  {N"commands", &cmd_commands}, \
-    {N"cmds", &cmd_commands, .dup=1}, {N"cmdlist", &cmd_commands, .dup=1}
 void cmd_place(UNUSED char *cmd,char *arg);
 #define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}
-void cmd_help(char *prefix,char *cmdargs);
-#define CMD_HELP \
-    {N"help", &cmd_help}, {N"faq", &cmd_help}, \
-    {N"news", &cmd_help}, {N"view", &cmd_help}, {N"rules", &cmd_help}
-typedef struct command_t command_t;
-typedef void(*cmd_func_t)(char *cmd,char *arg);
-struct command_t {
-    char * name;
-    cmd_func_t function;
-    int min_rank;
-    int dup;		// Don't show on /cmds (usually a duplicate)
-};
-extern command_t command_list[];
 #define INTERFACE 0

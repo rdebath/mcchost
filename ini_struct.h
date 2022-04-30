@@ -54,6 +54,7 @@ extern int cpe_disabled;
             else \
                 ini_write_bool(st, section, fld, (_var)); \
         }
+extern char logfile_pattern[1024];
 #define MB_STRLEN 64
 #define NB_SLEN (MB_STRLEN+1)
 extern char server_secret[NB_SLEN];

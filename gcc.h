@@ -13,4 +13,3 @@
 #define UNUSED
 #endif
 #define INTERFACE 0
-extern int cp437rom[256];

@@ -8,11 +8,8 @@
 
 /*
  * TODO:
- * +) scan for -dir first, then load defaults, then rescan command line.
- *
  * +) load/save level to *.cw and use for backups, restores and "unload".
  *    -- Add locking so one load at a time ?
- * +) /commands -- list help subjects with H_CMD.
  * +) Multiple Levels. (/newlvl, /goto, /main, /levels)
  * +) User history records.
  * +) Block history records.
@@ -36,97 +33,104 @@
 void
 process_args(int argc, char **argv)
 {
-    for(int ar = 1; ar<argc; ar++) {
-	if (argv[ar][0] != '-') {
-	    fprintf(stderr, "Skipping argument '%s'\n", argv[ar]);
-	    continue;
-	}
-
-	if (ar+1 < argc) {
-	    if (strcmp(argv[ar], "-name") == 0) {
-		strncpy(server_name, argv[ar+1], sizeof(server_name)-1);
-		ar++;
+    for(int pass = 0; pass<2; pass++)
+    {
+	for(int ar = 1; ar<argc; ar++) {
+	    if (argv[ar][0] != '-') {
+		fprintf(stderr, "Skipping argument '%s'\n", argv[ar]);
 		continue;
 	    }
 
-	    if (strcmp(argv[ar], "-motd") == 0) {
-		strncpy(server_motd, argv[ar+1], sizeof(server_motd)-1);
-		ar++;
+	    if (ar+1 < argc) {
+		if (strcmp(argv[ar], "-name") == 0) {
+		    strncpy(server_name, argv[ar+1], sizeof(server_name)-1);
+		    ar++;
+		    continue;
+		}
+
+		if (strcmp(argv[ar], "-motd") == 0) {
+		    strncpy(server_motd, argv[ar+1], sizeof(server_motd)-1);
+		    ar++;
+		    continue;
+		}
+
+		if (strcmp(argv[ar], "-salt") == 0 || strcmp(argv[ar], "-secret") == 0) {
+		    ar++;
+		    strncpy(server_secret, argv[ar], sizeof(server_secret)-1);
+		    // Try to hide the argument used as salt from ps(1)
+		    for(char * p = argv[ar]; *p; p++) *p = 'X';
+		    continue;
+		}
+
+		if (strcmp(argv[ar], "-heartbeat") == 0) {
+		    strncpy(heartbeat_url, argv[ar+1], sizeof(heartbeat_url)-1);
+		    ar++;
+		    enable_heartbeat_poll = 1;
+		    continue;
+		}
+
+		if (strcmp(argv[ar], "-port") == 0) {
+		    tcp_port_no = atoi(argv[ar+1]);
+		    ar++;
+		    continue;
+		}
+
+		if (strcmp(argv[ar], "-log") == 0) {
+		    strncpy(logfile_pattern, argv[ar+1], sizeof(logfile_pattern)-1);
+		    ar++;
+		    continue;
+		}
+
+		if (strcmp(argv[ar], "-dir") == 0) {
+		    if (pass == 0)
+			if(chdir(strdup(argv[ar+1])) < 0) {
+			    perror(argv[ar+1]);
+			    exit(1);
+			}
+		    ar++;
+		    continue;
+		}
+	    }
+
+	    if (strcmp(argv[ar], "-saveconf") == 0) {
+		save_conf = 1;
 		continue;
 	    }
 
-	    if (strcmp(argv[ar], "-salt") == 0 || strcmp(argv[ar], "-secret") == 0) {
-		ar++;
-		strncpy(server_secret, argv[ar], sizeof(server_secret)-1);
-		// Try to hide the argument used as salt from ps(1)
-		for(char * p = argv[ar]; *p; p++) *p = 'X';
+	    if (strcmp(argv[ar], "-inetd") == 0) {
+		inetd_mode = 1;
 		continue;
 	    }
 
-	    if (strcmp(argv[ar], "-heartbeat") == 0) {
-		strncpy(heartbeat_url, argv[ar+1], sizeof(heartbeat_url)-1);
-		ar++;
+	    if (strcmp(argv[ar], "-tcp") == 0) {
+		start_tcp_server = 1;
+		continue;
+	    }
+
+	    if (strcmp(argv[ar], "-net") == 0) {
+		start_tcp_server = 1;
 		enable_heartbeat_poll = 1;
 		continue;
 	    }
 
-	    if (strcmp(argv[ar], "-port") == 0) {
-		tcp_port_no = atoi(argv[ar+1]);
-		ar++;
+	    if (strcmp(argv[ar], "-private") == 0) {
+		server_private = 1;
 		continue;
 	    }
 
-	    if (strcmp(argv[ar], "-log") == 0) {
-		set_logfile(strdup(argv[ar+1]));
-		ar++;
+	    if (strcmp(argv[ar], "-runonce") == 0) {
+		server_runonce = 1;
 		continue;
 	    }
 
-	    if (strcmp(argv[ar], "-dir") == 0) {
-		if(chdir(strdup(argv[ar+1])) < 0) {
-		    perror(argv[ar+1]);
-		    exit(1);
-		}
-		ar++;
-		continue;
-	    }
+	    if (strcmp(argv[ar], "-nocpe") == 0) { cpe_disabled = 1; continue; }
+
+	    fprintf(stderr, "Invalid argument '%s'\n", argv[ar]);
+	    exit(1);
 	}
 
-	if (strcmp(argv[ar], "-saveconf") == 0) {
-	    save_conf = 1;
-	    continue;
-	}
-
-	if (strcmp(argv[ar], "-inetd") == 0) {
-	    inetd_mode = 1;
-	    continue;
-	}
-
-	if (strcmp(argv[ar], "-tcp") == 0) {
-	    start_tcp_server = 1;
-	    continue;
-	}
-
-	if (strcmp(argv[ar], "-net") == 0) {
-	    start_tcp_server = 1;
-	    enable_heartbeat_poll = 1;
-	    continue;
-	}
-
-	if (strcmp(argv[ar], "-private") == 0) {
-	    server_private = 1;
-	    continue;
-	}
-
-	if (strcmp(argv[ar], "-runonce") == 0) {
-	    server_runonce = 1;
-	    continue;
-	}
-
-	if (strcmp(argv[ar], "-nocpe") == 0) { cpe_disabled = 1; continue; }
-
-	fprintf(stderr, "Invalid argument '%s'\n", argv[ar]);
-	exit(1);
+	if (pass == 0)
+	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1);
     }
 
     if (enable_heartbeat_poll && server_secret[0] == 0) {

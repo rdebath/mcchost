@@ -16,7 +16,7 @@ struct ini_state_t {
 };
 #endif
 
-/*HELPTEXT inifile
+/*HELP inifile
 Empty lines are ignored.
 Section syntax is normal [...]
     Section syntax uses "." as element seperator within name.
@@ -49,6 +49,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAY("name", server_name);
 	INI_STRARRAY("motd", server_motd);
 	INI_STRARRAY("salt", server_secret);
+	INI_STRARRAY("logfile", logfile_pattern);
 	INI_BOOLVAL("nocpe", cpe_disabled);
 	INI_BOOLVAL("tcp", start_tcp_server);
 	INI_STRARRAY("heartbeat", heartbeat_url);

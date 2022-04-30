@@ -1,5 +1,6 @@
+#include <stdio.h>
 
-#include "definitions.h"
+#include "cp437.h"
 
 /*HELP chars
 ___0123456789ABCDEF0123456789ABCDEF_
@@ -12,6 +13,63 @@ ___0123456789ABCDEF0123456789ABCDEF_
 6:|└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀|
 7:|αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ |
 */
+
+void
+cp437_prt(FILE* ofd, int ch)
+{
+    int uc = cp437rom[ch & 0xFF];
+    int c1, c2, c3;
+
+    c2 = (uc/64);
+    c1 = uc - c2*64;
+    c3 = (c2/64);
+    c2 = c2 - c3 * 64;
+    if (uc < 2048)
+        fprintf(ofd, "%c%c", c2+192, c1+128);
+    else if (uc < 65536)
+        fprintf(ofd, "%c%c%c", c3+224, c2+128, c1+128);
+    else
+        fprintf(ofd, "%c%c%c", 0xef, 0xbf, 0xbd);
+}
+
+#ifdef UTFNIL
+void
+convert_to_cp437(char *buf, int *l)
+{
+    int s = 0, d = 0;
+    int utfstate[1] = {0};
+
+    for(s=0; s<*l; s++)
+    {
+        int ch = -1;
+        if (*utfstate>=0) ch= (buf[s] & 0xFF); else { s--; ch = -1; }
+
+        if (ch <= 0x7F && *utfstate == 0)
+            ;
+        else {
+            ch = decodeutf8(ch, utfstate);
+            if (ch == UTFNIL)
+                continue;
+            if (ch >= 0x80) {
+                int utf = ch;
+                ch = 0xA8; // CP437 ¿
+                for(int n=0; n<256; n++) {
+                    if (cp437rom[(n+128)&0xFF] == utf) { ch=((n+128)&0xFF) | 0x100; break; }
+                }
+            }
+        }
+
+        buf[d++] = ch;
+    }
+    *l = d;
+}
+#endif
+
+char cp437_ascii[] =
+	"CueaaaaceeeiiiAAE**ooouuyOUc$YPs"
+	"aiounNao?++**!<>###||||++||+++++"
+	"+--|-+||++--|-+----++++++++##||#"
+	"aBTPEsyt******EN=+><++-=... n2* ";
 
 int cp437rom[256] = {
     0x2400, 0x263a, 0x263b, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022,
@@ -47,17 +105,3 @@ int cp437rom[256] = {
     0x2261, 0x00b1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00f7, 0x2248,
     0x00b0, 0x2219, 0x00b7, 0x221a, 0x207f, 0x00b2, 0x25a0, 0x00a0
 };
-
-
-#if INTERFACE
-#if defined(__GNUC__) \
-    && (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
-#define UNUSED __attribute__ ((__unused__))
-
-#else
-#define UNUSED
-#ifndef __attribute__
-#define __attribute__(__ignored__)
-#endif
-#endif
-#endif
