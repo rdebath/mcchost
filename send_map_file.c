@@ -63,7 +63,7 @@ send_map_file()
     strm.next_in = blockbuffer;
     strm.avail_in = 4;
 
-    intptr_t level_blocks_used = 0;
+    uintptr_t level_blocks_used = 0;
     unsigned char zblockbuffer[1024];
     int percent = 0;
     uintptr_t blocks_sent = 0;
@@ -97,7 +97,7 @@ send_map_file()
 	    blocks_sent += 1;
 	    strm.avail_out = sizeof(zblockbuffer);
 	    strm.next_out = zblockbuffer;
-	    percent = level_blocks_used * 100 / level_len;
+	    percent = (int64_t)level_blocks_used * 100 / level_len;
 
 	    blocks_buffered ++;
 	    if (blocks_buffered > 64)

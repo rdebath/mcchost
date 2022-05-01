@@ -46,13 +46,13 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	// -log --> call fn, todo.
 	// Main level
 
-	INI_STRARRAY("name", server_name);
-	INI_STRARRAY("motd", server_motd);
-	INI_STRARRAY("salt", server_secret);
-	INI_STRARRAY("logfile", logfile_pattern);
+	INI_STRARRAYCP437("name", server_name);		//CP437
+	INI_STRARRAYCP437("motd", server_motd);		//CP437
+	INI_STRARRAY("salt", server_secret);		//Base62
+	INI_STRARRAY("logfile", logfile_pattern);	//Binary
 	INI_BOOLVAL("nocpe", cpe_disabled);
 	INI_BOOLVAL("tcp", start_tcp_server);
-	INI_STRARRAY("heartbeat", heartbeat_url);
+	INI_STRARRAY("heartbeat", heartbeat_url);	//ASCII
 	INI_BOOLVAL("pollheartbeat", enable_heartbeat_poll);
 	INI_INTVAL("port", tcp_port_no);
 	INI_BOOLVAL("inetd", inetd_mode);
@@ -197,7 +197,32 @@ ini_write_str(ini_state_t *st, char * section, char *fieldname, char *value)
 	st->curr_section = strdup(section);
 	fprintf(st->fd, "[%s]\n", section);
     }
-    fprintf(st->fd, "%s = %s\n", fieldname, value);
+    fprintf(st->fd, "%s =%s%s\n", fieldname, *value?" ":"", value);
+}
+
+LOCAL void
+ini_write_cp437(ini_state_t *st, char * section, char *fieldname, char *value)
+{
+    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
+	if (st->curr_section) free(st->curr_section);
+	st->curr_section = strdup(section);
+	fprintf(st->fd, "[%s]\n", section);
+    }
+    fprintf(st->fd, "%s =%s", fieldname, *value?" ":"\n");
+    if (*value == 0) return;
+    while(*value)
+	cp437_prt(st->fd, *value++);
+    fputc('\n', st->fd);
+}
+
+LOCAL void
+ini_read_cp437(char * buf, int len, char *value)
+{
+    int vlen = strlen(value);
+    convert_to_cp437(value, &vlen);
+    if (vlen >= len) vlen = len-1;
+    memcpy(buf, value, vlen);
+    buf[vlen] = 0;
 }
 
 LOCAL void
@@ -250,6 +275,16 @@ ini_read_bool(int *var, char * value)
                 snprintf((_var), (_len), "%s", *fieldvalue); \
             else \
                 ini_write_str(st, section, fld, (_var)); \
+        }
+
+#define INI_STRARRAYCP437(_field, _var) \
+        fld = _field; \
+        if (st->all || strcmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                ini_read_cp437((_var), sizeof(_var), *fieldvalue); \
+            else \
+                ini_write_cp437(st, section, fld, (_var)); \
         }
 
 #define INI_INTVAL(_field, _var) \

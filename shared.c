@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <assert.h>
 #include <sys/stat.h>
 
 /*
@@ -42,7 +43,7 @@
 typedef struct shmem_t shmem_t;
 struct shmem_t {
     void * ptr;
-    intptr_t len;
+    uintptr_t len;
     int lock_fd;
 };
 
@@ -149,6 +150,7 @@ open_level_files(char * levelname, int direct)
 	|| level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
     {
 	send_message_pkt(0, "&eCreating new default level");
+	flush_to_remote();
 	createmap(levelname);
     } else
         // NB: Missing file here makes an Air map.
@@ -162,16 +164,24 @@ open_blocks(char * levelname)
 {
     char sharename[256];
     if (level_blocks) {
-	intptr_t sz = level_blocks_len;
+	uintptr_t sz = level_blocks_len;
 	(void)munmap((void*)level_blocks, sz);
 	level_blocks_len = 0;
 	level_blocks = 0;
     }
 
     sprintf(sharename, LEVEL_BLOCKS_NAME, levelname);
-    level_blocks_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y *
-	level_prop->cells_z * sizeof(*level_blocks) +
-	sizeof(map_len_t);
+    int64_t l =
+	    (int64_t)level_prop->cells_x * level_prop->cells_y *
+	    level_prop->cells_z * sizeof(*level_blocks) +
+	    sizeof(map_len_t);
+
+    if((uintptr_t)l != l || (off_t)l != l || (size_t)l != l) {
+	errno = EINVAL;
+	perror("Server address space too small for this map");
+	fatal("Map too large for this server compilation.");
+    }
+    level_blocks_len = l;
     allocate_shared(sharename, level_blocks_len, shdat.dat+SHMID_BLOCKS);
     level_blocks = shdat.dat[SHMID_BLOCKS].ptr;
 
@@ -183,14 +193,14 @@ void
 stop_shared(void)
 {
     if (level_prop) {
-	intptr_t sz = level_prop_len;
+	uintptr_t sz = level_prop_len;
 	(void)munmap((void*)level_prop, sz);
 	level_prop_len = 0;
 	level_prop = 0;
     }
 
     if (level_blocks) {
-	intptr_t sz = level_blocks_len;
+	uintptr_t sz = level_blocks_len;
 	(void)munmap((void*)level_blocks, sz);
 	level_blocks_len = 0;
 	level_blocks = 0;
@@ -260,7 +270,7 @@ void
 stop_block_queue()
 {
     if (level_block_queue) {
-	intptr_t sz = level_block_queue_len;
+	uintptr_t sz = level_block_queue_len;
 	(void)munmap((void*)level_block_queue, sz);
 	level_block_queue_len = 0;
 	level_block_queue = 0;
@@ -291,7 +301,7 @@ void
 stop_client_list()
 {
     if (client_list) {
-	intptr_t sz = client_list_len;
+	uintptr_t sz = client_list_len;
 	(void)munmap((void*)client_list, sz);
 	client_list_len = 0;
 	client_list = 0;
@@ -337,7 +347,7 @@ void
 stop_chat_queue()
 {
     if (level_chat_queue) {
-	intptr_t sz = level_chat_queue_len;
+	uintptr_t sz = level_chat_queue_len;
 	(void)munmap((void*)level_chat_queue, sz);
 	level_chat_queue_len = 0;
 	level_chat_queue = 0;
@@ -351,11 +361,13 @@ stop_chat_queue()
 }
 
 LOCAL void
-allocate_shared(char * share_name, int share_size, shmem_t *shm)
+allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
 {
-    intptr_t sz;
+    uintptr_t sz;
     void * shm_p;
     int shared_fd = -1;
+
+    assert((size_t)share_size > 0 && (off_t)share_size > 0);
 
     shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW, 0600);
     if (shared_fd < 0) {

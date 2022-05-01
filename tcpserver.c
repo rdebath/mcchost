@@ -204,6 +204,22 @@ send_heartbeat_poll()
     char softwarebuf[256];
     int valid_salt = (*server_secret != 0 && *server_secret != '-');
 
+    // {"errors":[["Only first 256 unicode codepoints may be used in server names."]],"response":"","status":"fail"}
+    //
+    // This is a LIE.
+    // The codepoints are in cp437, but are encode using the UTF8 bit patterns.
+    //
+    // Printable ASCII are fine.
+    //
+    // Control characters (☺☻♥♦♣♠•◘○◙♂♀♪♫☼▶◀↕‼¶§▬↨↑↓→←∟↔▲▼) appear to fail
+    // The website doesn't error, but the ClassiCube doesn't show it.
+    //
+    // High controls (ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒ) are baaad
+    // --> Oopsie Woopsie! Uwu We made a fucky wucky!! A wittle fucko boingo!
+    // --> The code monkeys at our headquarters are working VEWY HAWD to fix this!
+    //
+    // Characters above 160 appear to work "correctly".
+
     snprintf(cmdbuf, sizeof(cmdbuf),
 	"%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s",
 	heartbeat_url,
@@ -213,21 +229,21 @@ send_heartbeat_poll()
 	"version=",7,
 	"users=",current_user_count(),
 	"salt=",valid_salt?server_secret:"0000000000000000",
-	"name=",quoteurl(server_name, namebuf, sizeof(namebuf)),
-	"software=",quoteurl(server_software, softwarebuf, sizeof(softwarebuf))
+	"name=",ccnet_cp437_quoteurl(server_name, namebuf, sizeof(namebuf)),
+	"software=",ccnet_cp437_quoteurl(server_software, softwarebuf, sizeof(softwarebuf))
 	);
 
     if (fork() == 0) {
 	close(listen_socket);
 	// SHUT UP CURL!!
-	E(execlp("curl", "curl", "-s", "-S", "-o", "/dev/null", cmdbuf, (char*)0), "exec of curl failed");
+	E(execlp("curl", "curl", "-s", "-S", "-o", "log/curl_resp.txt", cmdbuf, (char*)0), "exec of curl failed");
 	// Note: Returned string is web client URL
 	exit(0);
     }
 }
 
 LOCAL char *
-quoteurl(char *s, char *dest, int len)
+ccnet_cp437_quoteurl(char *s, char *dest, int len)
 {
     char * d = dest;
     for(; *s && d<dest+len-1; s++) {
@@ -235,13 +251,41 @@ quoteurl(char *s, char *dest, int len)
 	     (*s >= '0' && *s <= '9') ||
 	     (*s == '-') || (*s == '_') || (*s == '.') || (*s == '~'))
 	    *d++ = *s;
-	else {
+	else if (*s >= ' ' && (*s & 0x80) == 0) // ASCII
+	{
 	    char lb[4];
 	    if (d>dest+len-4) break;
 	    *d++ = '%';
 	    sprintf(lb, "%02x", *s & 0xFF);
 	    *d++ = lb[0];
 	    *d++ = lb[1];
+	}
+	else if ((*s &0x7F) < ' ') // Control characters.
+	{
+	    if (*s & 0x80)
+		*d++ = cp437_ascii[*s & 0x7F];
+	    else
+		*d++ = '*';
+	}
+	else // Workable.
+	{
+	    int c1, c2, c3;
+	    int uc = *s & 0xFF;
+	    char lb[10];
+	    if (d>dest+len-10) break;
+	    *lb = 0;
+
+	    c2 = (uc/64);
+	    c1 = uc - c2*64;
+	    c3 = (c2/64);
+	    c2 = c2 - c3 * 64;
+	    if (uc < 2048)
+		sprintf(lb, "%%%02x%%%02x", c2+192, c1+128);
+	    else if (uc < 65536)
+		sprintf(lb, "%%%02x%%%02x%%%02x", c3+224, c2+128, c1+128);
+
+	    for(char *p=lb; *p; p++)
+		*d++ = *p;
 	}
     }
     *d = 0;

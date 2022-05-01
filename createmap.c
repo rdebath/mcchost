@@ -83,10 +83,16 @@ createmap(char * levelname)
     if (!blocks_valid) {
         int x, y, z, y1;
 
-	// Calculate normal spawn posn.
-	level_prop->spawn.x = level_prop->cells_x/2   *32+16;
-	level_prop->spawn.y = level_prop->cells_y*3/4 *32;
-	level_prop->spawn.z = level_prop->cells_z/2   *32+16;
+	// Calculate normal spawn posn (max out at 1023)
+	level_prop->spawn.x = level_prop->cells_x/2;
+	level_prop->spawn.y = level_prop->cells_y*3/4;
+	level_prop->spawn.z = level_prop->cells_z/2;
+	if (level_prop->spawn.x >= 1024) level_prop->spawn.x = 1023;
+	if (level_prop->spawn.y >= 1024) level_prop->spawn.y = 1023;
+	if (level_prop->spawn.z >= 1024) level_prop->spawn.z = 1023;
+	level_prop->spawn.x = level_prop->spawn.x *32+16;
+	level_prop->spawn.y = level_prop->spawn.y *32;
+	level_prop->spawn.z = level_prop->spawn.z *32+16;
 
 	// Calculation used for edge level in classic client.
         y1 = level_prop->cells_y/2-1;

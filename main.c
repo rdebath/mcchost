@@ -60,9 +60,11 @@ main(int argc, char **argv)
     snprintf(program_name, sizeof(program_name), "%s", argv[0]);
 
     process_args(argc, argv);
-    proc_args_mem = argv[0];
-    proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0];
-    memset(proc_args_mem, 0, proc_args_len);
+    if (proc_args_len > 30) {
+	proc_args_mem = argv[0];
+	proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0];
+	memset(proc_args_mem, 0, proc_args_len);
+    }
 
     if (!inetd_mode && !start_tcp_server && (isatty(0) || isatty(1)))
 	show_args_help();
@@ -76,8 +78,10 @@ main(int argc, char **argv)
     init_dirs();
 
     if (start_tcp_server) {
-	memset(proc_args_mem, 0, proc_args_len);
-	snprintf(proc_args_mem, proc_args_len, "%s port %d", server_software, tcp_port_no);
+	if (proc_args_len > 30) {
+	    memset(proc_args_mem, 0, proc_args_len);
+	    snprintf(proc_args_mem, proc_args_len, "%s port %d", server_software, tcp_port_no);
+	}
 
 	open_logfile();
 	tcpserver();
@@ -103,8 +107,10 @@ process_connection()
 
     login();
 
-    memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "%s (%s)", server_software, user_id);
+    if (proc_args_len > 30) {
+	memset(proc_args_mem, 0, proc_args_len);
+	snprintf(proc_args_mem, proc_args_len, "%s (%s)", server_software, user_id);
+    }
 
     // If in classic mode, don't allow place of bedrock.
     if (!cpe_requested) server_id_op_flag = 0;

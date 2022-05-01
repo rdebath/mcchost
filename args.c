@@ -118,6 +118,11 @@ process_args(int argc, char **argv)
 		continue;
 	    }
 
+	    if (strcmp(argv[ar], "-public") == 0) {
+		server_private = 0;
+		continue;
+	    }
+
 	    if (strcmp(argv[ar], "-runonce") == 0) {
 		server_runonce = 1;
 		continue;

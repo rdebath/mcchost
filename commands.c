@@ -24,6 +24,7 @@ command_t command_list[] =
     CMD_PLACE,
     CMD_COMMANDS,
     CMD_QUITS,
+    CMD_RELOAD,
 
     {.name = 0}
 };
@@ -38,8 +39,6 @@ command_t command_list[] =
 void
 run_command(char * msg)
 {
-    char buf[256];
-
     if (msg[1] == 0) return; //TODO: Repeat command.
 
     char * cmd = strtok(msg+1, " ");
@@ -66,8 +65,11 @@ run_command(char * msg)
 	return;
     }
 
-    snprintf(buf, sizeof(buf), "&eUnknown command \"%.20s\".", cmd);
-    send_message_pkt(0, buf);
+    {
+	char buf[256];
+	snprintf(buf, sizeof(buf), "&eUnknown command \"%.20s\".", cmd);
+	send_message_pkt(0, buf);
+    }
     return;
 
 }
@@ -104,8 +106,8 @@ cmd_quit(char * cmd, char * arg)
 	fatal("Server crash! Error code 42");
     }
 
-    char buf[256];
     if (arg) {
+	char buf[256];
 	snprintf(buf, sizeof(buf), "Left the game: %s", arg);
 	logout(buf);
     } else
