@@ -46,22 +46,132 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	// -log --> call fn, todo.
 	// Main level
 
-	INI_STRARRAYCP437("name", server_name);		//CP437
-	INI_STRARRAYCP437("motd", server_motd);		//CP437
-	INI_STRARRAY("salt", server_secret);		//Base62
-	INI_STRARRAY("logfile", logfile_pattern);	//Binary
+	INI_STRARRAYCP437("name", server_name);
+	INI_STRARRAYCP437("motd", server_motd);
+	INI_STRARRAY(st->write?"; salt":"salt", server_secret);	//Base62
+	INI_STRARRAY("logfile", logfile_pattern);		//Binary
 	INI_BOOLVAL("nocpe", cpe_disabled);
 	INI_BOOLVAL("tcp", start_tcp_server);
-	INI_STRARRAY("heartbeat", heartbeat_url);	//ASCII
+	INI_STRARRAY("heartbeat", heartbeat_url);		//ASCII
 	INI_BOOLVAL("pollheartbeat", enable_heartbeat_poll);
-	INI_INTVAL("port", tcp_port_no);
+	INI_INTVAL(st->write && tcp_port_no==25565?"; port":"port", tcp_port_no);
 	INI_BOOLVAL("inetd", inetd_mode);
 	INI_BOOLVAL("opflag", server_id_op_flag);
 	INI_BOOLVAL("private", server_private);
-	INI_BOOLVAL("runonce", server_runonce);
+	INI_BOOLVAL(st->write?"; runonce":"runonce", server_runonce);
     }
 
-    // ...
+    return found;
+}
+
+
+int
+level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
+{
+    char *section = "", *fld;
+    int found = 0;
+
+    section = "level";
+    if (st->all || strcmp(section, st->curr_section) == 0)
+    {
+	INI_INTVAL("size_x", level_prop->cells_x);
+	INI_INTVAL("size_y", level_prop->cells_y);
+	INI_INTVAL("size_z", level_prop->cells_z);
+	INI_INTVAL("spawn_x", level_prop->spawn.x);
+	INI_INTVAL("spawn_y", level_prop->spawn.y);
+	INI_INTVAL("spawn_z", level_prop->spawn.z);
+	INI_INTVAL("spawn_h", level_prop->spawn.h);
+	INI_INTVAL("spawn_v", level_prop->spawn.v);
+	INI_INTVAL("clickdistance", level_prop->click_distance);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+	INI_STRARRAY("motd", level_prop->motd);
+#pragma GCC diagnostic pop
+
+	// hacks_flags
+
+    }
+
+    section = "level.env";
+    if (st->all || strcmp(section, st->curr_section) == 0)
+    {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+	INI_STRARRAY("texture", level_prop->texname);
+#pragma GCC diagnostic pop
+	INI_INTVAL("weathertype", level_prop->weather);
+	INI_INTVAL("skycolour", level_prop->sky_colour);
+	INI_INTVAL("cloudcolour", level_prop->cloud_colour);
+	INI_INTVAL("fog_colour", level_prop->fog_colour);
+	INI_INTVAL("ambientcolour", level_prop->ambient_colour);
+	INI_INTVAL("sunlightcolour", level_prop->sunlight_colour);
+	INI_INTVAL("sideblock", level_prop->side_block);
+	INI_INTVAL("edgeblock", level_prop->edge_block);
+	INI_INTVAL("sidelevel", level_prop->side_level);
+	INI_INTVAL("cloudheight", level_prop->clouds_height);
+	INI_INTVAL("maxfog", level_prop->max_fog);
+	INI_INTVAL("weatherspeed", level_prop->weather_speed);
+	INI_INTVAL("weatherfade", level_prop->weather_fade);
+	INI_INTVAL("expfog", level_prop->exp_fog);
+	INI_INTVAL("skyboxhorspeed", level_prop->skybox_hor_speed);
+	INI_INTVAL("skyboxverspeed", level_prop->skybox_ver_speed);
+    }
+
+    int bn = 0;
+    char sectionbuf[128];
+    do
+    {
+	//struct blockdef_t blockdef[BLOCKMAX];
+	//int invt_order[BLOCKMAX];
+	//uint8_t block_perms[BLOCKMAX];
+
+	if (st->all) {
+	    if (!level_prop->blockdef[bn].defined) { bn++; continue; }
+	    sprintf(sectionbuf, "level.blockdef.%d", bn);
+	    section = sectionbuf;
+	    if (st->write)
+		fprintf(st->fd, "\n");
+	} else if (strncmp(st->curr_section, "level.blockdef.", 15) == 0) {
+	    bn = atoi(st->curr_section+15);
+	    if (!bn && st->curr_section[15] == '0') break;
+	    if (bn < 0 || bn >= BLOCKMAX) break;
+	    sprintf(sectionbuf, "level.blockdef.%d", bn);
+	    section = sectionbuf;
+	    level_prop->blockdef[bn].defined = 1;
+	} else
+	    break;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+	INI_STRARRAY("name", level_prop->blockdef[bn].name);
+#pragma GCC diagnostic pop
+	INI_INTVAL("collide", level_prop->blockdef[bn].collide);
+	INI_INTVAL("transparent", level_prop->blockdef[bn].transparent);
+	INI_INTVAL("walksound", level_prop->blockdef[bn].walksound);
+	INI_INTVAL("blockslight", level_prop->blockdef[bn].blockslight);
+	INI_INTVAL("shape", level_prop->blockdef[bn].shape);
+	INI_INTVAL("draw", level_prop->blockdef[bn].draw);
+	INI_INTVAL("speed", level_prop->blockdef[bn].speed);
+	INI_INTVAL("fallback", level_prop->blockdef[bn].fallback);
+	INI_INTVAL("texture.0", level_prop->blockdef[bn].textures[0]);
+	INI_INTVAL("texture.1", level_prop->blockdef[bn].textures[1]);
+	INI_INTVAL("texture.2", level_prop->blockdef[bn].textures[2]);
+	INI_INTVAL("texture.3", level_prop->blockdef[bn].textures[3]);
+	INI_INTVAL("texture.4", level_prop->blockdef[bn].textures[4]);
+	INI_INTVAL("texture.5", level_prop->blockdef[bn].textures[5]);
+	INI_INTVAL("fog.0", level_prop->blockdef[bn].fog[0]);
+	INI_INTVAL("fog.1", level_prop->blockdef[bn].fog[1]);
+	INI_INTVAL("fog.2", level_prop->blockdef[bn].fog[2]);
+	INI_INTVAL("fog.3", level_prop->blockdef[bn].fog[3]);
+	INI_INTVAL("min.x", level_prop->blockdef[bn].coords[0]);
+	INI_INTVAL("min.y", level_prop->blockdef[bn].coords[1]);
+	INI_INTVAL("min.z", level_prop->blockdef[bn].coords[2]);
+	INI_INTVAL("max.x", level_prop->blockdef[bn].coords[3]);
+	INI_INTVAL("max.y", level_prop->blockdef[bn].coords[4]);
+	INI_INTVAL("max.z", level_prop->blockdef[bn].coords[5]);
+
+	bn++;
+    } while(!st->all || bn < BLOCKMAX);
 
     return found;
 }
@@ -88,7 +198,7 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet)
     st.fd = fopen(filename, "r");
     if (!st.fd) {
 	if (!quiet)
-	    post_chat(1, "&WFile not found", 0);
+	    printf_chat("&WFile not found: &e%s", filename);
 	return -1;
     }
 
@@ -106,22 +216,18 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet)
 	char label[64];
 	int rv = ini_decode_lable(&p, label, sizeof(label));
 	if (!rv) {
-	    char err[1024];
-	    snprintf(err, sizeof(err), "&WInvalid label '%.100s'", ibuf);
 	    if (quiet)
-		fprintf(stderr, "%s in %s section %s\n", err+2, filename, st.curr_section?:"-");
+		fprintf(stderr, "Invalid label %s in %s section %s\n", ibuf, filename, st.curr_section?:"-");
 	    else
-		post_chat(1, err, 0);
+		printf_chat("&WInvalid label &S%s%W in &S%s&W section &S%s&W\n", ibuf, filename, st.curr_section?:"-");
 	    if (++errcount>9) break;
 	    continue;
 	}
 	if (!st.curr_section || !filetype(&st, label, &p)) {
-	    char err[1024];
-	    snprintf(err, sizeof(err), "&WUnknown label '%.100s'", ibuf);
 	    if (quiet)
-		fprintf(stderr, "%s in %s section %s\n", err+2, filename, st.curr_section?:"-");
+		fprintf(stderr, "Unknown label %s in %s section %s\n", ibuf, filename, st.curr_section?:"-");
 	    else
-		post_chat(1, err, 0);
+		printf_chat("&WUnknown label &S%s%W in &S%s&W section &S%s&W\n", ibuf, filename, st.curr_section?:"-");
 	    if (++errcount>9) break;
 	}
     }
@@ -172,7 +278,7 @@ ini_decode_lable(char **line, char *buf, int len)
 		*d++ = *p - 'A' + 'a';
 	    continue;
 	}
-	if ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'z')) {
+	if ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'z') || *p == '.') {
 	    if (d<buf+len-1)
 		*d++ = *p;
 	    continue;

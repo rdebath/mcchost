@@ -108,10 +108,13 @@ send_queued_chats()
     }
 }
 
+/* Sends a message packet, filtering the CP437 to ASCII if required */
 void
 send_msg_pkt_filtered(int msg_flag, char * message)
 {
-    if (!extn_fullcp437)
+    if (extn_fullcp437)
+	send_message_pkt(msg_flag, message);
+    else
     {
 	char msgbuf[NB_SLEN];
 	char *s=message, *d = msgbuf;
@@ -125,6 +128,5 @@ send_msg_pkt_filtered(int msg_flag, char * message)
 	}
 	*d++ = 0;
 	send_message_pkt(msg_flag, msgbuf);
-    } else
-	send_message_pkt(msg_flag, message);
+    }
 }

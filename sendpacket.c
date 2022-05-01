@@ -120,7 +120,10 @@ send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
     *p++ = player_id;
     p += nb_string_write(p, playername);
     nb_short(&p, posn.x);
-    nb_short(&p, posn.y+29);
+//    if (player_id == 255)
+//        nb_short(&p, posn.y+29);
+//    else
+        nb_short(&p, posn.y+51);
     nb_short(&p, posn.z);
     *p++ = posn.h;
     *p++ = posn.v;
@@ -163,7 +166,10 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 	*p++ = PKID_POSN;
 	*p++ = player_id;
 	nb_short(&p, posn.x);
-	nb_short(&p, posn.y+29);
+	if (player_id == 255)
+	    nb_short(&p, posn.y+29);
+	else
+	    nb_short(&p, posn.y+51);
 	nb_short(&p, posn.z);
 	*p++ = posn.h;
 	*p++ = posn.v;

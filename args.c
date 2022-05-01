@@ -8,6 +8,9 @@
 
 /*
  * TODO:
+ * +) Cleanup of killed sessions without user return.
+ * +) Detach for tcpserver mode. (fork() tiny process to catch stderr to log/.)
+ *
  * +) load/save level to *.cw and use for backups, restores and "unload".
  *    -- Add locking so one load at a time ?
  * +) Multiple Levels. (/newlvl, /goto, /main, /levels)
@@ -15,13 +18,14 @@
  * +) Block history records.
  * +) /edlin for editing text files and virtual text files (blockdefs)
  *
- * +) Config file ~/.mcchost.ini
+ * +) Global gonfig file ~/.mcchost.ini
  *
- * +) Maybe embed commands: gzip, curl and gdb
+ * +) Maybe embed called commands: gzip, curl and gdb(stacktrace)
  * +) Maybe exec($0, ...) on accept()
  * +) NAME: (*) MCCHost
  *
  *
+ * +) /spawn command
  * +) /afk command (and auto)
  * +) /mode command (Grass, bedrock, water etc)
  * +) /info command

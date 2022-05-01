@@ -87,9 +87,9 @@ cmd_help(char * prefix, char *cmdargs)
     }
 
     if (prefix == 0)
-	post_chat(1, "&cNo help found for that topic", 0);
+	printf_chat("&WNo help found for topic '%s'", cmdargs);
     else
-	post_chat(1, "&cNo file found for that topic", 0);
+	printf_chat("&WNo %s file found for '%s'", prefix, cmdargs);
 }
 
 /*HELP view H_CMD

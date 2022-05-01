@@ -29,7 +29,7 @@ cmd_place(UNUSED char * cmd, char * arg)
 	    cnt = i+1;
 	}
     if (cnt != 1 && cnt != 4 && cnt != 7) {
-	send_message_pkt(0, "&cUsage: /place b [x y z] [X Y Z]");
+	printf_chat("&WUsage: /place b [x y z] [X Y Z]");
 	return;
     }
 

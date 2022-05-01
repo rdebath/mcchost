@@ -1,6 +1,7 @@
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
@@ -77,7 +78,7 @@ close_logfile()
 }
 
 void
-write_logfile(char * str, int len)
+log_chat_message(char * str, int len)
 {
     if (!logfile) return;
 
@@ -95,12 +96,13 @@ write_logfile(char * str, int len)
     for(int i=0; i<len; i++) {
 	if (cf) {
 	    cf = 0;
-	    if (isascii(str[i]) && isxdigit(str[i]))
+	    if (isascii(str[i]) && isalnum(str[i]))
 		continue;
 	    fputc('&', logfile);
-	} else if (str[i] == '&' && !logfile_raw)
-	    cf = 1;
-	else if (str[i] >= ' ' && str[i] <= '~')
+	} else if (str[i] == '&' && !logfile_raw) {
+	    cf = 1; continue;
+	}
+	if (str[i] >= ' ' && str[i] <= '~')
 	    fputc(str[i], logfile);
 	else if (!logfile_raw)
 	    cp437_prt(logfile, str[i]);
@@ -113,9 +115,11 @@ write_logfile(char * str, int len)
 }
 
 void
-print_logfile(char * s)
+fprintf_logfile(char * fmt, ...)
 {
     if (!logfile) return;
+
+    va_list ap;
 
     time_t now;
     time(&now);
@@ -123,8 +127,13 @@ print_logfile(char * s)
 
     check_reopen_logfile(tm);
 
-    fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d %s\n",
+    fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d ",
         tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-        tm->tm_hour, tm->tm_min, tm->tm_sec,
-        s);
+        tm->tm_hour, tm->tm_min, tm->tm_sec);
+
+    va_start(ap, fmt);
+    vfprintf(logfile, fmt, ap);
+    va_end(ap);
+
+    fprintf(logfile, "\n");
 }

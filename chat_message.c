@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -47,7 +48,7 @@ process_chat_message(int msg_flag, char * msg)
 	msg++;
     }
 
-    convert_chat_message(msg);
+    convert_inbound_chat(msg);
 
     if (pending_chat_size >= 65536) {
 	free(pending_chat);
@@ -56,7 +57,7 @@ process_chat_message(int msg_flag, char * msg)
 }
 
 void
-convert_chat_message(char * msg)
+convert_inbound_chat(char * msg)
 {
     char * buf = malloc(strlen(msg) + 256);
     char * p = buf + sprintf(buf, "&e%s:&f ", user_id);
@@ -80,7 +81,7 @@ convert_chat_message(char * msg)
     free(buf);
 }
 
-/* Post a long chat message to everyone (0) or just me (1) */
+/* Post a long cp437 chat message to everyone (0) or just me (1) */
 void
 post_chat(int where, char * chat, int chat_len)
 {
@@ -90,7 +91,7 @@ post_chat(int where, char * chat, int chat_len)
     if (chat_len <= 0) chat_len = strlen(chat);
 
     if (where == 0)
-	write_logfile(chat, chat_len);
+	log_chat_message(chat, chat_len);
 
     int s, d, ws = -1, wd = -1;
     for(d = s = 0; s<chat_len; s++) {
@@ -176,4 +177,26 @@ post_chat(int where, char * chat, int chat_len)
 
     // If someone spams they get it all back.
     send_queued_chats();
+}
+
+/* Printf to the chat a pretty long message normally to just me.
+ * Uses cp437 and clips at 4k. Prefix format with '@' to broadcast.
+ */
+void
+printf_chat(char * fmt, ...)
+{
+    char pbuf[BUFSIZ];
+    int to = 1;
+    char *f = fmt;
+    va_list ap;
+    va_start(ap, fmt);
+    if (*f == '@') { f++, to = 0; }
+    int l = vsnprintf(pbuf, sizeof(pbuf), f, ap);
+    if (l > sizeof(pbuf)) {
+	strcpy(pbuf+sizeof(pbuf)-4, "...");
+	l = sizeof(pbuf);
+    }
+    va_end(ap);
+
+    post_chat(to, pbuf, l);
 }

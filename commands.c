@@ -55,21 +55,21 @@ run_command(char * msg)
     {
 	char * arg = strtok(0, "");
 	if (!client_ipv4_localhost)
-	    send_message_pkt(0, "&cUsage: /save [Auth] filename");
+	    printf_chat("&WUsage: /save [Auth] filename");
 	else if (!arg || !*arg)
-	    send_message_pkt(0, "&cUsage: /save filename");
+	    printf_chat("&WUsage: /save filename");
 	else {
-	    save_map_to_file(arg);
-	    send_message_pkt(0, "&eFile saved");
+	    char buf[256];
+	    snprintf(buf, sizeof(buf), "backup/%.20s.1.cw", arg);
+	    save_map_to_file(buf);
+	    snprintf(buf, sizeof(buf), "backup/%.20s.1.ini", arg);
+	    save_ini_file(level_ini_fields, buf);
+	    printf_chat("&SFile saved");
 	}
 	return;
     }
 
-    {
-	char buf[256];
-	snprintf(buf, sizeof(buf), "&eUnknown command \"%.20s\".", cmd);
-	send_message_pkt(0, buf);
-    }
+    printf_chat("&SUnknown command \"%s\".", cmd);
     return;
 
 }
@@ -146,8 +146,8 @@ cmd_commands(UNUSED char * cmd, UNUSED char * arg)
 	    len += l;
 	}
     }
-    post_chat(1, "&SAvailable commands:", 0);
-    post_chat(1, buf, 0);
+    printf_chat("&SAvailable commands:");
+    printf_chat("%s", buf);
 }
 
 /*HELP reload H_CMD
@@ -166,6 +166,6 @@ cmd_reload(UNUSED char * cmd, char * arg)
     else if (strcasecmp(arg, "all") == 0)
 	level_block_queue->generation += 2;
     else
-	send_message_pkt(0, "&cUsage: /reload [all]");
+	printf_chat("&WUsage: /reload [all]");
     return;
 }

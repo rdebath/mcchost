@@ -24,7 +24,9 @@ cp437_prt(FILE* ofd, int ch)
     c1 = uc - c2*64;
     c3 = (c2/64);
     c2 = c2 - c3 * 64;
-    if (uc < 2048)
+    if (uc < 128 && uc >= 0)
+	putc(uc, ofd);
+    else if (uc < 2048)
         fprintf(ofd, "%c%c", c2+192, c1+128);
     else if (uc < 65536)
         fprintf(ofd, "%c%c%c", c3+224, c2+128, c1+128);

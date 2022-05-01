@@ -26,6 +26,14 @@ createmap(char * levelname)
 
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+    memcpy(level_prop->blockdef, default_blocks, sizeof(default_blocks));
+#pragma GCC diagnostic pop
+
+    for (int i = 0; i<66; i++)
+	level_prop->blockdef[i].defined = 1;
+
     for (int i = 1; i<BLOCKMAX; i++)
 	level_prop->blockdef[i].blockslight = 1;
 

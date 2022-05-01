@@ -139,7 +139,7 @@ start_user()
 		(kill(cd->user[i].session_id, 0) < 0 && errno != EPERM))
 	    {
 		// Must have died.
-		send_message_pkt(0, "&eNote: Wiped old session.");
+		printf_chat("&SNote: Wiped old session.");
 		cd->generation++;
 		cd->user[i].active = 0;
 		cd->user[i].session_id = 0;

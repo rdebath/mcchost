@@ -445,8 +445,8 @@ change_bin_value(char * section, char * item, uint8_t * value, int len)
 	    int i;
 	    if (len < 6) return;
 	    for(i=0; i<6; i++) {
-		if (level_prop->blockdef[current_block].cords[i] != value[i])
-		level_prop->blockdef[current_block].cords[i] = value[i];
+		if (level_prop->blockdef[current_block].coords[i] != value[i])
+		level_prop->blockdef[current_block].coords[i] = value[i];
 	    }
 
 	}

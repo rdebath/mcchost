@@ -21,7 +21,6 @@ typedef uint16_t block_t;
 #define BLK_NUM_FOG	4
 #define BLK_NUM_COORD	6
 
-//MARKSTRUCT
 typedef struct map_info_t map_info_t;
 struct map_info_t {
     int magic_no;
@@ -91,13 +90,13 @@ struct blockdef_t {
     uint8_t collide;
     uint8_t transparent;
     uint8_t walksound;
-    uint8_t blockslight;
+    uint8_t blockslight;	//NB: 0-No, 1-Yes, 2/3 flip client side.
     uint8_t shape;
     uint8_t draw;
     float speed;
     uint16_t textures[BLK_NUM_TEX];
     uint8_t fog[BLK_NUM_FOG];
-    int8_t cords[BLK_NUM_COORD];
+    int8_t coords[BLK_NUM_COORD];
 
     block_t fallback;
     block_t inventory_order;
@@ -119,7 +118,6 @@ struct blockdef_t {
     block_t grass_block;
     block_t dirt_block;
 };
-//ENDSTRUCT
 
 #define Block_Air 0
 #define Block_Stone 1

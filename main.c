@@ -155,22 +155,16 @@ complete_connection()
 void
 send_welcome_message()
 {
-    char buf[256];
-    sprintf(buf, "&eWelcome &7%s", user_id);
-    send_message_pkt(0, buf);
-    sprintf(buf, "&a+ &7%s &econnected", user_id);
-    post_chat(0, buf, strlen(buf));
+    printf_chat("&SWelcome &7%s", user_id);
+    printf_chat("@&a+ &7%s &Sconnected", user_id);
     cmd_help("welcome", 0);
 }
 
 void
 send_disconnect_message()
 {
-    char buf[256];
-    sprintf(buf, "&c- &7%s &edisconnected", user_id);
-    post_chat(0, buf, strlen(buf));
-    sprintf(buf, "Connection dropped for %s", user_id);
-    print_logfile(buf);
+    printf_chat("@&c- &7%s &Sdisconnected", user_id);
+    fprintf_logfile("Connection dropped for %s", user_id);
 }
 
 void
@@ -225,15 +219,11 @@ login()
 	    quiet_drop("Invalid user name");
 	}
 
-    {
-	char buf[256];
-	if (client_ipv4_port)
-	    sprintf(buf, "Logging in user '%s' from %s:%d",
-		user_id, client_ipv4_str, client_ipv4_port);
-	else
-	    sprintf(buf, "Logging in user '%s'", user_id);
-	print_logfile(buf);
-    }
+    if (client_ipv4_port)
+	fprintf_logfile("Logging in user '%s' from %s:%d",
+	    user_id, client_ipv4_str, client_ipv4_port);
+    else
+	fprintf_logfile("Logging in user '%s'", user_id);
 
     if (*server_secret != 0 && *server_secret != '-') {
 	if (strlen(mppass) != 32)
@@ -279,20 +269,15 @@ fatal(char * emsg)
     assert(!in_fatal);
     in_fatal = 1;
 
-    if (level_chat_queue) {
-	char buf[256];
-	sprintf(buf, "&c- &7%s &cCrashed: &e%s", user_id, emsg);
-	post_chat(0, buf, strlen(buf));
-    }
+    if (level_chat_queue)
+	printf_chat("@&W- &7%s &WCrashed: &S%s", user_id, emsg);
     disconnect(1, emsg);
 }
 
 void
 logout(char * emsg)
 {
-    char buf[256];
-    sprintf(buf, "&c- &7%s &e%s", user_id, emsg);
-    post_chat(0, buf, strlen(buf));
+    printf_chat("@&W- &7%s &S%s", user_id, emsg);
     disconnect(0, emsg);
 }
 
@@ -307,15 +292,13 @@ teapot()
 {
     if (line_ofd < 0) return;
 
-    char buf[256];
-    if (client_ipv4_port) {
-	sprintf(buf, "Failed connect %s:%d, Invalid peer process",
+    if (client_ipv4_port)
+	fprintf_logfile("Failed connect %s:%d, Invalid peer process",
 	    client_ipv4_str, client_ipv4_port);
-	print_logfile(buf);
-    }
 
-    strcpy(buf, "418 I'm a teapot\n");
-    write_to_remote(buf, strlen(buf));
+    char msg[] = "418 I'm a teapot\n";
+    write_to_remote(msg, sizeof(msg)-1);
+
     flush_to_remote();
     shutdown(line_ofd, SHUT_RDWR);
     if (line_ofd != line_ifd)
@@ -328,18 +311,16 @@ disconnect(int rv, char * emsg)
 {
     if (line_ofd < 0) return;
 
-    char buf[256];
     if (client_ipv4_port && *user_id)
-	sprintf(buf, "Disconnect %s:%d, user '%s', %s",
+	fprintf_logfile("Disconnect %s:%d, user '%s', %s",
 	    client_ipv4_str, client_ipv4_port, user_id, emsg);
     else if (client_ipv4_port)
-	sprintf(buf, "Disconnect %s:%d, %s",
+	fprintf_logfile("Disconnect %s:%d, %s",
 	    client_ipv4_str, client_ipv4_port, emsg);
     else if (*user_id)
-	sprintf(buf, "Disconnect user '%s', %s", user_id, emsg);
+	fprintf_logfile("Disconnect user '%s', %s", user_id, emsg);
     else
-	sprintf(buf, "Disconnect %s", emsg);
-    print_logfile(buf);
+	fprintf_logfile("Disconnect %s", emsg);
 
     stop_user();
     send_discon_msg_pkt(emsg);
