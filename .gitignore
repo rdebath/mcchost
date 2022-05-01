@@ -7,7 +7,8 @@ tmp.mk
 *.h
 lib_text.c
 
-# Crashing, etc
+# Crashing, debugging etc
+tags
 core
 core.*
 gmon.out

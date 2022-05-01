@@ -36,20 +36,17 @@ update_block(pkt_setblock pkt)
     // Physics Like updates ... these are trivial instant updates that allow
     // the classic client to enter blocks not in it's menu.
 
-    // Fix Grass/Dirt block below
-    if (pkt.coord.y > 0) {
-	int blockslight = level_prop->blockdef[b].blockslight;
-	uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
-	block_t blk = level_blocks[ind2];
-	if (blk >= BLOCKMAX) blk = BLOCKMAX-1;
-
-	if (!blockslight && level_prop->blockdef[blk].grass_block != 0) {
-	    level_blocks[ind2] = level_prop->blockdef[blk].grass_block;
-	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
-	}
-	if (blockslight && level_prop->blockdef[blk].dirt_block != 0) {
-	    level_blocks[ind2] = level_prop->blockdef[blk].dirt_block;
-	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
+    // Stack blocks.
+    if (pkt.coord.y > 0 && level_prop->blockdef[b].stack_block != 0)
+    {
+        block_t newblock = level_prop->blockdef[b].stack_block;
+        uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
+	if (b == level_blocks[ind2]) {
+	    level_blocks[ind2] = newblock;
+	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, newblock);
+	    b = 0;
+	    if (level_blocks[index] == b)
+		send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
 	}
     }
 
@@ -65,21 +62,28 @@ update_block(pkt_setblock pkt)
 	int blockslight = level_prop->blockdef[above].blockslight;
 	if (blockslight && level_prop->blockdef[b].dirt_block != 0)
 	    b = level_prop->blockdef[b].dirt_block;
-	else if (!blockslight && level_prop->blockdef[b].grass_block != 0)
-	    b = level_prop->blockdef[b].grass_block;
+	else if (!blockslight && level_prop->blockdef[b].grass_block != 0) {
+	    b = grow_dirt_block(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
+	}
     }
 
-    // Stack blocks.
-    if (pkt.coord.y > 0 && level_prop->blockdef[b].stack_block != 0)
-    {
-        block_t newblock = level_prop->blockdef[b].stack_block;
-        uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
-	if (b == level_blocks[ind2]) {
-	    level_blocks[ind2] = newblock;
-	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, newblock);
-	    b = 0;
-	    if (level_blocks[index] == b)
-		send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
+    // Fix Grass/Dirt block below
+    if (pkt.coord.y > 0) {
+	int blockslight = level_prop->blockdef[b].blockslight;
+	uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
+	block_t blk = level_blocks[ind2];
+	if (blk >= BLOCKMAX) blk = BLOCKMAX-1;
+
+	if (!blockslight && level_prop->blockdef[blk].grass_block != 0) {
+	    int t = grow_dirt_block(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
+	    if (t != level_blocks[ind2]) {
+		level_blocks[ind2] = t;
+		send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
+	    }
+	}
+	if (blockslight && level_prop->blockdef[blk].dirt_block != 0) {
+	    level_blocks[ind2] = level_prop->blockdef[blk].dirt_block;
+	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
 	}
     }
 
@@ -87,6 +91,35 @@ update_block(pkt_setblock pkt)
 	level_blocks[index] = b;
 	send_update(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
     }
+}
+
+int
+grow_dirt_block(int x, int y, int z, block_t blk)
+{
+    // Dirt gets changed into grass IF there is another grass block nearby.
+    // This includes the grass block below that's about to change into dirt.
+    int dx, dy, dz, found = 0;
+    int grass = level_prop->blockdef[blk].grass_block;
+
+    if (grass)
+	for(dx=-1; dx<2 && !found; dx++) {
+	    if (x+dx < 0 || x+dx>=level_prop->cells_x) continue;
+	    for(dy=-1; dy<2 && !found; dy++) {
+		if (y+dy < 0 || y+dy>=level_prop->cells_y) continue;
+		for(dz=-1; dz<2 && !found; dz++)
+		{
+		    if (z+dz < 0 || z+dz>=level_prop->cells_z) continue;
+		    if (dx==0 && dy==0 && dz==0) continue;
+		    if (level_blocks[World_Pack(x+dx,y+dy,z+dz)] == grass)
+			found = 1;
+		}
+	    }
+	}
+
+    if (found)
+	return grass;
+    else
+	return blk;
 }
 
 void
