@@ -6,7 +6,7 @@ NIL:=$(shell make makeheaders >&2 )
 endif
 endif
 
-DEFS=-O2 -g3
+DEFS=-O2 -g3 -D_FILE_OFFSET_BITS=64
 CFLAGS=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign ${DEFS}
 LDFLAGS=-lz
 #LDFLAGS=-Wl,-Bstatic -lz -Wl,-Bdynamic
@@ -15,9 +15,13 @@ PROG=server
 SRC:=$(filter-out lib_%.c,$(wildcard *.c) )
 OBJ:=$(patsubst %.c,%.o,${SRC}) lib_md5.o
 OBJ2=lib_text.o
+INAME=mcchost-server
 
 ${PROG}: ${OBJ} ${OBJ2}
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -o ${PROG} ${OBJ} ${OBJ2} $(LDFLAGS)
+
+install:
+	cp -p ${PROG} "${HOME}/bin/${INAME}"
 
 ifeq ($(MAKECMDGOALS),clean)
 clean:

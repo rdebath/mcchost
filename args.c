@@ -8,8 +8,8 @@
 
 /*
  * TODO:
- * +) Cleanup of killed sessions without user return.
- * +) Detach for tcpserver mode. (fork() tiny process to catch stderr to log/.)
+ * +) Move private flag to shared memory. (Others?)
+ * +) Restart listener after update?
  *
  * +) load/save level to *.cw and use for backups, restores and "unload".
  *    -- Add locking so one load at a time ?
@@ -41,7 +41,8 @@ process_args(int argc, char **argv)
     {
 	for(int ar = 1; ar<argc; ar++) {
 	    if (argv[ar][0] != '-') {
-		fprintf(stderr, "Skipping argument '%s'\n", argv[ar]);
+		if (pass == 0)
+		    fprintf(stderr, "Skipping argument '%s'\n", argv[ar]);
 		continue;
 	    }
 
@@ -143,7 +144,7 @@ process_args(int argc, char **argv)
     }
 
     if (enable_heartbeat_poll && server_secret[0] == 0) {
-	// A pretty trivial semi-random code.
+	// A pretty trivial semi-random code, maybe 20bits of randomness.
 	struct timeval now;
 	static char base62[] =
 	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

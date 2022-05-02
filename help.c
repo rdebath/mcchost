@@ -14,7 +14,7 @@ struct help_text_t {
 /*HELP help H_CMD
 Commands can be listed with &T/commands
 To see help for a command type &T/help CommandName
-Also see /faq, /news, /view and /rules
+Also see /faq and /news.
 */
 
 /*HELP other
@@ -25,8 +25,7 @@ Other help files: chars, inifile, edlin
 #define H_CMD	1	// Help for a command
 
 #define CMD_HELP \
-    {N"help", &cmd_help}, {N"faq", &cmd_help}, \
-    {N"news", &cmd_help}, {N"view", &cmd_help}, {N"rules", &cmd_help}
+    {N"help", &cmd_help}, {N"faq", &cmd_help}, {N"news", &cmd_help}
 
 #endif
 
@@ -92,11 +91,6 @@ cmd_help(char * prefix, char *cmdargs)
 	printf_chat("&WNo %s file found for '%s'", prefix, cmdargs);
 }
 
-/*HELP view H_CMD
-The view command show special files for this system,
-none are currently installed.
-*/
-
 /*HELP faq H_CMD
 &cFAQ&f:
 &fExample: What does this server run on? This server runs on MCCHost
@@ -104,8 +98,4 @@ none are currently installed.
 
 /*HELP news H_CMD
 No news today.
-*/
-
-/*HELP rules H_CMD
-No rules found.
 */

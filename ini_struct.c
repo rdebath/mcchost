@@ -52,6 +52,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAY("logfile", logfile_pattern);		//Binary
 	INI_BOOLVAL("nocpe", cpe_disabled);
 	INI_BOOLVAL("tcp", start_tcp_server);
+	INI_BOOLVAL("detach", detach_tcp_server);
 	INI_STRARRAY("heartbeat", heartbeat_url);		//ASCII
 	INI_BOOLVAL("pollheartbeat", enable_heartbeat_poll);
 	INI_INTVAL(st->write && tcp_port_no==25565?"; port":"port", tcp_port_no);

@@ -125,7 +125,16 @@ do_select()
 	if( rv > 0 )
 	{
 	    if( rv != ttl_end-ttl_start ) ttl_start += rv;
-	    else ttl_start = ttl_end = 0;
+	    else {
+		ttl_start = ttl_end = 0;
+
+		/* Once the map is sent we probably don't need the memory */
+		if (ttl_size > 65536) {
+		    free(ttl_buf);
+		    ttl_buf = 0;
+		    ttl_size = 0;
+		}
+	    }
 	} else if (rv < 0)
 	    fatal("write line_fd syscall");
     }

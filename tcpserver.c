@@ -17,6 +17,11 @@
 
 #include "tcpserver.h"
 
+int start_tcp_server = 0;
+int detach_tcp_server = 0;
+int enable_heartbeat_poll = 0;
+int tcp_port_no = 25565;
+
 static int listen_socket = -1;
 static time_t last_heartbeat = 0;
 
@@ -31,6 +36,9 @@ void
 tcpserver()
 {
     listen_socket = start_listen_socket("0.0.0.0", tcp_port_no);
+
+    if (detach_tcp_server && !server_runonce)
+	fork_and_detach();
 
     while(1)
     {
@@ -63,7 +71,8 @@ tcpserver()
 		    pid = E(fork(), "Forking failure");
 		if (pid == 0)
 		{
-		    setsid();
+		    if (!detach_tcp_server)
+			setsid();
 		    E(close(listen_socket), "close(listen)");
 		    line_ofd = 1; line_ifd = 0;
 		    E(dup2(socket, line_ifd), "dup2(S,0)");
@@ -82,6 +91,49 @@ tcpserver()
 	    send_heartbeat_poll();
     }
     /*NOTREACHED*/
+}
+
+LOCAL void
+fork_and_detach()
+{
+    int pid = E(fork(), "Forking failure, detach");
+    if (pid != 0) exit(0); // Detached process
+
+    setsid();	// New session group
+
+    // Logging pipe
+    int pipefd[2];
+    E(pipe(pipefd), "cannot create pipe");
+
+    int pid2 = E(fork(), "Forking failure, logger");
+
+    if (pid2 != 0) {
+	// Listener
+	E(dup2(pipefd[1], 1), "dup2(logger,1)");
+	E(dup2(pipefd[1], 2), "dup2(logger,2)");
+	close(pipefd[0]);
+
+	// Test the logging.
+	fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
+	return; // Only the listener returns.
+    }
+
+    // Logger
+    E(close(listen_socket), "close(listen)");
+    E(close(pipefd[1]), "close(pipe)");
+
+    memset(proc_args_mem, 0, proc_args_len);
+    snprintf(proc_args_mem, proc_args_len, "MCCHost logger");
+
+    FILE * ilog = fdopen(pipefd[0], "r");
+    char logbuf[BUFSIZ];
+    while(fgets(logbuf, sizeof(logbuf), ilog)) {
+	char *p = logbuf+strlen(logbuf);
+	while(p>logbuf && p[-1] == '\n') {p--; p[0] = 0; }
+	fprintf_logfile("| %s", logbuf);
+    }
+
+    exit(1);
 }
 
 /* Start listening socket listen_sock. */

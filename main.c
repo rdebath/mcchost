@@ -23,9 +23,6 @@ char user_id[NB_SLEN];
 int user_authenticated = 0;
 int server_id_op_flag = 1;
 int inetd_mode = 0;
-int start_tcp_server = 0;
-int enable_heartbeat_poll = 0;
-int tcp_port_no = 25565;
 
 char program_name[512];
 
@@ -60,11 +57,9 @@ main(int argc, char **argv)
     snprintf(program_name, sizeof(program_name), "%s", argv[0]);
 
     process_args(argc, argv);
-    if (proc_args_len > 30) {
-	proc_args_mem = argv[0];
-	proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0];
-	memset(proc_args_mem, 0, proc_args_len);
-    }
+
+    proc_args_mem = argv[0];
+    proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0] + 1;
 
     if (!inetd_mode && !start_tcp_server && (isatty(0) || isatty(1)))
 	show_args_help();
@@ -77,11 +72,11 @@ main(int argc, char **argv)
 
     init_dirs();
 
+    delete_session_id(0);
+
     if (start_tcp_server) {
-	if (proc_args_len > 30) {
-	    memset(proc_args_mem, 0, proc_args_len);
-	    snprintf(proc_args_mem, proc_args_len, "%s port %d", server_software, tcp_port_no);
-	}
+	memset(proc_args_mem, 0, proc_args_len);
+	snprintf(proc_args_mem, proc_args_len, "%s port %d", server_software, tcp_port_no);
 
 	open_logfile();
 	tcpserver();
@@ -107,10 +102,8 @@ process_connection()
 
     login();
 
-    if (proc_args_len > 30) {
-	memset(proc_args_mem, 0, proc_args_len);
-	snprintf(proc_args_mem, proc_args_len, "%s (%s)", server_software, user_id);
-    }
+    memset(proc_args_mem, 0, proc_args_len);
+    snprintf(proc_args_mem, proc_args_len, "%s (%s)", server_software, user_id);
 
     // If in classic mode, don't allow place of bedrock.
     if (!cpe_requested) server_id_op_flag = 0;

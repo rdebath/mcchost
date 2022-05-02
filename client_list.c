@@ -190,13 +190,23 @@ delete_session_id(int pid)
     if (!shdat.client) return;
     for(int i=0; i<MAX_USER; i++)
     {
-	if (shdat.client->user[i].active == 1 &&
-	    shdat.client->user[i].session_id == pid)
+	int wipe_this = 0;
+	if (pid > 0 && shdat.client->user[i].active == 1 &&
+		       shdat.client->user[i].session_id == pid)
+	    wipe_this = 1;
+
+	if (pid <= 0 && shdat.client->user[i].session_id > 0) {
+	    if (kill(shdat.client->user[i].session_id, 0) < 0 && errno != EPERM)
+		wipe_this = 1;
+	}
+
+	if (wipe_this)
 	{
 	    fprintf(stderr, "Wiped session %d (%.32s)\n", i, shdat.client->user[i].name);
+	    shdat.client->generation++;
 	    shdat.client->user[i].session_id = 0;
 	    shdat.client->user[i].active = 0;
-	    break;
+	    if (pid>0) break;
 	}
     }
     stop_client_list();
