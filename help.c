@@ -18,7 +18,7 @@ Also see /faq and /news.
 */
 
 /*HELP other
-Other help files: chars, inifile, edlin
+Other help files: chars, inifile, edlin, ...
 */
 /* Other generic help texts at the end of this file */
 

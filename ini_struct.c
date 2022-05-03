@@ -3,6 +3,9 @@
 #include <string.h>
 
 #include "ini_struct.h"
+/*
+ * TODO: Should unknown sections give warnings?
+ */
 
 #if INTERFACE
 typedef int (*ini_func_t)(ini_state_t *st, char * fieldname, char **value);
@@ -19,7 +22,7 @@ struct ini_state_t {
 /*HELP inifile
 Empty lines are ignored.
 Section syntax is normal [...]
-    Section syntax uses "." as element seperator within name.
+    Section syntax uses "." as element separator within name.
     Elements may be numeric for array index.
     Other elements are identifiers.
 
@@ -71,6 +74,13 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 {
     char *section = "", *fld;
     int found = 0;
+
+    // When writing include a copy of the system stuff.
+    // Skip it quietly on read.
+    if (st->write)
+	system_ini_fields(st, fieldname, fieldvalue);
+    else if (st->curr_section && strcmp("system", st->curr_section) == 0)
+	return 1;
 
     section = "level";
     if (st->all || strcmp(section, st->curr_section) == 0)

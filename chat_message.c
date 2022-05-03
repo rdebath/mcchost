@@ -93,7 +93,7 @@ post_chat(int where, char * chat, int chat_len)
     if (where == 0)
 	log_chat_message(chat, chat_len);
 
-    int s, d, ws = -1, wd = -1;
+    int s, d, ws = -1, wd = -1, add_gt = 0;
     for(d = s = 0; s<chat_len; s++) {
 	uint8_t c = chat[s];
 
@@ -138,12 +138,22 @@ post_chat(int where, char * chat, int chat_len)
 	if (d>=MB_STRLEN)
 	    s--;
 	else {
+	    int eatsp = 0;
+	    if (add_gt) {
+		add_gt = 0;
+		pkt.message[d++] = '&';
+		pkt.message[d++] = 'f';
+		pkt.message[d++] = '>';
+		pkt.message[d++] = ' ';
+		colour = 'f';
+		eatsp = 1;
+	    }
 	    if (colour != ncolour && c != ' ') {
 		pkt.message[d++] = '&';
 		pkt.message[d++] = ncolour;
 		colour = ncolour;
 		pkt.message[d++] = c;
-	    } else
+	    } else if (!eatsp || c != ' ')
 		pkt.message[d++] = c;
 	}
 
@@ -154,15 +164,8 @@ post_chat(int where, char * chat, int chat_len)
 	    else
 		update_chat(&pkt);
 	    d = 0;
-	    pkt.message[d++] = '&';
-	    pkt.message[d++] = 'f';
-	    pkt.message[d++] = '>';
-	    pkt.message[d++] = ' ';
-	    if (colour != -1 && ncolour != 'f') {
-		pkt.message[d++] = '&';
-		pkt.message[d++] = ncolour;
-		colour = ncolour;
-	    }
+	    add_gt = 1;
+	    colour = -1;
 	    ws = wd = -1;
 	}
     }

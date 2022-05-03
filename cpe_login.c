@@ -13,18 +13,20 @@ struct ext_list_t {
 };
 #endif
 
+#define N .name=
 static struct ext_list_t extensions[] = {
-    { .name= "CustomBlocks", 1, &extn_customblocks },
-    { .name= "ClickDistance",1, &extn_clickdistance },
-    { .name= "EmoteFix"    , 1 },
-    { .name= "FullCP437"   , 1, &extn_fullcp437 },
-    { .name= "LongerMessages",1, &extn_longermessages },
-    { .name= "InstantMOTD" , 1, &extn_instantmotd },
-    { .name= "SetHotbar"   , 1, &extn_sethotbar },
-//  { .name= "SetSpawnpoint",1, &extn_setspawnpoint },
-    { .name= "EvilBastard" , 1, &extn_evilbastard },
+    { N"CustomBlocks",   1, &extn_customblocks },
+    { N"ClickDistance",  1, &extn_clickdistance },
+    { N"EmoteFix",       1  }, // Included in FullCP437
+    { N"FullCP437",      1, &extn_fullcp437 },
+    { N"LongerMessages", 1, &extn_longermessages },
+    { N"InstantMOTD",    1, &extn_instantmotd },
+    { N"SetHotbar",      1, &extn_sethotbar },
+//  { N"SetSpawnpoint",  1, &extn_setspawnpoint },
+    { N"EvilBastard" ,   1, &extn_evilbastard },
     {0}
 };
+#undef N
 
 int extn_customblocks = 0;
 int extn_clickdistance = 0;

@@ -80,9 +80,6 @@ main(int argc, char **argv)
 
 	open_logfile();
 	tcpserver();
-
-	// Reload, changes?
-	load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1);
     } else {
 	line_ofd = 1; line_ifd = 0;
     }

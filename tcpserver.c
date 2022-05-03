@@ -31,14 +31,32 @@ int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
 char client_ipv4_str[INET_ADDRSTRLEN];
 int client_ipv4_port = 0;
 int client_ipv4_localhost = 0;
+int disable_restart = 0;
+
+static int restart_sig = 0;
+
+void
+handle_sighup(UNUSED int signo)
+{
+    restart_sig = 1;
+}
 
 void
 tcpserver()
 {
     listen_socket = start_listen_socket("0.0.0.0", tcp_port_no);
 
-    if (detach_tcp_server && !server_runonce)
-	fork_and_detach();
+    if (!server_runonce) {
+	if (detach_tcp_server)
+	    fork_and_detach();
+
+	if (!disable_restart) {
+	    if (signal(SIGHUP, handle_sighup) == SIG_ERR) {
+		perror("signal()");
+		exit(1);
+	    }
+	}
+    }
 
     while(1)
     {
@@ -73,10 +91,13 @@ tcpserver()
 		{
 		    if (!detach_tcp_server)
 			setsid();
+		    (void)signal(SIGHUP, SIG_DFL);
 		    E(close(listen_socket), "close(listen)");
 		    line_ofd = 1; line_ifd = 0;
 		    E(dup2(socket, line_ifd), "dup2(S,0)");
 		    E(dup2(socket, line_ofd), "dup2(S,1)");
+		    // It's connected to stdin/out so don't need the socket fd
+		    E(close(socket), "close(socket)");
 		    return; // Only the child returns.
 		}
 		close(socket);
@@ -84,6 +105,9 @@ tcpserver()
 	    if (FD_ISSET(listen_socket, &except_fds))
 		break;
 	}
+
+	if (restart_sig)
+	    do_restart();
 
 	cleanup_zombies();
 
@@ -112,6 +136,12 @@ fork_and_detach()
 	E(dup2(pipefd[1], 1), "dup2(logger,1)");
 	E(dup2(pipefd[1], 2), "dup2(logger,2)");
 	close(pipefd[0]);
+	close(pipefd[1]);
+
+	// Detach stdin.
+	int nullfd = E(open("/dev/null", O_RDWR), "open(null)");
+	E(dup2(nullfd, 0), "dup2(nullfd,0)");
+	close(nullfd);
 
 	// Test the logging.
 	fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
@@ -121,6 +151,13 @@ fork_and_detach()
     // Logger
     E(close(listen_socket), "close(listen)");
     E(close(pipefd[1]), "close(pipe)");
+
+    // Detach logger from everything.
+    int nullfd = E(open("/dev/null", O_RDWR), "open(null)");
+    E(dup2(nullfd, 0), "dup2(nullfd,0)");
+    E(dup2(nullfd, 1), "dup2(nullfd,1)");
+    E(dup2(nullfd, 2), "dup2(nullfd,2)");
+    close(nullfd);
 
     memset(proc_args_mem, 0, proc_args_len);
     snprintf(proc_args_mem, proc_args_len, "MCCHost logger");
@@ -134,6 +171,19 @@ fork_and_detach()
     }
 
     exit(1);
+}
+
+LOCAL void
+do_restart()
+{
+    (void)signal(SIGHUP, SIG_DFL);
+    close(listen_socket);
+    close_logfile();
+
+    fprintf(stderr, "Restarting %s ...\n", program_args[0]);
+    execvp(program_args[0], program_args);
+    perror(program_args[0]);
+    exit(126);
 }
 
 /* Start listening socket listen_sock. */
@@ -289,7 +339,8 @@ send_heartbeat_poll()
 	close(listen_socket);
 	// SHUT UP CURL!!
 	E(execlp("curl", "curl", "-s", "-S", "-o", "log/curl_resp.txt", cmdbuf, (char*)0), "exec of curl failed");
-	// Note: Returned string is web client URL
+	// Note: Returned string is web client URL, but the last
+	//       path part can be used in the standard client.
 	exit(0);
     }
 }

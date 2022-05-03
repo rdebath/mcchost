@@ -23,12 +23,11 @@ ${PROG}: ${OBJ} ${OBJ2}
 .PHONY: install clean makeheaders lib_text
 
 install: ${PROG}
-	cp -p ${PROG} "${HOME}/bin/${INAME}"
+	cp -fp ${PROG} "${HOME}/bin/${INAME}"
 
 ifeq ($(MAKECMDGOALS),clean)
 clean:
 	-rm -f ${PROG} tmp.mk *.o $(patsubst %.c,%.h,$(wildcard *.c)) md5.h lib_text.c
-	make -C lib clean
 else
 ifneq ($(findstring clean,$(MAKECMDGOALS)),)
 clean:
