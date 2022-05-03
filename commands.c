@@ -59,12 +59,42 @@ run_command(char * msg)
 	else if (!arg || !*arg)
 	    printf_chat("&WUsage: /save filename");
 	else {
-	    char buf[256];
-	    snprintf(buf, sizeof(buf), "backup/%.20s.1.cw", arg);
-	    save_map_to_file(buf);
-	    snprintf(buf, sizeof(buf), "backup/%.20s.1.ini", arg);
-	    save_ini_file(level_ini_fields, buf);
+	    char buf1[256], buf2[256], *s, *d;
+	    for(s=arg, d=buf1; *s && d<buf1+sizeof(buf1)-1; s++) {
+		if ((*s>='A' && *s<='Z') || (*s>='a' && *s<='z') ||
+		    (*s>='0' && *s<='9') || *s=='_' || *s=='.')
+		    *d++ = *s;
+	    }
+	    *d = 0;
+
+	    snprintf(buf2, sizeof(buf2), "backup/%.200s.cw", buf1);
+	    save_map_to_file(buf2);
+	    snprintf(buf2, sizeof(buf2), "backup/%.200s.ini", buf1);
+	    save_ini_file(level_ini_fields, buf2);
 	    printf_chat("&SFile saved");
+	}
+	return;
+    }
+
+    if (strcasecmp(cmd, "load") == 0)
+    {
+	char * arg = strtok(0, "");
+	if (!client_ipv4_localhost)
+	    printf_chat("&WUsage: /load [Auth] filename");
+	else if (!arg || !*arg)
+	    printf_chat("&WUsage: /load filename");
+	else {
+	    char buf1[256], buf2[256], *s, *d;
+	    for(s=arg, d=buf1; *s && d<buf1+sizeof(buf1)-1; s++) {
+		if ((*s>='A' && *s<='Z') || (*s>='a' && *s<='z') ||
+		    (*s>='0' && *s<='9') || *s=='_' || *s=='.')
+		    *d++ = *s;
+	    }
+	    *d = 0;
+
+	    snprintf(buf2, sizeof(buf2), "backup/%.200s.ini", buf1);
+	    load_ini_file(level_ini_fields, buf2, 0);
+	    printf_chat("&SFile loaded");
 	}
 	return;
     }

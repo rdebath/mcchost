@@ -20,7 +20,9 @@ INAME=mcchost-server
 ${PROG}: ${OBJ} ${OBJ2}
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -o ${PROG} ${OBJ} ${OBJ2} $(LDFLAGS)
 
-install:
+.PHONY: install clean makeheaders lib_text
+
+install: ${PROG}
 	cp -p ${PROG} "${HOME}/bin/${INAME}"
 
 ifeq ($(MAKECMDGOALS),clean)
@@ -51,4 +53,8 @@ lib_text:
 
 lib_text.o: lib_text.c
 
-.PHONY: clean makeheaders lib_text
+export TARGET_ARCH DEFS LDFLAGS
+vps:
+	$(MAKE) clean
+	$(MAKE) -j
+	rsync -Pax ${PROG} vps-mcc:bin/mcchost-server

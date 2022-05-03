@@ -10,6 +10,7 @@
  * TODO:
  * +) Move private flag to shared memory. (Others?)
  * +) Restart listener after update?
+ * +) /load from curl pipe
  *
  * +) load/save level to *.cw and use for backups, restores and "unload".
  *    -- Add locking so one load at a time ?
