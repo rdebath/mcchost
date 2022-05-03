@@ -41,7 +41,7 @@ char ** program_args = 0;
 void
 process_args(int argc, char **argv)
 {
-    program_args = calloc(argc+2, sizeof(*program_args));
+    program_args = calloc(argc+8, sizeof(*program_args));
     int bc = 0, plen = strlen(argv[0]);
 
     program_args[bc++] = strdup(argv[0]);
