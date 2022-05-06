@@ -3,6 +3,8 @@
 
 #include "place.h"
 
+int player_mode_paint = 0;
+
 /*HELP place,pl H_CMD
 &T/place b [x y z] [X Y Z]
 Places the Block numbered &Tb&S at your feet or at &T[x y z]&S
@@ -10,8 +12,15 @@ With both &T[x y z]&S and &T[X Y Z]&S it places a
 cuboid between those points.
 Alias: &T/pl
 */
+/*HELP paint,p H_CMD
+&T/paint
+When paint mode is on your held block replaces any deleted block.
+Alias: &T/p
+*/
+
 #if INTERFACE
-#define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}
+#define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}, \
+                   {N"paint", &cmd_paint}, {N"p", &cmd_paint, .dup=1}
 #endif
 void
 cmd_place(UNUSED char * cmd, char * arg)
@@ -77,4 +86,23 @@ cmd_place(UNUSED char * cmd, char * arg)
 		}
     }
     return;
+}
+
+void
+cmd_paint(UNUSED char * cmd, UNUSED char * arg)
+{
+    player_mode_paint = !player_mode_paint;
+
+    printf_chat("&SPainting mode: &T%s.", player_mode_paint?"ON":"OFF");
+}
+
+void
+process_player_setblock(pkt_setblock pkt)
+{
+    if (player_mode_paint) {
+	pkt.block = pkt.heldblock;
+	pkt.mode = 2;
+    }
+
+    update_block(pkt);
 }

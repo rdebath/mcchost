@@ -91,7 +91,8 @@ tcpserver()
 		{
 		    if (!detach_tcp_server)
 			setsid();
-		    (void)signal(SIGHUP, SIG_DFL);
+		    if (!disable_restart)
+			(void)signal(SIGHUP, SIG_DFL);
 		    E(close(listen_socket), "close(listen)");
 		    line_ofd = 1; line_ifd = 0;
 		    E(dup2(socket, line_ifd), "dup2(S,0)");

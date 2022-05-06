@@ -8,24 +8,24 @@
 
 /*
  * TODO:
- * +) Move private flag to shared memory.
- *
  * +) Comment preserving ini file save.
  *
- * +) /load level ini file from curl pipe ?
+ * +) User prefix/suffix for multiple heartbeat servers.
+ *
  * +) load/save level to *.cw and use for backups, restores and "unload".
  *    -- Add locking so one load at a time ?
+ * +) /load level ini file from curl pipe ?
  *
  * +) Multiple Levels. (/newlvl, /goto, /main, /levels)
  * +) Block/User history records.
  * +) /edlin for editing text files and virtual text files (blockdefs)
  *
- * +) Global gonfig file ~/.mcchost.ini
- *
  * +) Maybe embed called commands: gzip, curl and gdb(stacktrace)
  * +) Maybe exec($0, ...) on accept()
  * +) NAME: (*) MCCHost
  *
+ * +) Backup while physics running --> Copylvl then freeze physics.
+ *    Copylvl can more easily do patchups.
  *
  * +) /spawn command
  * +) /afk command (and auto)
@@ -47,6 +47,7 @@ process_args(int argc, char **argv)
     program_args[bc++] = strdup(argv[0]);
     if (argv[0][0] != '/' && strchr(argv[0], '/') != 0)
 	disable_restart = 1;
+	// TODO: Save /proc/self/exe ?
 
     for(int pass = 0; pass<2; pass++)
     {

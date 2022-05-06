@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "queue_chat.h"
 

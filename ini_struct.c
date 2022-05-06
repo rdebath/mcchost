@@ -34,6 +34,8 @@ Value is trimmed at both ends for spaces and tabs.
 
 Quotes are not special.
 Backslashes are not special
+Strings are generally limited to 64 cp437 characters by protocol.
+Character set of file is UTF8
 */
 
 int

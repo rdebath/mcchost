@@ -33,6 +33,7 @@ struct client_entry_t {
     char client_software[NB_SLEN];
     xyzhv_t posn;
     uint8_t active;
+    time_t keepalive;	//TODO
     pid_t session_id;
 };
 

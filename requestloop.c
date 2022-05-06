@@ -18,7 +18,6 @@ static char line_inp_buf[65536];
 static char rcvdpkt[PKBUF];
 int in_rcvd = 0;
 
-int pending_marks = 0;
 time_t last_ping = 0;
 
 void
@@ -172,7 +171,6 @@ on_select_timeout()
     check_user();
     send_queued_chats();
     send_queued_blocks();
-    pending_marks = 0;
 }
 
 void
@@ -227,9 +225,11 @@ process_client_message(int cmd, char * pktbuf)
 
 	    pkt.block = pkt.mode?pkt.heldblock:Block_Air;
 
-	    update_block(pkt);
-	    if (++pending_marks > 999)
+	    process_player_setblock(pkt);
+	    if (bytes_queued_to_send() > 65536) {
 		send_queued_blocks();
+		flush_to_remote();
+	    }
 	}
 	break;
     case PKID_POSN:

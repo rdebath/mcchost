@@ -25,8 +25,8 @@ Other help files: chars, inifile, edlin, ...
 #define H_CMD	1	// Help for a command
 
 #define CMD_HELP \
-    {N"help", &cmd_help}, {N"faq", &cmd_help}, {N"news", &cmd_help}
-
+    {N"help", &cmd_help}, {N"faq", &cmd_help}, {N"news", &cmd_help}, \
+    {N"clear", &cmd_clear}, {N"cls", &cmd_clear, .dup=1}
 #endif
 
 void
@@ -99,3 +99,16 @@ cmd_help(char * prefix, char *cmdargs)
 /*HELP news H_CMD
 No news today.
 */
+
+/*HELP clear,cls H_CMD
+&T/Clear &SClear your chat.
+Alias: &T/cls
+*/
+
+void
+cmd_clear(UNUSED char * prefix, UNUSED char *cmdargs)
+{
+    for(int i = 0; i<30; i++)
+	printf_chat(" ");;
+    printf_chat("&WCleared");;
+}

@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "queue_block.h"
 
@@ -31,7 +32,7 @@ update_block(pkt_setblock pkt)
     if (b >= BLOCKMAX) b = BLOCKMAX-1;
 
     // No update needed.
-    if (level_blocks[index] == b) return;
+    if (level_blocks[index] == b && pkt.mode != 2) return;
 
     // Physics Like updates ... these are trivial instant updates that allow
     // the classic client to enter blocks not in it's menu.
@@ -90,6 +91,8 @@ update_block(pkt_setblock pkt)
     if (b != level_blocks[index]) {
 	level_blocks[index] = b;
 	send_update(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
+    } else if (pkt.mode == 2) {
+	send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
     }
 }
 
