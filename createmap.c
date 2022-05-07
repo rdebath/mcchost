@@ -31,49 +31,9 @@ createmap(char * levelname)
     memcpy(level_prop->blockdef, default_blocks, sizeof(default_blocks));
 #pragma GCC diagnostic pop
 
+    // For Testing; later these will NOT be defined.
     for (int i = 0; i<66; i++)
 	level_prop->blockdef[i].defined = 1;
-
-    for (int i = 1; i<BLOCKMAX; i++)
-	level_prop->blockdef[i].blockslight = 1;
-
-    // For Grass<->Dirt
-    level_prop->blockdef[Block_Dirt].grass_block = Block_Grass;
-    level_prop->blockdef[Block_Grass].dirt_block = Block_Dirt;
-
-    // If Grass<->Dirt
-    level_prop->blockdef[Block_Air].blockslight = 0;
-    level_prop->blockdef[Block_Sapling].blockslight = 0;
-    level_prop->blockdef[Block_Leaves].blockslight = 0;
-    level_prop->blockdef[Block_Glass].blockslight = 0;
-    level_prop->blockdef[Block_Dandelion].blockslight = 0;
-    level_prop->blockdef[Block_Rose].blockslight = 0;
-    level_prop->blockdef[Block_BrownMushroom].blockslight = 0;
-    level_prop->blockdef[Block_RedMushroom].blockslight = 0;
-    level_prop->blockdef[Block_Rope].blockslight = 0;
-    level_prop->blockdef[Block_Fire].blockslight = 0;
-
-    // Block stacking
-    level_prop->blockdef[Block_Slab].stack_block = Block_DoubleSlab;
-    level_prop->blockdef[Block_CobbleSlab].stack_block = Block_Cobble;
-
-    // CPE fallbacks.
-    level_prop->blockdef[Block_CobbleSlab].fallback = Block_Slab;
-    level_prop->blockdef[Block_Rope].fallback = Block_BrownMushroom;
-    level_prop->blockdef[Block_Sandstone].fallback = Block_Sand;
-    level_prop->blockdef[Block_Snow].fallback = Block_Air;
-    level_prop->blockdef[Block_Fire].fallback = Block_ActiveLava;
-    level_prop->blockdef[Block_LightPink].fallback = Block_Pink;
-    level_prop->blockdef[Block_ForestGreen].fallback = Block_Green;
-    level_prop->blockdef[Block_Brown].fallback = Block_Dirt;
-    level_prop->blockdef[Block_DeepBlue].fallback = Block_Blue;
-    level_prop->blockdef[Block_Turquoise].fallback = Block_Cyan;
-    level_prop->blockdef[Block_Ice].fallback = Block_Glass;
-    level_prop->blockdef[Block_CeramicTile].fallback = Block_Iron;
-    level_prop->blockdef[Block_Magma].fallback = Block_Obsidian;
-    level_prop->blockdef[Block_Pillar].fallback = Block_White;
-    level_prop->blockdef[Block_Crate].fallback = Block_Wood;
-    level_prop->blockdef[Block_StoneBrick].fallback = Block_Stone;
 
     open_blocks(levelname);
 

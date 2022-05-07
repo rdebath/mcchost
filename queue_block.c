@@ -60,29 +60,29 @@ update_block(pkt_setblock pkt)
 	    above = level_blocks[ind2];
 	}
 	if (above >= BLOCKMAX) above = BLOCKMAX-1;
-	int blockslight = level_prop->blockdef[above].blockslight;
-	if (blockslight && level_prop->blockdef[b].dirt_block != 0)
+	int transmits_light = level_prop->blockdef[above].transmits_light;
+	if (!transmits_light && level_prop->blockdef[b].dirt_block != 0)
 	    b = level_prop->blockdef[b].dirt_block;
-	else if (!blockslight && level_prop->blockdef[b].grass_block != 0) {
+	else if (transmits_light && level_prop->blockdef[b].grass_block != 0) {
 	    b = grow_dirt_block(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
 	}
     }
 
     // Fix Grass/Dirt block below
     if (pkt.coord.y > 0) {
-	int blockslight = level_prop->blockdef[b].blockslight;
+	int transmits_light = level_prop->blockdef[b].transmits_light;
 	uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
 	block_t blk = level_blocks[ind2];
 	if (blk >= BLOCKMAX) blk = BLOCKMAX-1;
 
-	if (!blockslight && level_prop->blockdef[blk].grass_block != 0) {
+	if (transmits_light && level_prop->blockdef[blk].grass_block != 0) {
 	    int t = grow_dirt_block(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
 	    if (t != level_blocks[ind2]) {
 		level_blocks[ind2] = t;
 		send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
 	    }
 	}
-	if (blockslight && level_prop->blockdef[blk].dirt_block != 0) {
+	if (!transmits_light && level_prop->blockdef[blk].dirt_block != 0) {
 	    level_blocks[ind2] = level_prop->blockdef[blk].dirt_block;
 	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
 	}

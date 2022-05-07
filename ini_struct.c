@@ -96,10 +96,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("spawn_h", level_prop->spawn.h);
 	INI_INTVAL("spawn_v", level_prop->spawn.v);
 	INI_INTVAL("clickdistance", level_prop->click_distance);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-	INI_STRARRAY("motd", level_prop->motd);
-#pragma GCC diagnostic pop
+	INI_NBTSTR("motd", level_prop->motd);
 
 	// hacks_flags
 
@@ -108,10 +105,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     section = "level.env";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-	INI_STRARRAY("texture", level_prop->texname);
-#pragma GCC diagnostic pop
+	INI_NBTSTR("texture", level_prop->texname);
 	INI_INTVAL("weathertype", level_prop->weather);
 	INI_INTVAL("skycolour", level_prop->sky_colour);
 	INI_INTVAL("cloudcolour", level_prop->cloud_colour);
@@ -142,8 +136,6 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    if (!level_prop->blockdef[bn].defined) { bn++; continue; }
 	    sprintf(sectionbuf, "level.blockdef.%d", bn);
 	    section = sectionbuf;
-	    if (st->write)
-		fprintf(st->fd, "\n");
 	} else if (strncmp(st->curr_section, "level.blockdef.", 15) == 0) {
 	    bn = atoi(st->curr_section+15);
 	    if (!bn && st->curr_section[15] == '0') break;
@@ -154,28 +146,25 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	} else
 	    break;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-	INI_STRARRAY("name", level_prop->blockdef[bn].name);
-#pragma GCC diagnostic pop
+	INI_NBTSTR("name", level_prop->blockdef[bn].name);
 	INI_INTVAL("collide", level_prop->blockdef[bn].collide);
-	INI_INTVAL("transparent", level_prop->blockdef[bn].transparent);
+	INI_INTVAL("transmitslight", level_prop->blockdef[bn].transmits_light);
 	INI_INTVAL("walksound", level_prop->blockdef[bn].walksound);
-	INI_INTVAL("blockslight", level_prop->blockdef[bn].blockslight);
+	INI_INTVAL("fullbright", level_prop->blockdef[bn].fullbright);
 	INI_INTVAL("shape", level_prop->blockdef[bn].shape);
 	INI_INTVAL("draw", level_prop->blockdef[bn].draw);
 	INI_INTVAL("speed", level_prop->blockdef[bn].speed);
 	INI_INTVAL("fallback", level_prop->blockdef[bn].fallback);
-	INI_INTVAL("texture.0", level_prop->blockdef[bn].textures[0]);
-	INI_INTVAL("texture.1", level_prop->blockdef[bn].textures[1]);
-	INI_INTVAL("texture.2", level_prop->blockdef[bn].textures[2]);
-	INI_INTVAL("texture.3", level_prop->blockdef[bn].textures[3]);
-	INI_INTVAL("texture.4", level_prop->blockdef[bn].textures[4]);
-	INI_INTVAL("texture.5", level_prop->blockdef[bn].textures[5]);
-	INI_INTVAL("fog.0", level_prop->blockdef[bn].fog[0]);
-	INI_INTVAL("fog.1", level_prop->blockdef[bn].fog[1]);
-	INI_INTVAL("fog.2", level_prop->blockdef[bn].fog[2]);
-	INI_INTVAL("fog.3", level_prop->blockdef[bn].fog[3]);
+	INI_INTVAL("texture.top", level_prop->blockdef[bn].textures[0]);
+	INI_INTVAL("texture.left", level_prop->blockdef[bn].textures[1]);
+	INI_INTVAL("texture.right", level_prop->blockdef[bn].textures[2]);
+	INI_INTVAL("texture.front", level_prop->blockdef[bn].textures[3]);
+	INI_INTVAL("texture.back", level_prop->blockdef[bn].textures[4]);
+	INI_INTVAL("texture.bottom", level_prop->blockdef[bn].textures[5]);
+	INI_INTVAL("fog.den", level_prop->blockdef[bn].fog[0]);
+	INI_INTVAL("fog.r", level_prop->blockdef[bn].fog[1]);
+	INI_INTVAL("fog.g", level_prop->blockdef[bn].fog[2]);
+	INI_INTVAL("fog.b", level_prop->blockdef[bn].fog[3]);
 	INI_INTVAL("min.x", level_prop->blockdef[bn].coords[0]);
 	INI_INTVAL("min.y", level_prop->blockdef[bn].coords[1]);
 	INI_INTVAL("min.z", level_prop->blockdef[bn].coords[2]);
@@ -314,7 +303,7 @@ ini_write_str(ini_state_t *st, char * section, char *fieldname, char *value)
     if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
 	if (st->curr_section) free(st->curr_section);
 	st->curr_section = strdup(section);
-	fprintf(st->fd, "[%s]\n", section);
+	fprintf(st->fd, "\n[%s]\n", section);
     }
     fprintf(st->fd, "%s =%s%s\n", fieldname, *value?" ":"", value);
 }
@@ -325,7 +314,7 @@ ini_write_cp437(ini_state_t *st, char * section, char *fieldname, char *value)
     if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
 	if (st->curr_section) free(st->curr_section);
 	st->curr_section = strdup(section);
-	fprintf(st->fd, "[%s]\n", section);
+	fprintf(st->fd, "\n[%s]\n", section);
     }
     fprintf(st->fd, "%s =%s", fieldname, *value?" ":"\n");
     if (*value == 0) return;
@@ -345,12 +334,39 @@ ini_read_cp437(char * buf, int len, char *value)
 }
 
 LOCAL void
+ini_write_nbtstr(ini_state_t *st, char * section, char *fieldname, volatile nbtstr_t *value)
+{
+    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
+	if (st->curr_section) free(st->curr_section);
+	st->curr_section = strdup(section);
+	fprintf(st->fd, "\n[%s]\n", section);
+    }
+    fprintf(st->fd, "%s =%s", fieldname, value->c[0]?" ":"\n");
+    if (value->c[0] == 0) return;
+    for(int i = 0; value->c[i]; i++)
+	cp437_prt(st->fd, value->c[i]);
+    fputc('\n', st->fd);
+}
+
+LOCAL void
+ini_read_nbtstr(volatile nbtstr_t * buf, char *value)
+{
+    int vlen = strlen(value);
+    nbtstr_t t = {0};
+    convert_to_cp437(value, &vlen);
+    if (vlen >= NB_SLEN) vlen = NB_SLEN-1;
+    memcpy(t.c, value, vlen);
+    t.c[vlen] = 0;
+    *buf = t;
+}
+
+LOCAL void
 ini_write_int(ini_state_t *st, char * section, char *fieldname, int value)
 {
     if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
 	if (st->curr_section) free(st->curr_section);
 	st->curr_section = strdup(section);
-	fprintf(st->fd, "[%s]\n", section);
+	fprintf(st->fd, "\n[%s]\n", section);
     }
     fprintf(st->fd, "%s = %d\n", fieldname, value);
 }
@@ -361,7 +377,7 @@ ini_write_bool(ini_state_t *st, char * section, char *fieldname, int value)
     if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
 	if (st->curr_section) free(st->curr_section);
 	st->curr_section = strdup(section);
-	fprintf(st->fd, "[%s]\n", section);
+	fprintf(st->fd, "\n[%s]\n", section);
     }
     fprintf(st->fd, "%s = %s\n", fieldname, value?"true":"false");
 }
@@ -404,6 +420,16 @@ ini_read_bool(int *var, char * value)
                 ini_read_cp437((_var), sizeof(_var), *fieldvalue); \
             else \
                 ini_write_cp437(st, section, fld, (_var)); \
+        }
+
+#define INI_NBTSTR(_field, _var) \
+        fld = _field; \
+        if (st->all || strcmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                ini_read_nbtstr(&(_var), *fieldvalue); \
+            else \
+                ini_write_nbtstr(st, section, fld, &(_var)); \
         }
 
 #define INI_INTVAL(_field, _var) \

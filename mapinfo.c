@@ -15,6 +15,9 @@ struct xyzb_t { uint16_t x, y, z, b; };
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 
+typedef struct nbtstr_t nbtstr_t;
+struct nbtstr_t { char c[NB_SLEN]; };
+
 typedef uint16_t block_t;
 
 #define BLK_NUM_TEX	6
@@ -65,8 +68,8 @@ struct map_info_t {
 
     int click_distance; // Per level, Per user or both.
 
-    char texname[NB_SLEN];
-    char motd[NB_SLEN];
+    nbtstr_t texname;
+    nbtstr_t motd;
 
     struct blockdef_t blockdef[BLOCKMAX];
     int invt_order[BLOCKMAX];
@@ -85,24 +88,31 @@ struct map_len_t {
 
 typedef blockdef_t blockdef_t;
 struct blockdef_t {
-    char name[NB_SLEN];
+    nbtstr_t name;
 
+    // BlockDef Packet
     uint8_t collide;
-    uint8_t transparent;
+    uint8_t transmits_light;
     uint8_t walksound;
-    uint8_t blockslight;	//NB: 0-No, 1-Yes, 2/3 flip client side.
+    uint8_t fullbright;
     uint8_t shape;
     uint8_t draw;
     float speed;
     uint16_t textures[BLK_NUM_TEX];
+    // CW File: Top, Bottom, Left, Right, Front, Back
+    // Packet:  Top, Left, Right, Front, Back, Bottom
     uint8_t fog[BLK_NUM_FOG];
     int8_t coords[BLK_NUM_COORD];
 
+    // Server only
     block_t fallback;
+
+    // Inventory order packets
     block_t inventory_order;
 
     uint8_t defined;
 
+    // Physics flags
     uint8_t fire_flag;
     uint8_t door_flag;
     uint8_t mblock_flag;
@@ -113,6 +123,7 @@ struct blockdef_t {
     uint8_t rails_flag;
     uint8_t opblock_flag;
 
+    // Physics blocks
     block_t stack_block;
     block_t odoor_block;
     block_t grass_block;

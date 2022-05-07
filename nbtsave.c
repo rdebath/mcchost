@@ -115,7 +115,8 @@ save_map_to_file(char * fn)
     bc_ent_int8(savefile, "SideBlock", level_prop->side_block);
     bc_ent_int8(savefile, "EdgeBlock", level_prop->edge_block);
     bc_ent_int16(savefile, "SideLevel", level_prop->side_level);
-    bc_ent_string(savefile, "TextureURL", (char*)level_prop->texname, 0);
+    nbtstr_t b = level_prop->texname;
+    bc_ent_string(savefile, "TextureURL", b.c, 0);
     bc_end(savefile);
 
     int bdopen = 0;
@@ -125,7 +126,7 @@ save_map_to_file(char * fn)
 		bc_compound(savefile, "BlockDefinitions");
 		bdopen = 1;
 	    }
-	    //save_packet_to(savefile, level_prop->blockdef[i]);
+	    save_block_def(savefile, i, (void*)(&level_prop->blockdef[i]));
 	}
     if (bdopen)
 	bc_end(savefile);
@@ -154,66 +155,6 @@ save_map_to_file(char * fn)
 
     if (bdopen)
 	bc_end(savefile);
-
-#if 0
-    // Add bots something like this ...
-    for(int entno = 0; entno<MAX_ENT; entno++)
-    {
-	if (!entities[entno].live && !entities[entno].liveuser) continue;
-
-	char uniquename[64]; // Limitation of MCGalaxy loader.
-	sprintf(uniquename, "AddPlayer%04x", entno);
-	bc_compound(savefile, uniquename);
-
-	if (entities[entno].liveuser) {
-	    bc_compound(savefile, "ExtAddPlayerName");
-	    bc_ent_int(savefile, "playerid", entno);
-	    bc_ent_string(savefile, "playername", entities[entno].playername, 0);
-	    bc_ent_string(savefile, "listname", entities[entno].listname, 0);
-	    bc_ent_string(savefile, "groupname", entities[entno].groupname, 0);
-	    bc_ent_int(savefile, "playerrank", 0);
-	    bc_end(savefile);
-	}
-
-	if (entities[entno].live) {
-	    bc_compound(savefile, "ExtAddEntity2");
-	    bc_ent_int(savefile, "entityid", entno);
-	    bc_ent_string(savefile, "ingamename", entities[entno].name, 0);
-	    bc_ent_string(savefile, "skinname", entities[entno].skin, 0);
-	    if (entno != 255 || !player_pos.valid) {
-		bc_ent_int(savefile, "X", entities[entno].x);
-		bc_ent_int(savefile, "Y", entities[entno].y);
-		bc_ent_int(savefile, "Z", entities[entno].z);
-		bc_ent_int(savefile, "H", entities[entno].h);
-		bc_ent_int(savefile, "P", entities[entno].v);
-	    } else {
-		bc_ent_int(savefile, "X", player_pos.x);
-		bc_ent_int(savefile, "Y", player_pos.y);
-		bc_ent_int(savefile, "Z", player_pos.z);
-		bc_ent_int(savefile, "H", player_pos.h);
-		bc_ent_int(savefile, "P", player_pos.v);
-	    }
-	    bc_end(savefile);
-	}
-
-	if (entities[entno].model[0]) {
-	    bc_compound(savefile, "ChangeModel");
-	    bc_ent_int(savefile, "EntityID", entno);
-	    bc_ent_string(savefile, "ModelName", entities[entno].model, 0);
-	    bc_end(savefile);
-	}
-
-	for(int entprop=0; entprop<6; entprop++) {
-	    if (!entities[entno].propset[entprop]) continue;
-	    bc_compound(savefile, "EntityProperty");
-	    bc_ent_int(savefile, "entity", entno);
-	    bc_ent_int(savefile, entpropnames[entprop], entities[entno].properties[entprop]);
-	    bc_end(savefile);
-	}
-
-	bc_end(savefile);
-    }
-#endif
 
     bc_end(savefile);
     bc_end(savefile);
@@ -401,144 +342,75 @@ bc_colour(FILE * ofd, char * name, int colour)
     bc_end(ofd);
 }
 
-#if 0
 LOCAL void
-save_packet_to(FILE * ofd, char * pkt)
+save_block_def(FILE * ofd, int idno, blockdef_t * blkdef)
 {
-    // Whoever designed this was not using offsets, so pretend this is a stream.
+    char buf[64];
 
-    //case PKID_BLOCKDEF: case PKID_BLOCKDEF2:
+    sprintf(buf, "Block%04x", idno);
+
+    bc_compound(ofd, buf);
+    bc_ent_int8(ofd, "ID", idno);
+    bc_ent_int16(ofd, "ID2", idno);
+
+    bc_ent_string(ofd, "Name", blkdef->name.c, 64);
+    bc_ent_int8(ofd, "CollideType", blkdef->collide);
     {
-	int p = 1;
-	int idno;
-	char buf[64];
-
-	idno = BlockNo(pkt,p);
-	p += 1 + extn_10bitblocks;
-
-	sprintf(buf, "Block%04x", idno);
-
-	bc_compound(ofd, buf);
-	bc_ent_int8(ofd, "ID", idno);
-	bc_ent_int16(ofd, "ID2", idno);
-
-	bc_ent_string(ofd, "Name", pkt+p, 64);
-	p += 64;
-	bc_ent_int8(ofd, "CollideType", (pkt[p++] & 0xFF));
-	{
-	    double log2 = 0.693147180559945f;
-	    double spl2 = (UB(pkt[p++]) - 128) / 64.0;
-	    double spd = exp(log2 * spl2);
-	    bc_ent_float(ofd, "Speed", spd);
-	    // bc_ent_int(ofd, "Speed", (int)(spd*1000));
-	}
-
-	if (!extn_extratextures)
-	{
-	    if (cmd == PKID_BLOCKDEF) {
-		char texbyte[12] = {0,0,0,0,0,0, 0,0,0,0,0,0};
-		texbyte[0] = pkt[p+0];
-		texbyte[1] = pkt[p+2];
-		texbyte[2] = pkt[p+1]; // Sidetex
-		texbyte[3] = pkt[p+1];
-		texbyte[4] = pkt[p+1];
-		texbyte[5] = pkt[p+1];
-		p+=3;
-		bc_ent_bytes(ofd, "Textures", texbyte, 12);
-	    }
-
-	    if (cmd == PKID_BLOCKDEF2) {
-		char texbyte[12] = {0,0,0,0,0,0, 0,0,0,0,0,0};
-		texbyte[0] = pkt[p+0];
-		texbyte[1] = pkt[p+5];
-		texbyte[2] = pkt[p+1];
-		texbyte[3] = pkt[p+2];
-		texbyte[4] = pkt[p+3];
-		texbyte[5] = pkt[p+4];
-		p+=6;
-		bc_ent_bytes(ofd, "Textures", texbyte, 12);
-	    }
-	}
-	else
-	{
-	    if (cmd == PKID_BLOCKDEF) {
-		char texbyte[12] = {0,0,0,0,0,0, 0,0,0,0,0,0};
-		texbyte[0] = pkt[p+0*2+1];
-		texbyte[1] = pkt[p+2*2+1];
-		texbyte[2] = pkt[p+1*2+1]; // Sidetex
-		texbyte[3] = pkt[p+1*2+1];
-		texbyte[4] = pkt[p+1*2+1];
-		texbyte[5] = pkt[p+1*2+1];
-		texbyte[6] = pkt[p+0*2];
-		texbyte[7] = pkt[p+2*2];
-		texbyte[8] = pkt[p+1*2]; // Sidetex
-		texbyte[9] = pkt[p+1*2];
-		texbyte[10] = pkt[p+1*2];
-		texbyte[11] = pkt[p+1*2];
-		p+=6;
-		bc_ent_bytes(ofd, "Textures", texbyte, 12);
-	    }
-
-	    if (cmd == PKID_BLOCKDEF2) {
-		char texbyte[12] = {0,0,0,0,0,0, 0,0,0,0,0,0};
-		texbyte[0] = pkt[p+0*2+1];
-		texbyte[1] = pkt[p+5*2+1];
-		texbyte[2] = pkt[p+1*2+1];
-		texbyte[3] = pkt[p+2*2+1];
-		texbyte[4] = pkt[p+3*2+1];
-		texbyte[5] = pkt[p+4*2+1];
-		texbyte[6] = pkt[p+0*2];
-		texbyte[7] = pkt[p+5*2];
-		texbyte[8] = pkt[p+1*2];
-		texbyte[9] = pkt[p+2*2];
-		texbyte[10] = pkt[p+3*2];
-		texbyte[11] = pkt[p+4*2];
-		p+=12;
-		bc_ent_bytes(ofd, "Textures", texbyte, 12);
-	    }
-	}
-
-
-	bc_ent_int8(ofd, "TransmitsLight", (pkt[p++] & 0xFF));
-	bc_ent_int8(ofd, "WalkSound", (pkt[p++] & 0xFF));
-	bc_ent_int8(ofd, "FullBright", (pkt[p++] & 0xFF));
-
-	if (cmd == PKID_BLOCKDEF2) {
-
-	    char box[6] = {0,0,0,0,0,0};
-	    box[0] = pkt[p+0];	// min X
-	    box[1] = pkt[p+1];	// min Y
-	    box[2] = pkt[p+2];	// min Z
-	    box[3] = pkt[p+3];	// max X
-	    box[4] = pkt[p+4];	// max Y
-	    box[5] = pkt[p+5];	// max Z
-	    bc_ent_bytes(ofd, "Coords", box, 6);
-
-	    if (box[1] != 0 || box[4] == 0)
-		bc_ent_int8(ofd, "Shape", 1);
-	    else
-		bc_ent_int8(ofd, "Shape", (box[4] & 0xFF));
-
-	    p+=6;
-	} else {
-	    char box[6] = {0,0,0,16,16,16};
-	    bc_ent_bytes(ofd, "Coords", box, 6);
-	    bc_ent_int8(ofd, "Shape", (pkt[p++] & 0xFF));
-	}
-
-	bc_ent_int8(ofd, "BlockDraw", (pkt[p++] & 0xFF));
-
-	{
-	    char fog[4] = {0,0,0,0};
-	    fog[0] = pkt[p++];
-	    fog[1] = pkt[p++];
-	    fog[2] = pkt[p++];
-	    fog[3] = pkt[p++];
-	    bc_ent_bytes(ofd, "Fog", fog, 4);
-	}
-
-	bc_end(ofd);
+//	double log2 = 0.693147180559945f;
+//	double spl2 = (UB(pkt[p++]) - 128) / 64.0;
+//	double spd = exp(log2 * spl2);
+	bc_ent_float(ofd, "Speed", blkdef->speed);
     }
 
+    {
+	char texbyte[12] = {0,0,0,0,0,0, 0,0,0,0,0,0};
+
+	// CW File: Top, Bottom, Left, Right, Front, Back
+	// Packet:  Top, Left, Right, Front, Back, Bottom
+
+	texbyte[0]  = blkdef->textures[0];
+	texbyte[1]  = blkdef->textures[5];
+	texbyte[2]  = blkdef->textures[1];
+	texbyte[3]  = blkdef->textures[2];
+	texbyte[4]  = blkdef->textures[3];
+	texbyte[5]  = blkdef->textures[4];
+	texbyte[6]  = blkdef->textures[0] >> 8;
+	texbyte[7]  = blkdef->textures[5] >> 8;
+	texbyte[8]  = blkdef->textures[1] >> 8;
+	texbyte[9]  = blkdef->textures[2] >> 8;
+	texbyte[10] = blkdef->textures[3] >> 8;
+	texbyte[11] = blkdef->textures[4] >> 8;
+	bc_ent_bytes(ofd, "Textures", texbyte, 12);
+
+    }
+
+    bc_ent_int8(ofd, "TransmitsLight", blkdef->transmits_light);
+    bc_ent_int8(ofd, "WalkSound", blkdef->walksound);
+    bc_ent_int8(ofd, "FullBright", blkdef->fullbright);
+
+    {
+	char box[6] = {0,0,0,0,0,0};
+	box[0] = blkdef->coords[0];	// min X
+	box[1] = blkdef->coords[1];	// min Y
+	box[2] = blkdef->coords[2];	// min Z
+	box[3] = blkdef->coords[3];	// max X
+	box[4] = blkdef->coords[4];	// max Y
+	box[5] = blkdef->coords[5];	// max Z
+	bc_ent_bytes(ofd, "Coords", box, 6);
+
+	bc_ent_int8(ofd, "Shape", blkdef->shape);
+    }
+
+    bc_ent_int8(ofd, "BlockDraw", blkdef->draw);
+
+    {
+	char fog[4] = {0,0,0,0};
+	fog[0] = blkdef->fog[0];
+	fog[1] = blkdef->fog[1];
+	fog[2] = blkdef->fog[2];
+	fog[3] = blkdef->fog[3];
+	bc_ent_bytes(ofd, "Fog", fog, 4);
+    }
+
+    bc_end(ofd);
 }
-#endif

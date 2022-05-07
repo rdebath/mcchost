@@ -29,8 +29,8 @@
 
 typedef struct client_entry_t client_entry_t;
 struct client_entry_t {
-    char name[NB_SLEN];
-    char client_software[NB_SLEN];
+    nbtstr_t name;
+    nbtstr_t client_software;
     xyzhv_t posn;
     uint8_t active;
     time_t keepalive;	//TODO
@@ -80,7 +80,7 @@ check_user()
 	client_entry_t c = shdat.client->user[i];
 	if (c.active && !myuser[i].active) {
 	    // New user.
-	    send_spawn_pkt(i, c.name, c.posn);
+	    send_spawn_pkt(i, c.name.c, c.posn);
 	    myuser[i] = c;
 	} else
 	if (!c.active && myuser[i].active) {
@@ -116,6 +116,16 @@ update_player_pos(pkt_player_posn pkt)
 }
 
 void
+update_player_software(char * sw)
+{
+    if (user_no < 0 || user_no >= MAX_USER) return;
+    if (!shdat.client) return;
+    nbtstr_t b = {0};
+    strcpy(b.c, sw);
+    shdat.client->user[user_no].client_software = b;
+}
+
+void
 start_user()
 {
     int new_one = -1, kicked = 0;
@@ -135,7 +145,7 @@ start_user()
 		new_one = i;
 	    continue;
 	}
-	if (strcmp(user_id, cd->user[i].name) == 0) {
+	if (strcmp(user_id, cd->user[i].name.c) == 0) {
 	    if (cd->user[i].session_id == 0 ||
 		(kill(cd->user[i].session_id, 0) < 0 && errno != EPERM))
 	    {
@@ -165,7 +175,8 @@ start_user()
 	cd->generation++;
 	cd->user[user_no].active = 1;
 	cd->user[user_no].session_id = getpid();
-	strcpy(cd->user[user_no].name, user_id);
+	strcpy(cd->user[user_no].name.c, user_id);
+	cd->user[user_no].client_software = client_software;
 
 	// unlock_client_data();
     }
@@ -203,7 +214,7 @@ delete_session_id(int pid)
 
 	if (wipe_this)
 	{
-	    fprintf(stderr, "Wiped session %d (%.32s)\n", i, shdat.client->user[i].name);
+	    fprintf(stderr, "Wiped session %d (%.32s)\n", i, shdat.client->user[i].name.c);
 	    shdat.client->generation++;
 	    shdat.client->user[i].session_id = 0;
 	    shdat.client->user[i].active = 0;

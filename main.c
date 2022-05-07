@@ -30,7 +30,7 @@ char server_software[NB_SLEN] = "MCCHost";
 char server_name[NB_SLEN] = "MCCHost Server";
 char server_motd[NB_SLEN] = "";
 char server_secret[NB_SLEN] = "";
-char client_software[NB_SLEN] = "(unknown)";
+nbtstr_t client_software = {"(unknown)"};
 
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 char logfile_pattern[1024] = "";

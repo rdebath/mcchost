@@ -372,7 +372,6 @@ change_int_value(char * section, char * item, long long value)
 	    inventory_block = -1;
 	}
 
-#if 0
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {
 	    current_block = value;
@@ -386,28 +385,20 @@ change_int_value(char * section, char * item, long long value)
 	} else if (current_block < 0 || current_block >= BLOCKMAX) {
 	    // Skip -- no ID2.
 	} else if (strcmp(item, "CollideType") == 0) {
-	    if (level_prop->blockdef[current_block].collide != value)
 	    level_prop->blockdef[current_block].collide = value;
 	} else if (strcmp(item, "Speed") == 0) {
-	    if (level_prop->blockdef[current_block].speed != value/1000.0)
 	    level_prop->blockdef[current_block].speed = value/1000.0;
 	} else if (strcmp(item, "TransmitsLight") == 0) {
-	    if (level_prop->blockdef[current_block].transparent != value)
-	    level_prop->blockdef[current_block].transparent = value;
+	    level_prop->blockdef[current_block].transmits_light = value;
 	} else if (strcmp(item, "WalkSound") == 0) {
-	    if (level_prop->blockdef[current_block].walksound != value)
 	    level_prop->blockdef[current_block].walksound = value;
 	} else if (strcmp(item, "FullBright") == 0) {
-	    if (level_prop->blockdef[current_block].light != value)
-	    level_prop->blockdef[current_block].light = value;
+	    level_prop->blockdef[current_block].fullbright = value;
 	} else if (strcmp(item, "Shape") == 0) {
-	    if (level_prop->blockdef[current_block].shape != value)
 	    level_prop->blockdef[current_block].shape = value;
 	} else if (strcmp(item, "BlockDraw") == 0) {
-	    if (level_prop->blockdef[current_block].draw != value)
 	    level_prop->blockdef[current_block].draw = value;
 	}
-#endif
 
     }
 }
@@ -419,25 +410,31 @@ change_bin_value(char * section, char * item, uint8_t * value, int len)
 	current_block >= 0 && current_block < BLOCKMAX) {
 
 	if (strcmp(item, "Textures") == 0) {
-	    int i;
+	    // CW File: Top, Bottom, Left, Right, Front, Back
+	    // Packet:  Top, Left, Right, Front, Back, Bottom
+
 	    if (len < 6) return;
-	    for(i=0; i<6; i++) {
-		if (level_prop->blockdef[current_block].textures[i] != value[i])
-		level_prop->blockdef[current_block].textures[i] = value[i];
-	    }
+
+	    level_prop->blockdef[current_block].textures[0] = value[0];
+	    level_prop->blockdef[current_block].textures[1] = value[2];
+	    level_prop->blockdef[current_block].textures[2] = value[3];
+	    level_prop->blockdef[current_block].textures[3] = value[4];
+	    level_prop->blockdef[current_block].textures[4] = value[5];
+	    level_prop->blockdef[current_block].textures[5] = value[1];
 
 	    if (len < 12) return;
-	    for(i=0; i<6; i++) {
-		int nv = level_prop->blockdef[current_block].textures[i] + value[i+6] * 256;
-		if (level_prop->blockdef[current_block].textures[i] != nv)
-		level_prop->blockdef[current_block].textures[i] = nv;
-	    }
+
+	    level_prop->blockdef[current_block].textures[0] += value[0] * 255;
+	    level_prop->blockdef[current_block].textures[1] += value[2] * 255;
+	    level_prop->blockdef[current_block].textures[2] += value[3] * 255;
+	    level_prop->blockdef[current_block].textures[3] += value[4] * 255;
+	    level_prop->blockdef[current_block].textures[4] += value[5] * 255;
+	    level_prop->blockdef[current_block].textures[5] += value[1] * 255;
 
 	} else if (strcmp(item, "Fog") == 0) {
 	    int i;
 	    if (len < 4) return;
 	    for(i=0; i<4; i++) {
-		if (level_prop->blockdef[current_block].fog[i] != value[i])
 		level_prop->blockdef[current_block].fog[i] = value[i];
 	    }
 
@@ -445,7 +442,6 @@ change_bin_value(char * section, char * item, uint8_t * value, int len)
 	    int i;
 	    if (len < 6) return;
 	    for(i=0; i<6; i++) {
-		if (level_prop->blockdef[current_block].coords[i] != value[i])
 		level_prop->blockdef[current_block].coords[i] = value[i];
 	    }
 
@@ -458,12 +454,12 @@ change_str_value(char * section, char * item, char * value)
 {
     if (strcmp(section, "EnvMapAppearance") == 0) {
 	if (strcmp(item, "TextureURL") == 0) {
-	    cpy_nstr(level_prop->texname, value, MB_STRLEN);
+	    cpy_nstr(level_prop->texname.c, value, MB_STRLEN);
 	}
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "Name") == 0) {
 	    if (current_block >= 0 && current_block < BLOCKMAX) {
-		cpy_nstr(level_prop->blockdef[current_block].name, value, MB_STRLEN);
+		cpy_nstr(level_prop->blockdef[current_block].name.c, value, MB_STRLEN);
 	    }
 	}
 

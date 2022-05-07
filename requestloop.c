@@ -271,7 +271,7 @@ process_client_message(int cmd, char * pktbuf)
 	{
 	    char * p = pktbuf+1;
 	    int count;
-	    cpy_nbstring(client_software, p); p+=64;
+	    cpy_nbstring(client_software.c, p); p+=64;
 	    count = IntBE16(p); p+=2;
 	    if (cpe_pending)
 		cpe_extn_remaining = count;
