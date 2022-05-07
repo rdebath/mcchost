@@ -186,14 +186,20 @@ save_map_to_file(char * fn)
 	if (flg2) {
 	    // What format should I use for this?
 	    // Currently it's a corrected high byte but this means BA2 makes
-	    // a random block in 0..767
+	    // a random block in 0..767. This byte is only set if BA2 is wrong.
 	    bc_ent_bytes_header(savefile, "BlockArray3", level_prop->total_blocks);
 
 	    for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
 		int b = level_blocks[i];
 		// if (b>=BLOCKMAX) b=BLOCKMAX-1;
-		fputc(b>>8, savefile);
+		if (b>=768)
+		    fputc(b>>8, savefile);
+		else
+		    fputc(0, savefile);
 	    }
+
+	    // Another option is to discard BA2 completely, put the 255
+	    // fallback into BA1 and have BA3 and BA4 with the actual value.
 	}
 
     }

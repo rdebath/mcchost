@@ -131,35 +131,31 @@ start_user()
     int new_one = -1, kicked = 0;
 
     // lock_client_data();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-    client_data_t *cd = shdat.client;
-#pragma GCC diagnostic pop
-
-    if (!cd) fatal("Connection failed");
+    if (!shdat.client) fatal("Connection failed");
 
     for(int i=0; i<MAX_USER; i++)
     {
-	if (cd->user[i].active != 1) {
-	    if (new_one == -1 && cd->user[i].session_id == 0)
+	if (shdat.client->user[i].active != 1) {
+	    if (new_one == -1 && shdat.client->user[i].session_id == 0)
 		new_one = i;
 	    continue;
 	}
-	if (strcmp(user_id, cd->user[i].name.c) == 0) {
-	    if (cd->user[i].session_id == 0 ||
-		(kill(cd->user[i].session_id, 0) < 0 && errno != EPERM))
+	nbtstr_t u = shdat.client->user[i].name;
+	if (strcmp(user_id, u.c) == 0) {
+	    if (shdat.client->user[i].session_id == 0 ||
+		(kill(shdat.client->user[i].session_id, 0) < 0 && errno != EPERM))
 	    {
 		// Must have died.
 		printf_chat("&SNote: Wiped old session.");
-		cd->generation++;
-		cd->user[i].active = 0;
-		cd->user[i].session_id = 0;
+		shdat.client->generation++;
+		shdat.client->user[i].active = 0;
+		shdat.client->user[i].session_id = 0;
 		if (new_one == -1) new_one = i;
 		continue;
 	    }
 	    if (!user_authenticated)
 		fatal("Already logged in!");
-	    cd->user[i].active = 0;
+	    shdat.client->user[i].active = 0;
 	    kicked++;
 	}
     }
@@ -172,11 +168,13 @@ start_user()
 	    fatal("Too many sessions already connected");
     } else {
 	user_no = new_one;
-	cd->generation++;
-	cd->user[user_no].active = 1;
-	cd->user[user_no].session_id = getpid();
-	strcpy(cd->user[user_no].name.c, user_id);
-	cd->user[user_no].client_software = client_software;
+	nbtstr_t t = {0};
+	strcpy(t.c, user_id);
+	shdat.client->generation++;
+	shdat.client->user[user_no].active = 1;
+	shdat.client->user[user_no].session_id = getpid();
+	shdat.client->user[user_no].name = t;
+	shdat.client->user[user_no].client_software = client_software;
 
 	// unlock_client_data();
     }
