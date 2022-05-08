@@ -35,6 +35,24 @@ f_block_convert(block_t in)
 void
 send_map_file()
 {
+    // Send_system_ident()
+    // Send_hack_control()
+    // Send_block_definitions()
+    // Send_inventory_order()
+    send_block_array();
+    // Send_system_ident()
+    // Send_hack_control()
+    send_env_colours();
+    // send_map_aspect()
+    // send_block_permission();
+    // send_players()
+    // send_entities()
+    // send_spawn()
+}
+
+void
+send_block_array()
+{
     int zrv = 0;
     int blocks_buffered = 0;
     set_last_block_queue_id(); // Send updates from now.
@@ -112,4 +130,17 @@ send_map_file()
 
     // Record for next time.
     level_prop->last_map_download_size = blocks_sent * 1028 + 8;
+}
+
+void
+send_env_colours()
+{
+    if (!extn_envcolours) return;
+
+    send_envsetcolour_pkt(0, level_prop->sky_colour);
+    send_envsetcolour_pkt(1, level_prop->cloud_colour);
+    send_envsetcolour_pkt(2, level_prop->fog_colour);
+    send_envsetcolour_pkt(3, level_prop->ambient_colour);
+    send_envsetcolour_pkt(4, level_prop->sunlight_colour);
+    send_envsetcolour_pkt(5, level_prop->skybox_colour);
 }

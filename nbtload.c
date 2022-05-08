@@ -281,10 +281,13 @@ read_blockarray3(FILE *ifd, int len)
 LOCAL void
 set_colour(volatile int *colour, int by, int value)
 {
-    if (*colour < 0 || value < 0)
+    if (value < 0)
 	*colour = -1;
-    else
-	*colour = *colour | ((value & 0xFF) << (8*(3-by)));
+    else {
+	*colour &= 0xFFFFFF;
+	*colour = *colour & ~(0xFF << (8*(2-by)));
+	*colour = *colour | ((value & 0xFF) << (8*(2-by)));
+    }
 }
 
 LOCAL void
@@ -333,6 +336,12 @@ change_int_value(char * section, char * item, long long value)
 	if (strcmp(item, "G") == 0) c = 1;
 	if (strcmp(item, "B") == 0) c = 2;
 	if (c>=0) set_colour(&level_prop->sunlight_colour, c, value);
+    } else if (strcmp(section, "Skybox") == 0) {
+	int c = -1;
+	if (strcmp(item, "R") == 0) c = 0;
+	if (strcmp(item, "G") == 0) c = 1;
+	if (strcmp(item, "B") == 0) c = 2;
+	if (c>=0) set_colour(&level_prop->skybox_colour, c, value);
     } else if (strcmp(section, "EnvMapAppearance") == 0) {
 	if (strcmp(item, "SideBlock") == 0) level_prop->side_block = value;
 	if (strcmp(item, "EdgeBlock") == 0) level_prop->edge_block = value;

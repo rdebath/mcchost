@@ -65,6 +65,7 @@ send_ping_pkt()
 void
 send_lvlinit_pkt()
 {
+    // extn_fastmap
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_LVLINIT;
@@ -74,6 +75,7 @@ send_lvlinit_pkt()
 void
 send_lvldata_pkt(char *block, int len, int percent)
 {
+    // extn_extendblocks ?
     uint8_t packetbuf[2048];
     uint8_t *p = packetbuf;
     int l = len>1024?1024:len;
@@ -101,6 +103,7 @@ send_lvldone_pkt(int x, int y, int z)
 void
 send_setblock_pkt(int x, int y, int z, int block)
 {
+    // extn_extendblocks
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_SRVBLOCK;
@@ -286,6 +289,38 @@ send_customblocks_pkt()
     uint8_t *p = packetbuf;
     *p++ = PKID_CUSTBLOCK;
     *p++ = 1;
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_holdthis_pkt(block_t blk, int lock)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_HELDBLOCK;
+    *p++ = block_convert(blk);
+    *p++ = !!lock;
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_envsetcolour_pkt(int id, int rgb)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    int r, g, b;
+    if (rgb < 0 || rgb > 0xFFFFFF) r = g = b = -1;
+    else {
+	r = (rgb>>16) & 0xFF;
+	g = (rgb>>8 ) & 0xFF;
+	b = (rgb    ) & 0xFF;
+    }
+
+    *p++ = PKID_MAPCOLOUR;
+    *p++ = id;
+    nb_short(&p, r);
+    nb_short(&p, g);
+    nb_short(&p, b);
     write_to_remote(packetbuf, p-packetbuf);
 }
 

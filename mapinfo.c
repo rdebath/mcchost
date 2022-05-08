@@ -45,6 +45,7 @@ struct map_info_t {
     int fog_colour;
     int ambient_colour;
     int sunlight_colour;
+    int skybox_colour;
 
     // EnvMapAppearance
     block_t side_block;

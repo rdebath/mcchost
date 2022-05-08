@@ -42,6 +42,9 @@
 #define PKID_EXTENTRY   0x11    /*ClientSend&Rcv*/
 #define PKID_CLICKDIST	0x12
 #define PKID_CUSTBLOCK	0x13	/*ClientSend&Rcv*/
+#define PKID_HELDBLOCK	0x14
+
+#define PKID_MAPCOLOUR	0x19
 
 /* These are the structures for received packets after conversion from
  * the line format.
@@ -64,7 +67,8 @@ struct pkt_setblock {
 
 typedef struct pkt_player_posn pkt_player_posn;
 struct pkt_player_posn {
-    int player_id;
+    uint8_t player_id;
+    block_t held_block;
     struct xyzhv_t pos;
 };
 
@@ -135,6 +139,7 @@ int msglen[256] = {
     /* 0x15 */ 134,
 #define PKID_PLAYERNAME	0x16
     /* 0x16 */ 196,
+#define PKID_ADDENTv1	0x17
     /* 0x17 */ 130,
 #define PKID_RMENT	0x18
     /* 0x18 */ 3,

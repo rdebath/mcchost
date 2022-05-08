@@ -109,6 +109,7 @@ save_map_to_file(char * fn)
     bc_colour(savefile, "Fog", level_prop->fog_colour);
     bc_colour(savefile, "Ambient", level_prop->ambient_colour);
     bc_colour(savefile, "Sunlight", level_prop->sunlight_colour);
+    bc_colour(savefile, "Skybox", level_prop->skybox_colour);
     bc_end(savefile);
 
     bc_compound(savefile, "EnvMapAppearance");

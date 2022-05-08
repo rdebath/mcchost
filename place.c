@@ -44,7 +44,7 @@ cmd_place(UNUSED char * cmd, char * arg)
 
     pkt_setblock pkt;
     pkt.heldblock = args[0];
-    pkt.mode = (pkt.heldblock != Block_Air);
+    pkt.mode = 3;
     pkt.block = pkt.mode?pkt.heldblock:Block_Air;
     if (cnt == 1) {
 	pkt.coord.x = player_posn.x/32;	// check range [0..cells_x)
@@ -72,18 +72,27 @@ cmd_place(UNUSED char * cmd, char * arg)
 		{int t=args[i+1]; args[i+1]=args[i+4]; args[i+4]=t; }
 	}
 
-	pkt.heldblock = args[0];
-	pkt.mode = (pkt.heldblock != Block_Air);
-	pkt.block = pkt.mode?pkt.heldblock:Block_Air;
+	// Cuboid does not "adjust" blocks so call
+	// send_update(), not update_block().
+	//
+	// Lock may be very slow, so update all the blocks
+	// in one run using unlocked_update().
+	//
+	// Too large and this will trigger a /reload as it'll
+	// run too fast so buzzing the lock isn't needed
+	lock_shared();
+	block_t b = args[0];
+	if (b >= BLOCKMAX) b = BLOCKMAX-1;
 	for(y=args[2]; y<=args[5]; y++)
 	    for(x=args[1]; x<=args[4]; x++)
 		for(z=args[3]; z<=args[6]; z++)
 		{
-		    pkt.coord.x = x;
-		    pkt.coord.y = y;
-		    pkt.coord.z = z;
-		    update_block(pkt);
+		    uintptr_t index = World_Pack(x, y, z);
+		    if (level_blocks[index] == b) continue;
+		    level_blocks[index] = b;
+		    unlocked_update(x, y, z, b);
 		}
+	unlock_shared();
     }
     return;
 }

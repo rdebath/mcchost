@@ -236,7 +236,10 @@ process_client_message(int cmd, char * pktbuf)
 	{
 	    char * p = pktbuf+1;
 	    pkt_player_posn pkt;
-	    pkt.player_id = (uint8_t)(*p++);
+	    if (extn_heldblock) {
+		pkt.held_block = (uint8_t)(*p++);
+	    } else
+		pkt.player_id = (uint8_t)(*p++);
 	    pkt.pos.x = IntBE16(p); p+=2;
 	    pkt.pos.y = IntBE16(p); p+=2;
 	    pkt.pos.z = IntBE16(p); p+=2;

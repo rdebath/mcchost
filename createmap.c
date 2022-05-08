@@ -31,14 +31,15 @@ createmap(char * levelname)
 	    .magic_no = MAP_MAGIC,
 	    .version_no = MAP_VERSION,
 	    .cells_x = 128, .cells_y = 64, .cells_z = 128,
-	    .weather = 0, -1, -1, -1, -1, -1, 7, 8, -1, 2,
+	    .weather = 0, -1, -1, -1, -1, -1, -1,
+	    .side_block = 7, 8, -1, -2,
 	    .spawn = { 64*32+16, 48*32, 64*32+16 }
 	};
 
     {
 	char buf2[256];
         snprintf(buf2, sizeof(buf2), "map/%.200s.ini", levelname);
-        load_ini_file(level_ini_fields, buf2, 0);
+        load_ini_file(level_ini_fields, buf2, 1);
     }
 
     if (oldsize.valid) {

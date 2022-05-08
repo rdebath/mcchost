@@ -17,10 +17,12 @@ struct ext_list_t {
 static struct ext_list_t extensions[] = {
     { N"CustomBlocks",   1, &extn_customblocks },
     { N"ClickDistance",  1, &extn_clickdistance },
+    { N"HeldBlock",      1, &extn_heldblock },
     { N"EmoteFix",       1  }, // Included in FullCP437
     { N"FullCP437",      1, &extn_fullcp437 },
     { N"LongerMessages", 1, &extn_longermessages },
     { N"InstantMOTD",    1, &extn_instantmotd },
+    { N"EnvColors",      1, &extn_envcolours },
     { N"SetHotbar",      1, &extn_sethotbar },
 //  { N"SetSpawnpoint",  1, &extn_setspawnpoint },
     { N"EvilBastard" ,   1, &extn_evilbastard },
@@ -30,7 +32,9 @@ static struct ext_list_t extensions[] = {
 
 int extn_customblocks = 0;
 int extn_clickdistance = 0;
+int extn_heldblock = 0;
 int extn_instantmotd = 0;
+int extn_envcolours = 0;
 int extn_sethotbar = 0;
 int extn_setspawnpoint = 0;
 int extn_evilbastard = 0;

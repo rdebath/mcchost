@@ -22,6 +22,7 @@
  *
  * +) Maybe embed called commands: gzip, curl and gdb(stacktrace)
  * +) Maybe exec($0, ...) on accept()
+ * +) SIGHUP recreates log process too.
  * +) NAME: (*) MCCHost
  *
  * +) Backup while physics running --> Copylvl then freeze physics.

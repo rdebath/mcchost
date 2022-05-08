@@ -19,6 +19,10 @@ static int last_id = -1;
 static uint32_t last_generation;
 static int reload_pending = 0;
 
+/* Note the pkt.mode has extra values
+ * (2) Player in /paint mode, block needs update even if same.
+ * (3) This is a place like command, client doesn't know yet.
+ */
 void
 update_block(pkt_setblock pkt)
 {
@@ -46,7 +50,7 @@ update_block(pkt_setblock pkt)
 	    level_blocks[ind2] = newblock;
 	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, newblock);
 	    b = 0;
-	    if (level_blocks[index] == b)
+	    if (level_blocks[index] == b && pkt.mode != 3)
 		send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
 	}
     }
@@ -123,6 +127,20 @@ grow_dirt_block(int x, int y, int z, block_t blk)
 	return grass;
     else
 	return blk;
+}
+
+void
+unlocked_update(int x, int y, int z, int b)
+{
+    int id = level_block_queue->curr_offset;
+    level_block_queue->updates[id].x = x;
+    level_block_queue->updates[id].y = y;
+    level_block_queue->updates[id].z = z;
+    level_block_queue->updates[id].b = b;
+    if (++level_block_queue->curr_offset >= level_block_queue->queue_len) {
+	level_block_queue->curr_offset = 0;
+	level_block_queue->generation ++;
+    }
 }
 
 void
