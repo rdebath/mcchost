@@ -135,7 +135,7 @@ save_map_to_file(char * fn)
     for(int i=1; i<BLOCKMAX; i++)
 	if (level_prop->blockdef[i].defined)
 	{
-	    int ord = level_prop->invt_order[i];
+	    int ord = level_prop->blockdef[i].inventory_order;
 	    if (ord < 0) ord = 0;
 	    if (ord != i) {
 		if (!bdopen) {

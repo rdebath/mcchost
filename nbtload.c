@@ -366,7 +366,7 @@ change_int_value(char * section, char * item, long long value)
 	    int inventory_order = value;
 
 	    if (inventory_order >= 0 && inventory_block > 0 && inventory_block < BLOCKMAX) {
-		level_prop->invt_order[inventory_block] = inventory_order;
+		level_prop->blockdef[inventory_block].inventory_order = inventory_order;
 	    }
 	    inventory_order = -1;
 	    inventory_block = -1;

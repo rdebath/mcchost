@@ -87,14 +87,14 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     section = "level";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-	INI_INTVAL("size_x", level_prop->cells_x);
-	INI_INTVAL("size_y", level_prop->cells_y);
-	INI_INTVAL("size_z", level_prop->cells_z);
-	INI_INTVAL("spawn_x", level_prop->spawn.x);
-	INI_INTVAL("spawn_y", level_prop->spawn.y);
-	INI_INTVAL("spawn_z", level_prop->spawn.z);
-	INI_INTVAL("spawn_h", level_prop->spawn.h);
-	INI_INTVAL("spawn_v", level_prop->spawn.v);
+	INI_INTVAL("size.x", level_prop->cells_x);
+	INI_INTVAL("size.y", level_prop->cells_y);
+	INI_INTVAL("size.z", level_prop->cells_z);
+	INI_INTVAL("spawn.x", level_prop->spawn.x);
+	INI_INTVAL("spawn.y", level_prop->spawn.y);
+	INI_INTVAL("spawn.z", level_prop->spawn.z);
+	INI_INTVAL("spawn.h", level_prop->spawn.h);
+	INI_INTVAL("spawn.v", level_prop->spawn.v);
 	INI_INTVAL("clickdistance", level_prop->click_distance);
 	INI_NBTSTR("motd", level_prop->motd);
 
@@ -109,7 +109,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("weathertype", level_prop->weather);
 	INI_INTVAL("skycolour", level_prop->sky_colour);
 	INI_INTVAL("cloudcolour", level_prop->cloud_colour);
-	INI_INTVAL("fog_colour", level_prop->fog_colour);
+	INI_INTVAL("fogcolour", level_prop->fog_colour);
 	INI_INTVAL("ambientcolour", level_prop->ambient_colour);
 	INI_INTVAL("sunlightcolour", level_prop->sunlight_colour);
 	INI_INTVAL("sideblock", level_prop->side_block);
@@ -221,7 +221,7 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet)
 	    if (quiet)
 		fprintf(stderr, "Invalid label %s in %s section %s\n", ibuf, filename, st.curr_section?:"-");
 	    else
-		printf_chat("&WInvalid label &S%s%W in &S%s&W section &S%s&W\n", ibuf, filename, st.curr_section?:"-");
+		printf_chat("&WInvalid label &S%s&W in &S%s&W section &S%s&W", ibuf, filename, st.curr_section?:"-");
 	    if (++errcount>9) break;
 	    continue;
 	}
@@ -229,7 +229,7 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet)
 	    if (quiet)
 		fprintf(stderr, "Unknown label %s in %s section %s\n", ibuf, filename, st.curr_section?:"-");
 	    else
-		printf_chat("&WUnknown label &S%s%W in &S%s&W section &S%s&W\n", ibuf, filename, st.curr_section?:"-");
+		printf_chat("&WUnknown label &S%s&W in &S%s&W section &S%s&W", ibuf, filename, st.curr_section?:"-");
 	    if (++errcount>9) break;
 	}
     }

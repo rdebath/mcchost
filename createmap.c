@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -7,14 +8,24 @@
  * This populates a default map file properties.
  */
 
-/* TODO: Need static definitions for first 66 blocks.  */
-
 void
 createmap(char * levelname)
 {
     if (level_prop->version_no == MAP_VERSION)
 	if (level_prop->cells_x != 0 && level_prop->cells_y != 0 && level_prop->cells_z != 0)
 	    return;
+
+    xyzhv_t oldsize = {0};
+    if (level_prop->magic_no == MAP_MAGIC) {
+	if (level_prop->cells_x != 0 && level_prop->cells_y != 0 && level_prop->cells_z != 0)
+	    if (level_prop->total_blocks == (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z)
+	    {
+		oldsize.x = level_prop->cells_x;
+		oldsize.y = level_prop->cells_y;
+		oldsize.z = level_prop->cells_z;
+		oldsize.valid = 1;
+	    }
+    }
 
     *level_prop = (map_info_t){
 	    .magic_no = MAP_MAGIC,
@@ -24,6 +35,31 @@ createmap(char * levelname)
 	    .spawn = { 64*32+16, 48*32, 64*32+16 }
 	};
 
+    {
+	char buf2[256];
+        snprintf(buf2, sizeof(buf2), "map/%.200s.ini", levelname);
+        load_ini_file(level_ini_fields, buf2, 0);
+    }
+
+    if (oldsize.valid) {
+	level_prop->cells_x = oldsize.x;
+	level_prop->cells_y = oldsize.y;
+	level_prop->cells_z = oldsize.z;
+
+	// Calculate normal spawn posn (max out at 1023)
+	level_prop->spawn.x = level_prop->cells_x/2;
+	level_prop->spawn.y = level_prop->cells_y*3/4;
+	level_prop->spawn.z = level_prop->cells_z/2;
+	if (level_prop->spawn.x >= 1024) level_prop->spawn.x = 1023;
+	if (level_prop->spawn.y >= 1024) level_prop->spawn.y = 1023;
+	if (level_prop->spawn.z >= 1024) level_prop->spawn.z = 1023;
+	level_prop->spawn.x = level_prop->spawn.x *32+16;
+	level_prop->spawn.y = level_prop->spawn.y *32;
+	level_prop->spawn.z = level_prop->spawn.z *32+16;
+    }
+
+    // Calculation used for edge level in classic client.
+    level_prop->side_level = level_prop->cells_y/2-1;
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
 
 #pragma GCC diagnostic push
@@ -34,6 +70,9 @@ createmap(char * levelname)
     // For Testing; later these will NOT be defined.
     for (int i = 0; i<66; i++)
 	level_prop->blockdef[i].defined = 1;
+
+    for (int i = 0; i<BLOCKMAX; i++)
+	level_prop->blockdef[i].inventory_order = i;
 
     open_blocks(levelname);
 
@@ -51,19 +90,7 @@ createmap(char * levelname)
     if (!blocks_valid) {
         int x, y, z, y1;
 
-	// Calculate normal spawn posn (max out at 1023)
-	level_prop->spawn.x = level_prop->cells_x/2;
-	level_prop->spawn.y = level_prop->cells_y*3/4;
-	level_prop->spawn.z = level_prop->cells_z/2;
-	if (level_prop->spawn.x >= 1024) level_prop->spawn.x = 1023;
-	if (level_prop->spawn.y >= 1024) level_prop->spawn.y = 1023;
-	if (level_prop->spawn.z >= 1024) level_prop->spawn.z = 1023;
-	level_prop->spawn.x = level_prop->spawn.x *32+16;
-	level_prop->spawn.y = level_prop->spawn.y *32;
-	level_prop->spawn.z = level_prop->spawn.z *32+16;
-
-	// Calculation used for edge level in classic client.
-        y1 = level_prop->cells_y/2-1;
+        y1 = level_prop->side_level;
         for(y=0; y<level_prop->cells_y; y++)
             for(z=0; z<level_prop->cells_z; z++)
                 for(x=0; x<level_prop->cells_x; x++)

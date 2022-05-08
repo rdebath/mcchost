@@ -72,7 +72,6 @@ struct map_info_t {
     nbtstr_t motd;
 
     struct blockdef_t blockdef[BLOCKMAX];
-    int invt_order[BLOCKMAX];
     uint8_t block_perms[BLOCKMAX];
 
     int version_no;
