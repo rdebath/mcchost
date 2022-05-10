@@ -23,6 +23,8 @@ static struct ext_list_t extensions[] = {
     { N"LongerMessages", 1, &extn_longermessages },
     { N"InstantMOTD",    1, &extn_instantmotd },
     { N"EnvColors",      1, &extn_envcolours },
+    { N"EnvMapAspect",   1, &extn_envmapaspect },
+    { N"EnvWeatherType", 1, &extn_weathertype },
     { N"SetHotbar",      1, &extn_sethotbar },
 //  { N"SetSpawnpoint",  1, &extn_setspawnpoint },
     { N"EvilBastard" ,   1, &extn_evilbastard },
@@ -35,6 +37,8 @@ int extn_clickdistance = 0;
 int extn_heldblock = 0;
 int extn_instantmotd = 0;
 int extn_envcolours = 0;
+int extn_envmapaspect = 0;
+int extn_weathertype = 0;
 int extn_sethotbar = 0;
 int extn_setspawnpoint = 0;
 int extn_evilbastard = 0;

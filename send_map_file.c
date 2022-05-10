@@ -43,7 +43,9 @@ send_map_file()
     // Send_system_ident()
     // Send_hack_control()
     send_env_colours();
-    // send_map_aspect()
+    send_map_property();
+    send_weather();
+    send_textureurl();
     // send_block_permission();
     // send_players()
     // send_entities()
@@ -143,4 +145,39 @@ send_env_colours()
     send_envsetcolour_pkt(3, level_prop->ambient_colour);
     send_envsetcolour_pkt(4, level_prop->sunlight_colour);
     send_envsetcolour_pkt(5, level_prop->skybox_colour);
+}
+
+void
+send_textureurl()
+{
+    if (!extn_envmapaspect) return;
+
+    send_textureurl_pkt(&level_prop->texname);
+}
+
+void
+send_map_property()
+{
+    if (!extn_envmapaspect) return;
+
+    send_setmapproperty_pkt(0, level_prop->side_block);
+    send_setmapproperty_pkt(1, level_prop->edge_block);
+    send_setmapproperty_pkt(2, level_prop->side_level);
+    send_setmapproperty_pkt(3, level_prop->clouds_height);
+    send_setmapproperty_pkt(4, level_prop->max_fog);
+    send_setmapproperty_pkt(5, level_prop->clouds_speed);
+    send_setmapproperty_pkt(6, level_prop->weather_speed);
+    send_setmapproperty_pkt(7, level_prop->weather_fade);
+    send_setmapproperty_pkt(8, level_prop->exp_fog);
+    send_setmapproperty_pkt(9, level_prop->side_offset);
+    send_setmapproperty_pkt(10, level_prop->skybox_hor_speed);
+    send_setmapproperty_pkt(11, level_prop->skybox_ver_speed);
+}
+
+void
+send_weather()
+{
+    if (!extn_weathertype) return;
+
+    send_weather_pkt(level_prop->weather);
 }

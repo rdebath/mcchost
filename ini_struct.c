@@ -5,6 +5,7 @@
 #include "ini_struct.h"
 /*
  * TODO: Should unknown sections give warnings?
+ * TODO: Comment preserving ini file save.
  */
 
 #if INTERFACE
@@ -90,33 +91,36 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("size.x", level_prop->cells_x);
 	INI_INTVAL("size.y", level_prop->cells_y);
 	INI_INTVAL("size.z", level_prop->cells_z);
+
+	INI_NBTSTR("motd", level_prop->motd);
 	INI_INTVAL("spawn.x", level_prop->spawn.x);
 	INI_INTVAL("spawn.y", level_prop->spawn.y);
 	INI_INTVAL("spawn.z", level_prop->spawn.z);
 	INI_INTVAL("spawn.h", level_prop->spawn.h);
 	INI_INTVAL("spawn.v", level_prop->spawn.v);
-	INI_INTVAL("clickdistance", level_prop->click_distance);
-	INI_NBTSTR("motd", level_prop->motd);
 
+	INI_INTVAL("clickdistance", level_prop->click_distance);
 	// hacks_flags
 
-    }
-
-    section = "level.env";
-    if (st->all || strcmp(section, st->curr_section) == 0)
-    {
 	INI_NBTSTR("texture", level_prop->texname);
 	INI_INTVAL("weathertype", level_prop->weather);
-	INI_INTVAL("skycolour", level_prop->sky_colour);
-	INI_INTVAL("cloudcolour", level_prop->cloud_colour);
-	INI_INTVAL("fogcolour", level_prop->fog_colour);
-	INI_INTVAL("ambientcolour", level_prop->ambient_colour);
-	INI_INTVAL("sunlightcolour", level_prop->sunlight_colour);
+
+	INI_INTHEX("skycolour", level_prop->sky_colour);
+	INI_INTHEX("cloudcolour", level_prop->cloud_colour);
+	INI_INTHEX("fogcolour", level_prop->fog_colour);
+	INI_INTHEX("ambientcolour", level_prop->ambient_colour);
+	INI_INTHEX("sunlightcolour", level_prop->sunlight_colour);
+	INI_INTHEX("skyboxcolour", level_prop->skybox_colour);
+
 	INI_INTVAL("sideblock", level_prop->side_block);
 	INI_INTVAL("edgeblock", level_prop->edge_block);
 	INI_INTVAL("sidelevel", level_prop->side_level);
+	INI_INTVAL("sideoffset", level_prop->side_offset);
+
 	INI_INTVAL("cloudheight", level_prop->clouds_height);
 	INI_INTVAL("maxfog", level_prop->max_fog);
+
+	INI_INTVAL("cloudsspeed", level_prop->clouds_speed);
 	INI_INTVAL("weatherspeed", level_prop->weather_speed);
 	INI_INTVAL("weatherfade", level_prop->weather_fade);
 	INI_INTVAL("expfog", level_prop->exp_fog);
@@ -372,6 +376,20 @@ ini_write_int(ini_state_t *st, char * section, char *fieldname, int value)
 }
 
 LOCAL void
+ini_write_hexint(ini_state_t *st, char * section, char *fieldname, int value)
+{
+    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
+	if (st->curr_section) free(st->curr_section);
+	st->curr_section = strdup(section);
+	fprintf(st->fd, "\n[%s]\n", section);
+    }
+    if (value < 0)
+	fprintf(st->fd, "%s = %d\n", fieldname, value);
+    else
+	fprintf(st->fd, "%s = 0x%x\n", fieldname, value);
+}
+
+LOCAL void
 ini_write_bool(ini_state_t *st, char * section, char *fieldname, int value)
 {
     if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
@@ -440,6 +458,16 @@ ini_read_bool(int *var, char * value)
                 _var = atoi(*fieldvalue); \
             else \
                 ini_write_int(st, section, fld, (_var)); \
+        }
+
+#define INI_INTHEX(_field, _var) \
+        fld = _field; \
+        if (st->all || strcmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                _var = strtol(*fieldvalue, 0, 0); \
+            else \
+                ini_write_hexint(st, section, fld, (_var)); \
         }
 
 #define INI_BOOLVAL(_field, _var) \

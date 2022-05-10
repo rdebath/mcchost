@@ -149,7 +149,7 @@ open_level_files(char * levelname, int direct)
     if (level_prop->version_no != MAP_VERSION || level_prop->magic_no != MAP_MAGIC
 	|| level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
     {
-	printf_chat("&SCreating new default level");
+	printf_chat("&SCreating new level file");
 	flush_to_remote();
 	createmap(levelname);
     } else

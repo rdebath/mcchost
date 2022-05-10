@@ -8,9 +8,10 @@
 
 /*
  * TODO:
- * +) Comment preserving ini file save.
  *
  * +) User prefix/suffix for multiple heartbeat servers.
+ *
+ * +) Command that sets level properties using ini file loader.
  *
  * +) load/save level to *.cw and use for backups, restores and "unload".
  *    -- Add locking so one load at a time ?

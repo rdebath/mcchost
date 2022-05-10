@@ -296,9 +296,17 @@ change_int_value(char * section, char * item, long long value)
     if (*section == 0 ||
 	    strcmp(section, "ClassicWorld") == 0 ||
 	    strcmp(section, "MapSize") == 0) {
+	int ok = 1;
 	if (strcmp(item, "X") == 0) level_prop->cells_x = value;
-	if (strcmp(item, "Y") == 0) level_prop->cells_y = value;
-	if (strcmp(item, "Z") == 0) level_prop->cells_z = value;
+	else if (strcmp(item, "Y") == 0) level_prop->cells_y = value;
+	else if (strcmp(item, "Z") == 0) level_prop->cells_z = value;
+	else ok = 0;
+	if (ok) {
+	    level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
+	    if (level_prop->total_blocks)
+		init_map_from_size((xyz_t){level_prop->cells_x, level_prop->cells_y, level_prop->cells_z});
+	}
+
     } else if (strcmp(section, "Spawn") == 0) {
 	// Add precise spawn?
 	if (strcmp(item, "X") == 0) level_prop->spawn.x = value*32+16;
@@ -433,12 +441,12 @@ change_bin_value(char * section, char * item, uint8_t * value, int len)
 
 	    if (len < 12) return;
 
-	    level_prop->blockdef[current_block].textures[0] += value[0] * 255;
-	    level_prop->blockdef[current_block].textures[1] += value[2] * 255;
-	    level_prop->blockdef[current_block].textures[2] += value[3] * 255;
-	    level_prop->blockdef[current_block].textures[3] += value[4] * 255;
-	    level_prop->blockdef[current_block].textures[4] += value[5] * 255;
-	    level_prop->blockdef[current_block].textures[5] += value[1] * 255;
+	    level_prop->blockdef[current_block].textures[0] += value[6+0] * 256;
+	    level_prop->blockdef[current_block].textures[1] += value[6+2] * 256;
+	    level_prop->blockdef[current_block].textures[2] += value[6+3] * 256;
+	    level_prop->blockdef[current_block].textures[3] += value[6+4] * 256;
+	    level_prop->blockdef[current_block].textures[4] += value[6+5] * 256;
+	    level_prop->blockdef[current_block].textures[5] += value[6+1] * 256;
 
 	} else if (strcmp(item, "Fog") == 0) {
 	    int i;

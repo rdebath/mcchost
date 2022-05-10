@@ -43,8 +43,10 @@
 #define PKID_CLICKDIST	0x12
 #define PKID_CUSTBLOCK	0x13	/*ClientSend&Rcv*/
 #define PKID_HELDBLOCK	0x14
-
 #define PKID_MAPCOLOUR	0x19
+#define PKID_WEATHER	0x1f
+#define PKID_TEXURL	0x28
+#define PKID_MAPPROP	0x29
 
 /* These are the structures for received packets after conversion from
  * the line format.

@@ -15,8 +15,19 @@ nb_short(uint8_t **ptr, int v)
     *ptr = p;
 }
 
-LOCAL int
-nb_string_write(uint8_t *pkt, char * str)
+static inline void
+nb_short_clamp(uint8_t **ptr, int v)
+{
+    if (v>32767) v = 32767;
+    if (v<-32768) v = -32768;
+    uint8_t *p = *ptr;
+    *p++ = (v>>8);
+    *p++ = (v&0xFF);
+    *ptr = p;
+}
+
+static inline int
+nb_string_write(uint8_t *pkt, volatile char * str)
 {
     int l;
     for(l=0; l<MB_STRLEN; l++) {
@@ -122,12 +133,9 @@ send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
     *p++ = PKID_SPAWN;
     *p++ = player_id;
     p += nb_string_write(p, playername);
-    nb_short(&p, posn.x);
-//    if (player_id == 255)
-//        nb_short(&p, posn.y+29);
-//    else
-        nb_short(&p, posn.y+51);
-    nb_short(&p, posn.z);
+    nb_short_clamp(&p, posn.x);
+    nb_short_clamp(&p, posn.y+51);
+    nb_short_clamp(&p, posn.z);
     *p++ = posn.h;
     *p++ = posn.v;
     write_to_remote(packetbuf, p-packetbuf);
@@ -168,12 +176,12 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
     default:
 	*p++ = PKID_POSN;
 	*p++ = player_id;
-	nb_short(&p, posn.x);
+	nb_short_clamp(&p, posn.x);
 	if (player_id == 255)
-	    nb_short(&p, posn.y+29);
+	    nb_short_clamp(&p, posn.y+29);
 	else
-	    nb_short(&p, posn.y+51);
-	nb_short(&p, posn.z);
+	    nb_short_clamp(&p, posn.y+51);
+	nb_short_clamp(&p, posn.z);
 	*p++ = posn.h;
 	*p++ = posn.v;
 	break;
@@ -321,6 +329,37 @@ send_envsetcolour_pkt(int id, int rgb)
     nb_short(&p, r);
     nb_short(&p, g);
     nb_short(&p, b);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_textureurl_pkt(volatile nbtstr_t * textureurl)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_TEXURL;
+    p += nb_string_write(p, textureurl->c);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_setmapproperty_pkt(int prop_id, int prop_value)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_MAPPROP;
+    *p++ = prop_id;
+    nb_int(&p, prop_value);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_weather_pkt(int weather_id)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_WEATHER;
+    *p++ = weather_id;
     write_to_remote(packetbuf, p-packetbuf);
 }
 
