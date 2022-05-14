@@ -6,6 +6,9 @@
 
 #include "nbtload.h"
 
+/* NOTE: Do we want to be able to load other file formats?
+ */
+
 enum NbtTagType {
     NBT_END, NBT_I8, NBT_I16, NBT_I32, NBT_I64, NBT_F32,
     NBT_F64, NBT_I8ARRAY, NBT_STR, NBT_LIST, NBT_COMPOUND,

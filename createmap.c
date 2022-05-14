@@ -20,8 +20,6 @@ TODO:
 
     Default size from blocks file (move map_len_t right to end of file)
 
-    Use INT_MIN to flag post calculated fields; if not reset do the calculation.
-
  */
 
 void
@@ -43,40 +41,13 @@ createmap(char * levelname)
 	    }
     }
 
-    *level_prop = (map_info_t){
-	    .magic_no = MAP_MAGIC, .magic_no2 = MAP_MAGIC2,
-	    .version_no = MAP_VERSION, .dirty_save = 1,
-	    .cells_x = 128, .cells_y = 64, .cells_z = 128,
-	    .weather = 0, -1, -1, -1, -1, -1, -1,
-	    .side_block = 7, 8, -1, -2,
-	    .spawn = { 64*32+16, 48*32, 64*32+16, .valid = 1 }
-	};
+    init_map_null();
 
-    {
-	char buf2[256];
-        snprintf(buf2, sizeof(buf2), "map/%.200s.ini", levelname);
-        load_ini_file(level_ini_fields, buf2, 1);
-    }
+    char buf2[256];
+    snprintf(buf2, sizeof(buf2), "map/%.200s.ini", levelname);
+    load_ini_file(level_ini_fields, buf2, 1);
 
-    if (oldsize.valid) {
-	level_prop->cells_x = oldsize.x;
-	level_prop->cells_y = oldsize.y;
-	level_prop->cells_z = oldsize.z;
-	level_prop->spawn.valid = 0;
-    }
-
-    if (!level_prop->spawn.valid)
-    {
-	// Calculate normal spawn posn
-	level_prop->spawn.x = level_prop->cells_x/2;
-	level_prop->spawn.y = level_prop->cells_y*3/4;
-	level_prop->spawn.z = level_prop->cells_z/2;
-	level_prop->spawn.valid = 1;
-    }
-
-    // Calculation used for edge level in classic client.
-    level_prop->side_level = level_prop->cells_y/2;
-    level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
+    patch_map_nulls(oldsize);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
@@ -140,12 +111,40 @@ init_map_from_size(xyz_t size)
 	    .skybox_hor_speed = 1024, 1024,
 	    .click_distance = -1
 	};
-
 }
 
 void
-patch_map_nulls()
+init_map_null()
 {
+    *level_prop = (map_info_t){
+	    .magic_no = MAP_MAGIC, .magic_no2 = MAP_MAGIC2,
+	    .version_no = MAP_VERSION, .dirty_save = 1,
+	    .cells_x = 0, .cells_y = 0, .cells_z = 0,
+	    .total_blocks = 0,
+	    .weather = 0, -1, -1, -1, -1, -1, -1,
+	    .side_block = 7, 8, INT_MIN, -2,
+	    .spawn = { INT_MIN, INT_MIN, INT_MIN },
+	    .clouds_height = INT_MIN,
+	    .clouds_speed = 256, 256, 128,
+	    .skybox_hor_speed = 1024, 1024,
+	    .click_distance = -1
+	};
+}
+
+void
+patch_map_nulls(xyzhv_t oldsize)
+{
+    if (level_prop->cells_x >= 16384 || level_prop->cells_y >= 16384 || level_prop->cells_z >= 16384 ||
+        level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0 )
+    {
+	if (oldsize.valid == 1) {
+	    level_prop->cells_x = oldsize.x;
+	    level_prop->cells_y = oldsize.y;
+	    level_prop->cells_z = oldsize.z;
+	} else
+	    level_prop->cells_y = (level_prop->cells_x = level_prop->cells_z = 128)/2;
+    }
+
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
 
     if (level_prop->side_level == INT_MIN)
@@ -155,11 +154,11 @@ patch_map_nulls()
 	level_prop->clouds_height = level_prop->cells_y+2;
 
     if (level_prop->spawn.x == INT_MIN)
-	level_prop->spawn.x = level_prop->cells_x/2;
+	level_prop->spawn.x = level_prop->cells_x/2   *32+16;
 
     if (level_prop->spawn.y == INT_MIN)
-	level_prop->spawn.y = level_prop->cells_y*3/4;
+	level_prop->spawn.y = level_prop->cells_y*3/4 *32+16;
 
     if (level_prop->spawn.z == INT_MIN)
-	level_prop->spawn.z = level_prop->cells_z/2;
+	level_prop->spawn.z = level_prop->cells_z/2   *32+16;
 }
