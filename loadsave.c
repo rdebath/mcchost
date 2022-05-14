@@ -108,7 +108,9 @@ scan_and_save_levels()
 	nbtstr_t lv = shdat.client->levels[lvid].level;
 	levelname = lv.c;
 
-	open_level_files(levelname, 0);
+	open_level_files(levelname, 2);
+	if (!level_prop) continue;
+
 	if (level_prop->dirty_save) {
 	    fprintf(stderr, "Saving %s to maps\n", levelname);
 	    save_level_in_map(levelname);
@@ -139,7 +141,7 @@ scan_and_save_levels()
 
 	// unload.
 	fprintf(stderr, "Unloading %s\n", levelname);
-	unlink_level(levelname);
+	unlink_level(levelname, 0);
 	shdat.client->levels[lvid].loaded = 0;
 
 	unlock_client_data();

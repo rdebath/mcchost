@@ -5,6 +5,7 @@
 #include "queue_block.h"
 
 #if INTERFACE
+#define MIN_QUEUE 250
 typedef block_queue_t block_queue_t;
 struct block_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
@@ -165,6 +166,8 @@ void
 set_last_block_queue_id()
 {
     create_block_queue(level_name);
+    if (!level_block_queue) return;
+
     lock_shared();
     last_id = level_block_queue->curr_offset;
     last_generation = level_block_queue->generation;

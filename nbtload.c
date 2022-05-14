@@ -228,7 +228,8 @@ LOCAL int
 read_blockarray(FILE *ifd, int len)
 {
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-    open_blocks(new_level);
+    if (open_blocks(new_level) < 0)
+	return 0;
 
     map_len_t test_map;
     test_map.magic_no = MAP_MAGIC;

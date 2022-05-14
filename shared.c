@@ -101,10 +101,17 @@ struct shared_data_t shdat;
 	    --> Text file? Blob in data table?
  */
 
+/*
+ * direct:
+ *    0: open or create
+ *    1: open or create just the props
+ *    2: just open don't create
+ */
 void
 open_level_files(char * levelname, int direct)
 {
     char sharename[256];
+    int del_on_err = 0, try_cw_file = 0;
     if (level_prop && level_blocks) return;
 
     stop_shared();
@@ -112,36 +119,64 @@ open_level_files(char * levelname, int direct)
 
     check_level_name(levelname);
 
+    snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, levelname);
+    del_on_err = access(sharename, F_OK);
     snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, levelname);
-    allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP);
+    if (del_on_err == 0)
+	del_on_err = access(sharename, F_OK);
+    if (del_on_err < 0) {
+	if(errno == EACCES) del_on_err = 0;
+	else del_on_err = 1;
+    } else del_on_err = 0;
+
+    if (del_on_err && direct == 2) return;
+
+    if (allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP) < 0)
+	goto open_failed;
+
     level_prop = shdat.dat[SHMID_PROP].ptr;
+
+    if (level_prop->magic_no2 != MAP_MAGIC2 || level_prop->magic_no != MAP_MAGIC ||
+	    level_prop->version_no != MAP_VERSION ||
+	    level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
+	try_cw_file = 1;
+    else
+	// If it's not dirty, the cw file should be the master so okay to delete.
+	if (!level_prop->dirty_save) {
+	    char cwfilename[256];
+	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, levelname);
+	    if (access(cwfilename, R_OK) == 0)
+		del_on_err = 1;
+	}
+
+    if (direct == 1) return;
 
     lock_shared();
 
-    if (!direct) {
-	if (level_prop->magic_no2 != MAP_MAGIC2 || level_prop->magic_no != MAP_MAGIC ||
-	    level_prop->version_no != MAP_VERSION ||
-	    level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
-	{
+    // Haven't got any reasonable level files, ok to overwrite.
+    if (try_cw_file) {
 
-	    int ok = 0;
-	    // If level missing -- extract the matching *.cw file
-	    char cwfilename[256];
-	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, levelname);
-	    if (access(cwfilename, R_OK) == 0) {
-		ok = (load_map_from_file(cwfilename, levelname) >= 0);
-	    }
-
-	    // If level missing -- extract a model *.cw file
-	    if (!ok && access(MODEL_CW_NAME, R_OK) == 0) {
-		ok = (load_map_from_file(MODEL_CW_NAME, levelname) >= 0);
-	    }
-
-	    if (!ok) level_prop->version_no = 0;
+	int ok = 0;
+	// If level missing -- extract the matching *.cw file
+	char cwfilename[256];
+	snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, levelname);
+	if (access(cwfilename, R_OK) == 0) {
+	    ok = (load_map_from_file(cwfilename, levelname) >= 0);
+	    // If the cw extraction fails we don't want to use anything
+	    // else as overwriting it might be bad.
+	    if (!ok)
+		goto open_failed;
 	}
+
+	// If level missing -- extract a model *.cw file
+	if (!ok && access(MODEL_CW_NAME, R_OK) == 0) {
+	    ok = (load_map_from_file(MODEL_CW_NAME, levelname) >= 0);
+	}
+
+	if (!ok) level_prop->version_no = 0;
     }
 
-    // If level missing -- make a flat.
+    // If level we still haven't got a level -- make a flat.
     if (level_prop->magic_no2 != MAP_MAGIC2 || level_prop->magic_no != MAP_MAGIC ||
 	level_prop->version_no != MAP_VERSION ||
 	level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
@@ -151,12 +186,23 @@ open_level_files(char * levelname, int direct)
 	createmap(levelname);
     } else
         // NB: Missing file here makes an Air map.
-        open_blocks(levelname);
+        if (open_blocks(levelname) < 0)
+	    goto open_failed;
+
+    create_block_queue(levelname);
+    if (!level_block_queue)
+	goto open_failed;
 
     unlock_shared();
+    return;
+
+open_failed:
+    stop_shared();
+    if (del_on_err)
+	unlink_level(levelname, 1);
 }
 
-void
+int
 open_blocks(char * levelname)
 {
     char sharename[256];
@@ -179,11 +225,15 @@ open_blocks(char * levelname)
 	fatal("Map too large for this server compilation.");
     }
     level_blocks_len = l;
-    allocate_shared(sharename, level_blocks_len, shdat.dat+SHMID_BLOCKS);
+    if (allocate_shared(sharename, level_blocks_len, shdat.dat+SHMID_BLOCKS) < 0)
+	return -1;
+
     level_blocks = shdat.dat[SHMID_BLOCKS].ptr;
 
     close(shdat.dat[SHMID_BLOCKS].lock_fd);
     shdat.dat[SHMID_BLOCKS].lock_fd = 0;
+
+    return 0;
 }
 
 void
@@ -213,21 +263,21 @@ stop_shared(void)
 }
 
 void
-unlink_level(char * levelname)
+unlink_level(char * levelname, int silent)
 {
     char sharename[256];
     check_level_name(levelname);
 
     snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, levelname);
-    if (unlink(sharename) < 0)
+    if (unlink(sharename) < 0 && !silent)
 	perror(sharename);
 
     snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, levelname);
-    if (unlink(sharename) < 0)
+    if (unlink(sharename) < 0 && !silent)
 	perror(sharename);
 
     snprintf(sharename, sizeof(sharename), LEVEL_QUEUE_NAME, levelname);
-    if (unlink(sharename) < 0)
+    if (unlink(sharename) < 0 && !silent)
 	perror(sharename);
 }
 
@@ -244,52 +294,78 @@ LOCAL void check_level_name(char * levelname)
 void
 create_block_queue(char * levelname)
 {
-    char sharename[256];
-    int queue_count = (level_prop->queue_len + 1024) / 1024 * 1024;
-    if (queue_count < 2048) queue_count = 2048;
+    if (!level_prop) return;
 
-    if (level_prop->last_map_download_size / msglen[PKID_SRVBLOCK] > queue_count) {
-	queue_count = level_prop->last_map_download_size / msglen[PKID_SRVBLOCK];
-	queue_count = (queue_count + 1024) / 1024 * 1024;
-	level_prop->queue_len = queue_count;
-    }
+    char sharename[256];
+    int queue_count = MIN_QUEUE;
+
+    snprintf(sharename, sizeof(sharename), LEVEL_QUEUE_NAME, levelname);
 
     stop_block_queue();
     wipe_last_block_queue_id();
 
-    sprintf(sharename, LEVEL_QUEUE_NAME, levelname);
+    // First minimum size.
     level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
-    allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ);
+    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0)
+	return;
     level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
 
+    // Now try to extend it.
     lock_shared();
+
+    // First init check
     if (level_block_queue->generation == 0 ||
+	level_block_queue->queue_len < MIN_QUEUE ||
 	level_block_queue->curr_offset >= level_block_queue->queue_len ||
-	level_block_queue->queue_len != queue_count) {
+	level_block_queue->queue_len > level_prop->total_blocks)
+    {
+	level_block_queue->generation += 2;
+	level_block_queue->curr_offset = 0;
+	level_block_queue->queue_len = queue_count;
+    }
 
-	if (level_block_queue->curr_offset >= level_block_queue->queue_len)
-	    level_block_queue->queue_len = 0;
+    // The file is this big.
+    int file_queue_count = level_block_queue->queue_len;
 
-	if (queue_count > level_block_queue->queue_len ||
-		level_block_queue->queue_len > level_prop->total_blocks) {
+    // We want it this big
+    if (level_prop->last_map_download_size / msglen[PKID_SRVBLOCK] > queue_count) {
+	queue_count = level_prop->last_map_download_size / msglen[PKID_SRVBLOCK];
+	queue_count += 8;
+	queue_count = (queue_count + 1024) / 1024 * 1024;
+	if (queue_count < 2048) queue_count = 2048;
+	queue_count -= 8;
+    }
+
+    if (file_queue_count > queue_count) queue_count = file_queue_count;
+
+    stop_block_queue();
+
+    // Now try the size we want.
+    level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
+    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0) {
+	if (file_queue_count == queue_count)
+	    fatal("Cannot open block queue");
+
+	// Hummph. How about the size it is.
+	level_block_queue_len = sizeof(*level_block_queue) + file_queue_count * sizeof(xyzb_t);
+	if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0)
+	    fatal("Shared area allocation failure");
+
+	queue_count = file_queue_count;
+	level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
+    } else {
+	level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
+	if (queue_count > level_block_queue->queue_len) {
 	    level_block_queue->generation += 2;
 	    level_block_queue->curr_offset = 0;
 	    level_block_queue->queue_len = queue_count;
 	}
-	else queue_count = level_block_queue->queue_len;
+    }
 
-	unlock_shared();
+    close(shdat.dat[SHMID_BLOCKQ].lock_fd);
+    shdat.dat[SHMID_BLOCKQ].lock_fd = 0;
 
-	stop_block_queue();
-	level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
-	allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ);
-	level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
-
-	close(shdat.dat[SHMID_BLOCKQ].lock_fd);
-	shdat.dat[SHMID_BLOCKQ].lock_fd = 0;
-
-    } else
-	unlock_shared();
+    unlock_shared();
 }
 
 void
@@ -386,7 +462,7 @@ stop_chat_queue()
     }
 }
 
-LOCAL void
+LOCAL int
 allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
 {
     uintptr_t sz;
@@ -395,13 +471,12 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
 
     assert((size_t)share_size > 0 && (off_t)share_size > 0);
 
+    shm->ptr = 0;
+    shm->len = 0;
+    shm->lock_fd = -1;
+
     shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW, 0600);
-    if (shared_fd < 0) {
-	char buf[256];
-	sprintf(buf, "Cannot open mapfile \"%.40s\"", share_name);
-	fatal(buf);
-        return;
-    }
+    if (shared_fd < 0) { perror(share_name); return -1; }
 
     {
 	int p = sysconf(_SC_PAGESIZE);
@@ -410,10 +485,11 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
 	sz -= sz % p;
     }
 
-    if (posix_fallocate(shared_fd, 0, sz) < 0) {
+    // Weeeeeird calling process
+    if ((errno = posix_fallocate(shared_fd, 0, sz)) != 0) {
 	perror("posix_fallocate");
-	fatal("fallocate cannot allocate disk space");
-        return;
+	close(shared_fd);
+        return -1;
     }
 
     shm_p = (void*) mmap(0,
@@ -424,13 +500,15 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
 
     if ((intptr_t)shm_p == -1) {
 	perror("mmap");
-	fatal("Cannot allocate shared area");
-        return;
+	close(shared_fd);
+        return -1;
     }
 
     shm->ptr = shm_p;
     shm->len = sz;
     shm->lock_fd = shared_fd;
+
+    return 0;
 }
 
 void

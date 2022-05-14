@@ -35,12 +35,14 @@ f_block_convert(block_t in)
 void
 send_map_file()
 {
+    if (!level_prop || !level_blocks) return;
+
     // Send_system_ident()
     // Send_hack_control()
     // Send_block_definitions()
     // Send_inventory_order()
     send_block_array();
-    // Send_system_ident()
+    // Send_system_ident() // Level motd
     // Send_hack_control()
     send_env_colours();
     send_map_property();

@@ -16,6 +16,9 @@
  * +) load/save level to *.cw and use for backups, restores and "unload".
  * +) /load level ini file from curl pipe ?
  *
+ * +) Is adapting the queue length to the download size a good idea?
+ *    Perhaps the loaded CW file size would be better.
+ *
  * +) Multiple Levels. (/newlvl, /goto, /main, /levels)
  * +) Block/User history records.
  * +) /edlin for editing text files and virtual text files (blockdefs)
