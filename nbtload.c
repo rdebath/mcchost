@@ -419,6 +419,37 @@ change_int_value(char * section, char * item, long long value)
 	    level_prop->blockdef[current_block].shape = value;
 	} else if (strcmp(item, "BlockDraw") == 0) {
 	    level_prop->blockdef[current_block].draw = value;
+
+	} else if (strcmp(item, "Fallback") == 0) {
+	    level_prop->blockdef[current_block].fallback = value;
+	} else if (strcmp(item, "InventoryOrder") == 0) {
+	    level_prop->blockdef[current_block].inventory_order = value;
+	} else if (strcmp(item, "FireFlag") == 0) {
+	    level_prop->blockdef[current_block].fire_flag = value;
+	} else if (strcmp(item, "DoorFlag") == 0) {
+	    level_prop->blockdef[current_block].door_flag = value;
+	} else if (strcmp(item, "MblockFlag") == 0) {
+	    level_prop->blockdef[current_block].mblock_flag = value;
+	} else if (strcmp(item, "PortalFlag") == 0) {
+	    level_prop->blockdef[current_block].portal_flag = value;
+	} else if (strcmp(item, "LavakillsFlag") == 0) {
+	    level_prop->blockdef[current_block].lavakills_flag = value;
+	} else if (strcmp(item, "WaterkillsFlag") == 0) {
+	    level_prop->blockdef[current_block].waterkills_flag = value;
+	} else if (strcmp(item, "TdoorFlag") == 0) {
+	    level_prop->blockdef[current_block].tdoor_flag = value;
+	} else if (strcmp(item, "RailsFlag") == 0) {
+	    level_prop->blockdef[current_block].rails_flag = value;
+	} else if (strcmp(item, "OpblockFlag") == 0) {
+	    level_prop->blockdef[current_block].opblock_flag = value;
+	} else if (strcmp(item, "StackBlock") == 0) {
+	    level_prop->blockdef[current_block].stack_block = value;
+	} else if (strcmp(item, "OdoorBlock") == 0) {
+	    level_prop->blockdef[current_block].odoor_block = value;
+	} else if (strcmp(item, "GrassBlock") == 0) {
+	    level_prop->blockdef[current_block].grass_block = value;
+	} else if (strcmp(item, "DirtBlock") == 0) {
+	    level_prop->blockdef[current_block].dirt_block = value;
 	}
 
     }

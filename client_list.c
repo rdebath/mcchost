@@ -25,6 +25,7 @@
 
 #if INTERFACE
 #define MAX_USER	255
+#define MAX_LEVEL	255
 #define MAGIC_USR	0x0012FF7E
 
 typedef struct client_entry_t client_entry_t;
@@ -48,7 +49,7 @@ struct client_data_t {
     int magic1;
     uint32_t generation;
     client_entry_t user[MAX_USER];
-    client_level_t levels[MAX_USER];
+    client_level_t levels[MAX_LEVEL];
     int magic2;
 };
 #endif
@@ -179,11 +180,29 @@ start_user()
 	    fatal("Too many sessions already connected");
     }
 
+    user_no = new_one;
+    nbtstr_t t = {0};
+    strcpy(t.c, user_id);
+    shdat.client->generation++;
+    shdat.client->user[user_no].active = 1;
+    shdat.client->user[user_no].session_id = getpid();
+    shdat.client->user[user_no].name = t;
+    shdat.client->user[user_no].client_software = client_software;
+    shdat.client->user[user_no].on_level = -1;
+
+    unlock_client_data();
+}
+
+void
+start_level(char * levelname)
+{
     nbtstr_t level = {0};
-    strcpy(level.c, level_name);
+    strcpy(level.c, levelname);
     int level_id = -1;
 
-    for(int i=0; i<MAX_USER; i++) {
+    lock_client_data();
+
+    for(int i=0; i<MAX_LEVEL; i++) {
 	if (!shdat.client->levels[i].loaded) {
 	    if (level_id == -1) level_id = i;
 	    continue;
@@ -203,14 +222,6 @@ start_user()
 	shdat.client->levels[level_id].loaded = 1;
     }
 
-    user_no = new_one;
-    nbtstr_t t = {0};
-    strcpy(t.c, user_id);
-    shdat.client->generation++;
-    shdat.client->user[user_no].active = 1;
-    shdat.client->user[user_no].session_id = getpid();
-    shdat.client->user[user_no].name = t;
-    shdat.client->user[user_no].client_software = client_software;
     shdat.client->user[user_no].on_level = level_id;
 
     unlock_client_data();

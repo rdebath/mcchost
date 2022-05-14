@@ -131,6 +131,7 @@ complete_connection()
 
     // Open level mmap files.
     open_level_files(level_name, 0);
+    start_level(level_name);
 
     if (!level_prop)
 	fatal("Unable to load initial map file -- sorry");

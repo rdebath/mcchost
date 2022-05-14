@@ -408,5 +408,22 @@ save_block_def(FILE * ofd, int idno, blockdef_t * blkdef)
 	bc_ent_bytes(ofd, "Fog", fog, 4);
     }
 
+    bc_ent_int16(ofd, "Fallback", blkdef->fallback);
+    bc_ent_int16(ofd, "InventoryOrder", blkdef->inventory_order);
+
+    bc_ent_int8(ofd, "FireFlag", blkdef->fire_flag);
+    bc_ent_int8(ofd, "DoorFlag", blkdef->door_flag);
+    bc_ent_int8(ofd, "MblockFlag", blkdef->mblock_flag);
+    bc_ent_int8(ofd, "PortalFlag", blkdef->portal_flag);
+    bc_ent_int8(ofd, "LavakillsFlag", blkdef->lavakills_flag);
+    bc_ent_int8(ofd, "WaterkillsFlag", blkdef->waterkills_flag);
+    bc_ent_int8(ofd, "TdoorFlag", blkdef->tdoor_flag);
+    bc_ent_int8(ofd, "RailsFlag", blkdef->rails_flag);
+    bc_ent_int8(ofd, "OpblockFlag", blkdef->opblock_flag);
+
+    bc_ent_int16(ofd, "StackBlock", blkdef->stack_block);
+    bc_ent_int16(ofd, "OdoorBlock", blkdef->odoor_block);
+    bc_ent_int16(ofd, "GrassBlock", blkdef->grass_block);
+    bc_ent_int16(ofd, "DirtBlock", blkdef->dirt_block);
     bc_end(ofd);
 }

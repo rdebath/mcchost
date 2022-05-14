@@ -14,7 +14,9 @@
 */
 
 #if INTERFACE
-#define CMD_LOADSAVE  {N"load", &cmd_load}, {N"save", &cmd_save}
+#define CMD_LOADSAVE \
+    {N"load", &cmd_load}, {N"save", &cmd_save}, \
+    {N"goto", &cmd_goto}, {N"g", &cmd_goto, .dup=1}
 #endif
 
 static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
@@ -51,6 +53,29 @@ cmd_load(UNUSED char * cmd, char * arg)
 
 	printf_chat("&SFile loaded");
     }
+}
+
+void
+cmd_goto(UNUSED char * cmd, char * arg)
+{
+    char fixedname[NB_SLEN], buf2[256];
+    fix_fname(fixedname, sizeof(fixedname), arg);
+    snprintf(buf2, sizeof(buf2), "map/%s.cw", fixedname);
+    if (access(buf2, F_OK) != 0) {
+	printf_chat("&SNo levels match \"%s\"", arg);
+	return;
+    }
+
+    stop_shared();
+
+    open_level_files(fixedname, 0);
+    start_level(fixedname);
+    send_map_file();
+    send_spawn_pkt(255, user_id, level_prop->spawn);
+
+    if (extn_clickdistance && level_prop->click_distance > 0)
+        send_clickdistance_pkt(level_prop->click_distance);
+
 }
 
 void
@@ -140,9 +165,9 @@ scan_and_save_levels()
 	}
 
 	// unload.
-	fprintf(stderr, "Unloading %s\n", levelname);
 	unlink_level(levelname, 0);
 	shdat.client->levels[lvid].loaded = 0;
+	fprintf(stderr, "Unloaded level %s\n", levelname);
 
 	unlock_client_data();
     }

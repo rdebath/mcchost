@@ -49,14 +49,6 @@ createmap(char * levelname)
 
     patch_map_nulls(oldsize);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-    memcpy(level_prop->blockdef, default_blocks, sizeof(default_blocks));
-#pragma GCC diagnostic pop
-
-    for (int i = 0; i<BLOCKMAX; i++)
-	level_prop->blockdef[i].inventory_order = i;
-
     open_blocks(levelname);
 
     map_len_t test_map;
@@ -111,6 +103,14 @@ init_map_from_size(xyz_t size)
 	    .skybox_hor_speed = 1024, 1024,
 	    .click_distance = -1
 	};
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+    memcpy(level_prop->blockdef, default_blocks, sizeof(default_blocks));
+#pragma GCC diagnostic pop
+
+    for (int i = 0; i<BLOCKMAX; i++)
+	level_prop->blockdef[i].inventory_order = i;
 }
 
 void
@@ -129,6 +129,14 @@ init_map_null()
 	    .skybox_hor_speed = 1024, 1024,
 	    .click_distance = -1
 	};
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+    memcpy(level_prop->blockdef, default_blocks, sizeof(default_blocks));
+#pragma GCC diagnostic pop
+
+    for (int i = 0; i<BLOCKMAX; i++)
+	level_prop->blockdef[i].inventory_order = i;
 }
 
 void
