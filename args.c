@@ -14,7 +14,6 @@
  * +) Command that sets level properties using ini file loader.
  *
  * +) load/save level to *.cw and use for backups, restores and "unload".
- *    -- Add locking so one load at a time ?
  * +) /load level ini file from curl pipe ?
  *
  * +) Multiple Levels. (/newlvl, /goto, /main, /levels)
@@ -188,7 +187,7 @@ process_args(int argc, char **argv)
 	plen += 11;
     } while(plen < 32);
 
-    if (disable_restart)
+    if (disable_restart && !server_runonce)
 	fprintf(stderr, "WARNING: Restart disabled due to relative path\n");
 
     if (enable_heartbeat_poll && server_secret[0] == 0) {

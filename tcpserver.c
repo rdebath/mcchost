@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <assert.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -19,25 +20,34 @@
 
 int start_tcp_server = 0;
 int detach_tcp_server = 0;
-int enable_heartbeat_poll = 0;
 int tcp_port_no = 25565;
-
 static int listen_socket = -1;
+
+int enable_heartbeat_poll = 0;
 static time_t last_heartbeat = 0;
 
-static inline
-int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
+int enable_backups = 1;
+static time_t last_backup = 0;
+
+static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
 
 char client_ipv4_str[INET_ADDRSTRLEN];
 int client_ipv4_port = 0;
 int client_ipv4_localhost = 0;
 int disable_restart = 0;
 
-static int restart_sig = 0;
+static int restart_sig = 0, signal_available = 0;
 
 void
 handle_sighup(UNUSED int signo)
 {
+    restart_sig = 1;
+}
+
+void
+dont_panic()
+{
+    assert(!disable_restart && signal_available);
     restart_sig = 1;
 }
 
@@ -55,6 +65,7 @@ tcpserver()
 		perror("signal()");
 		exit(1);
 	    }
+	    signal_available = 1;
 	}
     }
 
@@ -93,6 +104,7 @@ tcpserver()
 			setsid();
 		    if (!disable_restart)
 			(void)signal(SIGHUP, SIG_DFL);
+		    signal_available = 0;
 		    E(close(listen_socket), "close(listen)");
 		    line_ofd = 1; line_ifd = 0;
 		    E(dup2(socket, line_ifd), "dup2(S,0)");
@@ -114,6 +126,9 @@ tcpserver()
 
 	if (enable_heartbeat_poll)
 	    send_heartbeat_poll();
+
+	if (enable_backups)
+	    start_backup_process();
     }
     /*NOTREACHED*/
 }
@@ -178,6 +193,7 @@ LOCAL void
 do_restart()
 {
     (void)signal(SIGHUP, SIG_DFL);
+    signal_available = 0;
     close(listen_socket);
     close_logfile();
 
@@ -324,7 +340,7 @@ send_heartbeat_poll()
     // Characters above 160 appear to work "correctly".
 
     snprintf(cmdbuf, sizeof(cmdbuf),
-	"%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s",
+	"%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s&%s%s",
 	heartbeat_url,
 	"port=",tcp_port_no,
 	"max=",255,
@@ -333,7 +349,8 @@ send_heartbeat_poll()
 	"users=",current_user_count(),
 	"salt=",valid_salt?server_secret:"0000000000000000",
 	"name=",ccnet_cp437_quoteurl(server_name, namebuf, sizeof(namebuf)),
-	"software=",ccnet_cp437_quoteurl(server_software, softwarebuf, sizeof(softwarebuf))
+	"software=",ccnet_cp437_quoteurl(server_software, softwarebuf, sizeof(softwarebuf)),
+	"web=","False"
 	);
 
     if (fork() == 0) {
@@ -394,4 +411,21 @@ ccnet_cp437_quoteurl(char *s, char *dest, int len)
     }
     *d = 0;
     return dest;
+}
+
+void
+start_backup_process()
+{
+    time_t now;
+    time(&now);
+    if (last_backup != 0) {
+        if ((now-last_backup) < 300)
+            return;
+    }
+    last_backup = now;
+
+    if (E(fork(),"fork() for backup") != 0) return;
+
+    scan_and_save_levels();
+    exit(0);
 }

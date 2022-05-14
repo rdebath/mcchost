@@ -132,6 +132,7 @@ grow_dirt_block(int x, int y, int z, block_t blk)
 void
 unlocked_update(int x, int y, int z, int b)
 {
+    level_prop->dirty_save = level_prop->dirty_backup = 1;
     int id = level_block_queue->curr_offset;
     level_block_queue->updates[id].x = x;
     level_block_queue->updates[id].y = y;
@@ -147,6 +148,7 @@ void
 send_update(int x, int y, int z, int b)
 {
     lock_shared();
+    level_prop->dirty_save = level_prop->dirty_backup = 1;
     int id = level_block_queue->curr_offset;
     level_block_queue->updates[id].x = x;
     level_block_queue->updates[id].y = y;

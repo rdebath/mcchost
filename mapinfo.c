@@ -4,8 +4,8 @@
 
 #define BLOCKMAX 1024
 #define MAP_MAGIC	0x1A7FFF00
-#define MAP_VERSION	0xA0000100
-#define VALID_MAGIC	0x057FFF00
+#define MAP_MAGIC2	0x557FFF00
+#define MAP_VERSION	0x00000100
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
 
 typedef struct xyz_t xyz_t;
@@ -34,9 +34,17 @@ struct map_info_t {
 
     xyzhv_t spawn;
 
-    int hacks_flags;
+    int version_no;
     int queue_len;
     int last_map_download_size;
+
+    // Do we want/need to backup/save ?
+    int dirty_backup;
+    time_t last_backup;
+    int dirty_save;
+    time_t last_save;
+
+    int hacks_flags;
 
     // Init together til side_offset.
     uint8_t weather;
@@ -75,7 +83,7 @@ struct map_info_t {
     struct blockdef_t blockdef[BLOCKMAX];
     uint8_t block_perms[BLOCKMAX];
 
-    int version_no;
+    int magic_no2;
 };
 
 typedef map_len_t map_len_t;

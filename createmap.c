@@ -44,8 +44,8 @@ createmap(char * levelname)
     }
 
     *level_prop = (map_info_t){
-	    .magic_no = MAP_MAGIC,
-	    .version_no = MAP_VERSION,
+	    .magic_no = MAP_MAGIC, .magic_no2 = MAP_MAGIC2,
+	    .version_no = MAP_VERSION, .dirty_save = 1,
 	    .cells_x = 128, .cells_y = 64, .cells_z = 128,
 	    .weather = 0, -1, -1, -1, -1, -1, -1,
 	    .side_block = 7, 8, -1, -2,
@@ -128,8 +128,8 @@ void
 init_map_from_size(xyz_t size)
 {
     *level_prop = (map_info_t){
-	    .magic_no = MAP_MAGIC,
-	    .version_no = MAP_VERSION,
+	    .magic_no = MAP_MAGIC, .magic_no2 = MAP_MAGIC2,
+	    .version_no = MAP_VERSION, .dirty_save = 1,
 	    .cells_x = size.x, .cells_y = size.y, .cells_z = size.z,
 	    .total_blocks = (int64_t)size.x*size.y*size.z,
 	    .weather = 0, -1, -1, -1, -1, -1, -1,

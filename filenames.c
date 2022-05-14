@@ -13,7 +13,7 @@
 #define LEVEL_QUEUE_NAME "level/%s.queue"
 #define LEVEL_CW_NAME "map/%s.cw"
 #define MODEL_CW_NAME "model.cw"
-#define SYS_USER_LIST_NAME "system/user.list"
+#define SYS_STAT_NAME "system/userlevels.dat"
 #define CHAT_QUEUE_NAME "system/chat.queue"
 #endif
 
@@ -36,5 +36,26 @@ init_dirs()
 	    // Just complain, later processes will error.
 	}
     }
+}
 
+void
+fix_fname(char *buf, int len, char *s)
+{
+    char *d = buf;
+    if (len<0) return;
+    for(char *p=s;*p;p++) {
+	if (d>=buf+len-1) break;
+	if (*p > ' ' && *p < '~' && *p != '\'' && *p != '/' && *p != '\\'
+		&& *p != '_' && *p != '%' && !(*p == '.' && d == buf)) {
+	    *d++ = *p;
+	} else if (*p == ' ') {
+	    *d++ = '_';
+	} else {
+	    static char hex[] = "0123456789ABCDEF";
+	    *d++ = '%';
+	    *d++ = hex[(*p>>4)&0xF];
+	    *d++ = hex[*p&0xF];
+	}
+    }
+    *d = 0;
 }

@@ -16,8 +16,6 @@
 
 int line_ofd = -1;
 int line_ifd = -1;
-char inbuf[4096];
-int insize = 0, inptr = 0;
 
 char user_id[NB_SLEN];
 int user_authenticated = 0;
@@ -160,38 +158,37 @@ send_disconnect_message()
 void
 login()
 {
+    char inbuf[1024];
+    int insize = 0, inptr = 0, rqsize = msglen[0];
+
+    // We should get 
     time_t startup = time(0);
     fcntl(line_ifd, F_SETFL, (int)O_NONBLOCK);
-    while(insize-inptr < 131)
+    while(insize-inptr < rqsize)
     {
-	int cc = read(line_ifd, inbuf+insize, sizeof(inbuf)-insize);
+	int cc = read(line_ifd, inbuf+insize, rqsize-insize);
 	if (cc>0) insize += cc;
 	if (cc<=0) {
-	    if (errno != EAGAIN && errno != EINTR) {
-		if (insize == 0)
-		    teapot();
-		else
-		    quiet_drop("Short connection received");
-	    }
+	    if (errno != EAGAIN && errno != EINTR)
+		teapot(inbuf+inptr, insize);
 	    time_t now = time(0);
 	    if (now-startup > 4) {
-		if (insize == 0) {
-		    teapot();
-		} else
+		if (insize >= 2 && inbuf[inptr+1] >= 3 && inbuf[inptr+1] <= 7) {
+		    if (insize >= 66 && inbuf[inptr+1] > 0 && inbuf[inptr+1] < 7)
+			cpy_nbstring(user_id, inbuf+2);
 		    quiet_drop("Short logon packet received");
+		} else
+		    teapot(inbuf+inptr, insize);
 	    } else
 		usleep(50000);
 	}
 
 	if (insize >= 1 && inbuf[inptr] != 0) // Special exit for weird caller.
-	    teapot();
-	if (insize >= 2 && inbuf[inptr+1] != 7) {
-	    if (inbuf[inptr+1] == 0)
-		teapot();
-	    if (insize >= 66 && inbuf[inptr+1] > 0 && inbuf[inptr+1] < 7)
-		cpy_nbstring(user_id, inbuf+2);
-	    quiet_drop("Only protocol version seven is supported");
-	}
+	    teapot(inbuf+inptr, insize);
+	if (insize >= 2 && inbuf[inptr+1] < 3)
+	    teapot(inbuf+inptr, insize);
+	if (insize >= 2 && inbuf[inptr+1] < 6)
+	    rqsize = msglen[0] - 1;
     }
     fcntl(line_ifd, F_SETFL, 0);
 
@@ -199,13 +196,12 @@ login()
     cpy_nbstring(mppass, inbuf+64+2);
     cpy_nbstring(user_id, inbuf+2);
 
+    if (inbuf[inptr+1] != 7)
+	quiet_drop("Only protocol version seven is supported");
+
     for(int i = 0; user_id[i]; i++)
 	if (!isascii(user_id[i]) ||
 	    (!isalnum(user_id[i]) && user_id[i] != '.' && user_id[i] != '_')) {
-
-	    for(i=0; user_id[i]; i++)
-		if (user_id[i] <= ' ' || user_id[i] > '~')
-		    user_id[i] = '*';
 	    quiet_drop("Invalid user name");
 	}
 
@@ -219,13 +215,13 @@ login()
 	if (strlen(mppass) != 32)
 	    if (!client_ipv4_localhost)
 		quiet_drop("Login failed!");
-	if (*user_id == 0) quiet_drop("Username must be entered");
     }
 
+    if (*user_id == 0) quiet_drop("Username must be entered");
     if (strlen(user_id) > 16)
 	quiet_drop("Usernames must be between 1 and 16 characters");
 
-    cpe_requested = inbuf[inptr+128+2] == 0x42;
+    cpe_requested = (inbuf[inptr+1] == 7 && inbuf[inptr+128+2] == 0x42);
 
     if (*server_secret != 0 && *server_secret != '-') {
 	char hashbuf[NB_SLEN*2];
@@ -274,17 +270,25 @@ logout(char * emsg)
 LOCAL void
 quiet_drop(char * emsg)
 {
+    for(int i = 0; user_id[i]; i++)
+	if (user_id[i] <= ' ' || user_id[i] == '\'' || user_id[i] > '~')
+	    user_id[i] = '*';
     disconnect(0, emsg);
 }
 
 LOCAL void
-teapot()
+teapot(uint8_t * buf, int len)
 {
     if (line_ofd < 0) return;
 
     if (client_ipv4_port)
-	fprintf_logfile("Failed connect %s:%d, Invalid peer process",
-	    client_ipv4_str, client_ipv4_port);
+	fprintf_logfile("Failed connect %s:%d, %s",
+	    client_ipv4_str, client_ipv4_port,
+	    len ? "invalid client hello": "no data.");
+
+    for(int i = 0; i<len; i++)
+	hex_logfile(buf[i]);
+    hex_logfile(EOF);
 
     char msg[] = "418 I'm a teapot\n";
     write_to_remote(msg, sizeof(msg)-1);

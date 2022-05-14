@@ -31,10 +31,16 @@ typedef struct client_entry_t client_entry_t;
 struct client_entry_t {
     nbtstr_t name;
     nbtstr_t client_software;
+    int on_level;
     xyzhv_t posn;
     uint8_t active;
     time_t keepalive;	//TODO
     pid_t session_id;
+};
+
+struct client_level_t {
+    int loaded;
+    nbtstr_t level;
 };
 
 typedef struct client_data_t client_data_t;
@@ -42,6 +48,7 @@ struct client_data_t {
     int magic1;
     uint32_t generation;
     client_entry_t user[MAX_USER];
+    client_level_t levels[MAX_USER];
     int magic2;
 };
 #endif
@@ -56,6 +63,10 @@ void
 check_user()
 {
     if (user_no < 0 || user_no >= MAX_USER || !shdat.client) return;
+
+    //TODO: Attempt a session upgrade -- call exec().
+    if (shdat.client->magic1 != MAGIC_USR || shdat.client->magic2 != MAGIC_USR)
+	fatal("Session upgrade failure, please reconnect");
 
     if (!shdat.client->user[user_no].active) {
 	shdat.client->user[user_no].session_id = 0;
@@ -130,7 +141,7 @@ start_user()
 {
     int new_one = -1, kicked = 0;
 
-    // lock_client_data();
+    lock_client_data();
     if (!shdat.client) fatal("Connection failed");
 
     for(int i=0; i<MAX_USER; i++)
@@ -161,23 +172,48 @@ start_user()
     }
 
     if (new_one < 0 || new_one >= MAX_USER) {
-	// unlock_client_data();
+	unlock_client_data();
 	if (kicked)
 	    fatal("Too many sessions, please try again");
 	else
 	    fatal("Too many sessions already connected");
-    } else {
-	user_no = new_one;
-	nbtstr_t t = {0};
-	strcpy(t.c, user_id);
-	shdat.client->generation++;
-	shdat.client->user[user_no].active = 1;
-	shdat.client->user[user_no].session_id = getpid();
-	shdat.client->user[user_no].name = t;
-	shdat.client->user[user_no].client_software = client_software;
-
-	// unlock_client_data();
     }
+
+    nbtstr_t level = {0};
+    strcpy(level.c, level_name);
+    int level_id = -1;
+
+    for(int i=0; i<MAX_USER; i++) {
+	if (!shdat.client->levels[i].loaded) {
+	    if (level_id == -1) level_id = i;
+	    continue;
+	}
+	nbtstr_t n = shdat.client->levels[i].level;
+	if (strcmp(n.c, level.c) == 0) {
+	    level_id = i;
+	    break;
+	}
+    }
+
+    if (level_id<0)
+	fatal("Too many levels loaded");
+
+    if (!shdat.client->levels[level_id].loaded) {
+	shdat.client->levels[level_id].level = level;
+	shdat.client->levels[level_id].loaded = 1;
+    }
+
+    user_no = new_one;
+    nbtstr_t t = {0};
+    strcpy(t.c, user_id);
+    shdat.client->generation++;
+    shdat.client->user[user_no].active = 1;
+    shdat.client->user[user_no].session_id = getpid();
+    shdat.client->user[user_no].name = t;
+    shdat.client->user[user_no].client_software = client_software;
+    shdat.client->user[user_no].on_level = level_id;
+
+    unlock_client_data();
 }
 
 void

@@ -74,7 +74,7 @@ struct shared_data_t {
 
 #define level_chat_queue shdat.chat
 #define level_chat_queue_len shdat.dat[SHMID_CHAT].len
-#define fcntl_chat_fd shdat.dat[SHMID_CHAT].lock_fd
+#define chat_fd shdat.dat[SHMID_CHAT].lock_fd
 #endif
 
 struct shared_data_t shdat;
@@ -110,12 +110,7 @@ open_level_files(char * levelname, int direct)
     stop_shared();
     stop_block_queue();
 
-    if (strchr(levelname, '/') != 0 || strlen(levelname) > 128) {
-	char buf[256];
-	snprintf(buf, sizeof(buf), "Illegal level name \"%.40s\"", levelname);
-	fatal(buf);
-        return;
-    }
+    check_level_name(levelname);
 
     snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, levelname);
     allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP);
@@ -124,8 +119,9 @@ open_level_files(char * levelname, int direct)
     lock_shared();
 
     if (!direct) {
-	if (level_prop->version_no != MAP_VERSION || level_prop->magic_no != MAP_MAGIC
-	    || level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
+	if (level_prop->magic_no2 != MAP_MAGIC2 || level_prop->magic_no != MAP_MAGIC ||
+	    level_prop->version_no != MAP_VERSION ||
+	    level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
 	{
 
 	    int ok = 0;
@@ -146,10 +142,11 @@ open_level_files(char * levelname, int direct)
     }
 
     // If level missing -- make a flat.
-    if (level_prop->version_no != MAP_VERSION || level_prop->magic_no != MAP_MAGIC
-	|| level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
+    if (level_prop->magic_no2 != MAP_MAGIC2 || level_prop->magic_no != MAP_MAGIC ||
+	level_prop->version_no != MAP_VERSION ||
+	level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
     {
-	printf_chat("&SCreating new level file");
+	printf_chat("&SLoading level file");
 	flush_to_remote();
 	createmap(levelname);
     } else
@@ -212,6 +209,35 @@ stop_shared(void)
     if (fcntl_fd > 0) {
 	close(fcntl_fd);
 	fcntl_fd = 0;
+    }
+}
+
+void
+unlink_level(char * levelname)
+{
+    char sharename[256];
+    check_level_name(levelname);
+
+    snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, levelname);
+    if (unlink(sharename) < 0)
+	perror(sharename);
+
+    snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, levelname);
+    if (unlink(sharename) < 0)
+	perror(sharename);
+
+    snprintf(sharename, sizeof(sharename), LEVEL_QUEUE_NAME, levelname);
+    if (unlink(sharename) < 0)
+	perror(sharename);
+}
+
+LOCAL void check_level_name(char * levelname)
+{
+    if (strchr(levelname, '/') != 0 || strlen(levelname) > 64) {
+	char buf[256];
+	snprintf(buf, sizeof(buf), "Illegal level name \"%.66s\"", levelname);
+	fatal(buf);
+        return;
     }
 }
 
@@ -285,7 +311,7 @@ open_client_list()
 
     if (client_list) stop_client_list();
 
-    sprintf(sharename, SYS_USER_LIST_NAME);
+    sprintf(sharename, SYS_STAT_NAME);
     client_list_len = sizeof(*client_list);
     allocate_shared(sharename, client_list_len, shdat.dat+SHMID_CLIENTS);
     client_list = shdat.dat[SHMID_CLIENTS].ptr;
@@ -354,9 +380,9 @@ stop_chat_queue()
 	wipe_last_chat_queue_id();
     }
 
-    if (fcntl_chat_fd > 0) {
-	close(fcntl_chat_fd);
-	fcntl_chat_fd = 0;
+    if (chat_fd > 0) {
+	close(chat_fd);
+	chat_fd = 0;
     }
 }
 
@@ -422,13 +448,25 @@ unlock_shared(void)
 void
 lock_chat_shared(void)
 {
-   share_lock(fcntl_chat_fd, F_SETLKW, F_WRLCK);
+   share_lock(chat_fd, F_SETLKW, F_WRLCK);
 }
 
 void
 unlock_chat_shared(void)
 {
-   share_lock(fcntl_chat_fd, F_SETLK, F_UNLCK);
+   share_lock(chat_fd, F_SETLK, F_UNLCK);
+}
+
+void
+lock_client_data(void)
+{
+   share_lock(client_fd, F_SETLKW, F_WRLCK);
+}
+
+void
+unlock_client_data(void)
+{
+   share_lock(client_fd, F_SETLK, F_UNLCK);
 }
 
 LOCAL void

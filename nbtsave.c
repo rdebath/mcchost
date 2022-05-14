@@ -16,10 +16,12 @@ enum NbtTagType {
     NBT_F64, NBT_I8ARRAY, NBT_STR, NBT_LIST, NBT_COMPOUND
 };
 
+#if 0
 static char *entpropnames[6] = {
     "ModelRotX", "ModelRotY", "ModelRotZ",
     "ModelScaleX", "ModelScaleY", "ModelScaleZ"
     };
+#endif
 
 /*
  * This writes a *.cw file.
@@ -32,47 +34,27 @@ static char *entpropnames[6] = {
  * I've put the block arrays at the end of the file, this should allow a
  * quick scan of the properties if necessary.
  */
-void
-save_map_to_file(char * fn)
+int
+save_map_to_file(char * fn, int background)
 {
     FILE * savefile;
 
-    if (!fn || *fn == 0) return;
+    if (!fn || *fn == 0) return -1;
 
     if (strlen(fn) > PATH_MAX-64) {
-	fprintf(stderr, "Filename too long\n");
-	return;
+	if (background)
+	    fprintf(stderr, "Filename too long\n");
+	else
+	    printf_chat("&WFilename too long");
+	return -1;
     } else {
 	char cmdbuf[PATH_MAX];
-	char * p = fn;
-	char * d;
-	strcpy(cmdbuf, "gzip>'");
-	d = cmdbuf+strlen(cmdbuf);
-	for(;*p;p++) {
-	    if((d-cmdbuf) >= sizeof(cmdbuf)-8) {
-		fprintf(stderr, "Filename too long\n");
-		return;
-	    }
-	    if (*p == '\'') {
-		*d++ = '\'';
-		*d++ = '\\';
-		*d++ = '\'';
-		*d++ = '\'';
-	    } else if (*p > ' ' && *p < '~') {
-		*d++ = *p;
-	    } else {
-		fprintf(stderr, "Filename conversion error character 0x%02x.\n", *p & 0xFF);
-		return;
-	    }
-	}
-	*d++ = '\'';
-	*d = 0;
-
+	snprintf(cmdbuf, sizeof(cmdbuf), "gzip>'%s'", fn);
 	savefile = popen(cmdbuf, "w");
 
 	if (!savefile) {
 	    perror(fn);
-	    return;
+	    return -1;
 	}
     }
 
@@ -208,10 +190,17 @@ save_map_to_file(char * fn)
     bc_end(savefile);
 
     int rv = pclose(savefile);
-    if (rv)
-	fprintf(stderr, "Save failed error %d\n", rv);
+    if (rv) {
+	if (background)
+	    fprintf(stderr, "Save compression failed error %d\n", rv);
+	else
+	    printf_chat("&WSave compression failed error %d", rv);
+    }
 
     signal(SIGPIPE, SIG_DFL);
+
+    if (rv) return -1;
+    return 0;
 }
 
 LOCAL void
