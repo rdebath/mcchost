@@ -20,6 +20,7 @@
 
 int start_tcp_server = 0;
 int detach_tcp_server = 0;
+int log_to_stderr = 0;
 int tcp_port_no = 25565;
 static int listen_socket = -1;
 
@@ -67,6 +68,12 @@ tcpserver()
 	    }
 	    signal_available = 1;
 	}
+    }
+
+    if (!log_to_stderr) {
+	logger_process();
+	if (detach_tcp_server)
+	    fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
     }
 
     while(1)
@@ -140,7 +147,11 @@ fork_and_detach()
     if (pid != 0) exit(0); // Detached process
 
     setsid();	// New session group
+}
 
+void
+logger_process()
+{
     // Logging pipe
     int pipefd[2];
     E(pipe(pipefd), "cannot create pipe");
@@ -148,7 +159,7 @@ fork_and_detach()
     int pid2 = E(fork(), "Forking failure, logger");
 
     if (pid2 != 0) {
-	// Listener
+	// Parent process
 	E(dup2(pipefd[1], 1), "dup2(logger,1)");
 	E(dup2(pipefd[1], 2), "dup2(logger,2)");
 	close(pipefd[0]);
@@ -159,13 +170,13 @@ fork_and_detach()
 	E(dup2(nullfd, 0), "dup2(nullfd,0)");
 	close(nullfd);
 
-	// Test the logging.
-	fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
-	return; // Only the listener returns.
+	// Return parent.
+	return;
     }
 
     // Logger
-    E(close(listen_socket), "close(listen)");
+    if (listen_socket>=0)
+	E(close(listen_socket), "close(listen)");
     E(close(pipefd[1]), "close(pipe)");
 
     // Detach logger from everything.
@@ -186,7 +197,9 @@ fork_and_detach()
 	fprintf_logfile("| %s", logbuf);
     }
 
-    exit(1);
+    if (ferror(ilog))
+	exit(errno);
+    exit(0);
 }
 
 LOCAL void

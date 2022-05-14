@@ -9,8 +9,6 @@
 /*
  * TODO:
  *
- * +) User prefix/suffix for multiple heartbeat servers.
- *
  * +) Command that sets level properties using ini file loader.
  *
  * +) load/save level to *.cw and use for backups, restores and "unload".
@@ -25,9 +23,9 @@
  *
  * +) Maybe embed called commands: gzip, curl and gdb(stacktrace)
  * +) Maybe exec($0, ...) on accept()
- * +) SIGHUP recreates log process too.
  * +) NAME: (*) MCCHost
  *
+ * +) User prefix/suffix for multiple heartbeat servers.
  * +) Backup while physics running --> Copylvl then freeze physics.
  *    Copylvl can more easily do patchups.
  *
@@ -162,6 +160,12 @@ process_args(int argc, char **argv)
 		if (strcmp(argv[ar], "-no-detach") == 0) {
 		    detach_tcp_server = 0;
 		    addarg = 0;
+		    break;
+		}
+
+		if (strcmp(argv[ar], "-log-stderr") == 0) {
+		    log_to_stderr = 1;
+		    addarg = 1;
 		    break;
 		}
 
