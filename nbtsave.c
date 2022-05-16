@@ -139,6 +139,12 @@ save_map_to_file(char * fn, int background)
     if (bdopen)
 	bc_end(savefile);
 
+    if (level_prop->click_distance >= 0) {
+	bc_compound(savefile, "ClickDistance");
+	bc_ent_int(savefile, "Distance", level_prop->click_distance);
+	bc_end(savefile);
+    }
+
     bc_end(savefile);
     bc_end(savefile);
 

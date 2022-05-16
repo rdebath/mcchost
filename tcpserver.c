@@ -37,12 +37,15 @@ int client_ipv4_port = 0;
 int client_ipv4_localhost = 0;
 int disable_restart = 0;
 
-static int restart_sig = 0, signal_available = 0;
+static volatile int restart_sig = 0, child_sig = 0, alarm_sig;
+static int signal_available = 0;
 
 void
-handle_sighup(UNUSED int signo)
+handle_signal(int signo)
 {
-    restart_sig = 1;
+    if (signo == SIGHUP) restart_sig = 1;
+    if (signo == SIGCHLD) child_sig = 1;
+    if (signo == SIGALRM) alarm_sig = 1;
 }
 
 void
@@ -62,12 +65,17 @@ tcpserver()
 	    fork_and_detach();
 
 	if (!disable_restart) {
-	    if (signal(SIGHUP, handle_sighup) == SIG_ERR) {
-		perror("signal()");
+	    if (signal(SIGHUP, handle_signal) == SIG_ERR) {
+		perror("signal(SIGHUP,)");
 		exit(1);
 	    }
 	    signal_available = 1;
 	}
+
+	if (signal(SIGCHLD, handle_signal) == SIG_ERR)
+	    perror("signal(SIGCHLD,)");
+	if (signal(SIGALRM, handle_signal) == SIG_ERR)
+	    perror("signal(SIGALRM,)");
     }
 
     if (!log_to_stderr) {
@@ -109,8 +117,9 @@ tcpserver()
 		{
 		    if (!detach_tcp_server)
 			setsid();
-		    if (!disable_restart)
-			(void)signal(SIGHUP, SIG_DFL);
+		    (void)signal(SIGHUP, SIG_DFL);
+		    (void)signal(SIGCHLD, SIG_DFL);
+		    (void)signal(SIGALRM, SIG_DFL);
 		    signal_available = 0;
 		    E(close(listen_socket), "close(listen)");
 		    line_ofd = 1; line_ifd = 0;
@@ -136,6 +145,8 @@ tcpserver()
 
 	if (enable_backups)
 	    start_backup_process();
+
+	alarm_sig = 0;
     }
     /*NOTREACHED*/
 }
@@ -206,6 +217,8 @@ LOCAL void
 do_restart()
 {
     (void)signal(SIGHUP, SIG_DFL);
+    (void)signal(SIGCHLD, SIG_DFL);
+    (void)signal(SIGALRM, SIG_DFL);
     signal_available = 0;
     close(listen_socket);
     close_logfile();
@@ -273,6 +286,7 @@ cleanup_zombies()
 {
     // Clean up any zombies.
     int status = 0, pid;
+    child_sig = 0;
     while ((pid = waitpid(-1, &status, WNOHANG)) != 0)
     {
 	if (pid < 0) {
@@ -325,7 +339,7 @@ send_heartbeat_poll()
 {
     time_t now;
     time(&now);
-    if (last_heartbeat != 0) {
+    if (alarm_sig == 0 && last_heartbeat != 0) {
 	if ((now-last_heartbeat) < 45)
 	    return;
     }
@@ -431,7 +445,7 @@ start_backup_process()
 {
     time_t now;
     time(&now);
-    if (last_backup != 0) {
+    if (alarm_sig == 0 && last_backup != 0) {
         if ((now-last_backup) < 300)
             return;
     }

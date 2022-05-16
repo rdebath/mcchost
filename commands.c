@@ -25,6 +25,7 @@ command_t command_list[] =
     CMD_QUITS,
     CMD_RELOAD,
     CMD_LOADSAVE,
+    CMD_SETVAR,
 
     {.name = 0}
 };

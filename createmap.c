@@ -7,16 +7,13 @@
 
 /*
  * This populates a default map file properties.
- *
+
 TODO:
     File source order -- Only one
 	Uncompressed props file -- on open map.
 	map/levelname.cw
-	map/levelname.ini
 	model.cw
 	model.ini
-
-    For *.ini allow existing block file.
 
     Default size from blocks file (move map_len_t right to end of file)
 

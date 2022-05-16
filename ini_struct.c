@@ -18,6 +18,9 @@ struct ini_state_t {
     int write;	// Set to write fields
     char * curr_section;
 };
+
+#define CMD_SETVAR  {N"setvar", &cmd_setvar}
+
 #endif
 
 /*HELP inifile
@@ -48,10 +51,6 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     section = "server";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-	// -dir --> nope.
-	// -log --> call fn, todo.
-	// Main level
-
 	INI_STRARRAYCP437("name", server_name);
 	INI_STRARRAYCP437("motd", server_motd);
 	INI_STRARRAY(st->write?"; salt":"salt", server_secret);	//Base62
@@ -82,7 +81,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     // Skip it quietly on read.
     if (st->write)
 	system_ini_fields(st, fieldname, fieldvalue);
-    else if (st->curr_section && strcmp("system", st->curr_section) == 0)
+    else if (st->curr_section && strcmp("server", st->curr_section) == 0)
 	return 1;
 
     section = "level";
@@ -481,3 +480,37 @@ ini_read_bool(int *var, char * value)
         }
 
 #endif
+
+
+/*HELP setvar
+&T/setvar section name value
+Sections are &Tlevel&S and &Tlevel.blockdef.&WN&S were &WN&S is the block definition number
+
+*/
+void
+cmd_setvar(UNUSED char * cmd, char * arg)
+{
+    char * section = strtok(arg, " ");
+    char * varname = strtok(0, " ");
+    char * value = strtok(0, "");
+
+    if (section == 0 || varname == 0 || !client_ipv4_localhost) {
+	printf_chat("&WUsage");
+	return;
+    }
+    if (value == 0) value = "";
+
+    ini_state_t stv = {0}, *st = &stv;
+    st->curr_section = section;
+
+    if (strcmp(section, "server")) {
+	if (!system_ini_fields(st, varname, &value)) {
+	    printf_chat("&WBad args %s.%s = '%s'", section, varname, value);
+	    return;
+	}
+    } else
+    if (!level_ini_fields(st, varname, &value)) {
+	printf_chat("&WBad args %s.%s = '%s'", section, varname, value);
+	return;
+    }
+}

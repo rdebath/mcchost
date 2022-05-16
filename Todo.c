@@ -1,23 +1,57 @@
+#pragma GCC diagnostic ignored "-Wcomment"
+// This file will be removed when it gets small.
+
+/*HELP todo
+ +) Command that sets level properties using ini file loader. (inprogress)
+
+ +) load/save level to *.cw and use for backups, restores and "unload".
+ +) /load level ini file from curl pipe ?
+
+ +) Is adapting the queue length to the download size a good idea?
+    Perhaps the loaded CW file size would be better.
+
+ +) Multiple Levels. (/newlvl, /goto, /main, /levels) (inprogress)
+ +) Block/User history records.
+ +) /edlin for editing text files and virtual text files (blockdefs)
+
+ +) Maybe embed called commands: gzip, curl and gdb(stacktrace)
+ +) Maybe exec($0, ...) on accept()
+ +) NAME: (*) MCCHost
+
+ +) User prefix/suffix for multiple heartbeat servers.
+ +) Backup while physics running --> Copylvl then freeze physics.
+    Copylvl can more easily do patchups.
+
+ +) /spawn command
+ +) /tp command
+ +) /afk command (and auto)
+ +) /mode command (Grass, bedrock, water etc)
+ +) /info command
+ +) /about command
+ +) /fly command
+
+
 Features:
 
-Everything in level prop file into *.cw file.
+Everything in level prop file into *.cw file. (base-done)
     -- CW file also contains pending physics operations.
     -- Command line routines to convert level files <--> cw file
 
-Routine to export/import level prop and server prop binary files (INI file).
-    -- Should automatic backup export server/level properties?
     -- Virtual edlin ?
+    -- Should automatic backup export server/level properties?
 
 When are cw files saved?
-    Part 1 -- Unload level. -- backup level
+    Part 1 -- Unload level. -- backup level (done)
 	Save new cw file to maps/levelname.tmp
 	Rename to maps/levelname.cw
 	Unload level: remove uncompressed level file.
+
     Part 2 -- backup level
 	copy maps/levelname.cw to backups/levelname.tmp
 	Rename to backups/levelname/...
 
 All files in subdirectories.
+    system.ini	(TODO?)
     map/*.cw
     system/*.*
     level/levelname.*
@@ -80,3 +114,4 @@ More blocks modified than will fit in queue?
 Logging:
     -- Automatic log file cleanup?
     -- Log run commands ?
+*/

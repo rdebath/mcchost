@@ -96,6 +96,10 @@ struct map_len_t {
 
 typedef blockdef_t blockdef_t;
 struct blockdef_t {
+
+//-------------------------------------------------------------
+//----- This section is set by position in default_blocks -----
+
     nbtstr_t name;
 
     // BlockDef Packet
@@ -111,6 +115,7 @@ struct blockdef_t {
     // Packet:  Top, Left, Right, Front, Back, Bottom
     uint8_t fog[BLK_NUM_FOG];
     int8_t coords[BLK_NUM_COORD];
+//-------------------------------------------------------------
 
     // Server only
     block_t fallback;

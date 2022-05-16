@@ -13,7 +13,7 @@ struct ext_list_t {
 };
 #endif
 
-#define N .name=
+#define N .name= /*STFU*/
 static struct ext_list_t extensions[] = {
     { N"CustomBlocks",   1, &extn_customblocks },
     { N"ClickDistance",  1, &extn_clickdistance },
