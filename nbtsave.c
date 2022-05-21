@@ -127,11 +127,11 @@ save_map_to_file(char * fn, int background)
 		}
 
 		char uniquename[64]; // Limitation of MCGalaxy loader.
-		sprintf(uniquename, "inventoryorder%04x", i);
+		sprintf(uniquename, "InventoryOrder%04x", i);
 
 		bc_compound(savefile, uniquename);
-		bc_ent_int(savefile, "block", i);
-		bc_ent_int(savefile, "order", ord);
+		bc_ent_int(savefile, "Block", i);
+		bc_ent_int(savefile, "Order", ord);
 		bc_end(savefile);
 	    }
 	}

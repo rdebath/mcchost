@@ -52,7 +52,7 @@ send_ext_list()
     for(i = 0; extensions[i].version; i++)
 	count++;
 
-    send_extinfo_pkt(server_software, count);
+    send_extinfo_pkt(server.software, count);
 
     for(i = 0; extensions[i].version; i++)
 	send_extentry_pkt(extensions[i].name, extensions[i].version);

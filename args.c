@@ -32,20 +32,20 @@ process_args(int argc, char **argv)
 	    do {
 		if (ar+1 < argc) {
 		    if (strcmp(argv[ar], "-name") == 0) {
-			strncpy(server_name, argv[ar+1], sizeof(server_name)-1);
+			strncpy(server.name, argv[ar+1], sizeof(server.name)-1);
 			ar++; addarg++;
 			break;
 		    }
 
 		    if (strcmp(argv[ar], "-motd") == 0) {
-			strncpy(server_motd, argv[ar+1], sizeof(server_motd)-1);
+			strncpy(server.motd, argv[ar+1], sizeof(server.motd)-1);
 			ar++; addarg++;
 			break;
 		    }
 
 		    if (strcmp(argv[ar], "-salt") == 0 || strcmp(argv[ar], "-secret") == 0) {
 			ar++; addarg++;
-			strncpy(server_secret, argv[ar], sizeof(server_secret)-1);
+			strncpy(server.secret, argv[ar], sizeof(server.secret)-1);
 			// Try to hide the argument used as salt from ps(1)
 			for(char * p = argv[ar]; *p; p++) *p = 'X';
 			break;
@@ -105,12 +105,12 @@ process_args(int argc, char **argv)
 		}
 
 		if (strcmp(argv[ar], "-private") == 0) {
-		    server_private = 1;
+		    server.private = 1;
 		    break;
 		}
 
 		if (strcmp(argv[ar], "-public") == 0) {
-		    server_private = 0;
+		    server.private = 0;
 		    break;
 		}
 
@@ -137,7 +137,7 @@ process_args(int argc, char **argv)
 		    break;
 		}
 
-		if (strcmp(argv[ar], "-nocpe") == 0) { cpe_disabled = 1; break; }
+		if (strcmp(argv[ar], "-nocpe") == 0) { server.cpe_disabled = 1; break; }
 
 		fprintf(stderr, "Invalid argument '%s'\n", argv[ar]);
 		exit(1);
@@ -165,7 +165,7 @@ process_args(int argc, char **argv)
     if (disable_restart && !server_runonce)
 	fprintf(stderr, "WARNING: Restart disabled due to relative path\n");
 
-    if (enable_heartbeat_poll && server_secret[0] == 0) {
+    if (enable_heartbeat_poll && server.secret[0] == 0) {
 	// A pretty trivial semi-random code, maybe 20bits of randomness.
 	struct timeval now;
 	static char base62[] =
@@ -173,9 +173,9 @@ process_args(int argc, char **argv)
 	gettimeofday(&now, 0);
 	srandom(now.tv_sec ^ (now.tv_usec*1000));
 	for(int i=0; i<16; i++) {
-	    server_secret[i] = base62[((unsigned)random())%62];
+	    server.secret[i] = base62[((unsigned)random())%62];
 	}
-	server_secret[16] = 0;
-	fprintf(stderr, "Generated server secret %s\n", server_secret);
+	server.secret[16] = 0;
+	fprintf(stderr, "Generated server secret %s\n", server.secret);
     }
 }

@@ -14,6 +14,20 @@
 // Currently: https://fossil-scm.org/home/file/src/makeheaders.c
 #include "main.h"
 
+#if INTERFACE
+typedef struct server_t server_t;
+struct server_t {
+    char software[NB_SLEN];
+    char name[NB_SLEN];
+    char motd[NB_SLEN];
+    char secret[NB_SLEN];
+    int private;
+    int cpe_disabled;
+    char main_level[NB_SLEN];
+
+};
+#endif
+
 int line_ofd = -1;
 int line_ifd = -1;
 
@@ -24,27 +38,25 @@ int inetd_mode = 0;
 
 char program_name[512];
 
-char server_software[NB_SLEN] = "MCCHost";
-char server_name[NB_SLEN] = "MCCHost Server";
-char server_motd[NB_SLEN] = "";
-char server_secret[NB_SLEN] = "";
+server_t server = {
+    .software = "MCCHost",
+    .name = "MCCHost Server",
+    .main_level = "main",
+};
+
 nbtstr_t client_software = {"(unknown)"};
 
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 char logfile_pattern[1024] = "";
-int server_private = 0;
 int server_runonce = 0;
 int save_conf = 0;
 
-int cpe_disabled = 0;	// Set if disabled on the server
 int cpe_enabled = 0;	// Set if this session is using CPE
 int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
 int cpe_pending = 0;	// Currently running ExtInfo process.
 int cpe_extn_remaining = 0;
 
 block_t max_blockno_to_send = 49;
-
-char * level_name = "main";
 
 char * proc_args_mem = 0;
 int    proc_args_len = 0;
@@ -74,7 +86,7 @@ main(int argc, char **argv)
 
     if (start_tcp_server) {
 	memset(proc_args_mem, 0, proc_args_len);
-	snprintf(proc_args_mem, proc_args_len, "%s port %d", server_software, tcp_port_no);
+	snprintf(proc_args_mem, proc_args_len, "%s port %d", server.software, tcp_port_no);
 
 	open_logfile();
 	tcpserver();
@@ -98,12 +110,12 @@ process_connection()
     login();
 
     memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "%s (%s)", server_software, user_id);
+    snprintf(proc_args_mem, proc_args_len, "%s (%s)", server.software, user_id);
 
     // If in classic mode, don't allow place of bedrock.
     if (!cpe_requested) server_id_op_flag = 0;
 
-    if (cpe_requested && !cpe_disabled) {
+    if (cpe_requested && !server.cpe_disabled) {
 	send_ext_list();
 	cpe_pending = 1;
     }
@@ -111,7 +123,7 @@ process_connection()
     if (!cpe_pending)
 	complete_connection();
 
-    cpe_enabled = (cpe_requested && !cpe_disabled);
+    cpe_enabled = (cpe_requested && !server.cpe_disabled);
 }
 
 void
@@ -120,7 +132,7 @@ complete_connection()
     if (extn_evilbastard)
 	fatal("Server is incompatible with Evil bastard extension");
 
-    send_server_id_pkt(server_name, server_motd, server_id_op_flag);
+    send_server_id_pkt(server.name, server.motd, server_id_op_flag);
     cpe_pending = 0;
 
     // List of users
@@ -130,8 +142,11 @@ complete_connection()
     create_chat_queue();
 
     // Open level mmap files.
-    open_level_files(level_name, 0);
-    start_level(level_name);
+    open_level_files(server.main_level, 0);
+    if (level_prop) {
+	start_level(server.main_level);
+	create_block_queue(server.main_level);
+    }
 
     if (!level_prop)
 	fatal("Unable to load initial map file -- sorry");
@@ -216,7 +231,7 @@ login()
     else
 	fprintf_logfile("Logging in user '%s'", user_id);
 
-    if (*server_secret != 0 && *server_secret != '-') {
+    if (*server.secret != 0 && *server.secret != '-') {
 	if (strlen(mppass) != 32)
 	    if (!client_ipv4_localhost)
 		quiet_drop("Login failed!");
@@ -228,9 +243,9 @@ login()
 
     cpe_requested = (inbuf[inptr+1] == 7 && inbuf[inptr+128+2] == 0x42);
 
-    if (*server_secret != 0 && *server_secret != '-') {
+    if (*server.secret != 0 && *server.secret != '-') {
 	char hashbuf[NB_SLEN*2];
-	strcpy(hashbuf, server_secret);
+	strcpy(hashbuf, server.secret);
 	strcat(hashbuf, user_id);
 
 	MD5_CTX mdContext;

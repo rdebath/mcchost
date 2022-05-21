@@ -381,9 +381,9 @@ change_int_value(char * section, char * item, long long value)
 	if (strcmp(item, "Distance") == 0) level_prop->click_distance = value;
     } else if (strcmp(section, "EnvWeatherType") == 0) {
 	if (strcmp(item, "WeatherType") == 0) level_prop->weather = value;
-    } else if (strncmp(section, "inventoryorder", 14) == 0) {
-	if (strcmp(item, "block") == 0) inventory_block = value;
-	if (strcmp(item, "order") == 0) {
+    } else if (strncasecmp(section, "InventoryOrder", 14) == 0) {
+	if (strcasecmp(item, "Block") == 0) inventory_block = value;
+	if (strcasecmp(item, "Order") == 0) {
 	    int inventory_order = value;
 
 	    if (inventory_order >= 0 && inventory_block > 0 && inventory_block < BLOCKMAX) {

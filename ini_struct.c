@@ -51,11 +51,13 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     section = "server";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-	INI_STRARRAYCP437("name", server_name);
-	INI_STRARRAYCP437("motd", server_motd);
-	INI_STRARRAY(st->write?"; salt":"salt", server_secret);	//Base62
+	INI_STRARRAYCP437("name", server.name);
+	INI_STRARRAYCP437("motd", server.motd);
+	INI_STRARRAY(st->write?"; salt":"salt", server.secret);	//Base62
+	INI_BOOLVAL("nocpe", server.cpe_disabled);
+	INI_BOOLVAL("private", server.private);
+
 	INI_STRARRAY("logfile", logfile_pattern);		//Binary
-	INI_BOOLVAL("nocpe", cpe_disabled);
 	INI_BOOLVAL("tcp", start_tcp_server);
 	INI_BOOLVAL("detach", detach_tcp_server);
 	INI_STRARRAY("heartbeat", heartbeat_url);		//ASCII
@@ -63,7 +65,6 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL(st->write && tcp_port_no==25565?"; port":"port", tcp_port_no);
 	INI_BOOLVAL("inetd", inetd_mode);
 	INI_BOOLVAL("opflag", server_id_op_flag);
-	INI_BOOLVAL("private", server_private);
 	INI_BOOLVAL(st->write?"; runonce":"runonce", server_runonce);
     }
 

@@ -41,6 +41,7 @@ send_map_file()
     // Send_hack_control()
     // Send_block_definitions()
     // Send_inventory_order()
+    set_last_block_queue_id(); // Send updates from now.
     send_block_array();
     // Send_system_ident() // Level motd
     // Send_hack_control()
@@ -59,7 +60,6 @@ send_block_array()
 {
     int zrv = 0;
     int blocks_buffered = 0;
-    set_last_block_queue_id(); // Send updates from now.
     send_lvlinit_pkt();
 
     uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;

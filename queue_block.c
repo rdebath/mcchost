@@ -165,7 +165,6 @@ send_update(int x, int y, int z, int b)
 void
 set_last_block_queue_id()
 {
-    create_block_queue(level_name);
     if (!level_block_queue) return;
 
     lock_shared();

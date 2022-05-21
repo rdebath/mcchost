@@ -34,8 +34,11 @@ command_t command_list[] =
 // TODO:
 // Commands.
 // Command expansion/aliases
-//      Which way? /cuboid-walls <--> /cuboid walls
-//      /os map <--> /map
+//   Which way?
+//      /cuboid-walls <-- /cuboid walls
+//        -- perms can be done on each subcommand
+//      /os map --> /map
+//        -- os is a grouper like "cuboid" above with some short subcmds
 
 void
 run_command(char * msg)

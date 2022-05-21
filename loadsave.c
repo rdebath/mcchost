@@ -125,7 +125,6 @@ scan_and_save_levels()
     open_client_list();
     stop_shared();
     stop_block_queue();
-    level_name = 0;
 
     for(int lvid=0; lvid<MAX_USER; lvid++) {
 	if (!shdat.client->levels[lvid].loaded) continue;
@@ -147,7 +146,6 @@ scan_and_save_levels()
 
 	stop_shared();
 	stop_block_queue();
-	level_name = 0;
 
 	lock_client_data();
 

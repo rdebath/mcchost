@@ -348,7 +348,7 @@ send_heartbeat_poll()
     char cmdbuf[4096];
     char namebuf[256];
     char softwarebuf[256];
-    int valid_salt = (*server_secret != 0 && *server_secret != '-');
+    int valid_salt = (*server.secret != 0 && *server.secret != '-');
 
     // {"errors":[["Only first 256 unicode codepoints may be used in server names."]],"response":"","status":"fail"}
     //
@@ -371,12 +371,12 @@ send_heartbeat_poll()
 	heartbeat_url,
 	"port=",tcp_port_no,
 	"max=",255,
-	"public=",server_private?"False":"True",
+	"public=",server.private?"False":"True",
 	"version=",7,
 	"users=",current_user_count(),
-	"salt=",valid_salt?server_secret:"0000000000000000",
-	"name=",ccnet_cp437_quoteurl(server_name, namebuf, sizeof(namebuf)),
-	"software=",ccnet_cp437_quoteurl(server_software, softwarebuf, sizeof(softwarebuf)),
+	"salt=",valid_salt?server.secret:"0000000000000000",
+	"name=",ccnet_cp437_quoteurl(server.name, namebuf, sizeof(namebuf)),
+	"software=",ccnet_cp437_quoteurl(server.software, softwarebuf, sizeof(softwarebuf)),
 	"web=","False"
 	);
 
