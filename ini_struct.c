@@ -501,17 +501,19 @@ cmd_setvar(UNUSED char * cmd, char * arg)
     }
     if (value == 0) value = "";
 
+    fprintf(stderr, "%s: [%s]%s= %s\n", user_id, section, varname, value);
+
     ini_state_t stv = {0}, *st = &stv;
     st->curr_section = section;
 
-    if (strcmp(section, "server")) {
+    if (strcasecmp(section, "server") == 0) {
 	if (!system_ini_fields(st, varname, &value)) {
-	    printf_chat("&WBad args %s.%s = '%s'", section, varname, value);
+	    printf_chat("&WBad args [%s]%s= %s", section, varname, value);
 	    return;
 	}
     } else
     if (!level_ini_fields(st, varname, &value)) {
-	printf_chat("&WBad args %s.%s = '%s'", section, varname, value);
+	printf_chat("&WBad args [%s]%s= %s", section, varname, value);
 	return;
     }
 }

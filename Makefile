@@ -55,5 +55,8 @@ lib_text.o: lib_text.c
 export TARGET_ARCH DEFS LDFLAGS
 vps:
 	$(MAKE) clean
-	$(MAKE) -j
+	$(MAKE) -j8
+	$(MAKE) sendvps
+
+sendvps:
 	rsync -Pax ${PROG} vps-mcc:bin/mcchost-server

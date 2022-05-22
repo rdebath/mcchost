@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
-#include <ctype.h>
+#include <errno.h>
 #include <stdint.h>
 #include <time.h>
 #include <math.h>
 #include <limits.h>
+#include <zlib.h>
 
 #include "nbtsave.h"
 
@@ -37,28 +37,16 @@ static char *entpropnames[6] = {
 int
 save_map_to_file(char * fn, int background)
 {
-    FILE * savefile;
-
     if (!fn || *fn == 0) return -1;
 
-    if (strlen(fn) > PATH_MAX-64) {
-	if (background)
-	    fprintf(stderr, "Filename too long\n");
-	else
-	    printf_chat("&WFilename too long");
+    gzFile savefile = gzopen(fn, "w");
+
+    if (!savefile) {
+	if (!background)
+	    printf_chat("&WMap save failed with error %d", errno);
+	perror(fn);
 	return -1;
-    } else {
-	char cmdbuf[PATH_MAX];
-	snprintf(cmdbuf, sizeof(cmdbuf), "gzip>'%s'", fn);
-	savefile = popen(cmdbuf, "w");
-
-	if (!savefile) {
-	    perror(fn);
-	    return -1;
-	}
     }
-
-    signal(SIGPIPE, SIG_IGN);	// If gzip or shell fails, check later.
 
     bc_compound(savefile, "ClassicWorld");
     bc_ent_int(savefile, "FormatVersion", 1);
@@ -82,9 +70,18 @@ save_map_to_file(char * fn, int background)
     bc_compound(savefile, "Metadata");
     bc_compound(savefile, "CPE");
 
+    bc_compound(savefile, "SetSpawn");
+    bc_ent_int(savefile, "X", level_prop->spawn.x);
+    bc_ent_int(savefile, "Y", level_prop->spawn.y);
+    bc_ent_int(savefile, "Z", level_prop->spawn.z);
+    bc_ent_int(savefile, "H", level_prop->spawn.h);
+    bc_ent_int(savefile, "P", level_prop->spawn.v);
+    bc_end(savefile);
+
     bc_compound(savefile, "EnvWeatherType");
     bc_ent_int8(savefile, "WeatherType", level_prop->weather);
     bc_end(savefile);
+
     bc_compound(savefile, "EnvColors");
     bc_colour(savefile, "Sky", level_prop->sky_colour);
     bc_colour(savefile, "Cloud", level_prop->cloud_colour);
@@ -156,7 +153,7 @@ save_map_to_file(char * fn, int background)
 	    int b = level_blocks[i];
 	    // if (b>=BLOCKMAX) b = BLOCKMAX-1;
 	    if (b>=768) {flg2 = 1; b &= 0xFF; }
-	    fputc(b & 0xFF, savefile);
+	    gzputc(savefile, b & 0xFF);
 	    flg |= (b>0xFF);
 	}
 
@@ -168,7 +165,7 @@ save_map_to_file(char * fn, int background)
 		int b = level_blocks[i];
 		// if (b>=BLOCKMAX) b = BLOCKMAX-1;
 		if (b>=768) b &= 0xFF;
-		fputc(b>>8, savefile);
+		gzputc(savefile, b>>8);
 	    }
 	}
 
@@ -182,9 +179,9 @@ save_map_to_file(char * fn, int background)
 		int b = level_blocks[i];
 		// if (b>=BLOCKMAX) b=BLOCKMAX-1;
 		if (b>=768)
-		    fputc(b>>8, savefile);
+		    gzputc(savefile, b>>8);
 		else
-		    fputc(0, savefile);
+		    gzputc(savefile, 0);
 	    }
 
 	    // Another option is to discard BA2 completely, put the 255
@@ -195,22 +192,20 @@ save_map_to_file(char * fn, int background)
 
     bc_end(savefile);
 
-    int rv = pclose(savefile);
+    int rv = gzclose(savefile);
     if (rv) {
 	if (background)
-	    fprintf(stderr, "Save compression failed error %d\n", rv);
+	    fprintf(stderr, "Save failed error Z%d\n", rv);
 	else
-	    printf_chat("&WSave compression failed error %d", rv);
+	    printf_chat("&WSave failed error Z%d", rv);
     }
-
-    signal(SIGPIPE, SIG_DFL);
 
     if (rv) return -1;
     return 0;
 }
 
 LOCAL void
-bc_string(FILE * ofd, char * str, int len)
+bc_string(gzFile ofd, char * str, int len)
 {
     if (len) {
         while(len>0 && (str[len-1] == ' ' || str[len-1] == 0))
@@ -218,115 +213,115 @@ bc_string(FILE * ofd, char * str, int len)
     } else {
         len = strlen(str);
     }
-    fputc(len>>8, ofd);
-    fputc(len&0xFF, ofd);
-    fwrite(str, len, 1, ofd);
+    gzputc(ofd, len>>8);
+    gzputc(ofd, len&0xFF);
+    gzwrite(ofd, str, len);
 }
 
 LOCAL void
-bc_ent_label(FILE * ofd, char * name)
+bc_ent_label(gzFile ofd, char * name)
 {
     bc_string(ofd, name, 0);
 }
 
 LOCAL void
-bc_ent_string(FILE * ofd, char * name, char * str, int len)
+bc_ent_string(gzFile ofd, char * name, char * str, int len)
 {
-    fputc(NBT_STR, ofd);
+    gzputc(ofd, NBT_STR);
     bc_ent_label(ofd, name);
     bc_string(ofd, str, len);
 }
 
 LOCAL void
-bc_ent_bytes_header(FILE * ofd, char * name, int len)
+bc_ent_bytes_header(gzFile ofd, char * name, int len)
 {
-    fputc(NBT_I8ARRAY, ofd);
+    gzputc(ofd, NBT_I8ARRAY);
     bc_ent_label(ofd, name);
-    fputc((len>>24) & 0xFF, ofd);
-    fputc((len>>16) & 0xFF, ofd);
-    fputc((len>>8)  & 0xFF, ofd);
-    fputc( len      & 0xFF, ofd);
+    gzputc(ofd, (len>>24) & 0xFF);
+    gzputc(ofd, (len>>16) & 0xFF);
+    gzputc(ofd, (len>>8)  & 0xFF);
+    gzputc(ofd,  len      & 0xFF);
 }
 
 LOCAL void
-bc_ent_bytes(FILE * ofd, char * name, char * bstr, int len)
+bc_ent_bytes(gzFile ofd, char * name, char * bstr, int len)
 {
     bc_ent_bytes_header(ofd, name, len);
-    fwrite(bstr, len, 1, ofd);
+    gzwrite(ofd, bstr, len);
 }
 
 LOCAL void
-bc_ent_int(FILE * ofd, char * name, int val)
+bc_ent_int(gzFile ofd, char * name, int val)
 {
     if (val >= -128 && val <= 127) {
-	fputc(NBT_I8, ofd);
+	gzputc(ofd, NBT_I8);
 	bc_ent_label(ofd, name);
-	fputc(val & 0xFF, ofd);
+	gzputc(ofd, val & 0xFF);
 	return;
     }
 
     if (val >= -32768 && val <= 32767) {
-	fputc(NBT_I16, ofd);
+	gzputc(ofd, NBT_I16);
 	bc_ent_label(ofd, name);
-	fputc((val>>8), ofd);
-	fputc(val&0xFF, ofd);
+	gzputc(ofd, (val>>8));
+	gzputc(ofd, val&0xFF);
 	return;
     }
 
-    fputc(NBT_I32, ofd);
+    gzputc(ofd, NBT_I32);
     bc_ent_label(ofd, name);
-    fputc((val>>24) & 0xFF, ofd);
-    fputc((val>>16) & 0xFF, ofd);
-    fputc((val>>8)  & 0xFF, ofd);
-    fputc( val      & 0xFF, ofd);
+    gzputc(ofd, (val>>24) & 0xFF);
+    gzputc(ofd, (val>>16) & 0xFF);
+    gzputc(ofd, (val>>8)  & 0xFF);
+    gzputc(ofd,  val      & 0xFF);
 }
 
 LOCAL void
-bc_ent_float(FILE * ofd, char * name, double fval)
+bc_ent_float(gzFile ofd, char * name, double fval)
 {
     union { int32_t i32; float f32; } bad;
     bad.f32 = fval;
     int val = bad.i32;
-    fputc(NBT_F32, ofd);
+    gzputc(ofd, NBT_F32);
     bc_ent_label(ofd, name);
-    fputc((val>>24) & 0xFF, ofd);
-    fputc((val>>16) & 0xFF, ofd);
-    fputc((val>>8)  & 0xFF, ofd);
-    fputc( val      & 0xFF, ofd);
+    gzputc(ofd, (val>>24) & 0xFF);
+    gzputc(ofd, (val>>16) & 0xFF);
+    gzputc(ofd, (val>>8)  & 0xFF);
+    gzputc(ofd,  val      & 0xFF);
 }
 
 LOCAL void
-bc_ent_int16(FILE * ofd, char * name, int val)
+bc_ent_int16(gzFile ofd, char * name, int val)
 {
-    fputc(NBT_I16, ofd);
+    gzputc(ofd, NBT_I16);
     bc_ent_label(ofd, name);
-    fputc((val>>8), ofd);
-    fputc(val&0xFF, ofd);
+    gzputc(ofd, (val>>8));
+    gzputc(ofd, val&0xFF);
 }
 
 LOCAL void
-bc_ent_int8(FILE * ofd, char * name, int val)
+bc_ent_int8(gzFile ofd, char * name, int val)
 {
-    fputc(NBT_I8, ofd);
+    gzputc(ofd, NBT_I8);
     bc_ent_label(ofd, name);
-    fputc(val & 0xFF, ofd);
+    gzputc(ofd, val & 0xFF);
 }
 
 LOCAL void
-bc_compound(FILE * ofd, char * name)
+bc_compound(gzFile ofd, char * name)
 {
-    fputc(NBT_COMPOUND, ofd);
+    gzputc(ofd, NBT_COMPOUND);
     bc_ent_label(ofd, name);
 }
 
 LOCAL void
-bc_end(FILE * ofd)
+bc_end(gzFile ofd)
 {
-    fputc(NBT_END, ofd);
+    gzputc(ofd, NBT_END);
 }
 
 void
-bc_colour(FILE * ofd, char * name, int colour)
+bc_colour(gzFile ofd, char * name, int colour)
 {
     int r, g, b;
     if (colour < 0)
@@ -345,7 +340,7 @@ bc_colour(FILE * ofd, char * name, int colour)
 }
 
 LOCAL void
-save_block_def(FILE * ofd, int idno, blockdef_t * blkdef)
+save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
 {
     char buf[64];
 

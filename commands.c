@@ -22,9 +22,11 @@ command_t command_list[] =
     CMD_HELP,
     CMD_PLACE,
     CMD_COMMANDS,
-    CMD_QUITS,
-    CMD_RELOAD,
+    CMD_MAPS,
     CMD_LOADSAVE,
+    CMD_WHO,
+    CMD_RELOAD,
+    CMD_QUITS,
     CMD_SETVAR,
 
     {.name = 0}

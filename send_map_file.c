@@ -53,6 +53,9 @@ send_map_file()
     // send_players()
     // send_entities()
     // send_spawn()
+
+    if (extn_clickdistance)
+	send_clickdistance_pkt(level_prop->click_distance > 0? level_prop->click_distance:160);
 }
 
 void

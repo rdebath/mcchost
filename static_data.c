@@ -58,7 +58,7 @@ blockdef_t default_blocks[66] = {
 /* 48 */ { N{"Mossy rocks"}, 2, 0, 4, 0, 16, 0, 1.0, {36, 36, 36, 36, 36, 36}, {0, 0, 0, 0}, {0, 0, 0, 16, 16, 16}},
 /* 49 */ { N{"Obsidian"}, 2, 0, 4, 0, 16, 0, 1.0, {37, 37, 37, 37, 37, 37}, {0, 0, 0, 0}, {0, 0, 0, 16, 16, 16}},
 
-/* Below here not available in pure classic */
+/* Below here not available in pure classic and so have fallbacks. */
 /* 50 */ { N{"Cobblestone slab"}, 2, 0, 4, 0, 8, 0, 1.0, {16, 16, 16, 16, 16, 16}, {0, 0, 0, 0}, {0, 0, 0, 16, 8, 16},
     .fallback=Block_Slab, .stack_block=Block_Cobble},
 /* 51 */ { N{"Rope"}, 7, 1, 7, 0, 0, 1, 1.0, {11, 11, 11, 11, 11, 11}, {0, 0, 0, 0}, {2, 0, 2, 13, 16, 13},

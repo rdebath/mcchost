@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <zlib.h>
 
 #include "nbtload.h"
 
@@ -28,43 +29,34 @@ static int indent = 0;
 static int current_block = -1;
 static int inventory_block = -1;
 
-// Load into here, copy to the real one later.
-static char new_level[256];
-
 int
 load_map_from_file(char * filename, char * levelname)
 {
-    FILE * ifd;
-    char * cmdbuf, *s, *d;
+    gzFile ifd;
+    nbtstr_t new_level;
 
-    d = cmdbuf = calloc(1, strlen(filename)*4 + 32);
-
-    d += sprintf(cmdbuf, "%s", "gzip -S .cw -cdf '");
-    for (s=filename; *s; s++) {
-	if (*s == '\'') {
-	    *d++ = '\''; *d++ = '\\'; *d++ = '\''; *d++ = '\'';
-	} else {
-	    *d++ = *s;
-	}
-    }
-    *d++ = '\''; *d = 0;
-    if ((ifd = popen(cmdbuf, "r")) == 0) {
+    if ((ifd = gzopen(filename, "r")) == 0) {
 	perror(filename);
 	return -1;
     }
-    snprintf(new_level, sizeof(new_level), "%s", levelname);
+    snprintf(new_level.c, sizeof(new_level.c), "%s", levelname);
 
-    load_cwfile(ifd);
-    pclose(ifd);
-    free(cmdbuf);
+    load_cwfile(ifd, new_level.c);
+
+    int rv = gzclose(ifd);
+    if (rv) {
+	fprintf(stderr, "Load '%s' failed error Z%d\n", filename, rv);
+	return -1;
+    }
+
     return 0;
 }
 
 LOCAL void
-load_cwfile(FILE * ifd)
+load_cwfile(gzFile ifd, char * levelname)
 {
     int ClassicWorld_found = 0;
-    int ch = fgetc(ifd);
+    int ch = gzgetc(ifd);
     if (ch == NBT_COMPOUND) {
 	*last_lbl = *last_sect = 0;
 	read_element(ifd, NBT_LABEL);
@@ -74,7 +66,7 @@ load_cwfile(FILE * ifd)
 	    return;
 	}
 	fprintf(stderr, "Loading ClassicWorld map: ");
-	open_level_files(new_level, 1);
+	open_level_files(levelname, 1);
 	read_element(ifd, ch);
     } else {
 	fprintf(stderr, "File format incorrect.\n");
@@ -86,7 +78,7 @@ load_cwfile(FILE * ifd)
 }
 
 LOCAL int
-read_element(FILE * ifd, int etype)
+read_element(gzFile ifd, int etype)
 {
     if (etype == NBT_END) {
 	// EOF
@@ -95,7 +87,7 @@ read_element(FILE * ifd, int etype)
 
 	/* NB: Only lengths 0 ..0x7FFFFFFF are valid. */
 	for(i=0; i<4; i++)
-	    len = (len<<8) + (ch = fgetc(ifd));
+	    len = (len<<8) + (ch = gzgetc(ifd));
 
 	if (strcmp(last_lbl, "BlockArray") == 0 && len>0)
 	    return read_blockarray(ifd, len);
@@ -108,12 +100,12 @@ read_element(FILE * ifd, int etype)
 
 	if (len < 0 || len > 256) {
 	    for(i=0; i<len; i++) {
-		if ((ch = fgetc(ifd)) == EOF) return 0;
+		if ((ch = gzgetc(ifd)) == EOF) return 0;
 	    }
 	} else {
 	    uint8_t bin_buf[256];
 	    for(i=0; i<len; i++) {
-		if ((ch = fgetc(ifd)) == EOF) return 0;
+		if ((ch = gzgetc(ifd)) == EOF) return 0;
 		if (i<sizeof(bin_buf)) bin_buf[i] = ch;
 	    }
 
@@ -126,8 +118,8 @@ read_element(FILE * ifd, int etype)
 	char str_buf[4096];
 	str_buf[0] = 0;
 
-	len = (len<<8) + (ch = fgetc(ifd));
-	len = (len<<8) + (ch = fgetc(ifd));
+	len = (len<<8) + (ch = gzgetc(ifd));
+	len = (len<<8) + (ch = gzgetc(ifd));
 	if (ch == EOF) return 0;
 
 	if (etype == NBT_STR) {
@@ -135,7 +127,7 @@ read_element(FILE * ifd, int etype)
 	} else
 	    last_lbl[len < sizeof(last_lbl)-1?len:0] = 0;
 	for(i=0; i<len; i++) {
-	    if ((ch = fgetc(ifd)) == EOF) return 0;
+	    if ((ch = gzgetc(ifd)) == EOF) return 0;
 	    if (etype == NBT_STR)
 	    {
 		if (i<sizeof(str_buf)-1) { str_buf[i] = ch; str_buf[i+1] = 0; }
@@ -161,7 +153,7 @@ read_element(FILE * ifd, int etype)
 	    strcpy(last_sect, last_lbl);
 	indent++;
 	for(;;) {
-	    etype = getc(ifd);
+	    etype = gzgetc(ifd);
 	    if (etype == NBT_END) {
 		indent--;
 		*last_sect = 0;
@@ -173,12 +165,12 @@ read_element(FILE * ifd, int etype)
 	}
 
     } else if (etype == NBT_LIST) {
-	int etype = fgetc(ifd);
+	int etype = gzgetc(ifd);
 	if (etype == EOF) return 0;
 
 	int len = 0, i, ch;
 	for(i = 0; i<4; i++)
-	    len = (len<<8) + ((ch=fgetc(ifd)) & 0xFF);
+	    len = (len<<8) + ((ch=gzgetc(ifd)) & 0xFF);
 	if (ch == EOF) return 0;
 
 	indent++;
@@ -198,7 +190,7 @@ read_element(FILE * ifd, int etype)
 	long long V = 0;
 	int i;
 	for(i=0; i<NbtLen[etype]; i++) {
-	    V = (V<<8) + (fgetc(ifd) & 0xFF);
+	    V = (V<<8) + (gzgetc(ifd) & 0xFF);
 	}
 	switch(etype) {
 	case NBT_I8: V = (int8_t) V; break;
@@ -225,10 +217,10 @@ read_element(FILE * ifd, int etype)
 }
 
 LOCAL int
-read_blockarray(FILE *ifd, int len)
+read_blockarray(gzFile ifd, int len)
 {
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-    if (open_blocks(new_level) < 0)
+    if (open_blocks(current_level.c) < 0)
 	return 0;
 
     map_len_t test_map;
@@ -241,14 +233,14 @@ read_blockarray(FILE *ifd, int len)
 
     for(int i=0; i<len; i++) {
 	int ch;
-	if ((ch = getc(ifd)) == EOF) return 0;
+	if ((ch = gzgetc(ifd)) == EOF) return 0;
 	level_blocks[i] = (level_blocks[i] & 0xFF00) + (ch&0xFF);
     }
     return 1;
 }
 
 LOCAL int
-read_blockarray2(FILE *ifd, int len)
+read_blockarray2(gzFile ifd, int len)
 {
 
     if (level_blocks == 0 || level_prop->total_blocks < len) {
@@ -258,14 +250,14 @@ read_blockarray2(FILE *ifd, int len)
 
     for(int i=0; i<len; i++) {
 	int ch;
-	if ((ch = getc(ifd)) == EOF) return 0;
+	if ((ch = gzgetc(ifd)) == EOF) return 0;
 	level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
     }
     return 1;
 }
 
 LOCAL int
-read_blockarray3(FILE *ifd, int len)
+read_blockarray3(gzFile ifd, int len)
 {
 
     if (level_blocks == 0 || level_prop->total_blocks < len) {
@@ -275,7 +267,7 @@ read_blockarray3(FILE *ifd, int len)
 
     for(int i=0; i<len; i++) {
 	int ch;
-	if ((ch = getc(ifd)) == EOF) return 0;
+	if ((ch = gzgetc(ifd)) == EOF) return 0;
 	if (ch)
 	    level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
     }
@@ -312,10 +304,15 @@ change_int_value(char * section, char * item, long long value)
 	}
 
     } else if (strcmp(section, "Spawn") == 0) {
-	// Add precise spawn?
 	if (strcmp(item, "X") == 0) level_prop->spawn.x = value*32+16;
 	if (strcmp(item, "Y") == 0) level_prop->spawn.y = value*32+16;
 	if (strcmp(item, "Z") == 0) level_prop->spawn.z = value*32+16;
+	if (strcmp(item, "H") == 0) level_prop->spawn.h = value*360/256;
+	if (strcmp(item, "P") == 0) level_prop->spawn.v = value*360/256;
+    } else if (strcmp(section, "SetSpawn") == 0) {
+	if (strcmp(item, "X") == 0) level_prop->spawn.x = value;
+	if (strcmp(item, "Y") == 0) level_prop->spawn.y = value;
+	if (strcmp(item, "Z") == 0) level_prop->spawn.z = value;
 	if (strcmp(item, "H") == 0) level_prop->spawn.h = value*360/256;
 	if (strcmp(item, "P") == 0) level_prop->spawn.v = value*360/256;
     } else if (strcmp(section, "Sky") == 0) {

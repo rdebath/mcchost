@@ -14,7 +14,7 @@
  * per level. That sets the maximum allowed number of users to 255.
  *
  * In the event that this is increased the user lists sent to the clients
- * will have to be filtered and renumbered. At that point it gets complicated!
+ * will have to be renumbered.
  */
 
 /* TODO:
@@ -35,7 +35,8 @@ struct client_entry_t {
     int on_level;
     xyzhv_t posn;
     uint8_t active;
-    time_t keepalive;	//TODO
+    uint8_t visible;
+    time_t afk_time;	//TODO
     pid_t session_id;
 };
 
@@ -54,7 +55,7 @@ struct client_data_t {
 };
 #endif
 
-static int user_no = -1;
+int my_user_no = -1;
 static client_entry_t myuser[MAX_USER];
 static struct timeval last_check;
 
@@ -63,14 +64,14 @@ xyzhv_t player_posn = {0};
 void
 check_user()
 {
-    if (user_no < 0 || user_no >= MAX_USER || !shdat.client) return;
+    if (my_user_no < 0 || my_user_no >= MAX_USER || !shdat.client) return;
 
     //TODO: Attempt a session upgrade -- call exec().
     if (shdat.client->magic1 != MAGIC_USR || shdat.client->magic2 != MAGIC_USR)
 	fatal("Session upgrade failure, please reconnect");
 
-    if (!shdat.client->user[user_no].active) {
-	shdat.client->user[user_no].session_id = 0;
+    if (!shdat.client->user[my_user_no].active) {
+	shdat.client->user[my_user_no].session_id = 0;
 	logout("(Connecting on new session)");
     }
 
@@ -84,22 +85,29 @@ check_user()
 	return;
     last_check = now;
 
+    int my_level = shdat.client->user[my_user_no].on_level;
+    if (my_level == -1) my_level = -2; //NOPE
+
     for(int i=0; i<MAX_USER; i++)
     {
-	if (i == user_no) continue; // Me
+	if (i == my_user_no) continue; // Me
 	// Note: slurp it so a torn struct is unlikely.
 	// But don't lock as we're not too worried.
 	client_entry_t c = shdat.client->user[i];
-	if (c.active && !myuser[i].active) {
+
+	// Is this user visible.
+	c.visible = (c.active && c.on_level == my_level);
+
+	if (c.visible && !myuser[i].visible) {
 	    // New user.
 	    send_spawn_pkt(i, c.name.c, c.posn);
 	    myuser[i] = c;
 	} else
-	if (!c.active && myuser[i].active) {
+	if (!c.visible && myuser[i].visible) {
 	    // User gone.
 	    send_despawn_pkt(i);
-	    myuser[i].active = 0;
-	} else if (c.active) {
+	    myuser[i].visible = 0;
+	} else if (c.visible) {
 	    // Update user
 	    send_posn_pkt(i, &myuser[i].posn, c.posn);
 	}
@@ -113,28 +121,28 @@ reset_player_list()
 	myuser[i].active = 0;
 
     send_spawn_pkt(255, user_id, level_prop->spawn);
-    if (myuser[user_no].posn.valid)
-	send_posn_pkt(255, 0, myuser[user_no].posn);
+    if (myuser[my_user_no].posn.valid)
+	send_posn_pkt(255, 0, myuser[my_user_no].posn);
 }
 
 void
 update_player_pos(pkt_player_posn pkt)
 {
     player_posn = pkt.pos;
-    if (user_no < 0 || user_no >= MAX_USER) return;
-    myuser[user_no].posn = pkt.pos;
+    if (my_user_no < 0 || my_user_no >= MAX_USER) return;
+    myuser[my_user_no].posn = pkt.pos;
     if (!shdat.client) return;
-    shdat.client->user[user_no].posn = pkt.pos;
+    shdat.client->user[my_user_no].posn = pkt.pos;
 }
 
 void
 update_player_software(char * sw)
 {
-    if (user_no < 0 || user_no >= MAX_USER) return;
+    if (my_user_no < 0 || my_user_no >= MAX_USER) return;
     if (!shdat.client) return;
     nbtstr_t b = {0};
     strcpy(b.c, sw);
-    shdat.client->user[user_no].client_software = b;
+    shdat.client->user[my_user_no].client_software = b;
 }
 
 void
@@ -180,15 +188,15 @@ start_user()
 	    fatal("Too many sessions already connected");
     }
 
-    user_no = new_one;
+    my_user_no = new_one;
     nbtstr_t t = {0};
     strcpy(t.c, user_id);
     shdat.client->generation++;
-    shdat.client->user[user_no].active = 1;
-    shdat.client->user[user_no].session_id = getpid();
-    shdat.client->user[user_no].name = t;
-    shdat.client->user[user_no].client_software = client_software;
-    shdat.client->user[user_no].on_level = -1;
+    shdat.client->user[my_user_no].active = 1;
+    shdat.client->user[my_user_no].session_id = getpid();
+    shdat.client->user[my_user_no].name = t;
+    shdat.client->user[my_user_no].client_software = client_software;
+    shdat.client->user[my_user_no].on_level = -1;
 
     unlock_client_data();
 }
@@ -222,7 +230,7 @@ start_level(char * levelname)
 	shdat.client->levels[level_id].loaded = 1;
     }
 
-    shdat.client->user[user_no].on_level = level_id;
+    shdat.client->user[my_user_no].on_level = level_id;
 
     unlock_client_data();
 }
@@ -230,13 +238,13 @@ start_level(char * levelname)
 void
 stop_user()
 {
-    if (user_no < 0 || user_no >= MAX_USER) return;
+    if (my_user_no < 0 || my_user_no >= MAX_USER) return;
     if (!shdat.client) return;
 
-    if (shdat.client->user[user_no].active) {
+    if (shdat.client->user[my_user_no].active) {
 	shdat.client->generation++;
-	shdat.client->user[user_no].active = 0;
-	shdat.client->user[user_no].session_id = 0;
+	shdat.client->user[my_user_no].active = 0;
+	shdat.client->user[my_user_no].session_id = 0;
     }
 }
 

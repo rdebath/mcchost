@@ -45,6 +45,7 @@ server_t server = {
 };
 
 nbtstr_t client_software = {"(unknown)"};
+nbtstr_t current_level = {0};
 
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 char logfile_pattern[1024] = "";
@@ -154,9 +155,6 @@ complete_connection()
     send_map_file();
     send_spawn_pkt(255, user_id, level_prop->spawn);
     send_welcome_message();
-
-    if (extn_clickdistance && level_prop->click_distance > 0)
-	send_clickdistance_pkt(level_prop->click_distance);
 }
 
 /*HELP Welcome 0 */

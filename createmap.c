@@ -16,6 +16,7 @@ TODO:
 	model.ini
 
     Default size from blocks file (move map_len_t right to end of file)
+	--> only works if no blockdefs
 
  */
 

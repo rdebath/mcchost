@@ -2,20 +2,26 @@
 // This file will be removed when it gets small.
 
 /*HELP todo
+ +) Users on different levels should not be visible.
+
  +) Command that sets level properties using ini file loader. (inprogress)
+    -- List of options.
+
+ +) Command line option to restart server and unload levels.
+    -- So we know this version will run! Find pid by port no.
+    -- SIGALRM: Command line routine to "unload" level file
 
  +) load/save level to *.cw and use for backups, restores and "unload".
- +) /load level ini file from curl pipe ?
+    -- Load/unload working
 
  +) Is adapting the queue length to the download size a good idea?
     Perhaps the loaded CW file size would be better.
 
  +) Multiple Levels. (/newlvl, /goto, /main, /levels) (inprogress)
- +) Block/User history records.
- +) /edlin for editing text files and virtual text files (blockdefs)
 
- +) Maybe embed called commands: gzip, curl and gdb(stacktrace)
- +) Maybe exec($0, ...) on accept()
+ +) Block/User history records.
+    -- Combined history needs user id numbers --> user file/table.
+
  +) NAME: (*) MCCHost
 
  +) User prefix/suffix for multiple heartbeat servers.
@@ -28,20 +34,19 @@
  +) /mode command (Grass, bedrock, water etc)
  +) /info command
  +) /about command
- +) /fly command
 
+ +) Run external command with stdout/err sent to client (</dev/null)
+    -- Map gen?
+
+ +) Maybe embed called commands: curl and gdb(stacktrace)
+ +) Maybe exec($0, ...) on accept()
 
 Features:
-
-Everything in level prop file into *.cw file. (base-done)
     -- CW file also contains pending physics operations.
-    -- Command line routines to convert level files <--> cw file
-
-    -- Virtual edlin ?
-    -- Should automatic backup export server/level properties?
+    -- edlin ? to edit help files and blockdef prop files?
 
 When are cw files saved?
-    Part 1 -- Unload level. -- backup level (done)
+    Part 1 -- Unload level.
 	Save new cw file to maps/levelname.tmp
 	Rename to maps/levelname.cw
 	Unload level: remove uncompressed level file.
@@ -51,28 +56,23 @@ When are cw files saved?
 	Rename to backups/levelname/...
 
 All files in subdirectories.
-    system.ini	(TODO?)
-    map/*.cw
-    system/*.*
-    level/levelname.*
-    tmp/unpack.level.id.* -- museum unpacks
-    conf/*.txt
-    help/*.txt
-    model.cw
+    system.ini  --> move?
+    model.cw    --> move?
+    map/${level}.cw
+    system/{...}
+    level/${level}.*
+    tmp/unpack.level.id.* -- museum unpacks?
+    help/${helpname}.txt
     blockdb/levelname.bdb
     log/YYYY-MM-DD.log
-    backup/...
-    deleted ?
+    backup/${level}.${id}.cw -- museum
+    recycle-bin/${level}.cw
 
-/Help command
-    Search through source for "/*HELP name" and "/*HELPCMD name" comments.
-    Place these in a C source file.
-    Only use if matching file does not exist.
-    ? Should the files be created ?
+/Help command -- Should the default files be created ?
 
 Physics:
 
-Physics queue is a *.level.* file which can be extended at any time.
+Physics queue is a level/${level}.* file which can be extended at any time.
 
 Basic
     Grass, Slabs
@@ -87,6 +87,7 @@ Extra
 Advanced
     Lava(Sand) -> Glass
     Water(Lava) -> Stone
+    Fire(TNT) -> Explosion
     Fire(...) -> Fire
     Time(Fire) -> Air
 
@@ -97,15 +98,14 @@ Implementation:
 Other components
     -- physics process does non-trivial physics.
     -- crash catcher restarts server process without dropping connection.
-    -- command to save level to *.cw file.
-	-- All lock or copy/update modes.
+    -- physics save to *.cw -- locking modes ?
 
 Make sure text anti-spam is in place.
     (Only echo duplicates back to self?)
     Ghost the player? (for a short time?)
 
 On Block queue, if user count < 2 && no-physics don't use queue ?
-    --> *256 blocks packet need queue? Clear queue on overload?
+    --> *256 blocks packet need queue?
 
 More blocks modified than will fit in queue?
     --> Can only see for "me" so generation number will wrap and reload.
@@ -113,5 +113,7 @@ More blocks modified than will fit in queue?
 
 Logging:
     -- Automatic log file cleanup?
-    -- Log run commands ?
-*/
+    -- Log user commands ?
+
+
+// vim:set syntax=none: */

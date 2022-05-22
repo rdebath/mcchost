@@ -39,6 +39,7 @@ struct map_info_t {
     int last_map_download_size;
 
     // Do we want/need to backup/save ?
+    int readonly;
     int dirty_backup;
     time_t last_backup;
     int dirty_save;

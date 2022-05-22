@@ -183,17 +183,24 @@ post_chat(int where, char * chat, int chat_len)
 }
 
 /* Printf to the chat a pretty long message normally to just me.
- * Uses cp437 and clips at 4k. Prefix format with '@' to broadcast.
+ * Uses cp437 and clips at 16k.
+ *
+ * Prefix format with '@' to broadcast.
+ * Prefix format with '#' for UTF-8
+ * Prefix format with '#@' to broadcast UTF-8
+ * Prefix format with '\\' to quote a prefix.
  */
 void
 printf_chat(char * fmt, ...)
 {
-    char pbuf[BUFSIZ];
-    int to = 1;
+    char pbuf[16<<10];
+    int to = 1, utf8 = 0;
     char *f = fmt;
     va_list ap;
     va_start(ap, fmt);
+    if (*f == '#') { f++, utf8 = 1; }
     if (*f == '@') { f++, to = 0; }
+    if (*f == '\\') f++;
     int l = vsnprintf(pbuf, sizeof(pbuf), f, ap);
     if (l > sizeof(pbuf)) {
 	strcpy(pbuf+sizeof(pbuf)-4, "...");
@@ -201,5 +208,7 @@ printf_chat(char * fmt, ...)
     }
     va_end(ap);
 
+    if (utf8)
+	convert_to_cp437(pbuf, &l);
     post_chat(to, pbuf, l);
 }

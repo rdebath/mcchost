@@ -12,6 +12,7 @@
 #define LEVEL_BLOCKS_NAME "level/%s.blocks"
 #define LEVEL_QUEUE_NAME "level/%s.queue"
 #define LEVEL_CW_NAME "map/%s.cw"
+#define LEVEL_TMP_NAME "map/%s.tmp"
 #define MODEL_CW_NAME "model.cw"
 #define SYS_STAT_NAME "system/userlevels.dat"
 #define CHAT_QUEUE_NAME "system/chat.queue"
