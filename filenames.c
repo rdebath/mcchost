@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -39,24 +40,61 @@ init_dirs()
     }
 }
 
+static char hex[] = "0123456789ABCDEF";
+
+/*
+ * Given a CP437 levelname create the ASCII version.
+ */
 void
 fix_fname(char *buf, int len, char *s)
 {
     char *d = buf;
-    if (len<0) return;
+    if (len<=0) return;
     for(char *p=s;*p;p++) {
 	if (d>=buf+len-1) break;
-	if (*p > ' ' && *p < '~' && *p != '\'' && *p != '/' && *p != '\\'
-		&& *p != '_' && *p != '%' && !(*p == '.' && d == buf)) {
+	if (*p > ' ' && *p < '~' && *p != '/' && *p != '\\'
+		&& *p != '%' && *p != '.') {
 	    *d++ = *p;
-	} else if (*p == ' ') {
-	    *d++ = '_';
 	} else {
-	    static char hex[] = "0123456789ABCDEF";
 	    *d++ = '%';
 	    *d++ = hex[(*p>>4)&0xF];
 	    *d++ = hex[*p&0xF];
 	}
+    }
+    *d = 0;
+}
+
+/*
+ * Given a valid ASCII levelname create the CP437 version.
+ * Case sensitive!
+ */
+void
+unfix_fname(char *buf, int len, char *s)
+{
+    char *d = buf;
+    if (len<=0) return;
+    if (*s == 0 || *s == '.') { *buf = 0; return; }
+
+    for(char *p=s;*p;p++) {
+	if (d>=buf+len-1) { *buf=0; return; }
+	if (*p <= ' ' || *p >= '~' || *p == '/' || *p == '\\' || *p == '.') {
+	    *buf = 0; return;
+	}
+	if (*p == '%') {
+	    char *d1, *d2;
+	    if (p[1] == 0 || (d1 = strchr(hex, p[1])) == 0 ||
+	        p[2] == 0 || (d2 = strchr(hex, p[2])) == 0) {
+		*buf = 0; return;
+	    }
+	    p+=2;
+	    int ch = (d1-hex)*16 + (d2-hex);
+	    if (ch == 0 || (ch > ' ' && ch < '~' && ch != '/' && ch != '\\'
+		&& ch != '_' && ch != '%' && ch != '.')) {
+		*buf = 0; return;
+	    }
+	    *d++ = ch;
+	} else
+	    *d++ = *p;
     }
     *d = 0;
 }

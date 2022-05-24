@@ -33,7 +33,7 @@ void
 cmd_help(char * prefix, char *cmdargs)
 {
     char helpbuf[BUFSIZ];
-    if (prefix && strcasecmp(prefix, "help") == 0) prefix = 0;
+    if (prefix && (*prefix == 0 || strcasecmp(prefix, "help") == 0)) prefix = 0;
     if (!cmdargs && !prefix)
 	strcpy(helpbuf, "help/help.txt");
     else {

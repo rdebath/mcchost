@@ -30,18 +30,15 @@ static int current_block = -1;
 static int inventory_block = -1;
 
 int
-load_map_from_file(char * filename, char * levelname)
+load_map_from_file(char * filename, char * level_fname)
 {
     gzFile ifd;
-    nbtstr_t new_level;
 
     if ((ifd = gzopen(filename, "r")) == 0) {
 	perror(filename);
 	return -1;
     }
-    snprintf(new_level.c, sizeof(new_level.c), "%s", levelname);
-
-    load_cwfile(ifd, new_level.c);
+    load_cwfile(ifd, level_fname);
 
     int rv = gzclose(ifd);
     if (rv) {
@@ -53,7 +50,7 @@ load_map_from_file(char * filename, char * levelname)
 }
 
 LOCAL void
-load_cwfile(gzFile ifd, char * levelname)
+load_cwfile(gzFile ifd, char * level_fname)
 {
     int ClassicWorld_found = 0;
     int ch = gzgetc(ifd);
@@ -66,7 +63,7 @@ load_cwfile(gzFile ifd, char * levelname)
 	    return;
 	}
 	fprintf(stderr, "Loading ClassicWorld map: ");
-	open_level_files(levelname, 1);
+	open_level_files(level_fname, 1);
 	read_element(ifd, ch);
     } else {
 	fprintf(stderr, "File format incorrect.\n");
@@ -220,7 +217,7 @@ LOCAL int
 read_blockarray(gzFile ifd, int len)
 {
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-    if (open_blocks(current_level.c) < 0)
+    if (open_blocks(current_level_fname) < 0)
 	return 0;
 
     map_len_t test_map;
@@ -405,7 +402,7 @@ change_int_value(char * section, char * item, long long value)
 	} else if (strcmp(item, "CollideType") == 0) {
 	    level_prop->blockdef[current_block].collide = value;
 	} else if (strcmp(item, "Speed") == 0) {
-	    level_prop->blockdef[current_block].speed = value/1000.0;
+	    level_prop->blockdef[current_block].speed = value;
 	} else if (strcmp(item, "TransmitsLight") == 0) {
 	    level_prop->blockdef[current_block].transmits_light = value;
 	} else if (strcmp(item, "WalkSound") == 0) {

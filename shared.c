@@ -117,7 +117,6 @@ open_level_files(char * levelname, int direct)
     stop_shared();
 
     check_level_name(levelname); // Last check.
-    strcpy(current_level.c, levelname);
 
     snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, levelname);
     del_on_err = access(sharename, F_OK);
@@ -168,7 +167,7 @@ open_level_files(char * levelname, int direct)
 		goto open_failed;
 
 	    if (access(cwfilename, W_OK) != 0) {
-		fprintf(stderr, "Loaded read only map %s", cwfilename);
+		fprintf(stderr, "Loaded read only map %s\n", cwfilename);
 		level_prop->readonly = 1;
 	    }
 	}

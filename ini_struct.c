@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "ini_struct.h"
 /*
@@ -53,6 +54,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     {
 	INI_STRARRAYCP437("name", server.name);
 	INI_STRARRAYCP437("motd", server.motd);
+	INI_STRARRAYCP437("main", server.main_level);
 	INI_STRARRAY(st->write?"; salt":"salt", server.secret);	//Base62
 	INI_BOOLVAL("nocpe", server.cpe_disabled);
 	INI_BOOLVAL("private", server.private);
@@ -93,13 +95,13 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("size.z", level_prop->cells_z);
 
 	INI_NBTSTR("motd", level_prop->motd);
-	INI_INTVAL("spawn.x", level_prop->spawn.x);
-	INI_INTVAL("spawn.y", level_prop->spawn.y);
-	INI_INTVAL("spawn.z", level_prop->spawn.z);
+	INI_INTSCALE("spawn.x", level_prop->spawn.x, 32);
+	INI_INTSCALE("spawn.y", level_prop->spawn.y, 32);
+	INI_INTSCALE("spawn.z", level_prop->spawn.z, 32);
 	INI_INTVAL("spawn.h", level_prop->spawn.h);
 	INI_INTVAL("spawn.v", level_prop->spawn.v);
 
-	INI_INTVAL("clickdistance", level_prop->click_distance);
+	INI_INTSCALE("clickdistance", level_prop->click_distance, 32);
 	// hacks_flags
 
 	INI_NBTSTR("texture", level_prop->texname);
@@ -120,12 +122,12 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("cloudheight", level_prop->clouds_height);
 	INI_INTVAL("maxfog", level_prop->max_fog);
 
-	INI_INTVAL("cloudsspeed", level_prop->clouds_speed);
-	INI_INTVAL("weatherspeed", level_prop->weather_speed);
-	INI_INTVAL("weatherfade", level_prop->weather_fade);
+	INI_INTSCALE("cloudsspeed", level_prop->clouds_speed, 256);
+	INI_INTSCALE("weatherspeed", level_prop->weather_speed, 256);
+	INI_INTSCALE("weatherfade", level_prop->weather_fade, 128);
 	INI_INTVAL("expfog", level_prop->exp_fog);
-	INI_INTVAL("skyboxhorspeed", level_prop->skybox_hor_speed);
-	INI_INTVAL("skyboxverspeed", level_prop->skybox_ver_speed);
+	INI_INTSCALE("skyboxhorspeed", level_prop->skybox_hor_speed, 1024);
+	INI_INTSCALE("skyboxverspeed", level_prop->skybox_ver_speed, 1024);
     }
 
     int bn = 0;
@@ -157,8 +159,8 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("fullbright", level_prop->blockdef[bn].fullbright);
 	INI_INTVAL("shape", level_prop->blockdef[bn].shape);
 	INI_INTVAL("draw", level_prop->blockdef[bn].draw);
-	INI_INTVAL("speed", level_prop->blockdef[bn].speed);
-	INI_INTVAL("fallback", level_prop->blockdef[bn].fallback);
+	INI_INTSCALE("speed", level_prop->blockdef[bn].speed, 1000);
+	INI_BLKVAL("fallback", level_prop->blockdef[bn].fallback);
 	INI_INTVAL("texture.top", level_prop->blockdef[bn].textures[0]);
 	INI_INTVAL("texture.left", level_prop->blockdef[bn].textures[1]);
 	INI_INTVAL("texture.right", level_prop->blockdef[bn].textures[2]);
@@ -376,6 +378,19 @@ ini_write_int(ini_state_t *st, char * section, char *fieldname, int value)
 }
 
 LOCAL void
+ini_write_int_blk(ini_state_t *st, char * section, char *fieldname, int value)
+{
+    if (value < 0 || value >= BLOCKMAX) return; // Skip illegal values.
+
+    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
+	if (st->curr_section) free(st->curr_section);
+	st->curr_section = strdup(section);
+	fprintf(st->fd, "\n[%s]\n", section);
+    }
+    fprintf(st->fd, "%s = %d\n", fieldname, value);
+}
+
+LOCAL void
 ini_write_hexint(ini_state_t *st, char * section, char *fieldname, int value)
 {
     if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
@@ -407,6 +422,28 @@ ini_read_bool(int *var, char * value)
     if (strcasecmp(value, "yes") == 0) *var = 1; else
     if (atoi(value) != 0) *var = 1; else
     *var = 0;
+}
+
+LOCAL int
+ini_read_int_scale(char * value, int scalefactor)
+{
+    double nval = strtod(value, 0);
+    nval = round(nval * scalefactor);
+    return (int)nval;
+}
+
+LOCAL void
+ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value, int scalefactor)
+{
+    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
+	if (st->curr_section) free(st->curr_section);
+	st->curr_section = strdup(section);
+	fprintf(st->fd, "\n[%s]\n", section);
+    }
+    double svalue = (double)value / scalefactor;
+    int digits = 0, sd = 1;
+    while (sd < scalefactor) { digits++; sd *= 10; }
+    fprintf(st->fd, "%s = %.*f\n", fieldname, digits, svalue);
 }
 
 #if INTERFACE
@@ -460,6 +497,16 @@ ini_read_bool(int *var, char * value)
                 ini_write_int(st, section, fld, (_var)); \
         }
 
+#define INI_BLKVAL(_field, _var) \
+        fld = _field; \
+        if (st->all || strcmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                _var = atoi(*fieldvalue); \
+            else \
+                ini_write_int_blk(st, section, fld, (_var)); \
+        }
+
 #define INI_INTHEX(_field, _var) \
         fld = _field; \
         if (st->all || strcmp(fieldname, fld) == 0) { \
@@ -468,6 +515,16 @@ ini_read_bool(int *var, char * value)
                 _var = strtol(*fieldvalue, 0, 0); \
             else \
                 ini_write_hexint(st, section, fld, (_var)); \
+        }
+
+#define INI_INTSCALE(_field, _var, _scale) \
+        fld = _field; \
+        if (st->all || strcmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                _var = ini_read_int_scale(*fieldvalue, _scale); \
+            else \
+                ini_write_int_scale(st, section, fld, (_var), _scale); \
         }
 
 #define INI_BOOLVAL(_field, _var) \

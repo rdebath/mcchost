@@ -99,7 +99,7 @@ init_map_from_size(xyz_t size)
 	    .clouds_height = size.y+2,
 	    .clouds_speed = 256, 256, 128,
 	    .skybox_hor_speed = 1024, 1024,
-	    .click_distance = -1
+	    .click_distance = 160
 	};
 
 #pragma GCC diagnostic push
@@ -125,7 +125,7 @@ init_map_null()
 	    .clouds_height = INT_MIN,
 	    .clouds_speed = 256, 256, 128,
 	    .skybox_hor_speed = 1024, 1024,
-	    .click_distance = -1
+	    .click_distance = 160
 	};
 
 #pragma GCC diagnostic push

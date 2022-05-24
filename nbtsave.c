@@ -356,7 +356,7 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
 //	double log2 = 0.693147180559945f;
 //	double spl2 = (UB(pkt[p++]) - 128) / 64.0;
 //	double spd = exp(log2 * spl2);
-	bc_ent_float(ofd, "Speed", blkdef->speed);
+	bc_ent_float(ofd, "Speed", blkdef->speed/1000.0);
     }
 
     {

@@ -202,11 +202,14 @@ start_user()
 }
 
 void
-start_level(char * levelname)
+start_level(char * levelname, char * levelfile)
 {
     nbtstr_t level = {0};
-    strcpy(level.c, levelname);
     int level_id = -1;
+
+    strcpy(level.c, levelname);
+    strcpy(current_level_name, levelname);
+    strcpy(current_level_fname, levelfile);
 
     lock_client_data();
 

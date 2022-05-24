@@ -7,7 +7,7 @@
 #include "loadsave.h"
 /*HELP goto
 &T/goto [levelname]
-Switch you current level
+Switch your current level
 */
 /*HELP main
 &T/main
@@ -33,10 +33,14 @@ static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } 
 void
 cmd_goto(UNUSED char * cmd, char * arg)
 {
-    char fixedname[NB_SLEN], buf2[256];
+    char fixedname[NB_SLEN], buf2[256], levelname[MAXLEVELNAMELEN+1];
+    if (!arg) { cmd_help(0,"goto"); return; }
+
     fix_fname(fixedname, sizeof(fixedname), arg);
+
     snprintf(buf2, sizeof(buf2), "map/%s.cw", fixedname);
     if (access(buf2, F_OK) != 0) {
+	// TODO: Search directory for approx. match.
 	snprintf(buf2, sizeof(buf2), "map/%s.ini", fixedname);
 	if (access(buf2, F_OK) != 0) {
 	    printf_chat("&SNo levels match \"%s\"", arg);
@@ -44,15 +48,21 @@ cmd_goto(UNUSED char * cmd, char * arg)
 	}
     }
 
+    unfix_fname(levelname, sizeof(levelname), fixedname);
+    if (*levelname == 0) {
+	printf_chat("&SNo levels match \"%s\"", arg);
+	return;
+    }
+
     stop_shared();
 
+    start_level(levelname, fixedname);
     open_level_files(fixedname, 0);
     if (!level_prop) {
 	printf_chat("&WLevel load failed, returning to main");
 	cmd_main("","");
 	return;
     }
-    start_level(fixedname);
     send_map_file();
     send_spawn_pkt(255, user_id, level_prop->spawn);
 
@@ -68,10 +78,10 @@ cmd_main(UNUSED char * cmd, UNUSED char * arg)
 
     stop_shared();
 
+    start_level(server.main_level, fixedname);
     open_level_files(fixedname, 0);
     if (!level_prop)
 	fatal("Failed to load main.");
-    start_level(fixedname);
     send_map_file();
     send_spawn_pkt(255, user_id, level_prop->spawn);
 }
@@ -131,22 +141,22 @@ cmd_save(UNUSED char * cmd, char * arg)
 }
 
 int
-save_level_in_map(char * levelname)
+save_level_in_map(char * level_fname)
 {
     char buf1[256], buf2[256];
-    snprintf(buf1, sizeof(buf1), LEVEL_TMP_NAME, levelname);
-    snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, levelname);
+    snprintf(buf1, sizeof(buf1), LEVEL_TMP_NAME, level_fname);
+    snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, level_fname);
     if (access(buf2, F_OK) == 0 && access(buf2, W_OK) != 0) {
 	// map _file_ is write protected; don't replace.
 	return 1;
     }
 
-    fprintf(stderr, "Saving %s to map directory\n", levelname);
+    fprintf(stderr, "Saving %s to map directory\n", level_fname);
 
     lock_shared();
     if (save_map_to_file(buf1, 1) < 0) {
 	(void)unlink(buf1);
-	fprintf(stderr, "map save of '%s' to '%s' failed\n", levelname, buf1);
+	fprintf(stderr, "map save of '%s' to '%s' failed\n", level_fname, buf1);
 	return -1;
     } else if (rename(buf1, buf2) < 0) {
 	perror("save rename failed");
@@ -162,21 +172,26 @@ save_level_in_map(char * levelname)
 void
 scan_and_save_levels()
 {
-    char * levelname = 0;
+    char * level_name = 0;
     int this_is_main = 0;
 
     open_client_list();
     stop_shared();
     stop_block_queue();
 
+    *current_level_name = 0;
+    *current_level_fname = 0;
+
     for(int lvid=0; lvid<MAX_USER; lvid++) {
 	if (!shdat.client->levels[lvid].loaded) continue;
 
 	nbtstr_t lv = shdat.client->levels[lvid].level;
-	levelname = lv.c;
-	this_is_main = (strcmp(levelname, server.main_level) == 0);
+	level_name = lv.c;
+	this_is_main = (strcmp(level_name, server.main_level) == 0);
 
-	open_level_files(levelname, 2);
+	char fixedname[MAXLEVELNAMELEN*4];
+	fix_fname(fixedname, sizeof(fixedname), level_name);
+	open_level_files(fixedname, 2);
 	if (!level_prop) continue;
 
 	if (level_prop->readonly) {
@@ -186,9 +201,9 @@ scan_and_save_levels()
 
 	if (!level_prop->readonly) {
 	    if (level_prop->dirty_save) {
-		int rv = save_level_in_map(levelname);
+		int rv = save_level_in_map(fixedname);
 		if (rv == 1) {
-		    fprintf(stderr, "Level %s write protected, changes discarded\n", levelname);
+		    fprintf(stderr, "Level %s write protected, changes discarded\n", fixedname);
 		    level_prop->dirty_save = 0;
 		    level_prop->dirty_backup = 0;
 		    level_prop->readonly = 1;
@@ -198,7 +213,7 @@ scan_and_save_levels()
 	    // If the map is clean and it's time for a backup.
 	    if (!level_prop->dirty_save && level_prop->dirty_backup) {
 		// Do backup map/* to backup/*
-		//copy_level_map_to_backup(levelname);
+		//copy_level_map_to_backup(fixedname);
 	    }
 	}
 
@@ -221,9 +236,9 @@ scan_and_save_levels()
 	}
 
 	// unload.
-	unlink_level(levelname, 0);
+	unlink_level(fixedname, 0);
 	shdat.client->levels[lvid].loaded = 0;
-	fprintf(stderr, "Unloaded level %s\n", levelname);
+	fprintf(stderr, "Unloaded level files %s\n", fixedname);
 
 	unlock_client_data();
     }

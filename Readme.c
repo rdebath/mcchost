@@ -1,11 +1,23 @@
 #pragma GCC diagnostic ignored "-Wcomment"
-// This file will be removed when it gets small.
+
+/*HELP readme
+This is a Minecraft classic server with CPE (Classic Protocol Extensions)
+Many of the CPE extensions are not implemented yet.
+See "/help todo" for notes.
+
+*/
 
 /*HELP todo
- +) Users on different levels should not be visible.
+ +) Fast unload of unmodified levels?
+ +) ini file format allowed for *.cw file -- trivial level create.
+ +) Sort map names!
+
+ +) INI files, fields with integer values as fixed point *32, *256 etc
 
  +) Command that sets level properties using ini file loader. (inprogress)
     -- List of options.
+    -- Unsafe fields; x,y,z
+    -- automatic refresh.
 
  +) Command line option to restart server and unload levels.
     -- So we know this version will run! Find pid by port no.
@@ -34,6 +46,8 @@
  +) /mode command (Grass, bedrock, water etc)
  +) /info command
  +) /about command
+
+ +) Add command to save all help texts as real files. (no overwrite)
 
  +) Run external command with stdout/err sent to client (</dev/null)
     -- Map gen?
@@ -114,6 +128,8 @@ More blocks modified than will fit in queue?
 Logging:
     -- Automatic log file cleanup?
     -- Log user commands ?
+
+Map filenames/level names: Use %XX encoding all CP437 characters are case sensitive.  A search will be done for case insensitive and partial matches if the exact name fails.
 
 
 // vim:set syntax=none: */

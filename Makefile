@@ -8,8 +8,8 @@ endif
 
 DEFS=-O2 -g3 -D_FILE_OFFSET_BITS=64
 CFLAGS=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign ${DEFS}
-LDFLAGS=-lz
-#LDFLAGS=-Wl,-Bstatic -lz -Wl,-Bdynamic
+LDFLAGS=-lz -lm
+#LDFLAGS=-Wl,-Bstatic -lz -Wl,-Bdynamic -lm
 #TARGET_ARCH=-m64
 PROG=server
 SRC:=$(filter-out lib_%.c,$(wildcard *.c) )

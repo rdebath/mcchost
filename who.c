@@ -42,7 +42,7 @@ cmd_who(UNUSED char * cmd, char * arg)
     }
 
     printf_chat("You are on %s (%d,%d,%d)",
-	current_level.c, player_posn.x/32, player_posn.y/32, player_posn.z/32);
+	current_level_name, player_posn.x/32, player_posn.y/32, player_posn.z/32);
     if (users == 0)
 	printf_chat("There are currently no other users");
 }

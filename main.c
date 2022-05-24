@@ -45,7 +45,9 @@ server_t server = {
 };
 
 nbtstr_t client_software = {"(unknown)"};
-nbtstr_t current_level = {0};
+
+char current_level_name[MAXLEVELNAMELEN+1];
+char current_level_fname[MAXLEVELNAMELEN*4];
 
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 char logfile_pattern[1024] = "";
@@ -143,11 +145,12 @@ complete_connection()
     create_chat_queue();
 
     // Open level mmap files.
-    open_level_files(server.main_level, 0);
-    if (level_prop) {
-	start_level(server.main_level);
-	create_block_queue(server.main_level);
-    }
+    char fixname[MAXLEVELNAMELEN*4];
+    fix_fname(fixname, sizeof(fixname), server.main_level);
+    start_level(server.main_level, fixname);
+    open_level_files(fixname, 0);
+    if (level_prop)
+	create_block_queue(fixname);
 
     if (!level_prop)
 	fatal("Unable to load initial map file -- sorry");
