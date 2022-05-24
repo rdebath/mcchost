@@ -5,6 +5,8 @@
 #include <assert.h>
 
 #include "loadsave.h"
+#include "inline.h"
+
 /*HELP goto
 &T/goto [levelname]
 Switch your current level
@@ -27,8 +29,6 @@ Return to the system main level
     {N"goto", &cmd_goto}, {N"g", &cmd_goto, .dup=1}, \
     {N"main", &cmd_main}
 #endif
-
-static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
 
 void
 cmd_goto(UNUSED char * cmd, char * arg)
@@ -170,7 +170,7 @@ save_level_in_map(char * level_fname)
 }
 
 void
-scan_and_save_levels()
+scan_and_save_levels(int unlink_only)
 {
     char * level_name = 0;
     int this_is_main = 0;
@@ -199,7 +199,7 @@ scan_and_save_levels()
 	    level_prop->dirty_backup = 0;
 	}
 
-	if (!level_prop->readonly) {
+	if (!level_prop->readonly && !unlink_only) {
 	    if (level_prop->dirty_save) {
 		int rv = save_level_in_map(fixedname);
 		if (rv == 1) {
@@ -217,7 +217,11 @@ scan_and_save_levels()
 	    }
 	}
 
+	int level_dirty = level_prop->dirty_save;
+
 	stop_shared();
+
+	if (level_dirty) continue;
 
 	lock_client_data();
 

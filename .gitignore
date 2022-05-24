@@ -7,6 +7,9 @@ tmp.*
 *.h
 lib_text.c
 
+# Except
+!inline.h
+
 # Crashing, debugging etc
 tags
 core

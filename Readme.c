@@ -8,9 +8,9 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) Fast unload of unmodified levels?
  +) ini file format allowed for *.cw file -- trivial level create.
  +) Sort map names!
+ +) Use link(2) for backup iff overwritten map/*.c is old.
 
  +) INI files, fields with integer values as fixed point *32, *256 etc
 

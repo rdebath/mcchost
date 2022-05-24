@@ -179,7 +179,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("max.z", level_prop->blockdef[bn].coords[5]);
 
 	bn++;
-    } while(!st->all || bn < BLOCKMAX);
+    } while(st->all && bn < BLOCKMAX);
 
     return found;
 }

@@ -167,11 +167,6 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 	}
     }
 
-// #define PKID_POSN       0x08 /* 0x08 */ 2+6+2, 	Pabs+O
-// #define PKID_POSN1      0x09 /* 0x09 */ 7,		PRel+O
-// #define PKID_POSN2      0x0A /* 0x0a */ 5,		PRel
-// #define PKID_POSN3      0x0B /* 0x0b */ 4,		Or
-
     switch(todo) {
     default:
 	*p++ = PKID_POSN;

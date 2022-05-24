@@ -17,6 +17,7 @@
 #include <sys/select.h>
 
 #include "tcpserver.h"
+#include "inline.h"
 
 int start_tcp_server = 0;
 int detach_tcp_server = 0;
@@ -26,11 +27,8 @@ static int listen_socket = -1;
 
 int enable_heartbeat_poll = 0;
 static time_t last_heartbeat = 0;
-
-int enable_backups = 1;
 static time_t last_backup = 0;
-
-static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
+static time_t last_unload = 0;
 
 char client_ipv4_str[INET_ADDRSTRLEN];
 int client_ipv4_port = 0;
@@ -143,8 +141,7 @@ tcpserver()
 	if (enable_heartbeat_poll)
 	    send_heartbeat_poll();
 
-	if (enable_backups)
-	    start_backup_process();
+	start_backup_process();
 
 	alarm_sig = 0;
     }
@@ -446,13 +443,19 @@ start_backup_process()
     time_t now;
     time(&now);
     if (alarm_sig == 0 && last_backup != 0) {
-        if ((now-last_backup) < 300)
+        if ((now-last_backup) < 300) {
+	    if ((now-last_unload) >= 15) {
+		scan_and_save_levels(1);
+		last_unload = now;
+	    }
             return;
+	}
     }
     last_backup = now;
+    last_unload = now;
 
     if (E(fork(),"fork() for backup") != 0) return;
 
-    scan_and_save_levels();
+    scan_and_save_levels(0);
     exit(0);
 }

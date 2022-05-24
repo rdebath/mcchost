@@ -1,9 +1,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdint.h>
 #include <zlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "nbtload.h"
 
@@ -44,6 +47,12 @@ load_map_from_file(char * filename, char * level_fname)
     if (rv) {
 	fprintf(stderr, "Load '%s' failed error Z%d\n", filename, rv);
 	return -1;
+    }
+
+    struct stat info;
+    if (stat(filename, &info) == 0) {
+	if (info.st_size < level_prop->total_blocks*sizeof(block_t))
+	    level_prop->last_map_download_size = info.st_size*3/2;
     }
 
     return 0;

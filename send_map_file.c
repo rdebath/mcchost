@@ -11,23 +11,25 @@
 #define block_convert(_bl) ((_bl)<=max_blockno_to_send?_bl:f_block_convert(_bl))
 #endif
 
+// CPE defined translations.
+block_t cpe_conversion[] = {
+    0x2C, 0x27, 0x0C, 0x00, 0x0A, 0x21, 0x19, 0x03,
+    0x1d, 0x1c, 0x14, 0x2a, 0x31, 0x24, 0x05, 0x01
+};
+
 // Convert from Map block numbers to ones the client will understand.
 block_t
 f_block_convert(block_t in)
 {
-    // CPE defined translations.
-    static block_t cpe_conv[] = {
-	0x2C, 0x27, 0x0C, 0x00, 0x0A, 0x21, 0x19, 0x03,
-	0x1d, 0x1c, 0x14, 0x2a, 0x31, 0x24, 0x05, 0x01
-    };
-
     if (in <= max_blockno_to_send) return in;
     if (in >= BLOCKMAX) in = BLOCKMAX-1;
 
-    if (level_prop->blockdef[in].defined)
+    if (level_prop->blockdef[in].defined
+	&& level_prop->blockdef[in].fallback < 66)
 	in = level_prop->blockdef[in].fallback;
 
-    if (in > max_blockno_to_send && in >= 50 && in < 66) in = cpe_conv[in-50];
+    if (in > max_blockno_to_send && in >= 50 && in < 66)
+	in = cpe_conversion[in-50];
 
     return in > max_blockno_to_send ? Block_Bedrock : in;
 }
@@ -63,10 +65,15 @@ send_block_array()
 {
     int zrv = 0;
     int blocks_buffered = 0;
+    block_t conv_blk[BLOCKMAX];
+
+    for(block_t b = 0; b<BLOCKMAX; b++)
+	conv_blk[b] = block_convert(b);
+
     send_lvlinit_pkt();
 
     uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-    unsigned char blockbuffer[4096];
+    unsigned char blockbuffer[65536];
     blockbuffer[0] = (level_len>>24);
     blockbuffer[1] = (level_len>>16);
     blockbuffer[2] = (level_len>>8);
@@ -76,7 +83,7 @@ send_block_array()
     strm.zalloc = Z_NULL;
     strm.zfree  = Z_NULL;
     strm.opaque = Z_NULL;
-    zrv = deflateInit2 (&strm, Z_BEST_SPEED, Z_DEFLATED,
+    zrv = deflateInit2 (&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
                              MAX_WBITS | 16, 8,
                              Z_DEFAULT_STRATEGY);
     if (zrv != Z_OK) {
@@ -98,13 +105,17 @@ send_block_array()
 
     do {
 	if (strm.avail_in == 0 && level_blocks_used < level_len) {
-	    // copy up to 4096 bytes from level_blocks
+	    // copy some bytes from level_blocks
 	    strm.next_in = blockbuffer;
 	    strm.avail_in = 0;
 
 	    for(int i=0; i<sizeof(blockbuffer) && level_blocks_used < level_len; i++)
 	    {
-		blockbuffer[i] = block_convert(level_blocks[level_blocks_used]);
+		block_t b = level_blocks[level_blocks_used];
+		if (b<BLOCKMAX)
+		    blockbuffer[i] = conv_blk[b];
+		else
+		    blockbuffer[i] = block_convert(level_blocks[level_blocks_used]);
 		level_blocks_used += 1;
 		strm.avail_in += 1;
 	    }

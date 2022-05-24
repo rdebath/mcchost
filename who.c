@@ -23,7 +23,7 @@ void
 cmd_who(UNUSED char * cmd, char * arg)
 {
     int users = 0;
-    int my_level_id = shdat.client->user[my_user_no].on_level;
+    // int my_level_id = shdat.client->user[my_user_no].on_level;
 
     for(int i=0; i<MAX_USER; i++)
     {

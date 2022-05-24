@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #include "requestloop.h"
+#include "inline.h"
 
 int64_t bytes_sent;
 static char *ttl_buf = 0;		/* Buffer for line output */

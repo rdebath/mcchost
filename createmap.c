@@ -135,6 +135,9 @@ init_map_null()
 
     for (int i = 0; i<BLOCKMAX; i++)
 	level_prop->blockdef[i].inventory_order = i;
+
+    for (int i = 0; i<16; i++)
+	level_prop->blockdef[i].fallback = cpe_conversion[i];
 }
 
 void
