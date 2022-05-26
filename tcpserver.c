@@ -35,7 +35,8 @@ int client_ipv4_port = 0;
 int client_ipv4_localhost = 0;
 int disable_restart = 0;
 
-static volatile int restart_sig = 0, child_sig = 0, alarm_sig;
+static volatile int restart_sig = 0, child_sig = 0;
+static volatile int alarm_sig = 0, term_sig = 0;
 static int signal_available = 0;
 
 void
@@ -44,6 +45,7 @@ handle_signal(int signo)
     if (signo == SIGHUP) restart_sig = 1;
     if (signo == SIGCHLD) child_sig = 1;
     if (signo == SIGALRM) alarm_sig = 1;
+    if (signo == SIGTERM) term_sig = 1;
 }
 
 void
@@ -74,6 +76,8 @@ tcpserver()
 	    perror("signal(SIGCHLD,)");
 	if (signal(SIGALRM, handle_signal) == SIG_ERR)
 	    perror("signal(SIGALRM,)");
+	if (signal(SIGTERM, handle_signal) == SIG_ERR)
+	    perror("signal(SIGTERM,)");
     }
 
     if (!log_to_stderr) {
@@ -82,7 +86,7 @@ tcpserver()
 	    fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
     }
 
-    while(1)
+    while(!term_sig)
     {
 	int max_sock = listen_socket;
 	fd_set read_fds;
@@ -118,6 +122,7 @@ tcpserver()
 		    (void)signal(SIGHUP, SIG_DFL);
 		    (void)signal(SIGCHLD, SIG_DFL);
 		    (void)signal(SIGALRM, SIG_DFL);
+		    (void)signal(SIGTERM, SIG_DFL);
 		    signal_available = 0;
 		    E(close(listen_socket), "close(listen)");
 		    line_ofd = 1; line_ifd = 0;
@@ -145,7 +150,14 @@ tcpserver()
 
 	alarm_sig = 0;
     }
-    /*NOTREACHED*/
+
+    if (enable_heartbeat_poll && !server.private) {
+	fprintf(stderr, "Shutting down service\n");
+	send_heartbeat_poll();
+    } else
+	fprintf(stderr, "Terminating service\n");
+
+    exit(0);
 }
 
 LOCAL void
@@ -216,6 +228,7 @@ do_restart()
     (void)signal(SIGHUP, SIG_DFL);
     (void)signal(SIGCHLD, SIG_DFL);
     (void)signal(SIGALRM, SIG_DFL);
+    (void)signal(SIGTERM, SIG_DFL);
     signal_available = 0;
     close(listen_socket);
     close_logfile();
@@ -336,7 +349,7 @@ send_heartbeat_poll()
 {
     time_t now;
     time(&now);
-    if (alarm_sig == 0 && last_heartbeat != 0) {
+    if (alarm_sig == 0 && last_heartbeat != 0 && !term_sig) {
 	if ((now-last_heartbeat) < 45)
 	    return;
     }
@@ -368,7 +381,7 @@ send_heartbeat_poll()
 	heartbeat_url,
 	"port=",tcp_port_no,
 	"max=",255,
-	"public=",server.private?"False":"True",
+	"public=",server.private||term_sig?"False":"True",
 	"version=",7,
 	"users=",current_user_count(),
 	"salt=",valid_salt?server.secret:"0000000000000000",
@@ -382,7 +395,7 @@ send_heartbeat_poll()
 	// SHUT UP CURL!!
 	E(execlp("curl", "curl", "-s", "-S", "-o", "log/curl_resp.txt", cmdbuf, (char*)0), "exec of curl failed");
 	// Note: Returned string is web client URL, but the last
-	//       path part can be used in the standard client.
+	//       path part can be used to query the api.
 	exit(0);
     }
 }
@@ -443,7 +456,7 @@ start_backup_process()
     time_t now;
     time(&now);
     if (alarm_sig == 0 && last_backup != 0) {
-        if ((now-last_backup) < 300) {
+        if ((now-last_backup) < server.save_interval) {
 	    if ((now-last_unload) >= 15) {
 		scan_and_save_levels(1);
 		last_unload = now;

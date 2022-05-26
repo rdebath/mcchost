@@ -1,7 +1,11 @@
 #include <string.h>
 #include <dirent.h>
+#include <time.h>
 
 #include "maps.h"
+
+// TODO qsort, paginate, filter. Based on arg1 && arg2 then arg1 || arg2?
+// Use same list generator for goto (one result only).
 
 /*HELP maps,levels,worlds
 &T/maps
@@ -31,7 +35,6 @@ cmd_maps(UNUSED char * cmd, char * arg)
     char line_buf[NB_SLEN] = {0};
     int c = 0;
 
-    // Todo? qsort this. TODO: Paginate.
     while( (entry=readdir(directory)) )
     {
 

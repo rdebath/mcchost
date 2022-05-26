@@ -12,20 +12,24 @@
 #define LEVEL_PROPS_NAME "level/%s.props"
 #define LEVEL_BLOCKS_NAME "level/%s.blocks"
 #define LEVEL_QUEUE_NAME "level/%s.queue"
-#define LEVEL_CW_NAME "map/%s.cw"
-#define LEVEL_TMP_NAME "map/%s.tmp"
+#define LEVEL_MAP_DIR_NAME "map"
+#define LEVEL_CW_NAME LEVEL_MAP_DIR_NAME "/%s.cw"
+#define LEVEL_TMP_NAME LEVEL_MAP_DIR_NAME "/%s.tmp"
 #define MODEL_CW_NAME "model.cw"
 #define SYS_STAT_NAME "system/userlevels.dat"
 #define CHAT_QUEUE_NAME "system/chat.queue"
+#define LEVEL_BACKUP_DIR_NAME "backup"
+#define LEVEL_PREV_NAME LEVEL_BACKUP_DIR_NAME "/%s.cw"
+#define LEVEL_BACKUP_NAME LEVEL_BACKUP_DIR_NAME "/%s.%d.cw"
 #endif
 
 static char * dirlist[] = {
     "system",
     "level",
+    LEVEL_MAP_DIR_NAME,
+    LEVEL_BACKUP_DIR_NAME,
     "help",
-    "backup",
     "log",
-    "map",
     0
 };
 

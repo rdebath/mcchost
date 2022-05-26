@@ -3,6 +3,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <ctype.h>
+#include <dirent.h>
 
 #include "loadsave.h"
 #include "inline.h"
@@ -38,14 +43,21 @@ cmd_goto(UNUSED char * cmd, char * arg)
 
     fix_fname(fixedname, sizeof(fixedname), arg);
 
-    snprintf(buf2, sizeof(buf2), "map/%s.cw", fixedname);
+    snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
     if (access(buf2, F_OK) != 0) {
-	// TODO: Search directory for approx. match.
-	snprintf(buf2, sizeof(buf2), "map/%s.ini", fixedname);
-	if (access(buf2, F_OK) != 0) {
-	    printf_chat("&SNo levels match \"%s\"", arg);
-	    return;
+	char * newfixed = find_file_match(fixedname, arg);
+
+	if (newfixed == 0) return;
+	if (0) {
+	    // TODO ??
+	    snprintf(buf2, sizeof(buf2), "map/%s.ini", fixedname);
+	    if (access(buf2, F_OK) != 0) {
+		printf_chat("&SNo levels match \"%s\"", arg);
+		return;
+	    }
 	}
+	snprintf(fixedname, sizeof(fixedname), "%s", newfixed);
+	free(newfixed);
     }
 
     unfix_fname(levelname, sizeof(levelname), fixedname);
@@ -53,6 +65,13 @@ cmd_goto(UNUSED char * cmd, char * arg)
 	printf_chat("&SNo levels match \"%s\"", arg);
 	return;
     }
+
+    if (strcmp(levelname, current_level_name) == 0) {
+	printf_chat("&SYou're already on &7%s", current_level_name);
+	return;
+    }
+
+    // printf_chat("@&S%s left &7%s", user_id, current_level_name);
 
     stop_shared();
 
@@ -66,6 +85,7 @@ cmd_goto(UNUSED char * cmd, char * arg)
     send_map_file();
     send_spawn_pkt(255, user_id, level_prop->spawn);
 
+    printf_chat("@&S%s went to &7%s", user_id, levelname);
     if (level_prop->readonly)
 	printf_chat("&WLoaded read only map, changes will be discarded");
 }
@@ -73,6 +93,11 @@ cmd_goto(UNUSED char * cmd, char * arg)
 void
 cmd_main(UNUSED char * cmd, UNUSED char * arg)
 {
+    if (strcmp(server.main_level, current_level_name) == 0) {
+	printf_chat("&SYou're already on &7%s", current_level_name);
+	return;
+    }
+
     char fixedname[NB_SLEN];
     fix_fname(fixedname, sizeof(fixedname), server.main_level);
 
@@ -84,6 +109,8 @@ cmd_main(UNUSED char * cmd, UNUSED char * arg)
 	fatal("Failed to load main.");
     send_map_file();
     send_spawn_pkt(255, user_id, level_prop->spawn);
+
+    printf_chat("@&S%s went to &7%s", user_id, server.main_level);
 }
 
 void
@@ -182,7 +209,7 @@ scan_and_save_levels(int unlink_only)
     *current_level_name = 0;
     *current_level_fname = 0;
 
-    for(int lvid=0; lvid<MAX_USER; lvid++) {
+    for(int lvid=0; lvid<MAX_LEVEL; lvid++) {
 	if (!shdat.client->levels[lvid].loaded) continue;
 
 	nbtstr_t lv = shdat.client->levels[lvid].level;
@@ -201,19 +228,16 @@ scan_and_save_levels(int unlink_only)
 
 	if (!level_prop->readonly && !unlink_only) {
 	    if (level_prop->dirty_save) {
+		try_backup(fixedname);
+
 		int rv = save_level_in_map(fixedname);
 		if (rv == 1) {
 		    fprintf(stderr, "Level %s write protected, changes discarded\n", fixedname);
 		    level_prop->dirty_save = 0;
 		    level_prop->dirty_backup = 0;
 		    level_prop->readonly = 1;
-		}
-	    }
-
-	    // If the map is clean and it's time for a backup.
-	    if (!level_prop->dirty_save && level_prop->dirty_backup) {
-		// Do backup map/* to backup/*
-		//copy_level_map_to_backup(fixedname);
+		} else if (rv == 0)
+		    level_prop->dirty_backup = 1;
 	    }
 	}
 
@@ -249,3 +273,174 @@ scan_and_save_levels(int unlink_only)
 
     stop_client_list();
 }
+
+void
+try_backup(char * fixedname)
+{
+    char filename[256];
+    snprintf(filename, sizeof(filename), LEVEL_PREV_NAME, fixedname);
+
+    struct stat info;
+
+    // Existing file in backup directory
+    if (stat(filename, &info) == 0)
+    {
+	// If it's old
+	time_t now = time(0);
+	if (now-server.backup_interval < info.st_mtime) return;
+	int backup_id = 1;
+
+	// Find the next unused number
+	struct dirent *entry;
+	DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
+	if (directory) {
+	    int l = strlen(fixedname);
+	    while( (entry=readdir(directory)) )
+	    {
+		if (strncmp(entry->d_name, fixedname, l) == 0
+		    && entry->d_name[l] == '.') {
+		    char * s = entry->d_name+l+1;
+		    int v = 0;
+		    while(*s>='0' && *s<='9') { s++; v=v*10+(*s-'0'); }
+		    if (v>backup_id && strcmp(s, ".cw") == 0) {
+			backup_id = v+1;
+		    }
+		}
+	    }
+	    closedir(directory);
+	}
+
+	// Rename it to there
+	char backupname[256];
+	sprintf(backupname, LEVEL_BACKUP_NAME, fixedname, backup_id);
+	if (rename(filename, backupname) < 0) {
+	    fprintf(stderr, "Error on backup of %s to %s\n", filename, backupname);
+	    return;
+	}
+    }
+
+    if (access(filename, F_OK) != 0) {
+
+	// No file in the backup dir, copy the saved one.
+	char cwfilename[256];
+	snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, fixedname);
+
+	if (access(cwfilename, F_OK) == 0) {
+	    if (rename(cwfilename, filename) < 0) {
+		fprintf(stderr, "Error on rename of %s to %s\n", cwfilename, filename);
+		return;
+	    }
+	}
+    }
+}
+
+/* This only finds ASCII case insensitive, not CP437. This is probably fine.
+ */
+#define NMATCH 4
+char *
+find_file_match(char * fixedname, char * levelname)
+{
+    struct dirent *entry;
+    char * exactmatch = 0;
+    char * match[NMATCH];
+    int matchcount = 0, need_exact_case = 0;
+
+    DIR *directory = opendir(LEVEL_MAP_DIR_NAME);
+    if (directory) {
+	while( (entry=readdir(directory)) )
+	{
+	    char nbuf[MAXLEVELNAMELEN*4];
+	    int l = strlen(entry->d_name);
+	    if (l<3 || strcmp(entry->d_name+l-3, ".cw") != 0)
+		continue;
+	    if (l>sizeof(nbuf)-1) continue;
+	    l -= 3;
+	    memcpy(nbuf, entry->d_name, l);
+            nbuf[l] = 0;
+
+	    // "Exact" matches, maybe case insensitive.
+	    if (strcasecmp(nbuf, fixedname) == 0) {
+		if (exactmatch == 0 && need_exact_case == 0) {
+		    // Nothing before accept CI
+		    exactmatch = strdup(nbuf);
+		    if (strcmp(nbuf, fixedname) == 0)
+			need_exact_case = 1; // Which we have.
+		} else if (exactmatch != 0 && need_exact_case == 0) {
+		    // Had a CI now got another, need CS
+		    need_exact_case = 1;
+		    if(exactmatch) free(exactmatch);
+		    exactmatch = 0;
+		    // Which this could be.
+		    if (strcmp(nbuf, fixedname) == 0)
+			exactmatch = strdup(nbuf);
+		} else if (exactmatch == 0 && need_exact_case != 0) {
+		    // Found a needed CS
+		    if (strcmp(nbuf, fixedname) == 0)
+			exactmatch = strdup(nbuf);
+		}
+	    }
+
+	    if (my_strcasestr(nbuf, fixedname) != 0)
+	    {
+		if (matchcount < NMATCH)
+		    match[matchcount] = strdup(nbuf);
+		matchcount++;
+	    }
+	}
+	closedir(directory);
+    }
+    if (exactmatch || matchcount == 1) {
+	char * p = exactmatch;
+	if (!exactmatch) {
+	    p = match[0];
+	    match[0] = 0;
+	}
+	for(int i = 0; i<matchcount && i<NMATCH; i++)
+	    if (match[i])
+		free(match[i]);
+	return p;
+    }
+    if (matchcount == 0) {
+	printf_chat("&SNo levels match \"%s\"", levelname);
+	return 0;
+    }
+    if (matchcount > NMATCH)
+	printf_chat("&S%d levels match \"%s\" including ...", matchcount, levelname);
+    else
+	printf_chat("&S%d levels match \"%s\"", matchcount, levelname);
+
+    int l = 0;
+    for(int i = 0; i<NMATCH && i<matchcount; i++)
+	l += strlen(match[i]) + 3;
+    char * line = calloc(l, 1);
+    for(int i = 0; i<NMATCH && i<matchcount; i++) {
+	if (i) strcat(line, ", ");
+	char lvlname[MAXLEVELNAMELEN+1];
+	unfix_fname(lvlname, sizeof(lvlname), match[i]);
+	strcat(line, match[i]);
+    }
+    printf_chat("&S%s", line);
+    free(line);
+
+    return 0;
+}
+
+char *
+my_strcasestr(char *haystack, char *needle)
+{
+    int nlen = strlen(needle);
+    int slen = strlen(haystack) - nlen + 1;
+    int i;
+
+    for (i = 0; i < slen; i++) {
+	int j;
+	for (j = 0; j < nlen; j++) {
+	    if (toupper((unsigned char)haystack[i+j]) != toupper((unsigned char)needle[j]))
+		goto break_continue;
+	}
+	return haystack + i;
+    break_continue: ;
+    }
+    return 0;
+}
+

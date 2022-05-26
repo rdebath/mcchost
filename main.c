@@ -26,7 +26,8 @@ struct server_t {
     int private;
     int cpe_disabled;
     char main_level[NB_SLEN];
-
+    time_t save_interval;
+    time_t backup_interval;
 };
 #endif
 
@@ -44,6 +45,8 @@ server_t server = {
     .software = "MCCHost",
     .name = "MCCHost Server",
     .main_level = "main",
+    .save_interval = 300,
+    .backup_interval = 86400,
 };
 
 nbtstr_t client_software = {"(unknown)"};

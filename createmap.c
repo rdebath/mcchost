@@ -98,7 +98,6 @@ init_map_from_size(xyz_t size)
 	    .spawn = { size.x*32+16, size.y*3/4*32, size.z*32+16 },
 	    .clouds_height = size.y+2,
 	    .clouds_speed = 256, 256, 128,
-	    .skybox_hor_speed = 1024, 1024,
 	    .click_distance = 160
 	};
 
@@ -124,7 +123,6 @@ init_map_null()
 	    .spawn = { INT_MIN, INT_MIN, INT_MIN },
 	    .clouds_height = INT_MIN,
 	    .clouds_speed = 256, 256, 128,
-	    .skybox_hor_speed = 1024, 1024,
 	    .click_distance = 160
 	};
 

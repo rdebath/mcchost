@@ -9,10 +9,6 @@ See "/help todo" for notes.
 
 /*HELP todo
  +) ini file format allowed for *.cw file -- trivial level create.
- +) Sort map names!
- +) Use link(2) for backup iff overwritten map/*.c is old.
-
- +) INI files, fields with integer values as fixed point *32, *256 etc
 
  +) Command that sets level properties using ini file loader. (inprogress)
     -- List of options.
@@ -23,13 +19,10 @@ See "/help todo" for notes.
     -- So we know this version will run! Find pid by port no.
     -- SIGALRM: Command line routine to "unload" level file
 
- +) load/save level to *.cw and use for backups, restores and "unload".
-    -- Load/unload working
-
- +) Is adapting the queue length to the download size a good idea?
-    Perhaps the loaded CW file size would be better.
-
- +) Multiple Levels. (/newlvl, /goto, /main, /levels) (inprogress)
+ +) Multiple Levels. (/newlvl, /goto, /main, /maps) (inprogress)
+ +) Sort map names!
+ +) /goto + ... goto my map, bypass map existence check. (size?)
+ +) /restore & /museum
 
  +) Block/User history records.
     -- Combined history needs user id numbers --> user file/table.
@@ -59,16 +52,6 @@ Features:
     -- CW file also contains pending physics operations.
     -- edlin ? to edit help files and blockdef prop files?
 
-When are cw files saved?
-    Part 1 -- Unload level.
-	Save new cw file to maps/levelname.tmp
-	Rename to maps/levelname.cw
-	Unload level: remove uncompressed level file.
-
-    Part 2 -- backup level
-	copy maps/levelname.cw to backups/levelname.tmp
-	Rename to backups/levelname/...
-
 All files in subdirectories.
     system.ini  --> move?
     model.cw    --> move?
@@ -80,6 +63,7 @@ All files in subdirectories.
     blockdb/levelname.bdb
     log/YYYY-MM-DD.log
     backup/${level}.${id}.cw -- museum
+    backup/${level}.cw -- current backup
     recycle-bin/${level}.cw
 
 /Help command -- Should the default files be created ?
