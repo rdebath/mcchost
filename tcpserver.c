@@ -24,6 +24,7 @@ int detach_tcp_server = 0;
 int log_to_stderr = 0;
 int tcp_port_no = 25565;
 static int listen_socket = -1;
+int logger_pid = 0;
 
 int enable_heartbeat_poll = 0;
 static time_t last_heartbeat = 0;
@@ -190,6 +191,7 @@ logger_process()
 	E(dup2(nullfd, 0), "dup2(nullfd,0)");
 	close(nullfd);
 
+	logger_pid = pid2;
 	// Return parent.
 	return;
     }
@@ -225,6 +227,8 @@ logger_process()
 LOCAL void
 do_restart()
 {
+    fprintf_logfile("Restarting %s ...\n", program_args[0]);
+
     (void)signal(SIGHUP, SIG_DFL);
     (void)signal(SIGCHLD, SIG_DFL);
     (void)signal(SIGALRM, SIG_DFL);
@@ -233,7 +237,10 @@ do_restart()
     close(listen_socket);
     close_logfile();
 
-    fprintf(stderr, "Restarting %s ...\n", program_args[0]);
+    // Doing this properly means looking in /proc/self/fd or /dev/fd
+    // for(int i=3; i<FD_SETSIZE; i++) close(i);
+    // Don't use getrlimit(RLIMIT_NOFILE, &rlim); as this might be immense.
+
     execvp(program_args[0], program_args);
     perror(program_args[0]);
     exit(126);
@@ -305,15 +312,21 @@ cleanup_zombies()
 	    perror("waitpid()");
 	    exit(1);
 	}
+	if (pid == logger_pid) {
+	    // Whup! that's our stderr! Try to respawn it.
+	    fprintf_logfile("! Attempting to restart logger process");
+	    logger_process();
+	}
+
 	// No complaints on clean exit
 	if (WIFEXITED(status)) {
 	    if (WEXITSTATUS(status))
-		fprintf(stderr, "Process %d had exit status %d\n",
+		fprintf_logfile("! Process %d had exit status %d",
 		    pid, WEXITSTATUS(status));
 	    continue;
 	}
 	if (WIFSIGNALED(status)) {
-	    fprintf(stderr, "Process %d was killed by signal %s (%d)%s\n",
+	    fprintf_logfile("! Process %d was killed by signal %s (%d)%s",
 		pid,
 		strsignal(WTERMSIG(status)),
 		WTERMSIG(status),
@@ -338,7 +351,7 @@ cleanup_zombies()
 		    "/usr/bin/gdb -batch -ex 'backtrace full' -c core '%s'", program_name))
 		    system(buf);
 		else
-		    fprintf(stderr, "Skipped running /usr/bin/gdb; checking exe and core files failed.\n");
+		    fprintf_logfile("! Skipped running /usr/bin/gdb; checking exe and core files failed.");
 	    }
 	}
     }

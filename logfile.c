@@ -15,28 +15,17 @@ static char * file_name = "log/%s.log";
 static struct tm file_tm;
 
 void
-set_logfile(char * logfile_name)
+set_logfile(char * logfile_name, int israw)
 {
     file_name = logfile_name;
+    logfile_raw = israw;
 }
 
-void
+LOCAL void
 open_logfile()
 {
     if (!file_name) return;
 
-    if (strstr(file_name, "%s") != 0) {
-	reopen_logfile();
-    } else {
-	if (logfile) fclose(logfile);
-	logfile = fopen(file_name, "a");
-	setlinebuf(logfile);
-    }
-}
-
-LOCAL void
-reopen_logfile()
-{
     char * fname = malloc(strlen(file_name) + 16);
     strcpy(fname, file_name);
     char * p = strstr(fname, "%s");
@@ -61,12 +50,13 @@ LOCAL void
 check_reopen_logfile(struct tm * tm)
 {
     if (!file_name) return;
-    if (file_tm.tm_year == tm->tm_year &&
-        file_tm.tm_mon == tm->tm_mon &&
-        file_tm.tm_mday == tm->tm_mday)
-	return;
+    if (logfile)
+	if (file_tm.tm_year == tm->tm_year &&
+	    file_tm.tm_mon == tm->tm_mon &&
+	    file_tm.tm_mday == tm->tm_mday)
+	    return;
 
-    reopen_logfile();
+    open_logfile();
 }
 
 void
@@ -80,7 +70,7 @@ close_logfile()
 void
 log_chat_message(char * str, int len)
 {
-    if (!logfile) return;
+    if (!logfile && !file_name) return;
 
     int cf = 0;
     time_t now;
@@ -117,7 +107,7 @@ log_chat_message(char * str, int len)
 void
 fprintf_logfile(char * fmt, ...)
 {
-    if (!logfile) return;
+    if (!logfile && !file_name) return;
 
     va_list ap;
 

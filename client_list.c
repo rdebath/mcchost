@@ -17,12 +17,6 @@
  * will have to be renumbered.
  */
 
-/* TODO:
- * NB: Add user_count == 1 --> no scan needed
- *     Add max occupied user slot. --> minimise scan.
- *     Generation?
- */
-
 #if INTERFACE
 #define MAX_USER	255
 #define MAX_LEVEL	255

@@ -130,7 +130,7 @@ open_level_files(char * levelname, int direct)
 
     if (del_on_err && direct == 2) return;
 
-    if (allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP) < 0)
+    if (allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP, 0) < 0)
 	goto open_failed;
 
     level_prop = shdat.dat[SHMID_PROP].ptr;
@@ -229,14 +229,10 @@ open_blocks(char * levelname)
 	fatal("Map too large for this server compilation.");
     }
     level_blocks_len = l;
-    if (allocate_shared(sharename, level_blocks_len, shdat.dat+SHMID_BLOCKS) < 0)
+    if (allocate_shared(sharename, level_blocks_len, shdat.dat+SHMID_BLOCKS, 1) < 0)
 	return -1;
 
     level_blocks = shdat.dat[SHMID_BLOCKS].ptr;
-
-    close(shdat.dat[SHMID_BLOCKS].lock_fd);
-    shdat.dat[SHMID_BLOCKS].lock_fd = 0;
-
     return 0;
 }
 
@@ -310,7 +306,7 @@ create_block_queue(char * levelname)
 
     // First minimum size.
     level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
-    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0)
+    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ, 1) < 0)
 	return;
     level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
 
@@ -346,13 +342,13 @@ create_block_queue(char * levelname)
 
     // Now try the size we want.
     level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
-    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0) {
+    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ, 1) < 0) {
 	if (file_queue_count == queue_count)
 	    fatal("Cannot open block queue");
 
 	// Hummph. How about the size it is.
 	level_block_queue_len = sizeof(*level_block_queue) + file_queue_count * sizeof(xyzb_t);
-	if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0)
+	if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ, 1) < 0)
 	    fatal("Shared area allocation failure");
 
 	queue_count = file_queue_count;
@@ -365,9 +361,6 @@ create_block_queue(char * levelname)
 	    level_block_queue->queue_len = queue_count;
 	}
     }
-
-    close(shdat.dat[SHMID_BLOCKQ].lock_fd);
-    shdat.dat[SHMID_BLOCKQ].lock_fd = 0;
 
     unlock_shared();
 }
@@ -393,7 +386,7 @@ open_client_list()
 
     sprintf(sharename, SYS_STAT_NAME);
     client_list_len = sizeof(*client_list);
-    allocate_shared(sharename, client_list_len, shdat.dat+SHMID_CLIENTS);
+    allocate_shared(sharename, client_list_len, shdat.dat+SHMID_CLIENTS, 0);
     client_list = shdat.dat[SHMID_CLIENTS].ptr;
     if (!client_list) return;
 
@@ -432,7 +425,7 @@ create_chat_queue()
 
     sprintf(sharename, CHAT_QUEUE_NAME);
     level_chat_queue_len = sizeof(*level_chat_queue) + queue_count * sizeof(chat_entry_t);
-    allocate_shared(sharename, level_chat_queue_len, shdat.dat+SHMID_CHAT);
+    allocate_shared(sharename, level_chat_queue_len, shdat.dat+SHMID_CHAT, 0);
     level_chat_queue = shdat.dat[SHMID_CHAT].ptr;
 
     lock_chat_shared();
@@ -467,7 +460,7 @@ stop_chat_queue()
 }
 
 LOCAL int
-allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
+allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm, int close_fd)
 {
     uintptr_t sz;
     void * shm_p;
@@ -475,11 +468,12 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
 
     assert((size_t)share_size > 0 && (off_t)share_size > 0);
 
+    if (shm->lock_fd > 0) close(shm->lock_fd);
     shm->ptr = 0;
     shm->len = 0;
     shm->lock_fd = -1;
 
-    shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW, 0600);
+    shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW|O_CLOEXEC, 0600);
     if (shared_fd < 0) { perror(share_name); return -1; }
 
     {
@@ -506,6 +500,11 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
 	perror("mmap");
 	close(shared_fd);
         return -1;
+    }
+
+    if (close_fd) {
+	close(shared_fd);
+	shared_fd = 0;
     }
 
     shm->ptr = shm_p;

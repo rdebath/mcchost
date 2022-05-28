@@ -15,8 +15,12 @@ typedef int (*ini_func_t)(ini_state_t *st, char * fieldname, char **value);
 typedef ini_state_t ini_state_t;
 struct ini_state_t {
     FILE * fd;
+    char * filename;
+
     int all;	// Write all fields
     int write;	// Set to write fields
+    int quiet;	// Don't comment to the remote (use stderr)
+    int errcount;
     char * curr_section;
 };
 
@@ -201,48 +205,55 @@ save_ini_file(ini_func_t filetype, char * filename)
 int
 load_ini_file(ini_func_t filetype, char * filename, int quiet)
 {
-    int errcount = 0;
-    ini_state_t st = {0};
-    st.fd = fopen(filename, "r");
-    if (!st.fd) {
+    int rv = 0;
+    ini_state_t st = {.quiet = quiet, .filename = filename};
+    FILE *ifd = fopen(filename, "r");
+    if (!ifd) {
 	if (!quiet)
 	    printf_chat("&WFile not found: &e%s", filename);
 	return -1;
     }
 
     char ibuf[BUFSIZ];
-    while(fgets(ibuf, sizeof(ibuf), st.fd)) {
-	char * p = ibuf + strlen(ibuf);
-	for(;p>ibuf && (p[-1] == '\n' || p[-1] == '\r' || p[-1] == ' ' || p[-1] == '\t');p--) p[-1] = 0;
-
-	for(p=ibuf; *p == ' ' || *p == '\t'; p++);
-	if (*p == '#' || *p == ';' || *p == 0) continue;
-	if (*p == '[') {
-	    ini_extract_section(&st, p);
-	    continue;
-	}
-	char label[64];
-	int rv = ini_decode_lable(&p, label, sizeof(label));
-	if (!rv) {
-	    if (quiet)
-		fprintf(stderr, "Invalid label %s in %s section %s\n", ibuf, filename, st.curr_section?:"-");
-	    else
-		printf_chat("&WInvalid label &S%s&W in &S%s&W section &S%s&W", ibuf, filename, st.curr_section?:"-");
-	    if (++errcount>9) break;
-	    continue;
-	}
-	if (!st.curr_section || !filetype(&st, label, &p)) {
-	    if (quiet)
-		fprintf(stderr, "Unknown label %s in %s section %s\n", ibuf, filename, st.curr_section?:"-");
-	    else
-		printf_chat("&WUnknown label &S%s&W in &S%s&W section &S%s&W", ibuf, filename, st.curr_section?:"-");
-	    if (++errcount>9) break;
-	}
+    while(fgets(ibuf, sizeof(ibuf), ifd)) {
+	if (load_ini_line(&st, filetype, ibuf) == 0) { rv = -1; break; }
     }
 
-    fclose(st.fd);
+    fclose(ifd);
     if (st.curr_section) free(st.curr_section);
-    return -1;
+    return rv;
+}
+
+int
+load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
+{
+    char * p = ibuf + strlen(ibuf);
+    for(;p>ibuf && (p[-1] == '\n' || p[-1] == '\r' || p[-1] == ' ' || p[-1] == '\t');p--) p[-1] = 0;
+
+    for(p=ibuf; *p == ' ' || *p == '\t'; p++);
+    if (*p == '#' || *p == ';' || *p == 0) return 1;
+    if (*p == '[') {
+	ini_extract_section(st, p);
+	return 1;
+    }
+    char label[64];
+    int rv = ini_decode_lable(&p, label, sizeof(label));
+    if (!rv) {
+	if (st->quiet)
+	    fprintf(stderr, "Invalid label %s in %s section %s\n", ibuf, st->filename, st->curr_section?:"-");
+	else
+	    printf_chat("&WInvalid label &S%s&W in &S%s&W section &S%s&W", ibuf, st->filename, st->curr_section?:"-");
+	if (++st->errcount>9) return 0;
+	return 1;
+    }
+    if (!st->curr_section || !filetype(st, label, &p)) {
+	if (st->quiet)
+	    fprintf(stderr, "Unknown label %s in %s section %s\n", ibuf, st->filename, st->curr_section?:"-");
+	else
+	    printf_chat("&WUnknown label &S%s&W in &S%s&W section &S%s&W", ibuf, st->filename, st->curr_section?:"-");
+	if (++st->errcount>9) return 0;
+    }
+    return 1;
 }
 
 LOCAL int

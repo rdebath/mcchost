@@ -16,6 +16,7 @@
 #define LEVEL_CW_NAME LEVEL_MAP_DIR_NAME "/%s.cw"
 #define LEVEL_TMP_NAME LEVEL_MAP_DIR_NAME "/%s.tmp"
 #define MODEL_CW_NAME "model.cw"
+#define MODEL_INI_NAME "model.ini"
 #define SYS_STAT_NAME "system/userlevels.dat"
 #define CHAT_QUEUE_NAME "system/chat.queue"
 #define LEVEL_BACKUP_DIR_NAME "backup"

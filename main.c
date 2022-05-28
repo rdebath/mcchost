@@ -83,7 +83,7 @@ main(int argc, char **argv)
 	show_args_help();
 
     if (*logfile_pattern)
-	set_logfile(logfile_pattern);
+	set_logfile(logfile_pattern, 0);
 
     if (save_conf)
 	save_ini_file(system_ini_fields, SERVER_CONF_NAME);
@@ -96,7 +96,6 @@ main(int argc, char **argv)
 	memset(proc_args_mem, 0, proc_args_len);
 	snprintf(proc_args_mem, proc_args_len, "%s port %d", server.software, tcp_port_no);
 
-	open_logfile();
 	tcpserver();
     } else {
 	line_ofd = 1; line_ifd = 0;
@@ -112,7 +111,6 @@ main(int argc, char **argv)
 void
 process_connection()
 {
-    open_logfile();
     open_client_list();
 
     login();

@@ -49,10 +49,12 @@ load_map_from_file(char * filename, char * level_fname)
 	return -1;
     }
 
-    struct stat info;
-    if (stat(filename, &info) == 0) {
-	if (info.st_size < level_prop->total_blocks*sizeof(block_t))
-	    level_prop->last_map_download_size = info.st_size*3/2;
+    if (level_prop->last_map_download_size < 16384) {
+	struct stat info;
+	if (stat(filename, &info) == 0) {
+	    if (info.st_size < level_prop->total_blocks*sizeof(block_t))
+		level_prop->last_map_download_size = info.st_size*3/2;
+	}
     }
 
     return 0;
@@ -74,7 +76,7 @@ load_cwfile(gzFile ifd, char * level_fname)
 	fprintf(stderr, "Loading ClassicWorld map: ");
 	open_level_files(level_fname, 1);
 	read_element(ifd, ch);
-    } else {
+    } else if (!try_asciimode(ifd, ch, level_fname)) {
 	fprintf(stderr, "File format incorrect.\n");
 	return;
     }
@@ -557,4 +559,31 @@ cpy_nstr(volatile char *buf, char *str, int len)
 	if (d == buf+len-1) break;
     }
     *d = 0;
+}
+
+LOCAL int
+try_asciimode(gzFile ifd, int ch, char * levelname)
+{
+    if (ch == EOF) return 0;
+    gzungetc(ch, ifd);
+
+    ini_state_t st = {.quiet = 0, .filename = "cw-file"};
+
+    init_map_null();
+    level_prop->last_map_download_size = 20400;
+
+    char ibuf[BUFSIZ];
+    while(gzgets(ifd, ibuf, sizeof(ibuf))) {
+        if (load_ini_line(&st, level_ini_fields, ibuf) == 0) {
+	    level_prop->version_no = level_prop->magic_no = 0;
+	    return 0;
+	}
+    }
+
+    xyzhv_t oldsize = {0};
+    patch_map_nulls(oldsize);
+    open_blocks(levelname);
+    init_flat_level();
+
+    return 1;
 }

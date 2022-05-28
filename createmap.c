@@ -10,7 +10,6 @@
 
 TODO:
     File source order -- Only one
-	Uncompressed props file -- on open map.
 	map/levelname.cw
 	model.cw
 	model.ini
@@ -23,10 +22,12 @@ TODO:
 void
 createmap(char * levelname)
 {
+    // Don't recreate a map that seems okay.
     if (level_prop->version_no == MAP_VERSION)
 	if (level_prop->cells_x != 0 && level_prop->cells_y != 0 && level_prop->cells_z != 0)
 	    return;
 
+    // Save away the old size.
     xyzhv_t oldsize = {0};
     if (level_prop->magic_no == MAP_MAGIC) {
 	if (level_prop->cells_x != 0 && level_prop->cells_y != 0 && level_prop->cells_z != 0)
@@ -41,14 +42,18 @@ createmap(char * levelname)
 
     init_map_null();
 
-    char buf2[256];
-    snprintf(buf2, sizeof(buf2), "map/%.200s.ini", levelname);
-    load_ini_file(level_ini_fields, buf2, 1);
+    load_ini_file(level_ini_fields, MODEL_INI_NAME, 1);
 
     patch_map_nulls(oldsize);
 
     open_blocks(levelname);
 
+    init_flat_level();
+}
+
+void
+init_flat_level()
+{
     map_len_t test_map;
     memcpy(&test_map, (void*)(level_blocks+level_prop->total_blocks),
 	    sizeof(map_len_t));
@@ -123,7 +128,7 @@ init_map_null()
 	    .spawn = { INT_MIN, INT_MIN, INT_MIN },
 	    .clouds_height = INT_MIN,
 	    .clouds_speed = 256, 256, 128,
-	    .click_distance = 160
+	    .click_distance = 160,
 	};
 
 #pragma GCC diagnostic push
@@ -131,8 +136,10 @@ init_map_null()
     memcpy(level_prop->blockdef, default_blocks, sizeof(default_blocks));
 #pragma GCC diagnostic pop
 
-    for (int i = 0; i<BLOCKMAX; i++)
+    for (int i = 0; i<BLOCKMAX; i++) {
 	level_prop->blockdef[i].inventory_order = i;
+	level_prop->blockdef[i].fallback = i<768?i:22;
+    }
 
     for (int i = 0; i<16; i++)
 	level_prop->blockdef[i].fallback = cpe_conversion[i];

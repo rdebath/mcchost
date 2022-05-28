@@ -121,21 +121,20 @@ cmd_load(UNUSED char * cmd, char * arg)
     else if (!arg || !*arg)
 	printf_chat("&WUsage: /load filename");
     else {
-	char buf1[256], buf2[256], *s, *d;
-	for(s=arg, d=buf1; *s && d<buf1+sizeof(buf1)-1; s++) {
+	char buf[200+8], *s, *d;
+	for(s=arg, d=buf; *s && d<buf+sizeof(buf)-8; s++) {
 	    if ((*s>='A' && *s<='Z') || (*s>='a' && *s<='z') ||
-		(*s>='0' && *s<='9') || *s=='_' || *s=='.')
+		(*s>='0' && *s<='9') || *s=='_')
 		*d++ = *s;
 	}
-	*d = 0;
-
-	snprintf(buf2, sizeof(buf2), "backup/%.200s.ini", buf1);
+	strcpy(d, ".ini");
 
 	lock_shared();
 	int x = level_prop->cells_x;
 	int y = level_prop->cells_y;
 	int z = level_prop->cells_z;
-	load_ini_file(level_ini_fields, buf2, 0);
+
+	int rv = load_ini_file(level_ini_fields, buf, 0);
 
 	// Restore map size to match blocks.
 	level_prop->cells_x = x;
@@ -143,7 +142,8 @@ cmd_load(UNUSED char * cmd, char * arg)
 	level_prop->cells_z = z;
 	unlock_shared();
 
-	printf_chat("&SFile loaded");
+	if (rv == 0)
+	    printf_chat("&SFile loaded");
     }
 }
 

@@ -4,15 +4,22 @@
 This is a Minecraft classic server with CPE (Classic Protocol Extensions)
 Many of the CPE extensions are not implemented yet.
 See "/help todo" for notes.
+*/
 
+/*HELP welcome
+&3Hi, this server is a very alpha application written in C.
+&3It's likely to crash (especially if you &3use &T/crash&3)
+&3and so far has rather limited features.
+ 
+     &4♥ ♥ ♥ &dPlease try to crash it!&4 ♥ ♥ ♥
+ 
+&eSource is at https://github.com/rdebath/mcchost
 */
 
 /*HELP todo
- +) ini file format allowed for *.cw file -- trivial level create.
-
  +) Command that sets level properties using ini file loader. (inprogress)
     -- List of options.
-    -- Unsafe fields; x,y,z
+    -- Unsafe fields; size.x,size.y,size.z
     -- automatic refresh.
 
  +) Command line option to restart server and unload levels.
@@ -21,8 +28,9 @@ See "/help todo" for notes.
 
  +) Multiple Levels. (/newlvl, /goto, /main, /maps) (inprogress)
  +) Sort map names!
- +) /goto + ... goto my map, bypass map existence check. (size?)
+ +) /goto + ... goto my map, bypass map existence check. (/resize?)
  +) /restore & /museum
+ +) newlvl, create ini file.
 
  +) Block/User history records.
     -- Combined history needs user id numbers --> user file/table.
@@ -40,7 +48,8 @@ See "/help todo" for notes.
  +) /info command
  +) /about command
 
- +) Add command to save all help texts as real files. (no overwrite)
+ +) Add command to save all help texts as real files.
+	no overwrite -- create *.bak in this case?
 
  +) Run external command with stdout/err sent to client (</dev/null)
     -- Map gen?
@@ -56,9 +65,9 @@ All files in subdirectories.
     system.ini  --> move?
     model.cw    --> move?
     map/${level}.cw
-    system/{...}
+    system/...
     level/${level}.*
-    tmp/unpack.level.id.* -- museum unpacks?
+    level/${level}.${id}.* -- museum unpack
     help/${helpname}.txt
     blockdb/levelname.bdb
     log/YYYY-MM-DD.log
@@ -66,7 +75,8 @@ All files in subdirectories.
     backup/${level}.cw -- current backup
     recycle-bin/${level}.cw
 
-/Help command -- Should the default files be created ?
+    ${level} uses %2E for '.' in level name.
+
 
 Physics:
 
@@ -112,8 +122,5 @@ More blocks modified than will fit in queue?
 Logging:
     -- Automatic log file cleanup?
     -- Log user commands ?
-
-Map filenames/level names: Use %XX encoding all CP437 characters are case sensitive.  A search will be done for case insensitive and partial matches if the exact name fails.
-
 
 // vim:set syntax=none: */
