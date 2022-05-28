@@ -130,20 +130,14 @@ cmd_load(UNUSED char * cmd, char * arg)
 	strcpy(d, ".ini");
 
 	lock_shared();
-	int x = level_prop->cells_x;
-	int y = level_prop->cells_y;
-	int z = level_prop->cells_z;
-
-	int rv = load_ini_file(level_ini_fields, buf, 0);
-
-	// Restore map size to match blocks.
-	level_prop->cells_x = x;
-	level_prop->cells_y = y;
-	level_prop->cells_z = z;
+	int rv = load_ini_file(level_ini_fields, buf, 0, 1);
 	unlock_shared();
 
-	if (rv == 0)
+	if (rv == 0) {
 	    printf_chat("&SFile loaded");
+	    level_prop->dirty_save = 1;
+	    level_prop->metadata_generation++;
+	}
     }
 }
 
@@ -221,10 +215,8 @@ scan_and_save_levels(int unlink_only)
 	open_level_files(fixedname, 2);
 	if (!level_prop) continue;
 
-	if (level_prop->readonly) {
+	if (level_prop->readonly)
 	    level_prop->dirty_save = 0;
-	    level_prop->dirty_backup = 0;
-	}
 
 	if (!level_prop->readonly && !unlink_only) {
 	    if (level_prop->dirty_save) {
@@ -234,10 +226,8 @@ scan_and_save_levels(int unlink_only)
 		if (rv == 1) {
 		    fprintf(stderr, "Level %s write protected, changes discarded\n", fixedname);
 		    level_prop->dirty_save = 0;
-		    level_prop->dirty_backup = 0;
 		    level_prop->readonly = 1;
-		} else if (rv == 0)
-		    level_prop->dirty_backup = 1;
+		}
 	    }
 	}
 

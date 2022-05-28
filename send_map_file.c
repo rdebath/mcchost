@@ -17,6 +17,8 @@ block_t cpe_conversion[] = {
     0x1d, 0x1c, 0x14, 0x2a, 0x31, 0x24, 0x05, 0x01
 };
 
+static uint32_t metadata_generation = 0;
+
 // Convert from Map block numbers to ones the client will understand.
 block_t
 f_block_convert(block_t in)
@@ -41,12 +43,34 @@ send_map_file()
 
     // Send_system_ident()
     // Send_hack_control()
+
     // Send_block_definitions()
     // Send_inventory_order()
+
     set_last_block_queue_id(); // Send updates from now.
     send_block_array();
+
     // Send_system_ident() // Level motd
     // Send_hack_control()
+
+    send_metadata();
+}
+
+void
+check_metadata_update()
+{
+    if (!level_prop || !level_blocks) return;
+    if (metadata_generation == level_prop->metadata_generation) return;
+
+    send_metadata();
+}
+
+void
+send_metadata()
+{
+    if (!level_prop || !level_blocks) return;
+
+    metadata_generation = level_prop->metadata_generation;
     send_env_colours();
     send_map_property();
     send_weather();
@@ -55,9 +79,7 @@ send_map_file()
     // send_players()
     // send_entities()
     // send_spawn()
-
-    if (extn_clickdistance)
-	send_clickdistance_pkt(level_prop->click_distance > 0? level_prop->click_distance:160);
+    send_clickdistance();
 }
 
 void
@@ -196,4 +218,12 @@ send_weather()
     if (!extn_weathertype) return;
 
     send_weather_pkt(level_prop->weather);
+}
+
+void
+send_clickdistance()
+{
+    if (!extn_clickdistance) return;
+
+    send_clickdistance_pkt(level_prop->click_distance > 0? level_prop->click_distance:160);
 }

@@ -227,7 +227,7 @@ logger_process()
 LOCAL void
 do_restart()
 {
-    fprintf_logfile("Restarting %s ...\n", program_args[0]);
+    fprintf_logfile("Restarting %s ...", program_args[0]);
 
     (void)signal(SIGHUP, SIG_DFL);
     (void)signal(SIGCHLD, SIG_DFL);

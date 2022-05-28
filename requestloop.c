@@ -170,6 +170,7 @@ on_select_timeout()
     if (cpe_pending) return;
 
     check_user();
+    check_metadata_update();
     send_queued_chats();
     send_queued_blocks();
 }

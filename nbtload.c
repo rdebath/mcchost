@@ -65,6 +65,26 @@ load_cwfile(gzFile ifd, char * level_fname)
 {
     int ClassicWorld_found = 0;
     int ch = gzgetc(ifd);
+
+    // File type peek
+    if (ch == NBT_COMPOUND) { // Sigh, this is '\n'
+	int ch1 = gzgetc(ifd);
+	if (ch1 != 0) {
+	    gzungetc(ch1, ifd);
+	    gzungetc(ch, ifd);
+	    ch = 0;
+	} else {
+	    int ch2 = gzgetc(ifd);
+	    gzungetc(ch2, ifd);
+	    gzungetc(ch1, ifd);
+	    if (ch2 != 0x0c) {
+		gzungetc(ch, ifd);
+		ch = 0;
+	    }
+	}
+    } else
+	gzungetc(ch, ifd);
+
     if (ch == NBT_COMPOUND) {
 	*last_lbl = *last_sect = 0;
 	read_element(ifd, NBT_LABEL);
@@ -76,7 +96,7 @@ load_cwfile(gzFile ifd, char * level_fname)
 	fprintf(stderr, "Loading ClassicWorld map: ");
 	open_level_files(level_fname, 1);
 	read_element(ifd, ch);
-    } else if (!try_asciimode(ifd, ch, level_fname)) {
+    } else if (ch == EOF || !try_asciimode(ifd, level_fname)) {
 	fprintf(stderr, "File format incorrect.\n");
 	return;
     }
@@ -562,11 +582,8 @@ cpy_nstr(volatile char *buf, char *str, int len)
 }
 
 LOCAL int
-try_asciimode(gzFile ifd, int ch, char * levelname)
+try_asciimode(gzFile ifd, char * levelname)
 {
-    if (ch == EOF) return 0;
-    gzungetc(ch, ifd);
-
     ini_state_t st = {.quiet = 0, .filename = "cw-file"};
 
     init_map_null();
@@ -575,6 +592,7 @@ try_asciimode(gzFile ifd, int ch, char * levelname)
     char ibuf[BUFSIZ];
     while(gzgets(ifd, ibuf, sizeof(ibuf))) {
         if (load_ini_line(&st, level_ini_fields, ibuf) == 0) {
+	    fprintf(stderr, "Line failed %s\n", ibuf);
 	    level_prop->version_no = level_prop->magic_no = 0;
 	    return 0;
 	}

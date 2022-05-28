@@ -21,6 +21,7 @@ struct ini_state_t {
     int write;	// Set to write fields
     int quiet;	// Don't comment to the remote (use stderr)
     int errcount;
+    int no_unsafe;
     char * curr_section;
 };
 
@@ -94,9 +95,11 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     section = "level";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-	INI_INTVAL("size.x", level_prop->cells_x);
-	INI_INTVAL("size.y", level_prop->cells_y);
-	INI_INTVAL("size.z", level_prop->cells_z);
+	if (!st->no_unsafe) {
+	    INI_INTVAL("size.x", level_prop->cells_x);
+	    INI_INTVAL("size.y", level_prop->cells_y);
+	    INI_INTVAL("size.z", level_prop->cells_z);
+	}
 
 	INI_NBTSTR("motd", level_prop->motd);
 	INI_INTSCALE("spawn.x", level_prop->spawn.x, 32);
@@ -203,10 +206,10 @@ save_ini_file(ini_func_t filetype, char * filename)
 }
 
 int
-load_ini_file(ini_func_t filetype, char * filename, int quiet)
+load_ini_file(ini_func_t filetype, char * filename, int quiet, int no_unsafe)
 {
     int rv = 0;
-    ini_state_t st = {.quiet = quiet, .filename = filename};
+    ini_state_t st = {.quiet = quiet, .no_unsafe=no_unsafe, .filename = filename};
     FILE *ifd = fopen(filename, "r");
     if (!ifd) {
 	if (!quiet)
@@ -217,6 +220,7 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet)
     char ibuf[BUFSIZ];
     while(fgets(ibuf, sizeof(ibuf), ifd)) {
 	if (load_ini_line(&st, filetype, ibuf) == 0) { rv = -1; break; }
+	// if (++st->errcount>9) return -1;
     }
 
     fclose(ifd);
@@ -243,15 +247,14 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
 	    fprintf(stderr, "Invalid label %s in %s section %s\n", ibuf, st->filename, st->curr_section?:"-");
 	else
 	    printf_chat("&WInvalid label &S%s&W in &S%s&W section &S%s&W", ibuf, st->filename, st->curr_section?:"-");
-	if (++st->errcount>9) return 0;
-	return 1;
+	return 0;
     }
     if (!st->curr_section || !filetype(st, label, &p)) {
 	if (st->quiet)
 	    fprintf(stderr, "Unknown label %s in %s section %s\n", ibuf, st->filename, st->curr_section?:"-");
 	else
 	    printf_chat("&WUnknown label &S%s&W in &S%s&W section &S%s&W", ibuf, st->filename, st->curr_section?:"-");
-	if (++st->errcount>9) return 0;
+	return 0;
     }
     return 1;
 }
@@ -571,17 +574,20 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 
     fprintf(stderr, "%s: [%s]%s= %s\n", user_id, section, varname, value);
 
-    ini_state_t stv = {0}, *st = &stv;
+    ini_state_t stv = {.no_unsafe=1}, *st = &stv;
     st->curr_section = section;
 
     if (strcasecmp(section, "server") == 0) {
 	if (!system_ini_fields(st, varname, &value)) {
-	    printf_chat("&WBad args [%s]%s= %s", section, varname, value);
+	    printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
 	    return;
 	}
     } else
     if (!level_ini_fields(st, varname, &value)) {
-	printf_chat("&WBad args [%s]%s= %s", section, varname, value);
+	printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
 	return;
     }
+
+    level_prop->dirty_save = 1;
+    level_prop->metadata_generation++;
 }

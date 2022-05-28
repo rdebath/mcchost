@@ -154,7 +154,7 @@ process_args(int argc, char **argv)
 	}
 
 	if (pass == 0)
-	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1);
+	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);
     }
 
     do {

@@ -42,7 +42,7 @@ createmap(char * levelname)
 
     init_map_null();
 
-    load_ini_file(level_ini_fields, MODEL_INI_NAME, 1);
+    load_ini_file(level_ini_fields, MODEL_INI_NAME, 1, 0);
 
     patch_map_nulls(oldsize);
 
