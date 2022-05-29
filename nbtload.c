@@ -335,14 +335,14 @@ change_int_value(char * section, char * item, long long value)
 	if (strcmp(item, "X") == 0) level_prop->spawn.x = value*32+16;
 	if (strcmp(item, "Y") == 0) level_prop->spawn.y = value*32+16;
 	if (strcmp(item, "Z") == 0) level_prop->spawn.z = value*32+16;
-	if (strcmp(item, "H") == 0) level_prop->spawn.h = value*360/256;
-	if (strcmp(item, "P") == 0) level_prop->spawn.v = value*360/256;
+	if (strcmp(item, "H") == 0) level_prop->spawn.h = value;
+	if (strcmp(item, "P") == 0) level_prop->spawn.v = value;
     } else if (strcmp(section, "SetSpawn") == 0) {
 	if (strcmp(item, "X") == 0) level_prop->spawn.x = value;
 	if (strcmp(item, "Y") == 0) level_prop->spawn.y = value;
 	if (strcmp(item, "Z") == 0) level_prop->spawn.z = value;
-	if (strcmp(item, "H") == 0) level_prop->spawn.h = value*360/256;
-	if (strcmp(item, "P") == 0) level_prop->spawn.v = value*360/256;
+	if (strcmp(item, "H") == 0) level_prop->spawn.h = value;
+	if (strcmp(item, "P") == 0) level_prop->spawn.v = value;
     } else if (strcmp(section, "Sky") == 0) {
 	int c = -1;
 	if (strcmp(item, "R") == 0) c = 0;

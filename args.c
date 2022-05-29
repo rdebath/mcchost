@@ -165,16 +165,16 @@ process_args(int argc, char **argv)
     if (disable_restart && !server_runonce)
 	fprintf(stderr, "WARNING: Restart disabled due to relative path\n");
 
+    struct timeval now;
+    gettimeofday(&now, 0);
+    srandom(now.tv_sec ^ (now.tv_usec*4294U));
+
     if (enable_heartbeat_poll && server.secret[0] == 0) {
-	// A pretty trivial semi-random code, maybe 20bits of randomness.
-	struct timeval now;
+	// A pretty trivial semi-random code, maybe 20-30bits of randomness.
 	static char base62[] =
 	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	gettimeofday(&now, 0);
-	srandom(now.tv_sec ^ (now.tv_usec*1000));
-	for(int i=0; i<16; i++) {
+	for(int i=0; i<16; i++)
 	    server.secret[i] = base62[((unsigned)random())%62];
-	}
 	server.secret[16] = 0;
 	fprintf(stderr, "Generated server secret %s\n", server.secret);
     }

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "sendpacket.h"
 
@@ -51,6 +52,24 @@ nb_int(uint8_t **ptr, int v)
     *ptr = p;
 }
 
+static inline void
+nb_block_t(uint8_t **ptr, block_t block)
+{
+    if (!extn_extendblockno)
+	*(*ptr)++ = (block > 255)?0:block;
+    else
+        nb_short(ptr, block);
+}
+
+static inline void
+nb_texid(uint8_t **ptr, int texid)
+{
+    if (!extn_extendtexno)
+	*(*ptr)++ = texid;	// MOD256 by dfn
+    else
+        nb_short(ptr, texid);
+}
+
 void
 send_server_id_pkt(char * servername, char * servermotd, int user_type)
 {
@@ -74,12 +93,14 @@ send_ping_pkt()
 }
 
 void
-send_lvlinit_pkt()
+send_lvlinit_pkt(int level_length)
 {
     // extn_fastmap
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_LVLINIT;
+    if (extn_fastmap)
+	nb_int(&p, level_length);
     write_to_remote(packetbuf, p-packetbuf);
 }
 
@@ -121,7 +142,8 @@ send_setblock_pkt(int x, int y, int z, int block)
     nb_short(&p, x);
     nb_short(&p, y);
     nb_short(&p, z);
-    *p++ = block_convert(block);
+    block = block_convert(block);
+    nb_block_t(&p, block);
     write_to_remote(packetbuf, p-packetbuf);
 }
 
@@ -301,7 +323,7 @@ send_holdthis_pkt(block_t blk, int lock)
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_HELDBLOCK;
-    *p++ = block_convert(blk);
+    nb_block_t(&p, block_convert(blk));
     *p++ = !!lock;
     write_to_remote(packetbuf, p-packetbuf);
 }
@@ -355,6 +377,87 @@ send_weather_pkt(int weather_id)
     uint8_t *p = packetbuf;
     *p++ = PKID_WEATHER;
     *p++ = weather_id;
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_removeblockdef_pkt(block_t blkno)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_BLOCKUNDEF;
+    nb_block_t(&p, blkno);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_defineblock_pkt(block_t blkno, blockdef_t *def)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    int use_v0 = 0;
+
+    if (def->shape == 0) // Sprites are only available in PKID_BLOCKDEF
+	use_v0 = 1;
+
+    // ? if(side_text are same and minXZY == 0 and maxXZ == 16 && maxY in 2..16)
+
+    if (use_v0)
+	*p++ = PKID_BLOCKDEF;
+    else
+	*p++ = PKID_BLOCKDEF2;
+    nb_block_t(&p, blkno);
+    p += nb_string_write(p, def->name.c);
+    *p++ = def->collide;
+    {
+	// Ugh: speed = 2 ** ((byteval-128)/64)
+	uint8_t conv_speed = 128;
+	double val = def->speed/1000.0;
+	if (val < 0.2) val = 0.2;	// Min is 0.25
+	if (val > 4) val = 4;		// Max is 3.95
+	val = round(64 * log(val) / log(2) + 128);
+	if (val >= 255) conv_speed = 255;
+	else if (val <= 0) conv_speed = 0;
+	else conv_speed = (uint8_t)val;
+	*p++ = conv_speed;
+    }
+
+    // Textures Packet order: Top, Left, Right, Front, Back, Bottom
+    nb_texid(&p, def->textures[0]);
+    if (use_v0) {
+	// Use "right" one ... Huh?
+	nb_texid(&p, def->textures[2]);
+    } else {
+	nb_texid(&p, def->textures[1]);
+	nb_texid(&p, def->textures[2]);
+	nb_texid(&p, def->textures[3]);
+	nb_texid(&p, def->textures[4]);
+    }
+    nb_texid(&p, def->textures[5]);
+    *p++ = !!def->transmits_light;	// MCG make bool
+    *p++ = def->walksound;
+    *p++ = !!def->fullbright;		// MCG make bool
+    if (use_v0) {
+	*p++ = def->shape;
+    } else {
+	for(int i=0; i<6; i++)
+	    *p++ = def->coords[i];
+    }
+    *p++ = def->draw;
+    for(int i=0; i<4; i++)
+	*p++ = def->fog[i];
+
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_inventory_order_pkt(block_t order, block_t block)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_INVORDER;
+    nb_block_t(&p, block);	// CC is reverse of documented order!
+    nb_block_t(&p, order);
     write_to_remote(packetbuf, p-packetbuf);
 }
 

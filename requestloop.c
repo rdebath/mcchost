@@ -223,7 +223,10 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt.coord.y = IntBE16(p); p+=2;
 	    pkt.coord.z = IntBE16(p); p+=2;
 	    pkt.mode = *p++;
-	    pkt.heldblock = *(uint8_t*)p++;
+	    if (extn_extendblockno) {
+		pkt.heldblock = IntBE16(p); p+=2;
+	    } else
+		pkt.heldblock = *(uint8_t*)p++;
 
 	    pkt.block = pkt.mode?pkt.heldblock:Block_Air;
 
@@ -239,7 +242,10 @@ process_client_message(int cmd, char * pktbuf)
 	    char * p = pktbuf+1;
 	    pkt_player_posn pkt;
 	    if (extn_heldblock) {
-		pkt.held_block = (uint8_t)(*p++);
+		if (extn_extendblockno) {
+		    pkt.held_block = IntBE16(p); p+=2;
+		} else
+		    pkt.held_block = (uint8_t)(*p++);
 	    } else
 		pkt.player_id = (uint8_t)(*p++);
 	    pkt.pos.x = IntBE16(p); p+=2;

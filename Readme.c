@@ -19,18 +19,17 @@ See "/help todo" for notes.
 /*HELP todo
  +) Command that sets level properties using ini file loader. (inprogress)
     -- List of options.
-    -- Unsafe fields; size.x,size.y,size.z
-    -- automatic refresh.
 
  +) Command line option to restart server and unload levels.
     -- So we know this version will run! Find pid by port no.
     -- SIGALRM: Command line routine to "unload" level file
 
  +) Multiple Levels. (/newlvl, /goto, /main, /maps) (inprogress)
- +) Sort map names!
- +) /goto + ... goto my map, bypass map existence check. (/resize?)
+ +) /goto + ... goto my map, bypass map existence check. 
+ +) /resize
  +) /restore & /museum
  +) newlvl, create ini file.
+ +) Import, download *.cw file from web.
 
  +) Block/User history records.
     -- Combined history needs user id numbers --> user file/table.
@@ -64,6 +63,7 @@ Features:
 All files in subdirectories.
     system.ini  --> move?
     model.cw    --> move?
+    *.ini --> ?
     map/${level}.cw
     system/...
     level/${level}.*

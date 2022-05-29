@@ -18,6 +18,7 @@ block_t cpe_conversion[] = {
 };
 
 static uint32_t metadata_generation = 0;
+static block_t max_defined_block = 0;
 
 // Convert from Map block numbers to ones the client will understand.
 block_t
@@ -44,8 +45,8 @@ send_map_file()
     // Send_system_ident()
     // Send_hack_control()
 
-    // Send_block_definitions()
-    // Send_inventory_order()
+    send_block_definitions();
+    send_inventory_order();
 
     set_last_block_queue_id(); // Send updates from now.
     send_block_array();
@@ -85,86 +86,111 @@ send_metadata()
 void
 send_block_array()
 {
-    int zrv = 0;
     int blocks_buffered = 0;
+    uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
     block_t conv_blk[BLOCKMAX];
 
     for(block_t b = 0; b<BLOCKMAX; b++)
 	conv_blk[b] = block_convert(b);
 
-    send_lvlinit_pkt();
+    send_lvlinit_pkt(level_len);
 
-    uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-    unsigned char blockbuffer[65536];
-    blockbuffer[0] = (level_len>>24);
-    blockbuffer[1] = (level_len>>16);
-    blockbuffer[2] = (level_len>>8);
-    blockbuffer[3] = (level_len&0xFF);
-
-    z_stream strm;
-    strm.zalloc = Z_NULL;
-    strm.zfree  = Z_NULL;
-    strm.opaque = Z_NULL;
-    zrv = deflateInit2 (&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
-                             MAX_WBITS | 16, 8,
-                             Z_DEFAULT_STRATEGY);
-    if (zrv != Z_OK) {
-	char buf[256];
-	sprintf(buf, "ZLib:deflateInit2() failed RV=%d.\n", zrv);
-	fatal(buf);
-    }
-
-    strm.next_in = blockbuffer;
-    strm.avail_in = 4;
-
-    uintptr_t level_blocks_used = 0;
-    unsigned char zblockbuffer[1024];
-    int percent = 0;
     uintptr_t blocks_sent = 0;
+    int need_himap = 0;
 
-    strm.avail_out = sizeof(zblockbuffer);
-    strm.next_out = zblockbuffer;
+    for(int part = 0; part<2; part++)
+    {
+	unsigned char blockbuffer[65536];
 
-    do {
-	if (strm.avail_in == 0 && level_blocks_used < level_len) {
-	    // copy some bytes from level_blocks
-	    strm.next_in = blockbuffer;
-	    strm.avail_in = 0;
-
-	    for(int i=0; i<sizeof(blockbuffer) && level_blocks_used < level_len; i++)
-	    {
-		block_t b = level_blocks[level_blocks_used];
-		if (b<BLOCKMAX)
-		    blockbuffer[i] = conv_blk[b];
-		else
-		    blockbuffer[i] = block_convert(level_blocks[level_blocks_used]);
-		level_blocks_used += 1;
-		strm.avail_in += 1;
-	    }
+	if (!extn_fastmap) {
+	    blockbuffer[0] = (level_len>>24);
+	    blockbuffer[1] = (level_len>>16);
+	    blockbuffer[2] = (level_len>>8);
+	    blockbuffer[3] = (level_len&0xFF);
 	}
 
-        zrv = deflate(&strm, strm.avail_in != 0?Z_NO_FLUSH:Z_FINISH);
-	if (zrv != Z_OK && zrv != Z_STREAM_END && zrv != Z_BUF_ERROR) {
+	int zrv = 0;
+	z_stream strm = {0};
+	strm.zalloc = Z_NULL;
+	strm.zfree  = Z_NULL;
+	strm.opaque = Z_NULL;
+	if (extn_fastmap)
+	    zrv = deflateInit2 (&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+				 -MAX_WBITS, 8,
+				 Z_DEFAULT_STRATEGY);
+	else
+	    zrv = deflateInit2 (&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+				 MAX_WBITS | 16, 8,
+				 Z_DEFAULT_STRATEGY);
+	if (zrv != Z_OK) {
 	    char buf[256];
-	    sprintf(buf, "ZLib:deflate() failed RV=%d.\n", zrv);
+	    sprintf(buf, "ZLib:deflateInit2() failed RV=%d.\n", zrv);
 	    fatal(buf);
 	}
 
-	if (strm.avail_out == 0 || (zrv == Z_STREAM_END && sizeof(zblockbuffer) != strm.avail_out)) {
-	    send_lvldata_pkt(zblockbuffer, sizeof(zblockbuffer)-strm.avail_out, percent);
-	    blocks_sent += 1;
-	    strm.avail_out = sizeof(zblockbuffer);
-	    strm.next_out = zblockbuffer;
-	    percent = (int64_t)level_blocks_used * 100 / level_len;
+	strm.next_in = blockbuffer;
+	strm.avail_in = extn_fastmap?0:4;
 
-	    blocks_buffered ++;
-	    if (blocks_buffered > 64)
-		flush_to_remote();
-	}
+	uintptr_t level_blocks_used = 0;
+	unsigned char zblockbuffer[1024];
+	int percent = part;
 
-    } while(zrv != Z_STREAM_END);
+	strm.avail_out = sizeof(zblockbuffer);
+	strm.next_out = zblockbuffer;
 
-    deflateEnd(&strm);
+	do {
+	    if (strm.avail_in == 0 && level_blocks_used < level_len) {
+		// copy some bytes from level_blocks
+		strm.next_in = blockbuffer;
+		strm.avail_in = 0;
+
+		for(int i=0; i<sizeof(blockbuffer) && level_blocks_used < level_len; i++)
+		{
+		    block_t b = level_blocks[level_blocks_used];
+		    if (b<BLOCKMAX)
+			b = conv_blk[b];
+		    else
+			b = block_convert(level_blocks[level_blocks_used]);
+
+		    if (b>255 && extn_extendblockno) need_himap = 1;
+		    if (part == 0)
+			blockbuffer[i] = b;
+		    else if (b<768)
+			blockbuffer[i] = (b>>8);
+		    else
+			blockbuffer[i] = 0;
+
+		    level_blocks_used += 1;
+		    strm.avail_in += 1;
+		}
+	    }
+
+	    zrv = deflate(&strm, strm.avail_in != 0?Z_NO_FLUSH:Z_FINISH);
+	    if (zrv != Z_OK && zrv != Z_STREAM_END && zrv != Z_BUF_ERROR) {
+		char buf[256];
+		sprintf(buf, "ZLib:deflate() failed RV=%d.\n", zrv);
+		fatal(buf);
+	    }
+
+	    if (strm.avail_out == 0 || (zrv == Z_STREAM_END && sizeof(zblockbuffer) != strm.avail_out)) {
+		send_lvldata_pkt(zblockbuffer, sizeof(zblockbuffer)-strm.avail_out, percent);
+		blocks_sent += 1;
+		strm.avail_out = sizeof(zblockbuffer);
+		strm.next_out = zblockbuffer;
+		if (!extn_extendblockno)
+		    percent = (int64_t)level_blocks_used * 100 / level_len;
+
+		blocks_buffered ++;
+		if (blocks_buffered > 64)
+		    flush_to_remote();
+	    }
+
+	} while(zrv != Z_STREAM_END);
+
+	deflateEnd(&strm);
+
+	if (!need_himap || !extn_extendblockno) break;
+    }
 
     send_lvldone_pkt(level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
 
@@ -226,4 +252,51 @@ send_clickdistance()
     if (!extn_clickdistance) return;
 
     send_clickdistance_pkt(level_prop->click_distance > 0? level_prop->click_distance:160);
+}
+
+void
+send_block_definitions()
+{
+    if (!extn_blockdefn || !extn_blockdefnext) return;
+
+    block_t newmax = 0;
+    for(block_t b = 0; b<=max_blockno_to_send; b++)
+    {
+	if (!level_prop->blockdef[b].defined) {
+	    if (b<max_defined_block)
+		send_removeblockdef_pkt(b);
+	} else {
+	    newmax = b+1;
+	    blockdef_t def = level_prop->blockdef[b];
+	    send_defineblock_pkt(b, &def);
+	}
+    }
+    max_defined_block = newmax;
+}
+
+void
+send_inventory_order()
+{
+    if (!extn_inventory_order) return;
+
+    int inv_block[BLOCKMAX] = {0};
+    block_t b;
+    for(b=0; b <= max_blockno_to_send && b<BLOCKMAX; b++) {
+	int inv = b;
+	if (!level_prop->blockdef[b].defined) {
+	    if (b >= 66) continue;
+	} else
+	    inv = level_prop->blockdef[b].inventory_order;
+
+	if (inv == (block_t)-1) inv = b;
+	if (inv <= 0 || inv > max_blockno_to_send) {
+	    send_inventory_order_pkt(0, b);
+	    continue;
+	}
+	inv_block[inv] = b;
+    }
+
+    for(int inv = 0; inv < max_blockno_to_send; inv++)
+	if (inv_block[inv] != 0)
+	    send_inventory_order_pkt(inv, inv_block[inv]);
 }

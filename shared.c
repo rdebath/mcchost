@@ -193,6 +193,12 @@ open_level_files(char * levelname, int direct)
         if (open_blocks(levelname) < 0)
 	    goto open_failed;
 
+    if (level_prop->last_map_download_size <= 0) {
+	level_prop->last_map_download_size = level_prop->total_blocks / 999;
+	if (level_prop->last_map_download_size < 16384)
+	    level_prop->last_map_download_size = 16384;
+    }
+
     create_block_queue(levelname);
     if (!level_block_queue)
 	goto open_failed;
@@ -336,7 +342,8 @@ create_block_queue(char * levelname)
 	queue_count -= 8;
     }
 
-    if (file_queue_count > queue_count) queue_count = file_queue_count;
+    // If it's sort of close, don't change it.
+    if (file_queue_count > queue_count/2) queue_count = file_queue_count;
 
     stop_block_queue();
 

@@ -12,9 +12,11 @@
 #include "loadsave.h"
 #include "inline.h"
 
-/*HELP goto
+/*HELP goto,g
 &T/goto [levelname]
-Switch your current level
+Switch your current level, level name may be a partial match
+to the full name and &T/goto +&S takes you to a personal level.
+Use &T/maps&S to list them.
 */
 /*HELP main
 &T/main
@@ -42,22 +44,19 @@ cmd_goto(UNUSED char * cmd, char * arg)
     if (!arg) { cmd_help(0,"goto"); return; }
 
     fix_fname(fixedname, sizeof(fixedname), arg);
+    if (strcmp(arg, "+") == 0) {
+	snprintf(fixedname, sizeof(fixedname), "%.60s+", user_id);
+    } else {
+	snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+	if (access(buf2, F_OK) != 0) {
+	    char * newfixed = find_file_match(fixedname, arg);
 
-    snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
-    if (access(buf2, F_OK) != 0) {
-	char * newfixed = find_file_match(fixedname, arg);
-
-	if (newfixed == 0) return;
-	if (0) {
-	    // TODO ??
-	    snprintf(buf2, sizeof(buf2), "map/%s.ini", fixedname);
-	    if (access(buf2, F_OK) != 0) {
-		printf_chat("&SNo levels match \"%s\"", arg);
-		return;
+	    if (newfixed != 0) {
+		snprintf(fixedname, sizeof(fixedname), "%s", newfixed);
+		free(newfixed);
 	    }
+	    else return;
 	}
-	snprintf(fixedname, sizeof(fixedname), "%s", newfixed);
-	free(newfixed);
     }
 
     unfix_fname(levelname, sizeof(levelname), fixedname);

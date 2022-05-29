@@ -45,8 +45,12 @@
 #define PKID_HELDBLOCK	0x14
 #define PKID_MAPCOLOUR	0x19
 #define PKID_WEATHER	0x1f
+#define PKID_BLOCKDEF	0x23
+#define PKID_BLOCKUNDEF	0x24
+#define PKID_BLOCKDEF2	0x25
 #define PKID_TEXURL	0x28
 #define PKID_MAPPROP	0x29
+#define PKID_INVORDER	0x2c
 
 /* These are the structures for received packets after conversion from
  * the line format.
