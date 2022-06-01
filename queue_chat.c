@@ -25,9 +25,6 @@ struct chat_entry_t {
 }
 #endif
 
-//volatile chat_queue_t *level_chat_queue = 0;
-//intptr_t level_chat_queue_len = 0;
-
 static int last_id = -1;
 static uint32_t last_generation;
 
@@ -70,7 +67,7 @@ wipe_last_chat_queue_id()
 }
 
 void
-send_queued_chats()
+send_queued_chats(int flush)
 {
     if (last_id < 0) return; // Hmmm.
 
@@ -90,13 +87,13 @@ send_queued_chats()
 		// Skip everything and try again next tick.
 		unlock_chat_shared();
 		set_last_chat_queue_id();
-		return;
+		break;
 	    }
 	}
 	if (last_id == level_chat_queue->curr_offset) {
 	    // Nothing more to send.
 	    unlock_chat_shared();
-	    return;
+	    break;
 	}
 	upd = level_chat_queue->updates[last_id++];
 	if (last_id == level_chat_queue->queue_len) {
@@ -107,6 +104,9 @@ send_queued_chats()
 
 	send_msg_pkt_filtered(upd.msg.msg_flag, upd.msg.message);
     }
+
+    if (flush)
+	flush_to_remote();
 }
 
 /* Sends a message packet, filtering the CP437 to ASCII if required */

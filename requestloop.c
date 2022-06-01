@@ -171,7 +171,7 @@ on_select_timeout()
 
     check_user();
     check_metadata_update();
-    send_queued_chats();
+    send_queued_chats(0);
     send_queued_blocks();
 }
 
@@ -303,8 +303,8 @@ process_client_message(int cmd, char * pktbuf)
 	{
 	    char * p = pktbuf+1;
 	    int version = *p++;
-	    if (version > 0 && max_blockno_to_send < 65)
-		max_blockno_to_send = 65;
+	    if (version > 0 && client_block_limit < Block_CPE)
+		client_block_limit = Block_CPE;
 
 	    cpe_pending |= 2;
 	    if (cpe_pending == 3)

@@ -245,11 +245,12 @@ stop_user()
     }
 }
 
-void
-delete_session_id(int pid)
+int
+delete_session_id(int pid, char * killed_user, int len)
 {
+    int cleaned = 0;
     open_client_list();
-    if (!shdat.client) return;
+    if (!shdat.client) return 0;
     for(int i=0; i<MAX_USER; i++)
     {
 	int wipe_this = 0;
@@ -264,6 +265,9 @@ delete_session_id(int pid)
 
 	if (wipe_this)
 	{
+	    cleaned ++;
+	    if (killed_user)
+		snprintf(killed_user, len, "%s", shdat.client->user[i].name.c);
 	    fprintf(stderr, "Wiped session %d (%.32s)\n", i, shdat.client->user[i].name.c);
 	    shdat.client->generation++;
 	    shdat.client->user[i].session_id = 0;
@@ -272,6 +276,7 @@ delete_session_id(int pid)
 	}
     }
     stop_client_list();
+    return cleaned;
 }
 
 int

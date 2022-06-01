@@ -121,7 +121,8 @@ cmd_load(UNUSED char * cmd, char * arg)
 	printf_chat("&WUsage: /load filename");
     else {
 	char buf[200+8], *s, *d;
-	for(s=arg, d=buf; *s && d<buf+sizeof(buf)-8; s++) {
+	d = buf; *d++ = '_';
+	for(s=arg; *s && d<buf+sizeof(buf)-8; s++) {
 	    if ((*s>='A' && *s<='Z') || (*s>='a' && *s<='z') ||
 		(*s>='0' && *s<='9') || *s=='_')
 		*d++ = *s;
@@ -151,11 +152,16 @@ cmd_save(UNUSED char * cmd, char * arg)
 	char fixedname[200], buf2[256];
 	fix_fname(fixedname, sizeof(fixedname), arg);
 
-	snprintf(buf2, sizeof(buf2), "backup/%s.cw", fixedname);
-	save_map_to_file(buf2, 0);
-	snprintf(buf2, sizeof(buf2), "backup/%s.ini", fixedname);
+	snprintf(buf2, sizeof(buf2), "_%s.ini", fixedname);
 	save_ini_file(level_ini_fields, buf2);
-	printf_chat("&SFile saved");
+
+	printf_chat("&SConfig saved to %s", buf2);
+	send_queued_chats(1);
+
+	snprintf(buf2, sizeof(buf2), "backup/sav.%s.cw", fixedname);
+	save_map_to_file(buf2, 0);
+
+	printf_chat("&SLevel saved to %s", buf2);
     }
     return;
 }

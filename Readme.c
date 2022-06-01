@@ -17,6 +17,14 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) /mode command.
+ +) /z and /m commands with setblock capture.
+
+ +) Colour definitions for &S,&W etc.
+ +) Level limited chat -- chatroom.
+
+ +) Create player detail structure/namespace.
+
  +) Command that sets level properties using ini file loader. (inprogress)
     -- List of options.
 
@@ -25,10 +33,10 @@ See "/help todo" for notes.
     -- SIGALRM: Command line routine to "unload" level file
 
  +) Multiple Levels. (/newlvl, /goto, /main, /maps) (inprogress)
- +) /goto + ... goto my map, bypass map existence check. 
- +) /resize
+ +) /goto + ... goto my map, bypass map existence check.
+ +) /resize, /copylvl, /deletelvl, /save(backup)
  +) /restore & /museum
- +) newlvl, create ini file.
+ +) /newlvl, create cw file in ini file format.
  +) Import, download *.cw file from web.
 
  +) Block/User history records.
@@ -37,8 +45,8 @@ See "/help todo" for notes.
  +) NAME: (*) MCCHost
 
  +) User prefix/suffix for multiple heartbeat servers.
- +) Backup while physics running --> Copylvl then freeze physics.
-    Copylvl can more easily do patchups.
+ +) Backup while physics running --> Copy level.* then freeze physics.
+    Copy can more easily do patchups.
 
  +) /spawn command
  +) /tp command
@@ -52,9 +60,6 @@ See "/help todo" for notes.
 
  +) Run external command with stdout/err sent to client (</dev/null)
     -- Map gen?
-
- +) Maybe embed called commands: curl and gdb(stacktrace)
- +) Maybe exec($0, ...) on accept()
 
 Features:
     -- CW file also contains pending physics operations.

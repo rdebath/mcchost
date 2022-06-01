@@ -64,7 +64,7 @@ int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
 int cpe_pending = 0;	// Currently running ExtInfo process.
 int cpe_extn_remaining = 0;
 
-block_t max_blockno_to_send = 49;
+block_t client_block_limit = Block_CP;
 
 char * proc_args_mem = 0;
 int    proc_args_len = 0;
@@ -90,7 +90,7 @@ main(int argc, char **argv)
 
     init_dirs();
 
-    delete_session_id(0);
+    delete_session_id(0, 0, 0);
 
     if (start_tcp_server) {
 	memset(proc_args_mem, 0, proc_args_len);

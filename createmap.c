@@ -9,14 +9,8 @@
  * This populates a default map file properties.
 
 TODO:
-    File source order -- Only one
-	map/levelname.cw
-	model.cw
-	model.ini
-
     Default size from blocks file (move map_len_t right to end of file)
 	--> only works if no blockdefs
-
  */
 
 void
@@ -138,7 +132,7 @@ init_map_null()
 
     for (int i = 0; i<BLOCKMAX; i++) {
 	level_prop->blockdef[i].inventory_order = i;
-	level_prop->blockdef[i].fallback = i<768?i:22;
+	level_prop->blockdef[i].fallback = i<CPELIMIT?i:22;
     }
 
     for (int i = 0; i<16; i++)

@@ -7,6 +7,10 @@
 /*
  * TODO: Should unknown sections give warnings?
  * TODO: Comment preserving ini file save.
+ *
+ * Server.MaxPlayers
+ * Server.WhiteList
+ * Server.Antispam
  */
 
 #if INTERFACE
@@ -25,7 +29,7 @@ struct ini_state_t {
     char * curr_section;
 };
 
-#define CMD_SETVAR  {N"setvar", &cmd_setvar}
+#define CMD_SETVAR  {N"setvar", &cmd_setvar}, {N"set", &cmd_setvar}
 
 #endif
 
@@ -147,13 +151,13 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	if (st->all) {
 	    if (!level_prop->blockdef[bn].defined) { bn++; continue; }
-	    sprintf(sectionbuf, "level.blockdef.%d", bn);
+	    sprintf(sectionbuf, "block.%d", bn);
 	    section = sectionbuf;
-	} else if (strncmp(st->curr_section, "level.blockdef.", 15) == 0) {
-	    bn = atoi(st->curr_section+15);
-	    if (!bn && st->curr_section[15] == '0') break;
+	} else if (strncmp(st->curr_section, "block.", 6) == 0) {
+	    bn = atoi(st->curr_section+6);
+	    if (!bn && st->curr_section[6] == '0') break;
 	    if (bn < 0 || bn >= BLOCKMAX) break;
-	    sprintf(sectionbuf, "level.blockdef.%d", bn);
+	    sprintf(sectionbuf, "block.%d", bn);
 	    section = sectionbuf;
 	    level_prop->blockdef[bn].defined = 1;
 	} else
@@ -184,6 +188,11 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("max.x", level_prop->blockdef[bn].coords[3]);
 	INI_INTVAL("max.y", level_prop->blockdef[bn].coords[4]);
 	INI_INTVAL("max.z", level_prop->blockdef[bn].coords[5]);
+
+	INI_BLKVAL("stackblock", level_prop->blockdef[bn].stack_block);
+	INI_BLKVAL("grassblock", level_prop->blockdef[bn].grass_block);
+	INI_BLKVAL("dirtblock", level_prop->blockdef[bn].dirt_block);
+	INI_BLKVAL("order", level_prop->blockdef[bn].inventory_order);
 
 	bn++;
     } while(st->all && bn < BLOCKMAX);
@@ -463,7 +472,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 #if INTERFACE
 #define INI_STRARRAY(_field, _var) \
         fld = _field; \
-        if (st->all || strcmp(fieldname, fld) == 0) { \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
                 snprintf((_var), sizeof(_var), "%s", *fieldvalue); \
@@ -473,7 +482,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 
 #define INI_STR_PTR(_field, _var, _len) \
         fld = _field; \
-        if (st->all || strcmp(fieldname, fld) == 0) { \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
                 snprintf((_var), (_len), "%s", *fieldvalue); \
@@ -483,7 +492,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 
 #define INI_STRARRAYCP437(_field, _var) \
         fld = _field; \
-        if (st->all || strcmp(fieldname, fld) == 0) { \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
                 ini_read_cp437((_var), sizeof(_var), *fieldvalue); \
@@ -493,7 +502,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 
 #define INI_NBTSTR(_field, _var) \
         fld = _field; \
-        if (st->all || strcmp(fieldname, fld) == 0) { \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
                 ini_read_nbtstr(&(_var), *fieldvalue); \
@@ -503,7 +512,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 
 #define INI_INTVAL(_field, _var) \
         fld = _field; \
-        if (st->all || strcmp(fieldname, fld) == 0) { \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
                 _var = atoi(*fieldvalue); \
@@ -513,7 +522,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 
 #define INI_BLKVAL(_field, _var) \
         fld = _field; \
-        if (st->all || strcmp(fieldname, fld) == 0) { \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
                 _var = atoi(*fieldvalue); \
@@ -523,7 +532,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 
 #define INI_INTHEX(_field, _var) \
         fld = _field; \
-        if (st->all || strcmp(fieldname, fld) == 0) { \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
                 _var = strtol(*fieldvalue, 0, 0); \
@@ -533,7 +542,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 
 #define INI_INTSCALE(_field, _var, _scale) \
         fld = _field; \
-        if (st->all || strcmp(fieldname, fld) == 0) { \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
                 _var = ini_read_int_scale(*fieldvalue, _scale); \
@@ -543,7 +552,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 
 #define INI_BOOLVAL(_field, _var) \
         fld = _field; \
-        if (st->all || strcmp(fieldname, fld) == 0) { \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
                 ini_read_bool(&(_var), *fieldvalue); \
@@ -554,9 +563,9 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 #endif
 
 
-/*HELP setvar
-&T/setvar section name value
-Sections are &Tlevel&S and &Tlevel.blockdef.&WN&S were &WN&S is the block definition number
+/*HELP setvar,set
+&T/set section name value
+Sections are &Tlevel&S and &Tblock.&WN&S were &WN&S is the block definition number
 
 */
 void
@@ -566,10 +575,15 @@ cmd_setvar(UNUSED char * cmd, char * arg)
     char * varname = strtok(0, " ");
     char * value = strtok(0, "");
 
-    if (section == 0 || varname == 0 || !client_ipv4_localhost) {
-	printf_chat("&WUsage");
-	return;
+    if (section == 0 || varname == 0)
+	return cmd_help(0, cmd);
+    if (!client_ipv4_localhost) {
+	char buf[128];
+	sprintf(buf, "%s+", user_id);
+	if (strcmp(current_level_name, buf) != 0)
+	    return printf_chat("&WPermission denied, only available on level %s", buf);
     }
+
     if (value == 0) value = "";
 
     fprintf(stderr, "%s: [%s]%s= %s\n", user_id, section, varname, value);
@@ -579,6 +593,8 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 
     if (strcasecmp(section, "server") == 0) {
 	if (!system_ini_fields(st, varname, &value)) {
+	    if (!client_ipv4_localhost)
+		return printf_chat("&WPermission denied, need to be localhost.");
 	    printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
 	    return;
 	}

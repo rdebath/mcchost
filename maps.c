@@ -25,12 +25,12 @@ and &T/maps all&S to show all maps.
 #endif
 
 static int
-pstrcmp(const void *p1, const void *p2)
+pstrcasecmp(const void *p1, const void *p2)
 {
     char **e1 = (char * *)p1;
     char **e2 = (char * *)p2;
 
-    return strcmp(*e1, *e2);
+    return strcasecmp(*e1, *e2);
 }
 
 void
@@ -86,7 +86,7 @@ cmd_maps(UNUSED char * cmd, char * arg)
     }
     closedir(directory);
 
-    qsort(maplist, maplist_cnt, sizeof*maplist, pstrcmp);
+    qsort(maplist, maplist_cnt, sizeof*maplist, pstrcasecmp);
 
     char line_buf[NB_SLEN] = {0};
     int c = 0, end = maplist_cnt;

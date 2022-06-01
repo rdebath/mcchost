@@ -56,7 +56,7 @@ static inline void
 nb_block_t(uint8_t **ptr, block_t block)
 {
     if (!extn_extendblockno)
-	*(*ptr)++ = (block > 255)?0:block;
+	*(*ptr)++ = (block < CPELIMITLO) ? block:0;
     else
         nb_short(ptr, block);
 }

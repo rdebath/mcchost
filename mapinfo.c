@@ -195,7 +195,9 @@ struct blockdef_t {
 #define Block_Crate 64
 #define Block_StoneBrick 65
 
-#define Block_CPE 50
-#define Block_Cust 66
+#define Block_CP 50
+#define Block_CPE 66
+#define CPELIMITLO 256
+#define CPELIMIT 768
 
 #endif

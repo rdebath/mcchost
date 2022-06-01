@@ -39,7 +39,7 @@ save_map_to_file(char * fn, int background)
 {
     if (!fn || *fn == 0) return -1;
 
-    gzFile savefile = gzopen(fn, "w");
+    gzFile savefile = gzopen(fn, "w9");
 
     if (!savefile) {
 	if (!background)
@@ -78,6 +78,12 @@ save_map_to_file(char * fn, int background)
     bc_ent_int(savefile, "P", level_prop->spawn.v);
     bc_end(savefile);
 
+    if (level_prop->click_distance >= 0) {
+	bc_compound(savefile, "ClickDistance");
+	bc_ent_int(savefile, "Distance", level_prop->click_distance);
+	bc_end(savefile);
+    }
+
     bc_compound(savefile, "EnvWeatherType");
     bc_ent_int8(savefile, "WeatherType", level_prop->weather);
     bc_end(savefile);
@@ -99,6 +105,24 @@ save_map_to_file(char * fn, int background)
     bc_ent_string(savefile, "TextureURL", b.c, 0);
     bc_end(savefile);
 
+    bc_compound(savefile, "EnvMapAspect");
+    bc_ent_int16(savefile, "SideOffset", level_prop->side_offset);
+    bc_ent_int16(savefile, "CloudsHeight", level_prop->clouds_height);
+
+    bc_ent_int(savefile, "MapProperty0", level_prop->side_block);
+    bc_ent_int(savefile, "MapProperty1", level_prop->edge_block);
+    bc_ent_int(savefile, "MapProperty2", level_prop->side_level);
+    bc_ent_int(savefile, "MapProperty3", level_prop->clouds_height);
+    bc_ent_int(savefile, "MapProperty4", level_prop->max_fog);
+    bc_ent_int(savefile, "MapProperty5", level_prop->clouds_speed);
+    bc_ent_int(savefile, "MapProperty6", level_prop->weather_speed);
+    bc_ent_int(savefile, "MapProperty7", level_prop->weather_fade);
+    bc_ent_int(savefile, "MapProperty8", level_prop->exp_fog);
+    bc_ent_int(savefile, "MapProperty9", level_prop->side_offset);
+    bc_ent_int(savefile, "MapProperty10", level_prop->skybox_hor_speed);
+    bc_ent_int(savefile, "MapProperty11", level_prop->skybox_ver_speed);
+    bc_end(savefile);
+
     int bdopen = 0;
     for(int i=1; i<BLOCKMAX; i++)
 	if (level_prop->blockdef[i].defined) {
@@ -116,7 +140,7 @@ save_map_to_file(char * fn, int background)
 	if (level_prop->blockdef[i].defined)
 	{
 	    int ord = level_prop->blockdef[i].inventory_order;
-	    if (ord < 0) ord = 0;
+	    if (ord < 0 || ord == (block_t)-1) ord = 0;
 	    if (ord != i) {
 		if (!bdopen) {
 		    bc_compound(savefile, "InventoryOrder");
@@ -136,12 +160,6 @@ save_map_to_file(char * fn, int background)
     if (bdopen)
 	bc_end(savefile);
 
-    if (level_prop->click_distance >= 0) {
-	bc_compound(savefile, "ClickDistance");
-	bc_ent_int(savefile, "Distance", level_prop->click_distance);
-	bc_end(savefile);
-    }
-
     bc_end(savefile);
     bc_end(savefile);
 
@@ -152,7 +170,7 @@ save_map_to_file(char * fn, int background)
 	for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
 	    int b = level_blocks[i];
 	    // if (b>=BLOCKMAX) b = BLOCKMAX-1;
-	    if (b>=768) {flg2 = 1; b &= 0xFF; }
+	    if (b>=CPELIMIT) {flg2 = 1; b &= 0xFF; }
 	    gzputc(savefile, b & 0xFF);
 	    flg |= (b>0xFF);
 	}
@@ -164,7 +182,7 @@ save_map_to_file(char * fn, int background)
 	    for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
 		int b = level_blocks[i];
 		// if (b>=BLOCKMAX) b = BLOCKMAX-1;
-		if (b>=768) b &= 0xFF;
+		if (b>=CPELIMIT) b &= 0xFF;
 		gzputc(savefile, b>>8);
 	    }
 	}
@@ -178,7 +196,7 @@ save_map_to_file(char * fn, int background)
 	    for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
 		int b = level_blocks[i];
 		// if (b>=BLOCKMAX) b=BLOCKMAX-1;
-		if (b>=768)
+		if (b>=CPELIMIT)
 		    gzputc(savefile, b>>8);
 		else
 		    gzputc(savefile, 0);
@@ -410,7 +428,8 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
     }
 
     bc_ent_int16(ofd, "Fallback", blkdef->fallback);
-    bc_ent_int16(ofd, "InventoryOrder", blkdef->inventory_order);
+    if (blkdef->inventory_order != (block_t)-1)
+	bc_ent_int16(ofd, "InventoryOrder", blkdef->inventory_order);
 
     bc_ent_int8(ofd, "FireFlag", blkdef->fire_flag);
     bc_ent_int8(ofd, "DoorFlag", blkdef->door_flag);

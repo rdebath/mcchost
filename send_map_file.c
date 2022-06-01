@@ -8,7 +8,7 @@
 #include "send_map_file.h"
 
 #if INTERFACE
-#define block_convert(_bl) ((_bl)<=max_blockno_to_send?_bl:f_block_convert(_bl))
+#define block_convert(_bl) ((_bl)<client_block_limit?_bl:f_block_convert(_bl))
 #endif
 
 // CPE defined translations.
@@ -24,17 +24,17 @@ static block_t max_defined_block = 0;
 block_t
 f_block_convert(block_t in)
 {
-    if (in <= max_blockno_to_send) return in;
+    if (in < client_block_limit) return in;
     if (in >= BLOCKMAX) in = BLOCKMAX-1;
 
     if (level_prop->blockdef[in].defined
-	&& level_prop->blockdef[in].fallback < 66)
+	&& level_prop->blockdef[in].fallback < Block_CPE)
 	in = level_prop->blockdef[in].fallback;
 
-    if (in > max_blockno_to_send && in >= 50 && in < 66)
-	in = cpe_conversion[in-50];
+    if (in >= client_block_limit && in >= Block_CP && in < Block_CPE)
+	in = cpe_conversion[in-Block_CP];
 
-    return in > max_blockno_to_send ? Block_Bedrock : in;
+    return in >= client_block_limit ? Block_Bedrock : in;
 }
 
 void
@@ -260,7 +260,7 @@ send_block_definitions()
     if (!extn_blockdefn || !extn_blockdefnext) return;
 
     block_t newmax = 0;
-    for(block_t b = 0; b<=max_blockno_to_send; b++)
+    for(block_t b = 0; b<client_block_limit; b++)
     {
 	if (!level_prop->blockdef[b].defined) {
 	    if (b<max_defined_block)
@@ -281,22 +281,22 @@ send_inventory_order()
 
     int inv_block[BLOCKMAX] = {0};
     block_t b;
-    for(b=0; b <= max_blockno_to_send && b<BLOCKMAX; b++) {
+    for(b=0; b < client_block_limit && b<BLOCKMAX; b++) {
 	int inv = b;
 	if (!level_prop->blockdef[b].defined) {
-	    if (b >= 66) continue;
+	    if (b >= Block_CPE) continue;
 	} else
 	    inv = level_prop->blockdef[b].inventory_order;
 
 	if (inv == (block_t)-1) inv = b;
-	if (inv <= 0 || inv > max_blockno_to_send) {
+	if (inv <= 0 || inv >= client_block_limit) {
 	    send_inventory_order_pkt(0, b);
 	    continue;
 	}
 	inv_block[inv] = b;
     }
 
-    for(int inv = 0; inv < max_blockno_to_send; inv++)
+    for(int inv = 0; inv < client_block_limit; inv++)
 	if (inv_block[inv] != 0)
 	    send_inventory_order_pkt(inv, inv_block[inv]);
 }

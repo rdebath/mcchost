@@ -54,6 +54,9 @@ process_chat_message(int msg_flag, char * msg)
 	free(pending_chat);
 	pending_chat = 0; pending_chat_size = pending_chat_len = 0;
     }
+
+    // If someone spams they get it all back.
+    send_queued_chats(1);
 }
 
 void
@@ -177,9 +180,6 @@ post_chat(int where, char * chat, int chat_len)
 	else
 	    update_chat(&pkt);
     }
-
-    // If someone spams they get it all back.
-    send_queued_chats();
 }
 
 /* Printf to the chat a pretty long message normally to just me.

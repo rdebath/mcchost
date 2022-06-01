@@ -437,9 +437,10 @@ create_chat_queue()
 
     lock_chat_shared();
     if (    level_chat_queue->generation == 0 ||
+	    level_chat_queue->generation > 0x0FFFFFFF ||
 	    level_chat_queue->queue_len != queue_count ||
 	    level_chat_queue->curr_offset >= queue_count) {
-	level_chat_queue->generation += 2;
+	level_chat_queue->generation = 2;
 	level_chat_queue->curr_offset = 0;
 	level_chat_queue->queue_len = queue_count;
 	unlock_chat_shared();

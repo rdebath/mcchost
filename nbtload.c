@@ -421,7 +421,7 @@ change_int_value(char * section, char * item, long long value)
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {
 	    current_block = value;
-	    if (current_block >= 0 && current_block<66 && !level_prop->blockdef[current_block].defined) {
+	    if (current_block >= 0 && current_block<Block_CPE && !level_prop->blockdef[current_block].defined) {
 		level_prop->blockdef[current_block] = default_blocks[current_block];
 	    }
 

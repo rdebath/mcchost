@@ -98,10 +98,10 @@ process_extentry(pkt_extentry * pkt)
     }
 
     if (extn_blockdefn && extn_blockdefnext) {
-	if (max_blockno_to_send < 255)
-	    max_blockno_to_send = 255;
-	if (extn_extendblockno && max_blockno_to_send < 767)
-	    max_blockno_to_send = 767;
+	if (client_block_limit < CPELIMITLO)
+	    client_block_limit = CPELIMITLO;
+	if (extn_extendblockno && client_block_limit < CPELIMIT)
+	    client_block_limit = CPELIMIT;
     }
 
     // Note: most of these lengths are not used because the send_*_pkt

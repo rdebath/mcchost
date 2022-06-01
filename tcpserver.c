@@ -304,6 +304,10 @@ cleanup_zombies()
     // Clean up any zombies.
     int status = 0, pid;
     child_sig = 0;
+    char msgbuf[256];
+    char userid[64];
+    int died_badly = 0;
+
     while ((pid = waitpid(-1, &status, WNOHANG)) != 0)
     {
 	if (pid < 0) {
@@ -312,6 +316,8 @@ cleanup_zombies()
 	    perror("waitpid()");
 	    exit(1);
 	}
+	*userid = *msgbuf = 0;
+
 	if (pid == logger_pid) {
 	    // Whup! that's our stderr! Try to respawn it.
 	    fprintf_logfile("! Attempting to restart logger process");
@@ -320,10 +326,15 @@ cleanup_zombies()
 
 	// No complaints on clean exit
 	if (WIFEXITED(status)) {
-	    if (WEXITSTATUS(status))
+	    if (WEXITSTATUS(status)) {
 		fprintf_logfile("! Process %d had exit status %d",
 		    pid, WEXITSTATUS(status));
-	    continue;
+		snprintf(msgbuf, sizeof(msgbuf),
+		    "kicked by panic with exit status %d",
+		    WEXITSTATUS(status));
+	    }
+
+	    died_badly = delete_session_id(pid, userid, sizeof(userid));
 	}
 	if (WIFSIGNALED(status)) {
 	    fprintf_logfile("! Process %d was killed by signal %s (%d)%s",
@@ -332,7 +343,13 @@ cleanup_zombies()
 		WTERMSIG(status),
 		WCOREDUMP(status)?" (core dumped)":"");
 
-	    delete_session_id(pid);
+	    snprintf(msgbuf, sizeof(msgbuf),
+		"kicked by signal %s (%d)%s",
+		strsignal(WTERMSIG(status)),
+		WTERMSIG(status),
+		WCOREDUMP(status)?" (core dumped)":"");
+
+	    died_badly = delete_session_id(pid, userid, sizeof(userid));
 
 	    // If there was a core dump try to spit out something.
 	    if (WCOREDUMP(status)) {
@@ -353,6 +370,12 @@ cleanup_zombies()
 		else
 		    fprintf_logfile("! Skipped running /usr/bin/gdb; checking exe and core files failed.");
 	    }
+	}
+
+	if (died_badly && *userid && *msgbuf)
+	{
+	    printf_chat("@&W- &7%s: &W%s", userid, msgbuf);
+	    stop_chat_queue();
 	}
     }
 }
