@@ -31,6 +31,8 @@ command_t command_list[] =
     CMD_RELOAD,
     CMD_QUITS,
     CMD_SETVAR,
+    CMD_SHB,
+    CMD_ANNOUNCE,
 
     {.name = 0}
 };

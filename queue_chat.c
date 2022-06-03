@@ -102,7 +102,7 @@ send_queued_chats(int flush)
 	}
 	unlock_chat_shared();
 
-	send_msg_pkt_filtered(upd.msg.msg_flag, upd.msg.message);
+	send_msg_pkt_filtered(upd.msg.message_type, upd.msg.message);
     }
 
     if (flush)
@@ -114,7 +114,7 @@ void
 send_msg_pkt_filtered(int msg_flag, char * message)
 {
     if (extn_fullcp437)
-	send_message_pkt(msg_flag, message);
+	send_message_pkt(0, msg_flag, message);
     else
     {
 	char msgbuf[NB_SLEN];
@@ -128,6 +128,6 @@ send_msg_pkt_filtered(int msg_flag, char * message)
 		*d++ = '*';
 	}
 	*d++ = 0;
-	send_message_pkt(msg_flag, msgbuf);
+	send_message_pkt(0, msg_flag, msgbuf);
     }
 }

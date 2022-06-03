@@ -16,48 +16,72 @@ struct ext_list_t {
 
 #define N .name= /*STFU*/
 static struct ext_list_t extensions[] = {
-    { N"CustomBlocks",        1, &extn_customblocks },
+//  { N"EnvMapAppearance",    1  },				//Old
     { N"ClickDistance",       1, &extn_clickdistance },
+    { N"CustomBlocks",        1, &extn_customblocks },
     { N"HeldBlock",           1, &extn_heldblock },
-    { N"EmoteFix",            1  }, // Included in FullCP437
-    { N"FullCP437",           1, &extn_fullcp437 },
-    { N"LongerMessages",      1, &extn_longermessages },
-    { N"InstantMOTD",         1, &extn_instantmotd },
+//  { N"TextHotKey",          1  },				//ServerConf
+//  { N"ExtPlayerList",       2  },
     { N"EnvColors",           1, &extn_envcolours },
-    { N"EnvMapAspect",        1, &extn_envmapaspect },
+//**{ N"SelectionCuboid",     1  },				//MapConf
+//**{ N"BlockPermissions",    1  },				//UserMapConf
+//  { N"ChangeModel",         1  },				//UserBotConf
+//  { N"EnvMapAppearance",    2  },				//Old
     { N"EnvWeatherType",      1, &extn_weathertype },
+//  { N"HackControl",         1  },
+    { N"EmoteFix",            1  }, // Included in FullCP437
+    { N"MessageTypes",        1, &extn_messagetypes },
+    { N"LongerMessages",      1, &extn_longermessages },
+    { N"FullCP437",           1, &extn_fullcp437 },
     { N"BlockDefinitions",    1, &extn_blockdefn },
     { N"BlockDefinitionsExt", 2, &extn_blockdefnext },
-    { N"ExtendedBlocks",      1, &extn_extendblockno },
-    { N"ExtendedTextures",    1, &extn_extendtexno },
-    { N"FastMap",             1, &extn_fastmap },
+//  { N"TextColors",          1  },				//ServerConf
+//  { N"BulkBlockUpdate",     1  },
+    { N"EnvMapAspect",        1, &extn_envmapaspect },
+//  { N"PlayerClick",         1  },
+//  { N"EntityProperty",      1  },
+//  { N"ExtEntityPositions",  1  },
+//**{ N"TwoWayPing",          1  },
     { N"InventoryOrder",      1, &extn_inventory_order },
+    { N"InstantMOTD",         1, &extn_instantmotd },
+    { N"FastMap",             1, &extn_fastmap },
+    { N"ExtendedTextures",    1, &extn_extendtexno },
     { N"SetHotbar",           1, &extn_sethotbar },
-//  { N"SetSpawnpoint",       1, &extn_setspawnpoint },
+//  { N"SetSpawnpoint",       1, },
+//  { N"VelocityControl",     1, },
+//  { N"CustomParticles",     1, },				//Conf&Use
+//  { N"CustomModels",        1, },				//Server,MapConf
+//  { N"PluginMessages",      1, },
+
+    { N"ExtendedBlocks",      1, &extn_extendblockno },
+
     { N"EvilBastard" ,        1, &extn_evilbastard },
     {0}
 };
 #undef N
 
-int extn_customblocks = 0;
-int extn_clickdistance = 0;
-int extn_heldblock = 0;
-int extn_instantmotd = 0;
-int extn_envcolours = 0;
-int extn_envmapaspect = 0;
-int extn_weathertype = 0;
-int extn_sethotbar = 0;
-int extn_setspawnpoint = 0;
-int extn_evilbastard = 0;
-int extn_longermessages = 0;
-int extn_fullcp437 = 0;
-
 int extn_blockdefn = 0;
 int extn_blockdefnext = 0;
+int extn_clickdistance = 0;
+int extn_customblocks = 0;
+int extn_envcolours = 0;
+int extn_envmapaspect = 0;
+int extn_evilbastard = 0;
 int extn_extendblockno = 0;
 int extn_extendtexno = 0;
-int extn_inventory_order = 0;
 int extn_fastmap = 0; // CC Crashes with 10bit gzip maps.
+int extn_fullcp437 = 0;
+int extn_heldblock = 0;
+int extn_instantmotd = 0;
+int extn_inventory_order = 0;
+int extn_longermessages = 0;
+int extn_messagetypes = 0;
+int extn_sethotbar = 0;
+int extn_setspawnpoint = 0;
+int extn_weathertype = 0;
+
+int customblock_pkt_sent = 0;
+int customblock_enabled = 0;
 
 void
 send_ext_list()
@@ -70,8 +94,6 @@ send_ext_list()
 
     for(i = 0; extensions[i].version; i++)
 	send_extentry_pkt(extensions[i].name, extensions[i].version);
-
-    send_customblocks_pkt();
 }
 
 void
@@ -87,6 +109,11 @@ process_extentry(pkt_extentry * pkt)
 	extensions[i].enabled = 1;
 	if (extensions[i].enabled_flag)
 	    *extensions[i].enabled_flag = 1;
+    }
+
+    if (!customblock_pkt_sent && extn_customblocks) {
+	send_customblocks_pkt();
+	customblock_pkt_sent = 1;
     }
 
     if (cpe_pending && cpe_extn_remaining <= 0) {
@@ -132,7 +159,7 @@ process_extentry(pkt_extentry * pkt)
 	// SetInventoryOrder (0x2C)  Block ID    short     Server -> Client
 	msglen[PKID_INVORDER] = 5;
 	// SetHotbar (0x2D)          BlockID     short     Server -> Client
-//	msglen[PKID_HOTBAR] = 4;
+	msglen[PKID_HOTBAR] = 4;
 
 	if (extn_extendtexno) {
 	    msglen[PKID_BLOCKDEF] = 81 + 3;

@@ -135,7 +135,6 @@ send_lvldone_pkt(int x, int y, int z)
 void
 send_setblock_pkt(int x, int y, int z, int block)
 {
-    // extn_extendblocks
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_SRVBLOCK;
@@ -242,14 +241,18 @@ send_despawn_pkt(int player_id)
 }
 
 void
-send_message_pkt(int id, char * message)
+send_message_pkt(int player_id, int type, char * message)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_MESSAGE;
-    /* 0..127 prefix line with &f */
-    /* 128..255 prefix line with &e */
-    *p++ = id;
+    if (!extn_messagetypes) {
+	if (type != 0 && type != 100) return;
+	/* 0..127 prefix line with &f */
+	/* 128..255 prefix line with &e */
+	*p++ = player_id;
+    } else
+	*p++ = type;
     p += nb_string_write(p, message);
     write_to_remote(packetbuf, p-packetbuf);
 }
@@ -461,3 +464,14 @@ send_inventory_order_pkt(block_t order, block_t block)
     write_to_remote(packetbuf, p-packetbuf);
 }
 
+void
+send_sethotbar_pkt(int slot, int block)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_HOTBAR;
+    block = block_convert(block);
+    nb_block_t(&p, block);
+    *p++ = slot;
+    write_to_remote(packetbuf, p-packetbuf);
+}

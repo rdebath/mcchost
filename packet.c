@@ -1,3 +1,4 @@
+#include <stdint.h>
 
 #include "packet.h"
 
@@ -51,6 +52,7 @@
 #define PKID_TEXURL	0x28
 #define PKID_MAPPROP	0x29
 #define PKID_INVORDER	0x2c
+#define PKID_HOTBAR     0x2d
 
 /* These are the structures for received packets after conversion from
  * the line format.
@@ -80,7 +82,8 @@ struct pkt_player_posn {
 
 typedef struct pkt_message pkt_message;
 struct pkt_message {
-    int msg_flag;
+    uint8_t player_id;
+    int8_t message_type;
     char message[NB_SLEN];
 };
 

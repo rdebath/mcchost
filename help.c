@@ -60,7 +60,7 @@ cmd_help(char * prefix, char *cmdargs)
 	    if (l != 0 && p[-1] == '\n') { p[-1] = 0; l--; }
 
 	    convert_to_cp437(helpbuf, &l);
-	    post_chat(1, helpbuf, l);
+	    post_chat(1, 0, helpbuf, l);
 	}
 	fclose(hfd);
 	return;
@@ -78,7 +78,7 @@ cmd_help(char * prefix, char *cmdargs)
 		    strcpy(helpbuf, *ln);
 		    l = strlen(helpbuf);
 		    convert_to_cp437(helpbuf, &l);
-		    post_chat(1, helpbuf, l);
+		    post_chat(1, 0, helpbuf, l);
 		}
 		return;
 	    }

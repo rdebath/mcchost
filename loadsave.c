@@ -41,11 +41,15 @@ void
 cmd_goto(UNUSED char * cmd, char * arg)
 {
     char fixedname[NB_SLEN], buf2[256], levelname[MAXLEVELNAMELEN+1];
+    char userlevel[256], fixeduserlevel[NB_SLEN];
     if (!arg) { cmd_help(0,"goto"); return; }
 
+    snprintf(userlevel, sizeof(userlevel), "%.60s+", user_id);
+    fix_fname(fixeduserlevel, sizeof(fixeduserlevel), userlevel);
+
     fix_fname(fixedname, sizeof(fixedname), arg);
-    if (strcmp(arg, "+") == 0) {
-	snprintf(fixedname, sizeof(fixedname), "%.60s+", user_id);
+    if (strcmp(arg, "+") == 0 || strcmp(arg, userlevel) == 0) {
+	strcpy(fixedname, fixeduserlevel);
     } else {
 	snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
 	if (access(buf2, F_OK) != 0) {
@@ -69,8 +73,6 @@ cmd_goto(UNUSED char * cmd, char * arg)
 	printf_chat("&SYou're already on &7%s", current_level_name);
 	return;
     }
-
-    // printf_chat("@&S%s left &7%s", user_id, current_level_name);
 
     stop_shared();
 

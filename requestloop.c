@@ -265,8 +265,14 @@ process_client_message(int cmd, char * pktbuf)
 	{
 	    char * p = pktbuf+1;
 	    pkt_message pkt;
-	    pkt.msg_flag = *p++;
-	    if (pkt.msg_flag == 1 && extn_longermessages) {
+	    if (extn_longermessages) {
+		pkt.message_type = *p++;
+		pkt.player_id = 0;
+	    } else {
+		pkt.message_type = 0;
+		pkt.player_id = *p++;
+	    }
+	    if (pkt.message_type == 1) {
 		char * b = pkt.message;
 		memcpy(b, p, MB_STRLEN);
 		for(int i = 0; i<MB_STRLEN; i++) if (b[i] == 0) b[i] = ' ';
@@ -274,7 +280,7 @@ process_client_message(int cmd, char * pktbuf)
 	    } else {
 		cpy_nbstring(pkt.message, p); p+=64;
 	    }
-	    process_chat_message(pkt.msg_flag, pkt.message);
+	    process_chat_message(pkt.message_type, pkt.message);
 	}
 	break;
 
@@ -303,8 +309,11 @@ process_client_message(int cmd, char * pktbuf)
 	{
 	    char * p = pktbuf+1;
 	    int version = *p++;
-	    if (version > 0 && client_block_limit < Block_CPE)
-		client_block_limit = Block_CPE;
+	    if (version > 0) {
+		customblock_enabled = 1;
+		if (client_block_limit < Block_CPE)
+		    client_block_limit = Block_CPE;
+	    }
 
 	    cpe_pending |= 2;
 	    if (cpe_pending == 3)

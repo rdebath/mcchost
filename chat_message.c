@@ -11,10 +11,10 @@ static int pending_chat_size = 0;
 static int pending_chat_len = 0;
 
 void
-process_chat_message(int msg_flag, char * msg)
+process_chat_message(int message_type, char * msg)
 {
     // Message concat.
-    if ((msg_flag == 1 && extn_longermessages) || pending_chat_len > 0) {
+    if (message_type == 1 || pending_chat_len > 0) {
 	if (pending_chat == 0) {
 	    pending_chat = malloc(PKBUF);
 	    pending_chat_size = PKBUF;
@@ -32,7 +32,7 @@ process_chat_message(int msg_flag, char * msg)
 	memcpy(pending_chat+pending_chat_len, msg, MB_STRLEN);
 	pending_chat_len += MB_STRLEN;
 	pending_chat[pending_chat_len] = 0;
-	if (msg_flag == 1) return;
+	if (message_type == 1) return;
     }
 
     if (pending_chat_len) {
@@ -80,17 +80,16 @@ convert_inbound_chat(char * msg)
     }
     *p = 0;
 
-    post_chat(0, buf, p-buf);
+    post_chat(0, 0, buf, p-buf);
     free(buf);
 }
 
 /* Post a long cp437 chat message to everyone (0) or just me (1) */
 void
-post_chat(int where, char * chat, int chat_len)
+post_chat(int where, int type, char * chat, int chat_len)
 {
     int colour = -1, ncolour = 'e';
-    pkt_message pkt;
-    pkt.msg_flag = 0;
+    pkt_message pkt = {.message_type = type};
     if (chat_len <= 0) chat_len = strlen(chat);
 
     if (where == 0)
@@ -160,10 +159,10 @@ post_chat(int where, char * chat, int chat_len)
 		pkt.message[d++] = c;
 	}
 
-	// Full buffer gets sent.
-	if (d >= MB_STRLEN) {
+	// Full buffer gets sent IF it's a normal message
+	if (d >= MB_STRLEN && type == 0) {
 	    if (where == 1)
-		send_msg_pkt_filtered(pkt.msg_flag, pkt.message);
+		send_msg_pkt_filtered(pkt.message_type, pkt.message);
 	    else
 		update_chat(&pkt);
 	    d = 0;
@@ -176,7 +175,7 @@ post_chat(int where, char * chat, int chat_len)
     if (d>0) {
 	while(d<MB_STRLEN) pkt.message[d++] = ' ';
 	if (where == 1)
-	    send_msg_pkt_filtered(pkt.msg_flag, pkt.message);
+	    send_msg_pkt_filtered(pkt.message_type, pkt.message);
 	else
 	    update_chat(&pkt);
     }
@@ -189,18 +188,32 @@ post_chat(int where, char * chat, int chat_len)
  * Prefix format with '#' for UTF-8
  * Prefix format with '#@' to broadcast UTF-8
  * Prefix format with '\\' to quote a prefix.
+ * Prefix format with '(11)' to choose message type
+ * Prefix format with '~' for '%' -> '&' conversion.
  */
 void
 printf_chat(char * fmt, ...)
 {
     char pbuf[16<<10];
-    int to = 1, utf8 = 0;
+    int to = 1, utf8 = 0, type = 0, percamp = 0;
     char *f = fmt;
     va_list ap;
     va_start(ap, fmt);
-    if (*f == '#') { f++, utf8 = 1; }
-    if (*f == '@') { f++, to = 0; }
-    if (*f == '\\') f++;
+    for(;;) {
+	if (*f == '#') { f++, utf8 = 1; }
+	else if (*f == '@') { f++, to = 0; }
+	else if (*f == '~') { f++, percamp = 1; }
+	else if (*f == '(') {
+	    f++;
+	    type = atoi(f);
+	    if(type) {
+		while(*f >= '0' && *f <= '9') f++;
+		if (*f == ')') f++;
+	    }
+	}
+	else if (*f == '\\') { f++; break; }
+	else break;
+    }
     int l = vsnprintf(pbuf, sizeof(pbuf), f, ap);
     if (l > sizeof(pbuf)) {
 	strcpy(pbuf+sizeof(pbuf)-4, "...");
@@ -208,7 +221,17 @@ printf_chat(char * fmt, ...)
     }
     va_end(ap);
 
+    if (percamp) {
+	char * p = pbuf;
+	for(;*p; p++)
+	    if (*p == '%') {
+		int col = p[1];
+		if ((col >= '0' && col <= '9') || (col >= 'a' && col <= 'f'))
+		    *p = '&';
+	    }
+    }
+
     if (utf8)
 	convert_to_cp437(pbuf, &l);
-    post_chat(to, pbuf, l);
+    post_chat(to, type, pbuf, l);
 }

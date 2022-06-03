@@ -24,7 +24,19 @@ static block_t max_defined_block = 0;
 block_t
 f_block_convert(block_t in)
 {
-    if (in < client_block_limit) return in;
+    if (in < client_block_limit) {
+#if 0
+	// NB: If CustomBlock isn't enabled but Blockdef is should the CPE
+	// fallbacks be enabled? I think Blockdef should be considered an
+	// alias of CustomBlock V2, at least here.
+
+	if (!customblock_enabled && in >= Block_CP && in < Block_CPE) {
+	    if (!level_prop->blockdef[in].defined)
+		in = cpe_conversion[in-Block_CP];
+	}
+#endif
+	return in;
+    }
     if (in >= BLOCKMAX) in = BLOCKMAX-1;
 
     if (level_prop->blockdef[in].defined
@@ -41,6 +53,8 @@ void
 send_map_file()
 {
     if (!level_prop || !level_blocks) return;
+
+    // if(extn_instantmotd) ...
 
     // Send_system_ident()
     // Send_hack_control()

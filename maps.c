@@ -6,9 +6,6 @@
 
 #include "maps.h"
 
-// TODO qsort, paginate, filter. Based on arg1 && arg2 then arg1 || arg2?
-// Use same list generator for goto (one result only).
-
 /*HELP maps,levels,worlds
 &T/maps
 List out the available levels
