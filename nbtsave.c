@@ -70,33 +70,31 @@ save_map_to_file(char * fn, int background)
     bc_compound(savefile, "Metadata");
     bc_compound(savefile, "CPE");
 
-    bc_compound(savefile, "SetSpawn");
-    bc_ent_int(savefile, "X", level_prop->spawn.x);
-    bc_ent_int(savefile, "Y", level_prop->spawn.y);
-    bc_ent_int(savefile, "Z", level_prop->spawn.z);
-    bc_ent_int(savefile, "H", level_prop->spawn.h);
-    bc_ent_int(savefile, "P", level_prop->spawn.v);
-    bc_end(savefile);
-
+    // Written by CC
     if (level_prop->click_distance >= 0) {
 	bc_compound(savefile, "ClickDistance");
 	bc_ent_int(savefile, "Distance", level_prop->click_distance);
 	bc_end(savefile);
     }
 
+    // Written by CC
     bc_compound(savefile, "EnvWeatherType");
     bc_ent_int8(savefile, "WeatherType", level_prop->weather);
     bc_end(savefile);
 
+    // Written by CC
     bc_compound(savefile, "EnvColors");
     bc_colour(savefile, "Sky", level_prop->sky_colour);
     bc_colour(savefile, "Cloud", level_prop->cloud_colour);
     bc_colour(savefile, "Fog", level_prop->fog_colour);
     bc_colour(savefile, "Ambient", level_prop->ambient_colour);
     bc_colour(savefile, "Sunlight", level_prop->sunlight_colour);
+    // Not written by CC {
     bc_colour(savefile, "Skybox", level_prop->skybox_colour);
+    // }
     bc_end(savefile);
 
+    // Written by CC
     bc_compound(savefile, "EnvMapAppearance");
     bc_ent_int8(savefile, "SideBlock", level_prop->side_block);
     bc_ent_int8(savefile, "EdgeBlock", level_prop->edge_block);
@@ -105,6 +103,16 @@ save_map_to_file(char * fn, int background)
     bc_ent_string(savefile, "TextureURL", b.c, 0);
     bc_end(savefile);
 
+    // Not written by CC
+    bc_compound(savefile, "SetSpawn");
+    bc_ent_int(savefile, "X", level_prop->spawn.x);
+    bc_ent_int(savefile, "Y", level_prop->spawn.y);
+    bc_ent_int(savefile, "Z", level_prop->spawn.z);
+    bc_ent_int(savefile, "H", level_prop->spawn.h);
+    bc_ent_int(savefile, "P", level_prop->spawn.v);
+    bc_end(savefile);
+
+    // Not written by CC
     bc_compound(savefile, "EnvMapAspect");
     bc_ent_int16(savefile, "SideOffset", level_prop->side_offset);
     bc_ent_int16(savefile, "CloudsHeight", level_prop->clouds_height);
@@ -123,24 +131,44 @@ save_map_to_file(char * fn, int background)
     bc_ent_int(savefile, "MapProperty11", level_prop->skybox_ver_speed);
     bc_end(savefile);
 
+    // Not written by CC
+    if (level_prop->hacks_flags) {
+	bc_compound(savefile, "HackControl");
+	int v = level_prop->hacks_flags;
+	bc_ent_int(savefile, "Flying", !(v&1));
+	bc_ent_int(savefile, "NoClip", !(v&2));
+	bc_ent_int(savefile, "Speed", !(v&4));
+	bc_ent_int(savefile, "SpawnControl", !(v&8));
+	bc_ent_int(savefile, "ThirdPersonView", !(v&0x10));
+	if (!(v&0x20))
+	    bc_ent_int(savefile, "JumpHeight", -1);
+	else
+	    bc_ent_int(savefile, "JumpHeight", level_prop->hacks_jump);
+	bc_end(savefile);
+    }
+
+    // Written by CC
     int bdopen = 0;
-    for(int i=1; i<BLOCKMAX; i++)
-	if (level_prop->blockdef[i].defined) {
+    for(int i=1; i<BLOCKMAX; i++) {
+	int id = (i+256)%BLOCKMAX;
+	if (level_prop->blockdef[id].defined) {
 	    if (!bdopen) {
 		bc_compound(savefile, "BlockDefinitions");
 		bdopen = 1;
 	    }
-	    save_block_def(savefile, i, (void*)(&level_prop->blockdef[i]));
+	    save_block_def(savefile, id, (void*)(&level_prop->blockdef[id]));
 	}
+    }
     if (bdopen)
 	bc_end(savefile);
 
+    // Not written by CC
     bdopen = 0;
     for(int i=1; i<BLOCKMAX; i++)
 	if (level_prop->blockdef[i].defined)
 	{
 	    int ord = level_prop->blockdef[i].inventory_order;
-	    if (ord < 0 || ord == (block_t)-1) ord = 0;
+	    if (ord < 0 || ord == (block_t)-1) ord = i;
 	    if (ord != i) {
 		if (!bdopen) {
 		    bc_compound(savefile, "InventoryOrder");
@@ -160,11 +188,25 @@ save_map_to_file(char * fn, int background)
     if (bdopen)
 	bc_end(savefile);
 
+    /* TODO -- server level ?
+        bc_compound(ofd, "SetTextHotKey", seqid);
+        bc_ent_string(ofd, "label", pkt+1, 64);
+        bc_ent_string(ofd, "action", pkt+65, 64);
+        bc_ent_int(ofd, "keycode", IntBE32(pkt+129));
+        bc_ent_int(ofd, "keymods", (pkt[133] & 0xFF));
+        bc_end(ofd);
+    */
+
+    /* TODO
+	Zones ...
+    */
+
     bc_end(savefile);
     bc_end(savefile);
 
     if (level_blocks) {
 	int flg = 0, flg2 = 0;
+	// Written by CC
 	bc_ent_bytes_header(savefile, "BlockArray", level_prop->total_blocks);
 
 	for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
@@ -175,6 +217,7 @@ save_map_to_file(char * fn, int background)
 	    flg |= (b>0xFF);
 	}
 
+	// Written by CC
 	if (flg) {
 	    // BlockArray2 can only have 0..767 so we need BlockArray3
 	    bc_ent_bytes_header(savefile, "BlockArray2", level_prop->total_blocks);
@@ -187,6 +230,7 @@ save_map_to_file(char * fn, int background)
 	    }
 	}
 
+	// Not written by CC
 	if (flg2) {
 	    // What format should I use for this?
 	    // Currently it's a corrected high byte but this means BA2 makes
@@ -205,7 +249,6 @@ save_map_to_file(char * fn, int background)
 	    // Another option is to discard BA2 completely, put the 255
 	    // fallback into BA1 and have BA3 and BA4 with the actual value.
 	}
-
     }
 
     bc_end(savefile);
@@ -362,6 +405,7 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
 {
     char buf[64];
 
+    // Written by CC
     sprintf(buf, "Block%04x", idno);
 
     bc_compound(ofd, buf);
@@ -414,6 +458,13 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
 	bc_ent_bytes(ofd, "Coords", box, 6);
 
 	bc_ent_int8(ofd, "Shape", blkdef->shape);
+
+	/* ... Huh?
+            if (box[1] != 0 || box[4] == 0)
+                bc_ent_int8(ofd, "Shape", 1);
+            else
+                bc_ent_int8(ofd, "Shape", (box[4] & 0xFF));
+	*/
     }
 
     bc_ent_int8(ofd, "BlockDraw", blkdef->draw);
@@ -427,7 +478,9 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
 	bc_ent_bytes(ofd, "Fog", fog, 4);
     }
 
+    // Not written by CC ...
     bc_ent_int16(ofd, "Fallback", blkdef->fallback);
+
     if (blkdef->inventory_order != (block_t)-1)
 	bc_ent_int16(ofd, "InventoryOrder", blkdef->inventory_order);
 

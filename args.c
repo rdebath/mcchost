@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/time.h>
+#include <limits.h>
 
 #include "args.h"
 
@@ -12,12 +13,9 @@ void
 process_args(int argc, char **argv)
 {
     program_args = calloc(argc+8, sizeof(*program_args));
-    int bc = 0, plen = strlen(argv[0]);
+    int bc = 1, plen = strlen(argv[0]);
 
-    program_args[bc++] = strdup(argv[0]);
-    if (argv[0][0] != '/' && strchr(argv[0], '/') != 0)
-	disable_restart = 1;
-	// TODO: Save /proc/self/exe ?
+    getprogram(argv[0]);
 
     for(int pass = 0; pass<2; pass++)
     {
@@ -157,13 +155,11 @@ process_args(int argc, char **argv)
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);
     }
 
+    // Pad the program args so we get some space after a restart.
     do {
 	program_args[bc++] = strdup("-no-detach");
 	plen += 11;
     } while(plen < 32);
-
-    if (disable_restart && !server_runonce)
-	fprintf(stderr, "WARNING: Restart disabled due to relative path\n");
 
     struct timeval now;
     gettimeofday(&now, 0);
@@ -178,4 +174,29 @@ process_args(int argc, char **argv)
 	server.secret[16] = 0;
 	fprintf(stderr, "Generated server secret %s\n", server.secret);
     }
+}
+
+LOCAL void
+getprogram(char * argv0)
+{
+    // Is argv0 absolute or a $PATH lookup?
+    if (argv0[0] == '/' || strchr(argv0, '/') == 0) {
+	program_args[0] = strdup(argv0);
+	return;
+    }
+
+    // For relative paths try something different.
+    char buf[PATH_MAX*2];
+    int l = readlink("/proc/self/exe", buf, sizeof(buf)-1);
+    buf[sizeof(buf)-1] = 0;
+
+    // /proc/self/exe gives something runnable.
+    if (l > 0 && access(buf, X_OK) == 0) {
+	program_args[0] = strdup(buf);
+	return;
+    }
+
+    // Last try, just use the exe name
+    char * p = strrchr(argv0, '/');
+    program_args[0] = p?strdup(p+1):strdup("");
 }

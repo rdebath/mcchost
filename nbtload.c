@@ -93,7 +93,7 @@ load_cwfile(gzFile ifd, char * level_fname)
 	    fprintf(stderr, "File format incorrect.\n");
 	    return;
 	}
-	fprintf(stderr, "Loading ClassicWorld map: ");
+	fprintf(stderr, "Loading ClassicWorld map from \"%s\": ", level_fname);
 	open_level_files(level_fname, 1);
 	read_element(ifd, ch);
     } else if (ch == EOF || !try_asciimode(ifd, level_fname)) {
@@ -417,6 +417,23 @@ change_int_value(char * section, char * item, long long value)
 	    inventory_order = -1;
 	    inventory_block = -1;
 	}
+
+    } else if (strcmp(section, "HackControl") == 0) {
+
+	int f = level_prop->hacks_flags;
+	if (strcmp(item, "Flying") == 0) f = (f&~1) | (1&-!value);
+	if (strcmp(item, "NoClip") == 0) f = (f&~2) | (2&-!value);
+	if (strcmp(item, "Speed") == 0) f = (f&~4) | (4&-!value);
+	if (strcmp(item, "SpawnControl") == 0) f = (f&~8) | (8&-!value);
+	if (strcmp(item, "ThirdPersonView") == 0) f = (f&~0x10) | (0x10&-!value);
+	if (strcmp(item, "JumpHeight") == 0) {
+	    if (value == -1) f = (f&~0x20);
+	    else {
+		level_prop->hacks_jump = value;
+		f |= 0x20;
+	    }
+	}
+	level_prop->hacks_flags = f;
 
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {

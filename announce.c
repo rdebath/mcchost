@@ -3,8 +3,8 @@
 
 #include "announce.h"
 
-/*HELP announce,an
-&T/announce messgae
+/*HELP announce,an H_CMD
+&T/announce message
 Display a really important message
 Alias &T/an
 */

@@ -9,7 +9,7 @@
 
 #include "who.h"
 
-/*HELP who
+/*HELP who H_CMD
 &T/who
 List out the connected users
 */

@@ -236,9 +236,8 @@ login()
 	fprintf_logfile("Logging in user '%s'", user_id);
 
     if (*server.secret != 0 && *server.secret != '-') {
-	if (strlen(mppass) != 32)
-	    if (!client_ipv4_localhost)
-		quiet_drop("Login failed!");
+	if (strlen(mppass) != 32 && !client_ipv4_localhost)
+	    quiet_drop("Login failed!");
     }
 
     if (*user_id == 0) quiet_drop("Username must be entered");
@@ -247,7 +246,9 @@ login()
 
     cpe_requested = (inbuf[inptr+1] == 7 && inbuf[inptr+128+2] == 0x42);
 
-    if (*server.secret != 0 && *server.secret != '-') {
+    if (*mppass == 0 && client_ipv4_localhost)
+	user_authenticated = 1;
+    else if (*server.secret != 0 && *server.secret != '-') {
 	char hashbuf[NB_SLEN*2];
 	strcpy(hashbuf, server.secret);
 	strcat(hashbuf, user_id);
@@ -258,18 +259,14 @@ login()
 	MD5Update (&mdContext, (unsigned char *)hashbuf, len);
 	MD5Final (&mdContext);
 
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < 16; i++)
 	    sprintf(hashbuf+i*2, "%02x", mdContext.digest[i]);
-	}
 
-	if (strcasecmp(hashbuf, mppass) != 0) {
-	    if (!client_ipv4_localhost)
-		quiet_drop("Login failed! Close the game and sign in again.");
-	}
+	if (strcasecmp(hashbuf, mppass) != 0)
+	    quiet_drop("Login failed! Close the game and sign in again.");
 
 	user_authenticated = 1;
     }
-
 }
 
 void

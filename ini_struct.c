@@ -21,10 +21,9 @@ struct ini_state_t {
     FILE * fd;
     char * filename;
 
-    int all;	// Write all fields
+    int all;	// Process all fields
     int write;	// Set to write fields
     int quiet;	// Don't comment to the remote (use stderr)
-    int errcount;
     int no_unsafe;
     char * curr_section;
 };
@@ -61,22 +60,22 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     section = "server";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-	INI_STRARRAYCP437("name", server.name);
-	INI_STRARRAYCP437("motd", server.motd);
-	INI_STRARRAYCP437("main", server.main_level);
-	INI_STRARRAY(st->write?"; salt":"salt", server.secret);	//Base62
-	INI_BOOLVAL("nocpe", server.cpe_disabled);
-	INI_BOOLVAL("private", server.private);
+	INI_STRARRAYCP437("Name", server.name);
+	INI_STRARRAYCP437("Motd", server.motd);
+	INI_STRARRAYCP437("Main", server.main_level);
+	INI_STRARRAY(st->write?"; Salt":"Salt", server.secret);	//Base62
+	INI_BOOLVAL("NoCPE", server.cpe_disabled);
+	INI_BOOLVAL("Private", server.private);
 
-	INI_STRARRAY("logfile", logfile_pattern);		//Binary
+	INI_STRARRAY("Logfile", logfile_pattern);		//Binary
 	INI_BOOLVAL("tcp", start_tcp_server);
-	INI_BOOLVAL("detach", detach_tcp_server);
-	INI_STRARRAY("heartbeat", heartbeat_url);		//ASCII
-	INI_BOOLVAL("pollheartbeat", enable_heartbeat_poll);
-	INI_INTVAL(st->write && tcp_port_no==25565?"; port":"port", tcp_port_no);
-	INI_BOOLVAL("inetd", inetd_mode);
-	INI_BOOLVAL("opflag", server_id_op_flag);
-	INI_BOOLVAL(st->write?"; runonce":"runonce", server_runonce);
+	INI_BOOLVAL("Detach", detach_tcp_server);
+	INI_STRARRAY("Heartbeat", heartbeat_url);		//ASCII
+	INI_BOOLVAL("PollHeartbeat", enable_heartbeat_poll);
+	INI_INTVAL(st->write && tcp_port_no==25565?"; Port":"Port", tcp_port_no);
+	INI_BOOLVAL("Inetd", inetd_mode);
+	INI_BOOLVAL("OPFlag", server_id_op_flag);
+	INI_BOOLVAL(st->write?"; Runonce":"Runonce", server_runonce);
     }
 
     return found;
@@ -100,99 +99,100 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
 	if (!st->no_unsafe) {
-	    INI_INTVAL("size.x", level_prop->cells_x);
-	    INI_INTVAL("size.y", level_prop->cells_y);
-	    INI_INTVAL("size.z", level_prop->cells_z);
+	    INI_INTVAL("Size.X", level_prop->cells_x);
+	    INI_INTVAL("Size.Y", level_prop->cells_y);
+	    INI_INTVAL("Size.Z", level_prop->cells_z);
 	}
 
-	INI_NBTSTR("motd", level_prop->motd);
-	INI_INTSCALE("spawn.x", level_prop->spawn.x, 32);
-	INI_INTSCALE("spawn.y", level_prop->spawn.y, 32);
-	INI_INTSCALE("spawn.z", level_prop->spawn.z, 32);
-	INI_INTVAL("spawn.h", level_prop->spawn.h);
-	INI_INTVAL("spawn.v", level_prop->spawn.v);
+	INI_NBTSTR("Motd", level_prop->motd);
+	INI_FIXEDP("Spawn.X", level_prop->spawn.x, 32);
+	INI_FIXEDP("Spawn.Y", level_prop->spawn.y, 32);
+	INI_FIXEDP("Spawn.Z", level_prop->spawn.z, 32);
+	INI_INTVAL("Spawn.H", level_prop->spawn.h);
+	INI_INTVAL("Spawn.V", level_prop->spawn.v);
 
-	INI_INTSCALE("clickdistance", level_prop->click_distance, 32);
-	// hacks_flags
+	INI_FIXEDP("ClickDistance", level_prop->click_distance, 32);
 
-	INI_NBTSTR("texture", level_prop->texname);
-	INI_INTVAL("weathertype", level_prop->weather);
+	INI_INTHEX("HacksFlags", level_prop->hacks_flags);
 
-	INI_INTHEX("skycolour", level_prop->sky_colour);
-	INI_INTHEX("cloudcolour", level_prop->cloud_colour);
-	INI_INTHEX("fogcolour", level_prop->fog_colour);
-	INI_INTHEX("ambientcolour", level_prop->ambient_colour);
-	INI_INTHEX("sunlightcolour", level_prop->sunlight_colour);
-	INI_INTHEX("skyboxcolour", level_prop->skybox_colour);
+	INI_NBTSTR("Texture", level_prop->texname);
+	INI_INTVAL("EnvWeatherType", level_prop->weather);
 
-	INI_INTVAL("sideblock", level_prop->side_block);
-	INI_INTVAL("edgeblock", level_prop->edge_block);
-	INI_INTVAL("sidelevel", level_prop->side_level);
-	INI_INTVAL("sideoffset", level_prop->side_offset);
+	INI_INTHEX("SkyColour", level_prop->sky_colour);
+	INI_INTHEX("CloudColour", level_prop->cloud_colour);
+	INI_INTHEX("FogColour", level_prop->fog_colour);
+	INI_INTHEX("AmbientColour", level_prop->ambient_colour);
+	INI_INTHEX("SunlightColour", level_prop->sunlight_colour);
+	INI_INTHEX("SkyboxColour", level_prop->skybox_colour);
 
-	INI_INTVAL("cloudheight", level_prop->clouds_height);
-	INI_INTVAL("maxfog", level_prop->max_fog);
+	INI_INTVAL("SideBlock", level_prop->side_block);
+	INI_INTVAL("EdgeBlock", level_prop->edge_block);
+	INI_INTVAL("SideLevel", level_prop->side_level);
+	INI_INTVAL("SideOffset", level_prop->side_offset);
 
-	INI_INTSCALE("cloudsspeed", level_prop->clouds_speed, 256);
-	INI_INTSCALE("weatherspeed", level_prop->weather_speed, 256);
-	INI_INTSCALE("weatherfade", level_prop->weather_fade, 128);
-	INI_INTVAL("expfog", level_prop->exp_fog);
-	INI_INTSCALE("skyboxhorspeed", level_prop->skybox_hor_speed, 1024);
-	INI_INTSCALE("skyboxverspeed", level_prop->skybox_ver_speed, 1024);
+	INI_INTVAL("CloudHeight", level_prop->clouds_height);
+	INI_INTVAL("MaxFog", level_prop->max_fog);
+
+	INI_FIXEDP("CloudsSpeed", level_prop->clouds_speed, 256);
+	INI_FIXEDP("WeatherSpeed", level_prop->weather_speed, 256);
+	INI_FIXEDP("WeatherFade", level_prop->weather_fade, 128);
+	INI_INTVAL("ExpFog", level_prop->exp_fog);
+	INI_FIXEDP("SkyboxHorSpeed", level_prop->skybox_hor_speed, 1024);
+	INI_FIXEDP("SkyboxVerSpeed", level_prop->skybox_ver_speed, 1024);
     }
 
     int bn = 0;
     char sectionbuf[128];
     do
     {
-	//struct blockdef_t blockdef[BLOCKMAX];
-	//int invt_order[BLOCKMAX];
-	//uint8_t block_perms[BLOCKMAX];
-
 	if (st->all) {
 	    if (!level_prop->blockdef[bn].defined) { bn++; continue; }
 	    sprintf(sectionbuf, "block.%d", bn);
 	    section = sectionbuf;
-	} else if (strncmp(st->curr_section, "block.", 6) == 0) {
-	    bn = atoi(st->curr_section+6);
-	    if (!bn && st->curr_section[6] == '0') break;
-	    if (bn < 0 || bn >= BLOCKMAX) break;
-	    sprintf(sectionbuf, "block.%d", bn);
-	    section = sectionbuf;
-	    level_prop->blockdef[bn].defined = 1;
-	} else
-	    break;
+	} else {
+	    strncpy(sectionbuf, st->curr_section, 6);
+	    sectionbuf[6] = 0;
+	    if (strcasecmp(st->curr_section, "block.") == 0) {
+		bn = atoi(st->curr_section+6);
+		if (!bn && st->curr_section[6] == '0') break;
+		if (bn < 0 || bn >= BLOCKMAX) break;
+		sprintf(sectionbuf, "block.%d", bn);
+		section = sectionbuf;
+		level_prop->blockdef[bn].defined = 1;
+	    } else
+		break;
+	}
 
-	INI_NBTSTR("name", level_prop->blockdef[bn].name);
-	INI_INTVAL("collide", level_prop->blockdef[bn].collide);
-	INI_INTVAL("transmitslight", level_prop->blockdef[bn].transmits_light);
-	INI_INTVAL("walksound", level_prop->blockdef[bn].walksound);
-	INI_INTVAL("fullbright", level_prop->blockdef[bn].fullbright);
-	INI_INTVAL("shape", level_prop->blockdef[bn].shape);
-	INI_INTVAL("draw", level_prop->blockdef[bn].draw);
-	INI_INTSCALE("speed", level_prop->blockdef[bn].speed, 1000);
-	INI_BLKVAL("fallback", level_prop->blockdef[bn].fallback);
-	INI_INTVAL("texture.top", level_prop->blockdef[bn].textures[0]);
-	INI_INTVAL("texture.left", level_prop->blockdef[bn].textures[1]);
-	INI_INTVAL("texture.right", level_prop->blockdef[bn].textures[2]);
-	INI_INTVAL("texture.front", level_prop->blockdef[bn].textures[3]);
-	INI_INTVAL("texture.back", level_prop->blockdef[bn].textures[4]);
-	INI_INTVAL("texture.bottom", level_prop->blockdef[bn].textures[5]);
-	INI_INTVAL("fog.den", level_prop->blockdef[bn].fog[0]);
-	INI_INTVAL("fog.r", level_prop->blockdef[bn].fog[1]);
-	INI_INTVAL("fog.g", level_prop->blockdef[bn].fog[2]);
-	INI_INTVAL("fog.b", level_prop->blockdef[bn].fog[3]);
-	INI_INTVAL("min.x", level_prop->blockdef[bn].coords[0]);
-	INI_INTVAL("min.y", level_prop->blockdef[bn].coords[1]);
-	INI_INTVAL("min.z", level_prop->blockdef[bn].coords[2]);
-	INI_INTVAL("max.x", level_prop->blockdef[bn].coords[3]);
-	INI_INTVAL("max.y", level_prop->blockdef[bn].coords[4]);
-	INI_INTVAL("max.z", level_prop->blockdef[bn].coords[5]);
+	INI_NBTSTR("Name", level_prop->blockdef[bn].name);
+	INI_INTVAL("Collide", level_prop->blockdef[bn].collide);
+	INI_INTVAL("TransmitsLight", level_prop->blockdef[bn].transmits_light);
+	INI_INTVAL("WalkSound", level_prop->blockdef[bn].walksound);
+	INI_INTVAL("FullBright", level_prop->blockdef[bn].fullbright);
+	INI_INTVAL("Shape", level_prop->blockdef[bn].shape);
+	INI_INTVAL("Draw", level_prop->blockdef[bn].draw);
+	INI_FIXEDP("Speed", level_prop->blockdef[bn].speed, 1000);
+	INI_BLKVAL("Fallback", level_prop->blockdef[bn].fallback);
+	INI_INTVAL("Texture.Top", level_prop->blockdef[bn].textures[0]);
+	INI_INTVAL("Texture.Left", level_prop->blockdef[bn].textures[1]);
+	INI_INTVAL("Texture.Right", level_prop->blockdef[bn].textures[2]);
+	INI_INTVAL("Texture.Front", level_prop->blockdef[bn].textures[3]);
+	INI_INTVAL("Texture.Back", level_prop->blockdef[bn].textures[4]);
+	INI_INTVAL("Texture.Bottom", level_prop->blockdef[bn].textures[5]);
+	INI_INTVAL("Fog.Den", level_prop->blockdef[bn].fog[0]);
+	INI_INTVAL("Fog.R", level_prop->blockdef[bn].fog[1]);
+	INI_INTVAL("Fog.G", level_prop->blockdef[bn].fog[2]);
+	INI_INTVAL("Fog.B", level_prop->blockdef[bn].fog[3]);
+	INI_INTVAL("Min.X", level_prop->blockdef[bn].coords[0]);
+	INI_INTVAL("Min.Y", level_prop->blockdef[bn].coords[1]);
+	INI_INTVAL("Min.Z", level_prop->blockdef[bn].coords[2]);
+	INI_INTVAL("Max.X", level_prop->blockdef[bn].coords[3]);
+	INI_INTVAL("Max.Y", level_prop->blockdef[bn].coords[4]);
+	INI_INTVAL("Max.Z", level_prop->blockdef[bn].coords[5]);
 
-	INI_BLKVAL("stackblock", level_prop->blockdef[bn].stack_block);
-	INI_BLKVAL("grassblock", level_prop->blockdef[bn].grass_block);
-	INI_BLKVAL("dirtblock", level_prop->blockdef[bn].dirt_block);
-	INI_BLKVAL("order", level_prop->blockdef[bn].inventory_order);
+	INI_BLKVAL("StackBlock", level_prop->blockdef[bn].stack_block);
+	INI_BLKVAL("GrassBlock", level_prop->blockdef[bn].grass_block);
+	INI_BLKVAL("DirtBlock", level_prop->blockdef[bn].dirt_block);
+	INI_BLKVAL("Order", level_prop->blockdef[bn].inventory_order);
 
 	bn++;
     } while(st->all && bn < BLOCKMAX);
@@ -229,7 +229,6 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet, int no_unsafe)
     char ibuf[BUFSIZ];
     while(fgets(ibuf, sizeof(ibuf), ifd)) {
 	if (load_ini_line(&st, filetype, ibuf) == 0) { rv = -1; break; }
-	// if (++st->errcount>9) return -1;
     }
 
     fclose(ifd);
@@ -480,16 +479,6 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
                 ini_write_str(st, section, fld, (_var)); \
         }
 
-#define INI_STR_PTR(_field, _var, _len) \
-        fld = _field; \
-        if (st->all || strcasecmp(fieldname, fld) == 0) { \
-	    found = 1; \
-            if (!st->write) \
-                snprintf((_var), (_len), "%s", *fieldvalue); \
-            else \
-                ini_write_str(st, section, fld, (_var)); \
-        }
-
 #define INI_STRARRAYCP437(_field, _var) \
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
@@ -540,7 +529,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
                 ini_write_hexint(st, section, fld, (_var)); \
         }
 
-#define INI_INTSCALE(_field, _var, _scale) \
+#define INI_FIXEDP(_field, _var, _scale) \
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -563,11 +552,20 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
 #endif
 
 
-/*HELP setvar,set
+/*HELP setvar,set H_CMD
 &T/set section name value
 Sections are &Tlevel&S and &Tblock.&WN&S were &WN&S is the block definition number
 
+Options in "level" include ...
+Spawn.X Spawn.Y Spawn.Z Spawn.H Spawn.V
+Motd ClickDistance Texture EnvWeatherType SkyColour
+CloudColour FogColour AmbientColour SunlightColour
+SkyboxColour SideBlock EdgeBlock SideLevel SideOffset
+CloudHeight MaxFog CloudsSpeed WeatherSpeed WeatherFade
+ExpFog SkyboxHorSpeed SkyboxVerSpeed
+
 */
+
 void
 cmd_setvar(UNUSED char * cmd, char * arg)
 {

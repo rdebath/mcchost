@@ -12,13 +12,13 @@
 #include "loadsave.h"
 #include "inline.h"
 
-/*HELP goto,g
+/*HELP goto,g H_CMD
 &T/goto [levelname]
 Switch your current level, level name may be a partial match
 to the full name and &T/goto +&S takes you to a personal level.
-Use &T/maps&S to list them.
+Use &T/maps&S to list levels.
 */
-/*HELP main
+/*HELP main H_CMD
 &T/main
 Return to the system main level
 */
@@ -44,6 +44,8 @@ cmd_goto(UNUSED char * cmd, char * arg)
     char userlevel[256], fixeduserlevel[NB_SLEN];
     if (!arg) { cmd_help(0,"goto"); return; }
 
+    while (*arg == ' ') arg++;
+
     snprintf(userlevel, sizeof(userlevel), "%.60s+", user_id);
     fix_fname(fixeduserlevel, sizeof(fixeduserlevel), userlevel);
 
@@ -65,6 +67,7 @@ cmd_goto(UNUSED char * cmd, char * arg)
 
     unfix_fname(levelname, sizeof(levelname), fixedname);
     if (*levelname == 0) {
+	fprintf(stderr, "Error on map name for \"/goto %s\"\n", arg);
 	printf_chat("&SNo levels match \"%s\"", arg);
 	return;
     }
@@ -158,12 +161,6 @@ cmd_save(UNUSED char * cmd, char * arg)
 	save_ini_file(level_ini_fields, buf2);
 
 	printf_chat("&SConfig saved to %s", buf2);
-	send_queued_chats(1);
-
-	snprintf(buf2, sizeof(buf2), "backup/sav.%s.cw", fixedname);
-	save_map_to_file(buf2, 0);
-
-	printf_chat("&SLevel saved to %s", buf2);
     }
     return;
 }
@@ -398,6 +395,7 @@ find_file_match(char * fixedname, char * levelname)
 	return p;
     }
     if (matchcount == 0) {
+	fprintf(stderr, "No level file found to match \"%s\"\n", fixedname);
 	printf_chat("&SNo levels match \"%s\"", levelname);
 	return 0;
     }

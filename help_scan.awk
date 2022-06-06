@@ -22,12 +22,13 @@ flg==0 {next;}
 { text=text $0 "\n"; next }
 
 function save_text() {
+    gsub("\n*$", "", text);
     gsub("\t", "        ", text); # Don't use tabs!!
     gsub("\\\\", "\\\\\\\\", text); # Seriously!?
     gsub("\"", "\\\"", text);
 
     gsub("\n", "\",\n    \"", text);
-    sub("\"$", "0};\n", text);
+    sub("$", "\",\n    0\n};\n", text);
     if (text == "") text = "\",0};\n";
 
     t1 = textname; sub(",.*", "", t1);

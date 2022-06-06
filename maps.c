@@ -6,7 +6,7 @@
 
 #include "maps.h"
 
-/*HELP maps,levels,worlds
+/*HELP maps,levels,worlds H_CMD
 &T/maps
 List out the available levels
 use &T/maps [number]&S to start at that position

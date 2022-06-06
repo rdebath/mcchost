@@ -95,7 +95,7 @@ post_chat(int where, int type, char * chat, int chat_len)
     if (where == 0)
 	log_chat_message(chat, chat_len);
 
-    int s, d, ws = -1, wd = -1, add_gt = 0;
+    int s, d, ws = -1, wd = -1, add_gt = 0, el = 1;
     for(d = s = 0; s<chat_len; s++) {
 	uint8_t c = chat[s];
 
@@ -165,14 +165,14 @@ post_chat(int where, int type, char * chat, int chat_len)
 		send_msg_pkt_filtered(pkt.message_type, pkt.message);
 	    else
 		update_chat(&pkt);
-	    d = 0;
+	    el = d = 0;
 	    add_gt = 1;
 	    colour = -1;
 	    ws = wd = -1;
 	}
     }
 
-    if (d>0) {
+    if (d>0 || el) {
 	while(d<MB_STRLEN) pkt.message[d++] = ' ';
 	if (where == 1)
 	    send_msg_pkt_filtered(pkt.message_type, pkt.message);

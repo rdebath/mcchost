@@ -19,11 +19,19 @@ See "/help todo" for notes.
 /*HELP todo
  +) /mode command.
  +) /z and /m commands with setblock capture.
+ +) Setblock capture for readonly mode ?
+
+ +) ClassicWorld.TimeCreated (forced 64bit) = time(0);
+ +) ClassicWorld.LastModified (forced 64bit) = time(0);
+    -- Time of the last setblock or set command, not the unload.
 
  +) Colour definitions for &S,&W etc.
- +) Level limited chat -- chatroom.
+ +) Level limited chat -- primitive chatroom.
+ +) Team chat, less primitive chatroom.
 
- +) Create player detail structure/namespace.
+ +) Create player detail "struct user" (for saving in SQL? blob store.)
+    -- SQLite3 ? Multiple keys ? Just user names?
+    -- https://github.com/symisc/unqlite  ??
 
  +) Command that sets level properties using ini file loader. (inprogress)
     -- List of options.
@@ -31,13 +39,15 @@ See "/help todo" for notes.
  +) Command line option to restart server and unload levels.
     -- So we know this version will run! Find pid by port no.
     -- SIGALRM: Command line routine to "unload" level file
+    -- Precheck so levels can be unloaded by old version.
+    -- Precheck so users processes can be restarted too?
 
  +) Multiple Levels. (/newlvl, /goto, /main, /maps) (inprogress)
- +) /goto + ... goto my map, bypass map existence check.
  +) /resize, /copylvl, /deletelvl, /save(backup)
  +) /restore & /museum
  +) /newlvl, create cw file in ini file format.
- +) Import, download *.cw file from web.
+ +) Import -- download *.cw file from web.
+ +) Export -- Hummm, filesend extension? (can be used for terrain.png)
 
  +) Block/User history records.
     -- Combined history needs user id numbers --> user file/table.
@@ -60,6 +70,9 @@ See "/help todo" for notes.
 
  +) Run external command with stdout/err sent to client (</dev/null)
     -- Map gen?
+
+ +) Automatic log file cleanup?
+ +) Log user commands ?
 
 Features:
     -- CW file also contains pending physics operations.
@@ -123,9 +136,5 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
 More blocks modified than will fit in queue?
     --> Can only see for "me" so generation number will wrap and reload.
     Mass change can pre-supress block queue and force generation rollover.
-
-Logging:
-    -- Automatic log file cleanup?
-    -- Log user commands ?
 
 // vim:set syntax=none: */

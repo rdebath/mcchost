@@ -3,7 +3,7 @@
 
 #include "sethotbar.h"
 
-/*HELP sethotbar,chb
+/*HELP sethotbar,chb H_CMD
 &T/sethotbar Slot [Block]
 Alias &T/shb
 &T/chb &S -- Clear hotbar

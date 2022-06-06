@@ -44,7 +44,8 @@ struct map_info_t {
     uint32_t metadata_generation;
     time_t last_backup;
 
-    int hacks_flags;
+    uint8_t hacks_flags;
+    int16_t hacks_jump;
 
     // Init together til side_offset.
     uint8_t weather;

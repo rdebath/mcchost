@@ -33,25 +33,35 @@ void
 cmd_help(char * prefix, char *cmdargs)
 {
     char helpbuf[BUFSIZ];
+    char helptopic[128];
     if (prefix && (*prefix == 0 || strcasecmp(prefix, "help") == 0)) prefix = 0;
     if (!cmdargs && !prefix)
-	strcpy(helpbuf, "help/help.txt");
+	strcpy(helptopic, "help");
     else {
 	while (cmdargs && *cmdargs == ' ') cmdargs++;
-	snprintf(helpbuf, sizeof(helpbuf),
-	    "help/%s%s%.64s.txt", 
+	snprintf(helptopic, sizeof(helptopic),"%s%s%s",
 	    prefix?prefix:"",
 	    !prefix||!cmdargs?"":" ",
 	    cmdargs?cmdargs:"");
 
-	for(char * p = helpbuf; *p; p++) {
-	    if (*p <= ' ' || *p > '~' || *p == '\'' || *p == '"')
-		*p = '_';
-	    if (*p >= 'A' && *p <= 'Z')
-		*p = *p - 'A' + 'a';
+	char * d = helptopic;
+	for(char *p = helptopic; *p; p++) {
+	    int ch = *p;
+	    if (ch <= ' ' || ch > '~' || ch == '\'' || ch == '"'
+		|| ch == '.' || ch == '_' || ch == '/') {
+		if (d == helptopic || d[-1] != '_')
+		    ch = '_';
+		else
+		    ch = 0;
+	    }
+	    if (ch >= 'A' && ch <= 'Z')
+		ch = ch - 'A' + 'a';
+	    if (ch) *d++ = ch;
 	}
+	*d = 0;
     }
 
+    snprintf(helpbuf, sizeof(helpbuf), "help/%s.txt", helptopic);
     FILE * hfd = fopen(helpbuf, "r");
     if (hfd) {
 	while(fgets(helpbuf, sizeof(helpbuf), hfd)) {
@@ -67,11 +77,11 @@ cmd_help(char * prefix, char *cmdargs)
     }
 
     {
-	int l = strlen(helpbuf);
-	if (l>9) {
+	int l = strlen(helptopic);
+	if (l>0) {
 	    helpbuf[l-4] = 0;
 	    for(int hno = 0; helptext[hno].item; hno++) {
-		if (strcasecmp(helptext[hno].item, helpbuf+5) != 0)
+		if (strcasecmp(helptext[hno].item, helptopic) != 0)
 		    continue;
 		char ** ln = helptext[hno].lines;
 		for(;*ln; ln++) {
@@ -85,20 +95,14 @@ cmd_help(char * prefix, char *cmdargs)
 	}
     }
 
+    fprintf(stderr, "Failed /help \"%s\",\"%s\" file \"%s.txt\"\n",
+	prefix?prefix:"", cmdargs, helptopic);
+
     if (prefix == 0)
 	printf_chat("&WNo help found for topic '%s'", cmdargs);
     else
 	printf_chat("&WNo %s file found for '%s'", prefix, cmdargs);
 }
-
-/*HELP faq H_CMD
-&cFAQ&f:
-&fExample: What does this server run on? This server runs on MCCHost
-*/
-
-/*HELP news H_CMD
-No news today.
-*/
 
 /*HELP clear,cls H_CMD
 &T/Clear &SClear your chat.
@@ -112,3 +116,12 @@ cmd_clear(UNUSED char * prefix, UNUSED char *cmdargs)
 	printf_chat(" ");;
     printf_chat("&WCleared");;
 }
+
+/*HELP faq H_CMD
+&cFAQ&f:
+&fExample: What does this server run on? This server runs on MCCHost
+*/
+
+/*HELP news H_CMD
+No news today.
+*/

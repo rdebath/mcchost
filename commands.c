@@ -66,7 +66,7 @@ run_command(char * msg)
     return;
 }
 
-/*HELP quit
+/*HELP quit H_CMD
 &T/quit [Reason]
 Logout and leave the server
 Aliases: /rq
@@ -110,7 +110,7 @@ cmd_quit(char * cmd, char * arg)
 	logout("Left the game.");
 }
 
-/*HELP commands,cmds,cmdlist
+/*HELP commands,cmds,cmdlist H_CMD
 &T/commands
 List all available commands
 Aliases: /cmds /cmdlist
