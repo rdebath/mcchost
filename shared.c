@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -33,6 +32,8 @@
 #endif
 
 #if INTERFACE
+#include <stdint.h>
+
 #define SHMID_PROP	0
 #define SHMID_BLOCKS	1
 #define SHMID_BLOCKQ	2

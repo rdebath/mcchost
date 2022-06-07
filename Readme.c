@@ -17,7 +17,10 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Allow for extend of .queue file without triggering reloads.
+
  +) /mode command.
+ +) /about command
  +) /z and /m commands with setblock capture.
  +) Setblock capture for readonly mode ?
 
@@ -47,7 +50,6 @@ See "/help todo" for notes.
  +) /restore & /museum
  +) /newlvl, create cw file in ini file format.
  +) Import -- download *.cw file from web.
- +) Export -- Hummm, filesend extension? (can be used for terrain.png)
 
  +) Block/User history records.
     -- Combined history needs user id numbers --> user file/table.
@@ -61,17 +63,14 @@ See "/help todo" for notes.
  +) /spawn command
  +) /tp command
  +) /afk command (and auto)
- +) /mode command (Grass, bedrock, water etc)
  +) /info command
- +) /about command
 
  +) Add command to save all help texts as real files.
-	no overwrite -- create *.bak in this case?
+	no overwrite -- save to *.bak in this case?
 
  +) Run external command with stdout/err sent to client (</dev/null)
-    -- Map gen?
+    -- Map gen? Import?
 
- +) Automatic log file cleanup?
  +) Log user commands ?
 
 Features:
@@ -132,9 +131,5 @@ Make sure text anti-spam is in place.
 
 On Block queue, if user count < 2 && no-physics don't use queue ?
     --> *256 blocks packet need queue?
-
-More blocks modified than will fit in queue?
-    --> Can only see for "me" so generation number will wrap and reload.
-    Mass change can pre-supress block queue and force generation rollover.
 
 // vim:set syntax=none: */

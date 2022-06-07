@@ -3,9 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <stdint.h>
 #include <zlib.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #include "nbtload.h"
@@ -188,6 +186,13 @@ read_element(gzFile ifd, int etype)
 		return 1;
 	    }
 
+
+#if 0
+static char *entpropnames[6] = {
+    "ModelRotX", "ModelRotY", "ModelRotZ",
+    "ModelScaleX", "ModelScaleY", "ModelScaleZ"
+    };
+#endif
 	    if (!read_element(ifd, NBT_LABEL)) return 0;
 	    if (!read_element(ifd, etype)) return 0;
 	}

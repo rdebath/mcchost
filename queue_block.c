@@ -1,10 +1,11 @@
 #include <unistd.h>
 #include <stdio.h>
-#include <time.h>
 
 #include "queue_block.h"
 
 #if INTERFACE
+#include <stdint.h>
+
 #define MIN_QUEUE 250
 typedef block_queue_t block_queue_t;
 struct block_queue_t {

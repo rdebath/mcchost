@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
-#include <sys/types.h>
 #include <signal.h>
 
 #include "commands.h"

@@ -1,9 +1,13 @@
-#include <stdio.h>
 #include <string.h>
+
 #include "hexdump.h"
 
+#if INTERFACE
+#include <stdio.h>
 #define hexdump_use_iso 0
-static int hexdump_address;
+#endif
+
+int hexdump_address;
 
 void
 hex_logfile(int ch)

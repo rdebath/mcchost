@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
-#include <time.h>
 
 #include "maps.h"
 

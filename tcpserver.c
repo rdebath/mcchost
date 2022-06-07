@@ -4,20 +4,21 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <assert.h>
-#include <time.h>
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/select.h>
 
 #include "tcpserver.h"
 #include "inline.h"
+
+#if INTERFACE
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
 
 int start_tcp_server = 0;
 int detach_tcp_server = 0;

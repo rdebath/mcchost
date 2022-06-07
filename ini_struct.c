@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -14,6 +13,8 @@
  */
 
 #if INTERFACE
+#include <stdio.h>
+
 typedef int (*ini_func_t)(ini_state_t *st, char * fieldname, char **value);
 
 typedef ini_state_t ini_state_t;

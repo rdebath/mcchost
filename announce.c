@@ -1,5 +1,3 @@
-#include <stdlib.h>
-#include <string.h>
 
 #include "announce.h"
 
@@ -17,6 +15,7 @@ Alias &T/an
 void
 cmd_announce(UNUSED char * cmd, char * arg)
 {
+    // TODO Permissions ? Attribution ?
     printf_chat("@~(100)%s", arg);
 }
 

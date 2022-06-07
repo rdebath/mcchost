@@ -4,9 +4,7 @@
 #include <string.h>
 #include <signal.h>
 #include <errno.h>
-#include <sys/types.h>
 #include <sys/time.h>
-#include <time.h>
 
 #include "client_list.h"
 
@@ -18,6 +16,9 @@
  */
 
 #if INTERFACE
+#include <time.h>
+#include <sys/types.h>
+
 #define MAX_USER	255
 #define MAX_LEVEL	255
 #define MAGIC_USR	0x0012FF7E

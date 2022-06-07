@@ -1,6 +1,9 @@
-#include <stdio.h>
 
 #include "cp437.h"
+
+#if INTERFACE
+#include <stdio.h>
+#endif
 
 /*HELP chars
 ___0123456789ABCDEF0123456789ABCDEF_

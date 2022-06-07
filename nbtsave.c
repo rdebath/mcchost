@@ -3,8 +3,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <stdint.h>
-#include <time.h>
 #include <math.h>
 #include <limits.h>
 #include <zlib.h>
@@ -15,13 +13,6 @@ enum NbtTagType {
     NBT_END, NBT_I8, NBT_I16, NBT_I32, NBT_I64, NBT_F32,
     NBT_F64, NBT_I8ARRAY, NBT_STR, NBT_LIST, NBT_COMPOUND
 };
-
-#if 0
-static char *entpropnames[6] = {
-    "ModelRotX", "ModelRotY", "ModelRotZ",
-    "ModelScaleX", "ModelScaleY", "ModelScaleZ"
-    };
-#endif
 
 /*
  * This writes a *.cw file.

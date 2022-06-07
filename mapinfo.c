@@ -1,6 +1,7 @@
 
 #if INTERFACE
 #include <stdint.h>
+#include <time.h>
 
 #define BLOCKMAX 1024
 #define MAP_MAGIC	0x1A7FFF00
