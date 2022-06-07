@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <time.h>
 
 #include "createmap.h"
 
@@ -34,6 +35,10 @@ createmap(char * levelname)
     }
 
     init_map_null();
+
+    level_prop->time_created = time(0),
+    // Don't backup too soon.
+    level_prop->last_backup = level_prop->time_created;
 
     load_ini_file(level_ini_fields, MODEL_INI_NAME, 1, 0);
 

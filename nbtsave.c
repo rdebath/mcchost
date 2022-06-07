@@ -50,6 +50,13 @@ save_map_to_file(char * fn, int background)
     bc_ent_int16(savefile, "Y", level_prop->cells_y);
     bc_ent_int16(savefile, "Z", level_prop->cells_z);
 
+    if (level_prop->time_created)
+	bc_ent_int64(savefile, "TimeCreated", level_prop->time_created);
+    if (level_prop->last_modified)
+	bc_ent_int64(savefile, "LastModified", level_prop->last_modified);
+    if (level_prop->last_backup)
+	bc_ent_int64(savefile, "LastBackup", level_prop->last_backup);
+
     bc_compound(savefile, "Spawn");
     bc_ent_int16(savefile, "X", level_prop->spawn.x/32);
     bc_ent_int16(savefile, "Y", level_prop->spawn.y/32);
@@ -340,6 +347,21 @@ bc_ent_float(gzFile ofd, char * name, double fval)
     gzputc(ofd, (val>>16) & 0xFF);
     gzputc(ofd, (val>>8)  & 0xFF);
     gzputc(ofd,  val      & 0xFF);
+}
+
+LOCAL void
+bc_ent_int64(gzFile ofd, char * name, int64_t val)
+{
+    gzputc(ofd, NBT_I64);
+    bc_ent_label(ofd, name);
+    gzputc(ofd, (val>>56));
+    gzputc(ofd, (val>>48));
+    gzputc(ofd, (val>>40));
+    gzputc(ofd, (val>>32));
+    gzputc(ofd, (val>>24));
+    gzputc(ofd, (val>>16));
+    gzputc(ofd, (val>>8));
+    gzputc(ofd, val&0xFF);
 }
 
 LOCAL void

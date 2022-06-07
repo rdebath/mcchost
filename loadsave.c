@@ -222,6 +222,16 @@ scan_and_save_levels(int unlink_only)
 
 	if (!level_prop->readonly && !unlink_only) {
 	    if (level_prop->dirty_save) {
+		level_prop->last_modified = time(0); // Close enough
+
+		// TODO: 1) Save map to .tmp
+		//       2) Link .cw to .bak
+		//       3) Rename .tmp to .cw
+		//       4) Rename .bak to backup/...cw
+		//
+		// If not backup omit (2) and (4) has nothing to ren.
+		// Current has hole when .cw is not available.
+
 		try_backup(fixedname);
 
 		int rv = save_level_in_map(fixedname);
@@ -270,60 +280,49 @@ void
 try_backup(char * fixedname)
 {
     char filename[256];
-    snprintf(filename, sizeof(filename), LEVEL_PREV_NAME, fixedname);
+    snprintf(filename, sizeof(filename), LEVEL_CW_NAME, fixedname);
 
-    struct stat info;
+    // Time to save ?
+    time_t now = time(0);
+    if (now-server.backup_interval < level_prop->last_backup) return;
 
-    // Existing file in backup directory
-    if (stat(filename, &info) == 0)
-    {
-	// If it's old
-	time_t now = time(0);
-	if (now-server.backup_interval < info.st_mtime) return;
-	int backup_id = 1;
+    // Anything to save
+    if (access(filename, F_OK) != 0) return;
 
-	// Find the next unused number
-	struct dirent *entry;
-	DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
-	if (directory) {
-	    int l = strlen(fixedname);
-	    while( (entry=readdir(directory)) )
-	    {
-		if (strncmp(entry->d_name, fixedname, l) == 0
-		    && entry->d_name[l] == '.') {
-		    char * s = entry->d_name+l+1;
-		    int v = 0;
-		    while(*s>='0' && *s<='9') { s++; v=v*10+(*s-'0'); }
-		    if (v>backup_id && strcmp(s, ".cw") == 0) {
-			backup_id = v+1;
-		    }
+    int backup_id = 1;
+
+    // Find the next unused number
+    struct dirent *entry;
+    DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
+    if (directory) {
+	int l = strlen(fixedname);
+	while( (entry=readdir(directory)) )
+	{
+	    if (strncmp(entry->d_name, fixedname, l) == 0
+		&& entry->d_name[l] == '.') {
+		char * s = entry->d_name+l+1;
+		int v = 0;
+		while(*s>='0' && *s<='9') { s++; v=v*10+(*s-'0'); }
+		if (v>backup_id && strcmp(s, ".cw") == 0) {
+		    backup_id = v+1;
 		}
 	    }
-	    closedir(directory);
 	}
-
-	// Rename it to there
-	char backupname[256];
-	sprintf(backupname, LEVEL_BACKUP_NAME, fixedname, backup_id);
-	if (rename(filename, backupname) < 0) {
-	    fprintf(stderr, "Error on backup of %s to %s\n", filename, backupname);
-	    return;
-	}
+	closedir(directory);
     }
 
-    if (access(filename, F_OK) != 0) {
-
-	// No file in the backup dir, copy the saved one.
-	char cwfilename[256];
-	snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, fixedname);
-
-	if (access(cwfilename, F_OK) == 0) {
-	    if (rename(cwfilename, filename) < 0) {
-		fprintf(stderr, "Error on rename of %s to %s\n", cwfilename, filename);
-		return;
-	    }
-	}
+    // Rename it to there
+    char backupname[256];
+    sprintf(backupname, LEVEL_BACKUP_NAME, fixedname, backup_id);
+    if (rename(filename, backupname) < 0) {
+	fprintf(stderr, "Error on backup of %s to %s\n", filename, backupname);
+	return;
     }
+
+    fprintf(stderr, "Saved backup %s\n", backupname);
+
+    // We saved the previous
+    level_prop->last_backup = now;
 }
 
 /* This only finds ASCII case insensitive, not CP437. This is probably fine.

@@ -336,6 +336,10 @@ change_int_value(char * section, char * item, long long value)
 		init_map_from_size((xyz_t){level_prop->cells_x, level_prop->cells_y, level_prop->cells_z});
 	}
 
+	if (strcmp(item, "TimeCreated") == 0) level_prop->time_created = value;
+	if (strcmp(item, "LastModified") == 0) level_prop->last_modified = value;
+	if (strcmp(item, "LastBackup") == 0) level_prop->last_backup = value;
+
     } else if (strcmp(section, "Spawn") == 0) {
 	if (strcmp(item, "X") == 0) level_prop->spawn.x = value*32+16;
 	if (strcmp(item, "Y") == 0) level_prop->spawn.y = value*32+16;

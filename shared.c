@@ -17,6 +17,7 @@
  *
  *       pthread_mutex_lock() appears to do this.
  *		pthread_mutexattr_setrobust to use "robust futexes"
+ *		However, it goes into an error state.
  *
  *       SysV semops with SEM_UNDO do this.
  *
@@ -60,23 +61,18 @@ struct shared_data_t {
 };
 
 #define level_prop shdat.prop
-#define level_prop_len shdat.dat[SHMID_PROP].len
-#define fcntl_fd shdat.dat[SHMID_PROP].lock_fd
-
 #define level_blocks shdat.blocks
-#define level_blocks_len shdat.dat[SHMID_BLOCKS].len
-
 #define level_block_queue shdat.blockq
-#define level_block_queue_len shdat.dat[SHMID_BLOCKQ].len
-
 #define client_list shdat.client
-#define client_list_len shdat.dat[SHMID_CLIENTS].len
-#define client_fd shdat.dat[SHMID_CLIENTS].lock_fd
-
 #define level_chat_queue shdat.chat
-#define level_chat_queue_len shdat.dat[SHMID_CHAT].len
-#define chat_fd shdat.dat[SHMID_CHAT].lock_fd
 #endif
+
+#define fcntl_fd shdat.dat[SHMID_PROP].lock_fd
+#define client_fd shdat.dat[SHMID_CLIENTS].lock_fd
+#define chat_fd shdat.dat[SHMID_CHAT].lock_fd
+
+#define level_block_queue_len shdat.dat[SHMID_BLOCKQ].len
+#define level_chat_queue_len shdat.dat[SHMID_CHAT].len
 
 struct shared_data_t shdat;
 
@@ -217,12 +213,9 @@ int
 open_blocks(char * levelname)
 {
     char sharename[256];
-    if (level_blocks) {
-	uintptr_t sz = level_blocks_len;
-	(void)munmap((void*)level_blocks, sz);
-	level_blocks_len = 0;
-	level_blocks = 0;
-    }
+
+    deallocate_shared(SHMID_BLOCKS);
+    level_blocks = 0;
 
     sprintf(sharename, LEVEL_BLOCKS_NAME, levelname);
     int64_t l =
@@ -235,8 +228,7 @@ open_blocks(char * levelname)
 	perror("Server address space too small for this map");
 	fatal("Map too large for this server compilation.");
     }
-    level_blocks_len = l;
-    if (allocate_shared(sharename, level_blocks_len, shdat.dat+SHMID_BLOCKS, 1) < 0)
+    if (allocate_shared(sharename, l, shdat.dat+SHMID_BLOCKS, 1) < 0)
 	return -1;
 
     level_blocks = shdat.dat[SHMID_BLOCKS].ptr;
@@ -246,27 +238,13 @@ open_blocks(char * levelname)
 void
 stop_shared(void)
 {
-    if (level_prop) {
-	uintptr_t sz = level_prop_len;
-	(void)munmap((void*)level_prop, sz);
-	level_prop_len = 0;
-	level_prop = 0;
-    }
-
-    if (level_blocks) {
-	uintptr_t sz = level_blocks_len;
-	(void)munmap((void*)level_blocks, sz);
-	level_blocks_len = 0;
-	level_blocks = 0;
-    }
+    deallocate_shared(SHMID_PROP);
+    deallocate_shared(SHMID_BLOCKS);
+    level_prop = 0;
+    level_blocks = 0;
 
     if (level_block_queue)
 	stop_block_queue();
-
-    if (fcntl_fd > 0) {
-	close(fcntl_fd);
-	fcntl_fd = 0;
-    }
 }
 
 void
@@ -377,9 +355,7 @@ void
 stop_block_queue()
 {
     if (level_block_queue) {
-	uintptr_t sz = level_block_queue_len;
-	(void)munmap((void*)level_block_queue, sz);
-	level_block_queue_len = 0;
+	deallocate_shared(SHMID_BLOCKQ);
 	level_block_queue = 0;
 	wipe_last_block_queue_id();
     }
@@ -393,8 +369,7 @@ open_client_list()
     if (client_list) stop_client_list();
 
     sprintf(sharename, SYS_STAT_NAME);
-    client_list_len = sizeof(*client_list);
-    allocate_shared(sharename, client_list_len, shdat.dat+SHMID_CLIENTS, 0);
+    allocate_shared(sharename, sizeof(*client_list), shdat.dat+SHMID_CLIENTS, 0);
     client_list = shdat.dat[SHMID_CLIENTS].ptr;
     if (!client_list) return;
 
@@ -407,17 +382,8 @@ open_client_list()
 void
 stop_client_list()
 {
-    if (client_list) {
-	uintptr_t sz = client_list_len;
-	(void)munmap((void*)client_list, sz);
-	client_list_len = 0;
-	client_list = 0;
-    }
-
-    if (client_fd > 0) {
-	close(client_fd);
-	client_fd = 0;
-    }
+    deallocate_shared(SHMID_CLIENTS);
+    client_list = 0;
 }
 
 void
@@ -455,16 +421,9 @@ void
 stop_chat_queue()
 {
     if (level_chat_queue) {
-	uintptr_t sz = level_chat_queue_len;
-	(void)munmap((void*)level_chat_queue, sz);
-	level_chat_queue_len = 0;
+	deallocate_shared(SHMID_CHAT);
 	level_chat_queue = 0;
 	wipe_last_chat_queue_id();
-    }
-
-    if (chat_fd > 0) {
-	close(chat_fd);
-	chat_fd = 0;
     }
 }
 
@@ -475,6 +434,7 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm, int close
     void * shm_p;
     int shared_fd = -1;
 
+    // size_t for mmap and off_t for posix_fallocate
     assert((size_t)share_size > 0 && (off_t)share_size > 0);
 
     if (shm->lock_fd > 0) close(shm->lock_fd);
@@ -521,6 +481,22 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm, int close
     shm->lock_fd = shared_fd;
 
     return 0;
+}
+
+void
+deallocate_shared(int share_id)
+{
+    if (shdat.dat[share_id].ptr) {
+	void * p = shdat.dat[share_id].ptr;
+	uintptr_t sz = shdat.dat[share_id].len;
+	(void)munmap(p, sz);
+	shdat.dat[share_id].ptr = 0;
+	shdat.dat[share_id].len = 0;
+    }
+    if (shdat.dat[share_id].lock_fd > 0) {
+	close(shdat.dat[share_id].lock_fd);
+	shdat.dat[share_id].lock_fd = 0;
+    }
 }
 
 void
