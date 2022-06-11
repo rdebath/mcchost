@@ -108,7 +108,7 @@ cmd_paint(UNUSED char * cmd, UNUSED char * arg)
 void
 process_player_setblock(pkt_setblock pkt)
 {
-    if (level_prop->readonly) {
+    if (level_prop->readonly && !level_prop->allowchange) {
 	revert_client(pkt);
 	return;
     }

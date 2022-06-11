@@ -62,19 +62,25 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAYCP437("Name", server.name);
 	INI_STRARRAYCP437("Motd", server.motd);
 	INI_STRARRAYCP437("Main", server.main_level);
-	INI_STRARRAY(st->write?"; Salt":"Salt", server.secret);	//Base62
+
+	if (!st->no_unsafe) {
+	    INI_STRARRAY(st->write?"; Salt":"Salt", server.secret);	//Base62
+	    INI_BOOLVAL(st->write?"; Runonce":"Runonce", server_runonce);
+	}
+
 	INI_BOOLVAL("NoCPE", server.cpe_disabled);
 	INI_BOOLVAL("Private", server.private);
 
 	INI_STRARRAY("Logfile", logfile_pattern);		//Binary
+
 	INI_BOOLVAL("tcp", start_tcp_server);
-	INI_BOOLVAL("Detach", detach_tcp_server);
 	INI_STRARRAY("Heartbeat", heartbeat_url);		//ASCII
 	INI_BOOLVAL("PollHeartbeat", enable_heartbeat_poll);
 	INI_INTVAL(st->write && tcp_port_no==25565?"; Port":"Port", tcp_port_no);
+
 	INI_BOOLVAL("Inetd", inetd_mode);
+	INI_BOOLVAL("Detach", detach_tcp_server);
 	INI_BOOLVAL("OPFlag", server_id_op_flag);
-	INI_BOOLVAL(st->write?"; Runonce":"Runonce", server_runonce);
     }
 
     return found;
@@ -89,9 +95,12 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
     // When writing include a copy of the system stuff.
     // Skip it quietly on read.
-    if (st->write)
+    if (st->write) {
+	int i = st->no_unsafe;
+	st->no_unsafe = 1;
 	system_ini_fields(st, fieldname, fieldvalue);
-    else if (st->curr_section && strcmp("server", st->curr_section) == 0)
+	st->no_unsafe = i;
+    } else if (st->curr_section && strcmp("server", st->curr_section) == 0)
 	return 1;
 
     section = "level";
@@ -138,6 +147,9 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("ExpFog", level_prop->exp_fog);
 	INI_FIXEDP("SkyboxHorSpeed", level_prop->skybox_hor_speed, 1024);
 	INI_FIXEDP("SkyboxVerSpeed", level_prop->skybox_ver_speed, 1024);
+
+	INI_BOOLVAL("AllowChange", level_prop->allowchange);
+	INI_BOOLVAL("ReadOnly", level_prop->readonly);
     }
 
     int bn = 0;
@@ -440,7 +452,7 @@ ini_write_bool(ini_state_t *st, char * section, char *fieldname, int value)
 }
 
 LOCAL void
-ini_read_bool(int *var, char * value)
+ini_read_bool(volatile int *var, char * value)
 {
     if (strcasecmp(value, "true") == 0) *var = 1; else
     if (strcasecmp(value, "yes") == 0) *var = 1; else

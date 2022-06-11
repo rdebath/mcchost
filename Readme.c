@@ -20,6 +20,7 @@ See "/help todo" for notes.
  +) backup/ on different filesystem
  +) Aliases in /set command
  +) Allow for extend of .queue file without triggering reloads.
+ +) Move server_t structure to shared memory. (Multiple ports?)
 
  +) /mode command.
  +) /about command

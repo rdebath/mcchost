@@ -10,11 +10,13 @@
 #include "loadsave.h"
 #include "inline.h"
 
-/*HELP goto,g H_CMD
+/*HELP goto,g,gr H_CMD
 &T/goto [levelname]
 Switch your current level, level name may be a partial match
 to the full name and &T/goto +&S takes you to a personal level.
 Use &T/maps&S to list levels.
+&T/goto -random &Sor &T/gr
+Go to a random level.
 */
 /*HELP main H_CMD
 &T/main
@@ -31,7 +33,8 @@ Return to the system main level
 #if INTERFACE
 #define CMD_LOADSAVE \
     {N"load", &cmd_load}, {N"save", &cmd_save}, \
-    {N"goto", &cmd_goto}, {N"g", &cmd_goto, .dup=1}, \
+    {N"goto", &cmd_goto}, \
+    {N"g", &cmd_goto, .dup=1}, {N"gr", &cmd_goto, .dup=1}, \
     {N"main", &cmd_main}
 #endif
 
@@ -40,33 +43,51 @@ cmd_goto(UNUSED char * cmd, char * arg)
 {
     char fixedname[NB_SLEN], buf2[256], levelname[MAXLEVELNAMELEN+1];
     char userlevel[256], fixeduserlevel[NB_SLEN];
-    if (!arg) { cmd_help(0,"goto"); return; }
+    if (!arg && strcmp(cmd, "gr") != 0) { cmd_help(0,"goto"); return; }
+    if (!arg) arg = "";
 
     while (*arg == ' ') arg++;
-
-    snprintf(userlevel, sizeof(userlevel), "%.60s+", user_id);
-    fix_fname(fixeduserlevel, sizeof(fixeduserlevel), userlevel);
-
-    fix_fname(fixedname, sizeof(fixedname), arg);
-    if (strcmp(arg, "+") == 0 || strcmp(arg, userlevel) == 0) {
-	strcpy(fixedname, fixeduserlevel);
-    } else {
+    int l = strlen(arg);
+    // A quoted name is used exactly.
+    if (l>2 && arg[0] == '"' && arg[l-1] == '"') {
+	arg[l-1] = 0;
+	arg++;
+	fix_fname(fixedname, sizeof(fixedname), arg);
 	snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
 	if (access(buf2, F_OK) != 0) {
-	    char * newfixed = find_file_match(fixedname, arg);
+	    printf_chat("&SLevel \"%s\" does not exist", arg);
+	    return;
+	}
+    } else if (strcmp(cmd, "gr") == 0 || strcasecmp(arg, "-random") == 0) {
+	choose_random_level(fixedname, sizeof(fixedname));
+    } else {
+	snprintf(userlevel, sizeof(userlevel), "%.60s+", user_id);
+	fix_fname(fixeduserlevel, sizeof(fixeduserlevel), userlevel);
 
-	    if (newfixed != 0) {
-		snprintf(fixedname, sizeof(fixedname), "%s", newfixed);
-		free(newfixed);
+	fix_fname(fixedname, sizeof(fixedname), arg);
+	if (strcmp(arg, "+") == 0 || strcmp(arg, userlevel) == 0) {
+	    strcpy(fixedname, fixeduserlevel);
+	} else {
+	    snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+	    if (access(buf2, F_OK) != 0) {
+		char * newfixed = find_file_match(fixedname, arg);
+
+		if (newfixed != 0) {
+		    snprintf(fixedname, sizeof(fixedname), "%s", newfixed);
+		    free(newfixed);
+		}
+		else return;
 	    }
-	    else return;
 	}
     }
 
     unfix_fname(levelname, sizeof(levelname), fixedname);
     if (*levelname == 0) {
-	fprintf(stderr, "Error on map name for \"/goto %s\"\n", arg);
-	printf_chat("&SNo levels match \"%s\"", arg);
+	fprintf(stderr, "Error on map name for \"/goto %s\" file:\"%s\"\n", arg, fixedname);
+	if (*arg && !*fixedname)
+	    printf_chat("&SNo levels match \"%s\"", arg);
+	else
+	    printf_chat("&SCould not load level file \"%s\"", fixedname);
 	return;
     }
 
@@ -88,8 +109,7 @@ cmd_goto(UNUSED char * cmd, char * arg)
     send_spawn_pkt(255, user_id, level_prop->spawn);
 
     printf_chat("@&S%s went to &7%s", user_id, levelname);
-    if (level_prop->readonly)
-	printf_chat("&WLoaded read only map");
+    read_only_message();
 }
 
 void
@@ -114,8 +134,7 @@ cmd_main(UNUSED char * cmd, UNUSED char * arg)
 
     printf_chat("@&S%s went to &7%s", user_id, server.main_level);
 
-    if (level_prop->readonly)
-	printf_chat("&WLoaded read only map");
+    read_only_message();
 }
 
 void
@@ -417,6 +436,62 @@ find_file_match(char * fixedname, char * levelname)
     free(line);
 
     return 0;
+}
+
+void
+choose_random_level(char * fixedname, int name_len)
+{
+    struct dirent *entry;
+
+    DIR *directory = opendir(LEVEL_MAP_DIR_NAME);
+
+    if (!directory) {
+        printf_chat("#No maps found... WTF where is %s‼", server.main_level);
+        return;
+    }
+
+    char ** maplist = 0;
+    int maplist_sz = 0, maplist_cnt = 0;
+
+    while( (entry=readdir(directory)) )
+    {
+    #ifdef _DIRENT_HAVE_D_TYPE
+	if (entry->d_type != DT_REG && entry->d_type != DT_UNKNOWN)
+	    continue;
+    #endif
+	int l = strlen(entry->d_name);
+	if (l<=3 || strcmp(entry->d_name+l-3, ".cw") != 0) continue;
+
+	char nbuf[MAXLEVELNAMELEN*4];
+	char nbuf2[MAXLEVELNAMELEN+1];
+	l -= 3;
+	if (l>sizeof(nbuf)-2) continue;
+	memcpy(nbuf, entry->d_name, l);
+	nbuf[l] = 0;
+	unfix_fname(nbuf2, sizeof(nbuf2), nbuf);
+	if (*nbuf2 == 0) continue;
+	l = strlen(nbuf2);
+	if (l>MAXLEVELNAMELEN) continue;
+
+	if (maplist_cnt >= maplist_sz) {
+	    if (maplist_sz==0) maplist_sz = 32;
+	    maplist = realloc(maplist, (maplist_sz *= 2)*sizeof*maplist);
+	}
+	if (strcmp(nbuf2, current_level_name) != 0)
+	    maplist[maplist_cnt++] = strdup(nbuf);
+    }
+    closedir(directory);
+
+    *fixedname = 0;
+    if (maplist_cnt>0) {
+	int which = random() % maplist_cnt;
+	snprintf(fixedname, name_len, "%s", maplist[which]);
+    }
+
+    for(int i = 0; i<maplist_cnt; i++)
+	free(maplist[i]);
+    free(maplist);
+    return;
 }
 
 char *

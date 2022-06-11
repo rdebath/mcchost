@@ -41,6 +41,8 @@ static volatile int restart_sig = 0, child_sig = 0;
 static volatile int alarm_sig = 0, term_sig = 0;
 static int signal_available = 0;
 
+pid_t alarm_handler_pid = 0;
+
 void
 handle_signal(int signo)
 {
@@ -80,6 +82,8 @@ tcpserver()
 	    perror("signal(SIGALRM,)");
 	if (signal(SIGTERM, handle_signal) == SIG_ERR)
 	    perror("signal(SIGTERM,)");
+
+	alarm_handler_pid = getpid(); // For the children to signal us.
     }
 
     if (!log_to_stderr) {

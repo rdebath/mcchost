@@ -75,9 +75,9 @@ cmd_quit(char * cmd, char * arg)
     if (strcasecmp(cmd, "crash") == 0 || strcasecmp(cmd, "servercrash") == 0) {
 	char * crash_type = arg;
 	assert(!crash_type || strcmp(crash_type, "666"));
-	if (strcmp(crash_type, "616") == 0)
+	if (crash_type && strcmp(crash_type, "616") == 0)
 	    kill(getpid(), SIGKILL);
-	if (strcmp(crash_type, "696") == 0)
+	if (crash_type && strcmp(crash_type, "696") == 0)
 	    exit(254);
 	fatal("Server crash! Error code 42");
     }

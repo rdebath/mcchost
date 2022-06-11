@@ -163,10 +163,20 @@ complete_connection()
     printf_chat("&SWelcome &7%s", user_id);
     printf_chat("@&a+ &7%s &Sconnected", user_id);
 
-    if (level_prop->readonly)
-	printf_chat("&WLoaded read only map");
+    read_only_message();
 
     cmd_help("welcome", 0);
+}
+
+void
+read_only_message()
+{
+    if (level_prop->readonly) {
+	if (level_prop->allowchange)
+	    printf_chat("&WLoaded read only map, any changes you make will be discarded when the level unloads");
+	else
+	    printf_chat("&WLoaded read only map");
+    }
 }
 
 void

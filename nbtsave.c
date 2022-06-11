@@ -181,6 +181,10 @@ save_map_to_file(char * fn, int background)
     if (bdopen)
 	bc_end(savefile);
 
+    bc_compound(savefile, "MCCHost");
+    bc_ent_int(savefile, "AllowChange", level_prop->allowchange);
+    bc_end(savefile);
+
     /* TODO -- server level ?
         bc_compound(ofd, "SetTextHotKey", seqid);
         bc_ent_string(ofd, "label", pkt+1, 64);
@@ -488,24 +492,24 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
     }
 
     // Not written by CC ...
-    bc_ent_int16(ofd, "Fallback", blkdef->fallback);
+    bc_ent_int(ofd, "Fallback", blkdef->fallback);
 
     if (blkdef->inventory_order != (block_t)-1)
-	bc_ent_int16(ofd, "InventoryOrder", blkdef->inventory_order);
+	bc_ent_int(ofd, "InventoryOrder", blkdef->inventory_order);
 
-    bc_ent_int8(ofd, "FireFlag", blkdef->fire_flag);
-    bc_ent_int8(ofd, "DoorFlag", blkdef->door_flag);
-    bc_ent_int8(ofd, "MblockFlag", blkdef->mblock_flag);
-    bc_ent_int8(ofd, "PortalFlag", blkdef->portal_flag);
-    bc_ent_int8(ofd, "LavakillsFlag", blkdef->lavakills_flag);
-    bc_ent_int8(ofd, "WaterkillsFlag", blkdef->waterkills_flag);
-    bc_ent_int8(ofd, "TdoorFlag", blkdef->tdoor_flag);
-    bc_ent_int8(ofd, "RailsFlag", blkdef->rails_flag);
-    bc_ent_int8(ofd, "OpblockFlag", blkdef->opblock_flag);
+    bc_ent_int(ofd, "FireFlag", blkdef->fire_flag);
+    bc_ent_int(ofd, "DoorFlag", blkdef->door_flag);
+    bc_ent_int(ofd, "MblockFlag", blkdef->mblock_flag);
+    bc_ent_int(ofd, "PortalFlag", blkdef->portal_flag);
+    bc_ent_int(ofd, "LavakillsFlag", blkdef->lavakills_flag);
+    bc_ent_int(ofd, "WaterkillsFlag", blkdef->waterkills_flag);
+    bc_ent_int(ofd, "TdoorFlag", blkdef->tdoor_flag);
+    bc_ent_int(ofd, "RailsFlag", blkdef->rails_flag);
+    bc_ent_int(ofd, "OpblockFlag", blkdef->opblock_flag);
 
-    bc_ent_int16(ofd, "StackBlock", blkdef->stack_block);
-    bc_ent_int16(ofd, "OdoorBlock", blkdef->odoor_block);
-    bc_ent_int16(ofd, "GrassBlock", blkdef->grass_block);
-    bc_ent_int16(ofd, "DirtBlock", blkdef->dirt_block);
+    bc_ent_int(ofd, "StackBlock", blkdef->stack_block);
+    bc_ent_int(ofd, "OdoorBlock", blkdef->odoor_block);
+    bc_ent_int(ofd, "GrassBlock", blkdef->grass_block);
+    bc_ent_int(ofd, "DirtBlock", blkdef->dirt_block);
     bc_end(ofd);
 }

@@ -113,11 +113,13 @@ void
 reset_player_list()
 {
     for(int i=0; i<MAX_USER; i++)
-	myuser[i].active = 0;
+	myuser[i].visible = myuser[i].active = 0;
 
     send_spawn_pkt(255, user_id, level_prop->spawn);
     if (myuser[my_user_no].posn.valid)
 	send_posn_pkt(255, 0, myuser[my_user_no].posn);
+
+    last_check.tv_sec = 1;
 }
 
 void

@@ -198,7 +198,6 @@ send_queued_blocks()
 	    usleep(500000);  // Half a second leeway to allow network to clear.
 	reload_pending = 0;
 	send_map_file();
-	reset_player_list();
 	return;
     }
 

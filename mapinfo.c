@@ -41,6 +41,7 @@ struct map_info_t {
 
     // Do we want/need to backup/save/update ?
     int readonly;
+    int allowchange;	// even if readonly, you can change the working map.
     int dirty_save;
     uint32_t metadata_generation;
     time_t time_created;	// Map initial creation time

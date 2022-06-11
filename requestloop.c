@@ -143,9 +143,10 @@ do_select()
 	rv = read(line_ifd, line_inp_buf, sizeof(line_inp_buf));
 	if( rv > 0 )
 	    remote_received(line_inp_buf, rv);
-	else if (rv < 0)
-	    fatal("read line_fd syscall");
-	else if (rv == 0)
+	else if (rv < 0) {
+	    perror("Error reading line_fd");
+	    return -1;
+	} else if (rv == 0)
 	    return -1;
     }
 

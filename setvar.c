@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <signal.h>
 
 #include "setvar.h"
 
@@ -78,4 +80,6 @@ cmd_setvar(UNUSED char * cmd, char * arg)
     level_prop->dirty_save = 1;
     level_prop->metadata_generation++;
     level_prop->last_modified = time(0);
+
+    printf_chat("&SSet %s.%s=\"%s\" ok.", section, varname, value);
 }

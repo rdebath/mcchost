@@ -77,6 +77,7 @@ send_map_file()
     // Send_hack_control()
 
     send_metadata();
+    reset_player_list();
 }
 
 void
@@ -300,7 +301,7 @@ send_inventory_order()
 {
     if (!extn_inventory_order) return;
 
-    if (level_prop->readonly) {
+    if (level_prop->readonly && !level_prop->allowchange) {
 	for(int inv = 0; inv < client_block_limit; inv++)
 	    send_inventory_order_pkt(inv, 0);
 	if (extn_sethotbar) {
@@ -352,7 +353,7 @@ send_block_permission()
     int rok = 1, dok = 1;
     block_t b;
 
-    if (level_prop->readonly)
+    if (level_prop->readonly && !level_prop->allowchange)
 	rok = dok = 0;
 
     for(b=0; b< client_block_limit; b++)

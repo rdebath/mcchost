@@ -452,6 +452,10 @@ change_int_value(char * section, char * item, long long value)
 	}
 	level_prop->hacks_flags = f;
 
+    } else if (strcmp(section, "MCCHost") == 0) {
+
+	if (strcmp(item, "AllowChange") == 0) level_prop->allowchange = value;
+
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {
 	    current_block = value;
@@ -645,6 +649,9 @@ try_asciimode(gzFile ifd, char * levelname)
     patch_map_nulls(oldsize);
     open_blocks(levelname);
     init_flat_level();
+
+    // Don't want to keep the ini file -- no blocks.
+    level_prop->last_backup = level_prop->time_created;
 
     return 1;
 }
