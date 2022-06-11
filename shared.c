@@ -182,8 +182,7 @@ open_level_files(char * levelname, int direct)
 	level_prop->version_no != MAP_VERSION ||
 	level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
     {
-	printf_chat("&SLoading level file");
-	flush_to_remote();
+	fprintf(stderr, "Level \"%s\" does not have valid file, creating map\n", levelname);
 	createmap(levelname);
     } else
         // NB: Missing file here makes an Air map.

@@ -77,7 +77,7 @@ load_cwfile(gzFile ifd, char * level_fname)
 	    int ch2 = gzgetc(ifd);
 	    gzungetc(ch2, ifd);
 	    gzungetc(ch1, ifd);
-	    if (ch2 != 0x0c) {
+	    if (ch2 < 4 || ch2 > 30) { // Reasonable lengths
 		gzungetc(ch, ifd);
 		ch = 0;
 	    }
@@ -88,16 +88,21 @@ load_cwfile(gzFile ifd, char * level_fname)
     if (ch == NBT_COMPOUND) {
 	*last_lbl = *last_sect = 0;
 	read_element(ifd, NBT_LABEL);
+
 	ClassicWorld_found = !strcmp("ClassicWorld", last_lbl);
+	if (!ClassicWorld_found)
+	    ClassicWorld_found = !strcmp("CPEPacketLog", last_lbl);
+
 	if (!ClassicWorld_found) {
-	    fprintf(stderr, "File format incorrect.\n");
+	    fprintf(stderr, "Level \"%s\" incorrect NBT schema label \"%s\".\n", level_fname, last_lbl);
 	    return;
 	}
 	fprintf(stderr, "Loading ClassicWorld map from \"%s\": ", level_fname);
 	open_level_files(level_fname, 1);
+	init_map_null();
 	read_element(ifd, ch);
     } else if (ch == EOF || !try_asciimode(ifd, level_fname)) {
-	fprintf(stderr, "File format incorrect.\n");
+	fprintf(stderr, "Level \"%s\" NBT and INI load failed.\n", level_fname);
 	return;
     }
 
@@ -333,9 +338,10 @@ change_int_value(char * section, char * item, long long value)
 	else if (strcmp(item, "Z") == 0) level_prop->cells_z = value;
 	else ok = 0;
 	if (ok) {
-	    level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
+	    level_prop->total_blocks = (int64_t)level_prop->cells_x *
+		    level_prop->cells_y * level_prop->cells_z;
 	    if (level_prop->total_blocks)
-		init_map_from_size((xyz_t){level_prop->cells_x, level_prop->cells_y, level_prop->cells_z});
+		patch_map_nulls((xyzhv_t){0});
 	}
 
 	if (strcmp(item, "TimeCreated") == 0) level_prop->time_created = value;
@@ -449,8 +455,14 @@ change_int_value(char * section, char * item, long long value)
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {
 	    current_block = value;
-	    if (current_block >= 0 && current_block<Block_CPE && !level_prop->blockdef[current_block].defined) {
-		level_prop->blockdef[current_block] = default_blocks[current_block];
+	    if (!level_prop->blockdef[current_block].defined) {
+		if (current_block >= 0 && current_block<Block_CPE) {
+		    level_prop->blockdef[current_block] = default_blocks[current_block];
+		} else {
+		    blockdef_t t = default_blocks[1];
+		    sprintf(t.name.c, "@%d", current_block);
+		    level_prop->blockdef[current_block] = default_blocks[1];
+		}
 	    }
 
 	    level_prop->blockdef[current_block].defined = 1;
@@ -612,15 +624,18 @@ cpy_nstr(volatile char *buf, char *str, int len)
 LOCAL int
 try_asciimode(gzFile ifd, char * levelname)
 {
-    ini_state_t st = {.quiet = 0, .filename = "cw-file"};
+    ini_state_t st = {.quiet = 0, .filename = levelname};
+
+    fprintf(stderr, "Trying to load level \"%s\" as ini file\n", levelname);
 
     init_map_null();
     level_prop->last_map_download_size = 20400;
+    level_prop->time_created = time(0);
+    level_prop->dirty_save = 1;
 
     char ibuf[BUFSIZ];
     while(gzgets(ifd, ibuf, sizeof(ibuf))) {
         if (load_ini_line(&st, level_ini_fields, ibuf) == 0) {
-	    fprintf(stderr, "Line failed %s\n", ibuf);
 	    level_prop->version_no = level_prop->magic_no = 0;
 	    return 0;
 	}

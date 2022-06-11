@@ -26,7 +26,10 @@ pstrcasecmp(const void *p1, const void *p2)
     char **e1 = (char * *)p1;
     char **e2 = (char * *)p2;
 
-    return strcasecmp(*e1, *e2);
+    int r = strnatcasecmp(*e1, *e2);
+    if (r) return r;
+    /* We can get duplicates, this stabilises the final order. */
+    return strcmp(*e1, *e2);
 }
 
 void

@@ -29,8 +29,6 @@ struct ini_state_t {
     char * curr_section;
 };
 
-#define CMD_SETVAR  {N"setvar", &cmd_setvar}, {N"set", &cmd_setvar}
-
 #endif
 
 /*HELP inifile
@@ -153,7 +151,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	} else {
 	    strncpy(sectionbuf, st->curr_section, 6);
 	    sectionbuf[6] = 0;
-	    if (strcasecmp(st->curr_section, "block.") == 0) {
+	    if (strcasecmp(sectionbuf, "block.") == 0) {
 		bn = atoi(st->curr_section+6);
 		if (!bn && st->curr_section[6] == '0') break;
 		if (bn < 0 || bn >= BLOCKMAX) break;
@@ -227,6 +225,8 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet, int no_unsafe)
 	return -1;
     }
 
+    // fprintf(stderr, "Loading ini file \"%s\"\n", filename);
+
     char ibuf[BUFSIZ];
     while(fgets(ibuf, sizeof(ibuf), ifd)) {
 	if (load_ini_line(&st, filetype, ibuf) == 0) { rv = -1; break; }
@@ -259,10 +259,11 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
 	return 0;
     }
     if (!st->curr_section || !filetype(st, label, &p)) {
-	if (st->quiet)
-	    fprintf(stderr, "Unknown label %s in %s section %s\n", ibuf, st->filename, st->curr_section?:"-");
-	else
-	    printf_chat("&WUnknown label &S%s&W in &S%s&W section &S%s&W", ibuf, st->filename, st->curr_section?:"-");
+	if (st->quiet) {
+	    fprintf(stderr, "Unknown item \"%s\" in file \"%s\" section \"%s\" -- label \"%s\" value \"%s\"\n",
+		ibuf, st->filename, st->curr_section?:"-", label, p);
+	} else
+	    printf_chat("&WUnknown item&S \"%s\" section \"%s\"", ibuf, st->curr_section?:"-");
 	return 0;
     }
     return 1;
@@ -551,77 +552,3 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
         }
 
 #endif
-
-
-/*HELP setvar,set H_CMD
-&T/set section name value
-Sections are &Tlevel&S and &Tblock.&WN&S were &WN&S is the block definition number
-
-Options in "level" include ...
-Spawn.X Spawn.Y Spawn.Z Spawn.H Spawn.V
-Motd ClickDistance Texture EnvWeatherType SkyColour
-CloudColour FogColour AmbientColour SunlightColour
-SkyboxColour SideBlock EdgeBlock SideLevel SideOffset
-CloudHeight MaxFog CloudsSpeed WeatherSpeed WeatherFade
-ExpFog SkyboxHorSpeed SkyboxVerSpeed
-
-*/
-
-void
-cmd_setvar(UNUSED char * cmd, char * arg)
-{
-    char * section = strtok(arg, " ");
-    char * varname = 0;
-    char * value = 0;
-    char vbuf[256];
-
-    if (section) {
-	if (strcasecmp(section, "server") == 0 || strcasecmp(section, "level") == 0) {
-	    varname = strtok(0, " ");
-	    value = strtok(0, "");
-	} else if (strcasecmp(section, "block") == 0) {
-	    char * bno = strtok(0, "");
-	    snprintf(vbuf, sizeof(vbuf), "block.%s", bno);
-	    section = vbuf;
-	    varname = strtok(0, " ");
-	    value = strtok(0, "");
-	} else {
-	    varname = section;
-	    section = "level";
-	    value = strtok(0, "");
-	}
-    }
-    if (value == 0) value = "";
-
-    if (section == 0 || varname == 0)
-	return cmd_help(0, cmd);
-
-    if (!client_ipv4_localhost) {
-	char buf[128];
-	sprintf(buf, "%s+", user_id);
-	if (strcmp(current_level_name, buf) != 0)
-	    return printf_chat("&WPermission denied, only available on level %s", buf);
-    }
-
-    fprintf(stderr, "%s: Set %s %s = %s\n", user_id, section, varname, value);
-
-    ini_state_t stv = {.no_unsafe=1}, *st = &stv;
-    st->curr_section = section;
-
-    if (strcasecmp(section, "server") == 0) {
-	if (!system_ini_fields(st, varname, &value)) {
-	    if (!client_ipv4_localhost)
-		return printf_chat("&WPermission denied, need to be localhost.");
-	    printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
-	    return;
-	}
-    } else
-    if (!level_ini_fields(st, varname, &value)) {
-	printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
-	return;
-    }
-
-    level_prop->dirty_save = 1;
-    level_prop->metadata_generation++;
-    level_prop->last_modified = time(0);
-}

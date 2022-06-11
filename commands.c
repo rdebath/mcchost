@@ -18,25 +18,6 @@ struct command_t {
 };
 #endif
 
-#define N .name=
-command_t command_list[] =
-{
-    CMD_HELP,
-    CMD_PLACE,
-    CMD_COMMANDS,
-    CMD_MAPS,
-    CMD_LOADSAVE,
-    CMD_WHO,
-    CMD_RELOAD,
-    CMD_QUITS,
-    CMD_SETVAR,
-    CMD_SHB,
-    CMD_ANNOUNCE,
-
-    {.name = 0}
-};
-#undef N
-
 // TODO:
 // Commands.
 // Command expansion/aliases

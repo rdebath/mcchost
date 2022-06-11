@@ -12,7 +12,7 @@ List out the connected users
 #endif
 
 void
-cmd_who(UNUSED char * cmd, char * arg)
+cmd_who(UNUSED char * cmd, UNUSED char * arg)
 {
     int users = 0;
     // int my_level_id = shdat.client->user[my_user_no].on_level;

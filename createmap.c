@@ -37,8 +37,6 @@ createmap(char * levelname)
     init_map_null();
 
     level_prop->time_created = time(0),
-    // Don't backup too soon.
-    level_prop->last_backup = level_prop->time_created;
 
     load_ini_file(level_ini_fields, MODEL_INI_NAME, 1, 0);
 
@@ -89,31 +87,6 @@ init_flat_level()
 }
 
 void
-init_map_from_size(xyz_t size)
-{
-    *level_prop = (map_info_t){
-	    .magic_no = MAP_MAGIC, .magic_no2 = MAP_MAGIC2,
-	    .version_no = MAP_VERSION,
-	    .cells_x = size.x, .cells_y = size.y, .cells_z = size.z,
-	    .total_blocks = (int64_t)size.x*size.y*size.z,
-	    .weather = 0, -1, -1, -1, -1, -1, -1,
-	    .side_block = 7, 8, size.y/2, -2,
-	    .spawn = { size.x*32+16, size.y*3/4*32, size.z*32+16 },
-	    .clouds_height = size.y+2,
-	    .clouds_speed = 256, 256, 128,
-	    .click_distance = 160
-	};
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-    memcpy(level_prop->blockdef, default_blocks, sizeof(default_blocks));
-#pragma GCC diagnostic pop
-
-    for (int i = 0; i<BLOCKMAX; i++)
-	level_prop->blockdef[i].inventory_order = i;
-}
-
-void
 init_map_null()
 {
     *level_prop = (map_info_t){
@@ -136,11 +109,11 @@ init_map_null()
 
     for (int i = 0; i<BLOCKMAX; i++) {
 	level_prop->blockdef[i].inventory_order = i;
-	level_prop->blockdef[i].fallback = i<CPELIMIT?i:22;
+	level_prop->blockdef[i].fallback = i<CPELIMIT?i:Block_Orange;
     }
 
     for (int i = 0; i<16; i++)
-	level_prop->blockdef[i].fallback = cpe_conversion[i];
+	level_prop->blockdef[Block_CP+i].fallback = cpe_conversion[i];
 }
 
 void

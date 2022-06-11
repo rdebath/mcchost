@@ -1,3 +1,13 @@
+# This script is used to scan the C source files to find items to register
+# in lists at compile time. This does allow specific commands to be deleted
+# by removing (or renaming) their source files.
+#
+# Currently used for:
+# "HELP" comments to convert to C strings for the help command.
+#
+#  CMD_XXXXX defines to construct the list of available commands.
+#
+
 BEGIN{
     flg=0;count=0;
     print "#include \"lib_text.h\"\n"
@@ -16,6 +26,10 @@ BEGIN{
     flg = 0;
 }
 /^\/\*HELP/ {next;}
+
+/^#define\ *CMD_[A-Z0-9]*[	 ]*[\\{]/ {
+    cmdlist = cmdlist "    " $2 ",\n"
+}
 
 flg==0 {next;}
 
@@ -53,4 +67,13 @@ END{
     }
     print "    {0,0,0}"
     print "};"
+
+    print ""
+    print "#define N .name="
+    print "command_t command_list[] ="
+    print "{"
+    print cmdlist;
+    print "    {.name = 0}"
+    print "};"
+    print "#undef N"
 }

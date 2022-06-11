@@ -17,6 +17,8 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) backup/ on different filesystem
+ +) Aliases in /set command
  +) Allow for extend of .queue file without triggering reloads.
 
  +) /mode command.
@@ -81,6 +83,7 @@ Features:
 All files in subdirectories.
     system.ini  --> move?
     model.cw    --> move?
+    model.ini   --> move?
     *.ini --> ?
     map/${level}.cw
     system/...

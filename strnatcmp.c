@@ -30,6 +30,13 @@
  * negative chars in their default char type.
  */
 
+/* Local changes
+ *
+ * Add INTERFACE section for header file.
+ * Replace excessive use of nat_char with int.
+ * Change order so non-alphanumeric characters move to the end.
+ */
+
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
@@ -38,8 +45,7 @@
 #include "strnatcmp.h"
 
 #if INTERFACE
-/* Required contents of standard strnatcmp.h moved here.
- */
+/* Required contents of standard strnatcmp.h moved here. */
 
 /* CUSTOMIZATION SECTION
  *
@@ -51,26 +57,28 @@ typedef char nat_char;
 /* These are defined as macros to make it easier to adapt this code to
  * different characters types or comparison functions. */
 static inline int
-nat_isdigit(nat_char a)
+nat_isdigit(int a)
 {
      return isdigit((unsigned char) a);
 }
 
-
 static inline int
-nat_isspace(nat_char a)
+nat_isspace(int a)
 {
      return isspace((unsigned char) a);
 }
 
-
-static inline nat_char
-nat_toupper(nat_char a)
+static inline int
+nat_toupper(int a)
 {
      return toupper((unsigned char) a);
 }
 
-
+static inline int
+nat_isalnum(int a)
+{
+    return isascii((unsigned char) a) && isalnum((unsigned char) a);
+}
 
 static int
 compare_right(nat_char const *a, nat_char const *b)
@@ -127,7 +135,7 @@ compare_left(nat_char const *a, nat_char const *b)
 static int strnatcmp0(nat_char const *a, nat_char const *b, int fold_case)
 {
      int ai, bi;
-     nat_char ca, cb;
+     int ca, cb;
      int fractional, result;
      
      assert(a && b);
@@ -164,6 +172,16 @@ static int strnatcmp0(nat_char const *a, nat_char const *b, int fold_case)
 	  if (fold_case) {
 	       ca = nat_toupper(ca);
 	       cb = nat_toupper(cb);
+
+	       /* Reorder non-alphanumeric characters. */
+	       if (ca != 0 && !nat_isalnum(ca) && !nat_isspace(ca)) {
+		    if (ca >= ' ' && ca <= '~') ca += 256;
+		    else ca += 512;
+	       }
+	       if (cb != 0 && !nat_isalnum(cb) && !nat_isspace(cb)) {
+		    if (cb >= ' ' && cb <= '~') cb += 256;
+		    else cb += 512;
+	       }
 	  }
 	  
 	  if (ca < cb)
