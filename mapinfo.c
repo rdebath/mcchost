@@ -180,6 +180,7 @@ struct blockdef_t {
 #define Block_Iron 42
 #define Block_DoubleSlab 43
 #define Block_Slab 44
+#define Block_Brick 45
 #define Block_Bookshelf 47
 #define Block_Obsidian 49
 #define Block_CobbleSlab 50

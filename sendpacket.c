@@ -478,3 +478,15 @@ send_sethotbar_pkt(int slot, int block)
     *p++ = slot;
     write_to_remote(packetbuf, p-packetbuf);
 }
+
+void
+send_blockperm_pkt(block_t block, int delok, int placeok)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_BLOCKPERM;
+    nb_block_t(&p, block); // NO Conversion!
+    *p++ = placeok;
+    *p++ = delok;
+    write_to_remote(packetbuf, p-packetbuf);
+}

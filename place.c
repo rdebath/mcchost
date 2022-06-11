@@ -108,6 +108,11 @@ cmd_paint(UNUSED char * cmd, UNUSED char * arg)
 void
 process_player_setblock(pkt_setblock pkt)
 {
+    if (level_prop->readonly) {
+	revert_client(pkt);
+	return;
+    }
+
     if (player_mode_paint) {
 	pkt.block = pkt.heldblock;
 	pkt.mode = 2;
@@ -115,3 +120,19 @@ process_player_setblock(pkt_setblock pkt)
 
     update_block(pkt);
 }
+
+void
+revert_client(pkt_setblock pkt)
+{
+    if (!level_block_queue || !level_blocks) return; // !!!
+    if (pkt.coord.x < 0 || pkt.coord.x >= level_prop->cells_x) return;
+    if (pkt.coord.y < 0 || pkt.coord.y >= level_prop->cells_y) return;
+    if (pkt.coord.z < 0 || pkt.coord.z >= level_prop->cells_z) return;
+
+    uintptr_t index = World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z);
+
+    block_t b = level_blocks[index];
+
+    send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
+}
+

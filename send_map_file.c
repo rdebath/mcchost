@@ -20,6 +20,8 @@ block_t cpe_conversion[] = {
 static uint32_t metadata_generation = 0;
 static block_t max_defined_block = 0;
 
+int reset_hotbar_on_mapload = 0;
+
 // Convert from Map block numbers to ones the client will understand.
 block_t
 f_block_convert(block_t in)
@@ -54,16 +56,22 @@ send_map_file()
 {
     if (!level_prop || !level_blocks) return;
 
+    uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
+
     // if(extn_instantmotd) ...
 
     // Send_system_ident()
     // Send_hack_control()
+
+    send_lvlinit_pkt(level_len);
 
     send_block_definitions();
     send_inventory_order();
 
     set_last_block_queue_id(); // Send updates from now.
     send_block_array();
+
+    send_lvldone_pkt(level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
 
     // Send_system_ident() // Level motd
     // Send_hack_control()
@@ -90,7 +98,7 @@ send_metadata()
     send_map_property();
     send_weather();
     send_textureurl();
-    // send_block_permission();
+    send_block_permission();
     // send_players()
     // send_entities()
     // send_spawn()
@@ -106,8 +114,6 @@ send_block_array()
 
     for(block_t b = 0; b<BLOCKMAX; b++)
 	conv_blk[b] = block_convert(b);
-
-    send_lvlinit_pkt(level_len);
 
     uintptr_t blocks_sent = 0;
     int need_himap = 0;
@@ -206,8 +212,6 @@ send_block_array()
 	if (!need_himap || !extn_extendblockno) break;
     }
 
-    send_lvldone_pkt(level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
-
     // Record for next time.
     level_prop->last_map_download_size = blocks_sent * 1028 + 8;
 }
@@ -265,7 +269,10 @@ send_clickdistance()
 {
     if (!extn_clickdistance) return;
 
-    send_clickdistance_pkt(level_prop->click_distance > 0? level_prop->click_distance:160);
+    send_clickdistance_pkt(
+	    level_prop->click_distance > 0
+	    ? level_prop->click_distance
+	    : 160);
 }
 
 void
@@ -293,6 +300,29 @@ send_inventory_order()
 {
     if (!extn_inventory_order) return;
 
+    if (level_prop->readonly) {
+	for(int inv = 0; inv < client_block_limit; inv++)
+	    send_inventory_order_pkt(inv, 0);
+	if (extn_sethotbar) {
+	    reset_hotbar_on_mapload = 1;
+	    for(int id = 0; id<9; id++)
+		send_sethotbar_pkt(id, Block_Air);
+	}
+	return;
+    }
+
+    if (reset_hotbar_on_mapload) {
+	reset_hotbar_on_mapload = 0;
+	if (extn_sethotbar) {
+	    static block_t tbl[] = {
+		Block_Stone, Block_Cobble, Block_Brick, Block_Dirt, Block_Wood,
+		Block_Log, Block_Leaves, Block_Glass, Block_Slab, 0
+	    };
+	    for(int id = 0; id<9; id++)
+		send_sethotbar_pkt(id, tbl[id]);
+	}
+    }
+
     int inv_block[BLOCKMAX] = {0};
     block_t b;
     for(b=0; b < client_block_limit && b<BLOCKMAX; b++) {
@@ -313,4 +343,18 @@ send_inventory_order()
     for(int inv = 0; inv < client_block_limit; inv++)
 	if (inv_block[inv] != 0)
 	    send_inventory_order_pkt(inv, inv_block[inv]);
+}
+
+void
+send_block_permission()
+{
+    if (!extn_block_permission) return;
+    int rok = 1, dok = 1;
+    block_t b;
+
+    if (level_prop->readonly)
+	rok = dok = 0;
+
+    for(b=0; b< client_block_limit; b++)
+	send_blockperm_pkt(b, rok, dok);
 }

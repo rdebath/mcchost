@@ -45,6 +45,7 @@
 #define PKID_CUSTBLOCK	0x13	/*ClientSend&Rcv*/
 #define PKID_HELDBLOCK	0x14
 #define PKID_MAPCOLOUR	0x19
+#define PKID_BLOCKPERM	0x1c
 #define PKID_WEATHER	0x1f
 #define PKID_BLOCKDEF	0x23
 #define PKID_BLOCKUNDEF	0x24

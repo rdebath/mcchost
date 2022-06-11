@@ -37,7 +37,6 @@ cp437_prt(FILE* ofd, int ch)
         fprintf(ofd, "%c%c%c", 0xef, 0xbf, 0xbd);
 }
 
-#ifdef UTFNIL
 void
 convert_to_cp437(char *buf, int *l)
 {
@@ -68,7 +67,6 @@ convert_to_cp437(char *buf, int *l)
     }
     *l = d;
 }
-#endif
 
 char cp437_ascii[] =
 	"CueaaaaceeeiiiAAE**ooouuyOUc$YPs"

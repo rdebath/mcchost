@@ -89,7 +89,7 @@ cmd_goto(UNUSED char * cmd, char * arg)
 
     printf_chat("@&S%s went to &7%s", user_id, levelname);
     if (level_prop->readonly)
-	printf_chat("&WLoaded read only map, changes will be discarded");
+	printf_chat("&WLoaded read only map");
 }
 
 void
@@ -113,6 +113,9 @@ cmd_main(UNUSED char * cmd, UNUSED char * arg)
     send_spawn_pkt(255, user_id, level_prop->spawn);
 
     printf_chat("@&S%s went to &7%s", user_id, server.main_level);
+
+    if (level_prop->readonly)
+	printf_chat("&WLoaded read only map");
 }
 
 void
@@ -140,6 +143,7 @@ cmd_load(UNUSED char * cmd, char * arg)
 	    printf_chat("&SFile loaded");
 	    level_prop->dirty_save = 1;
 	    level_prop->metadata_generation++;
+	    level_prop->last_modified = time(0);
 	}
     }
 }
@@ -222,8 +226,6 @@ scan_and_save_levels(int unlink_only)
 
 	if (!level_prop->readonly && !unlink_only) {
 	    if (level_prop->dirty_save) {
-		level_prop->last_modified = time(0); // Close enough
-
 		// TODO: 1) Save map to .tmp
 		//       2) Link .cw to .bak
 		//       3) Rename .tmp to .cw
@@ -236,7 +238,7 @@ scan_and_save_levels(int unlink_only)
 
 		int rv = save_level_in_map(fixedname);
 		if (rv == 1) {
-		    fprintf(stderr, "Level %s write protected, changes discarded\n", fixedname);
+		    fprintf(stderr, "Level %s write protected", fixedname);
 		    level_prop->dirty_save = 0;
 		    level_prop->readonly = 1;
 		}

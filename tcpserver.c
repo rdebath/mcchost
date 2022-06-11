@@ -432,7 +432,9 @@ send_heartbeat_poll()
 	// SHUT UP CURL!!
 	E(execlp("curl", "curl", "-s", "-S", "-o", "log/curl_resp.txt", cmdbuf, (char*)0), "exec of curl failed");
 	// Note: Returned string is web client URL, but the last
-	//       path part can be used to query the api.
+	//       path part can be used to query the api; it's
+	//       the ip and port in ASCII hashed with MD5.
+	//       eg: echo -n 8.8.8.8:25565 | md5sum
 	exit(0);
     }
 }
@@ -455,7 +457,7 @@ ccnet_cp437_quoteurl(char *s, char *dest, int len)
 	    *d++ = lb[0];
 	    *d++ = lb[1];
 	}
-	else if ((*s &0x7F) < ' ') // Control characters.
+	else if ((*s &0x7F) < ' ') // Control characters both C0 and C1
 	{
 	    if (*s & 0x80)
 		*d++ = cp437_ascii[*s & 0x7F];

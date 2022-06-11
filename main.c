@@ -159,15 +159,13 @@ complete_connection()
 
     send_map_file();
     send_spawn_pkt(255, user_id, level_prop->spawn);
-    send_welcome_message();
-}
 
-/*HELP Welcome 0 */
-void
-send_welcome_message()
-{
     printf_chat("&SWelcome &7%s", user_id);
     printf_chat("@&a+ &7%s &Sconnected", user_id);
+
+    if (level_prop->readonly)
+	printf_chat("&WLoaded read only map");
+
     cmd_help("welcome", 0);
 }
 

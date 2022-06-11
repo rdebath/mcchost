@@ -571,11 +571,31 @@ void
 cmd_setvar(UNUSED char * cmd, char * arg)
 {
     char * section = strtok(arg, " ");
-    char * varname = strtok(0, " ");
-    char * value = strtok(0, "");
+    char * varname = 0;
+    char * value = 0;
+    char vbuf[256];
+
+    if (section) {
+	if (strcasecmp(section, "server") == 0 || strcasecmp(section, "level") == 0) {
+	    varname = strtok(0, " ");
+	    value = strtok(0, "");
+	} else if (strcasecmp(section, "block") == 0) {
+	    char * bno = strtok(0, "");
+	    snprintf(vbuf, sizeof(vbuf), "block.%s", bno);
+	    section = vbuf;
+	    varname = strtok(0, " ");
+	    value = strtok(0, "");
+	} else {
+	    varname = section;
+	    section = "level";
+	    value = strtok(0, "");
+	}
+    }
+    if (value == 0) value = "";
 
     if (section == 0 || varname == 0)
 	return cmd_help(0, cmd);
+
     if (!client_ipv4_localhost) {
 	char buf[128];
 	sprintf(buf, "%s+", user_id);
@@ -583,9 +603,7 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 	    return printf_chat("&WPermission denied, only available on level %s", buf);
     }
 
-    if (value == 0) value = "";
-
-    fprintf(stderr, "%s: [%s]%s= %s\n", user_id, section, varname, value);
+    fprintf(stderr, "%s: Set %s %s = %s\n", user_id, section, varname, value);
 
     ini_state_t stv = {.no_unsafe=1}, *st = &stv;
     st->curr_section = section;
@@ -605,4 +623,5 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 
     level_prop->dirty_save = 1;
     level_prop->metadata_generation++;
+    level_prop->last_modified = time(0);
 }

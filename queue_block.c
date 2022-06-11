@@ -135,6 +135,7 @@ void
 unlocked_update(int x, int y, int z, int b)
 {
     level_prop->dirty_save = 1;
+    level_prop->last_modified = time(0);
     int id = level_block_queue->curr_offset;
     level_block_queue->updates[id].x = x;
     level_block_queue->updates[id].y = y;
@@ -151,6 +152,7 @@ send_update(int x, int y, int z, int b)
 {
     lock_shared();
     level_prop->dirty_save = 1;
+    level_prop->last_modified = time(0);
     int id = level_block_queue->curr_offset;
     level_block_queue->updates[id].x = x;
     level_block_queue->updates[id].y = y;

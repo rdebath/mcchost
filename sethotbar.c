@@ -24,6 +24,7 @@ cmd_sethotbar(char * cmd, char * arg)
     }
 
     block_t block = Block_Air;
+    reset_hotbar_on_mapload = 0;
 
     if (strcasecmp("chb", cmd) == 0) {
 	for(int id = 0; id<9; id++)

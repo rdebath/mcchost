@@ -27,7 +27,8 @@ install: ${PROG}
 
 ifeq ($(MAKECMDGOALS),clean)
 clean:
-	-rm -f ${PROG} tmp.mk *.o $(patsubst %.c,%.h,$(wildcard *.c)) md5.h lib_text.c
+	-rm -f ${PROG} *.o $(patsubst %.c,%.h,$(wildcard *.c)) md5.h lib_text.c
+	-rm -f .build-opts.* tmp.mk
 else
 ifneq ($(findstring clean,$(MAKECMDGOALS)),)
 clean:
@@ -53,10 +54,13 @@ lib_text:
 lib_text.o: lib_text.c
 
 export TARGET_ARCH DEFS LDFLAGS
-vps:
-	$(MAKE) clean
-	$(MAKE) -j8
-	$(MAKE) sendvps
 
-sendvps:
+BUILDOPT=$(CC) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(TARGET_ARCH)
+BUILDFLG :=.build-opts.$(shell echo '$(BUILDOPT)' | sum | tr -d '\040\055' )
+$(PROG) ${OBJ} ${OBJ2}: $(BUILDFLG)
+$(BUILDFLG):
+	-@rm -f .build-opts.*
+	-@echo '$(BUILDOPT)' > $(BUILDFLG)
+
+vps: ${PROG}
 	rsync -Pax ${PROG} vps-mcc:bin/mcchost-server

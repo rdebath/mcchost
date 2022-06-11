@@ -23,7 +23,7 @@ static struct ext_list_t extensions[] = {
 //  { N"ExtPlayerList",       2  },
     { N"EnvColors",           1, &extn_envcolours },
 //**{ N"SelectionCuboid",     1  },				//MapConf
-//**{ N"BlockPermissions",    1  },				//UserMapConf
+    { N"BlockPermissions",    1, &extn_block_permission },	//UserMapConf
 //  { N"ChangeModel",         1  },				//UserBotConf
 //  { N"EnvMapAppearance",    2  },				//Old
     { N"EnvWeatherType",      1, &extn_weathertype },
@@ -64,6 +64,7 @@ int extn_blockdefnext = 0;
 int extn_clickdistance = 0;
 int extn_customblocks = 0;
 int extn_envcolours = 0;
+int extn_block_permission = 0;
 int extn_envmapaspect = 0;
 int extn_evilbastard = 0;
 int extn_extendblockno = 0;

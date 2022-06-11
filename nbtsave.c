@@ -9,11 +9,6 @@
 
 #include "nbtsave.h"
 
-enum NbtTagType {
-    NBT_END, NBT_I8, NBT_I16, NBT_I32, NBT_I64, NBT_F32,
-    NBT_F64, NBT_I8ARRAY, NBT_STR, NBT_LIST, NBT_COMPOUND
-};
-
 /*
  * This writes a *.cw file.
  *
@@ -391,7 +386,8 @@ bc_compound(gzFile ofd, char * name)
 LOCAL void
 bc_end(gzFile ofd)
 {
-    gzputc(ofd, NBT_END);
+    enum NbtTagType v = NBT_END;
+    gzputc(ofd, v);
 }
 
 void

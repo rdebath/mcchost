@@ -22,11 +22,6 @@ See "/help todo" for notes.
  +) /mode command.
  +) /about command
  +) /z and /m commands with setblock capture.
- +) Setblock capture for readonly mode ?
-
- +) ClassicWorld.TimeCreated (forced 64bit) = time(0);
- +) ClassicWorld.LastModified (forced 64bit) = time(0);
-    -- Time of the last setblock or set command, not the unload.
 
  +) Colour definitions for &S,&W etc.
  +) Level limited chat -- primitive chatroom.
@@ -54,9 +49,15 @@ See "/help todo" for notes.
  +) Block/User history records.
     -- Combined history needs user id numbers --> user file/table.
 
+ +) Permissions -- currently "client_ipv4_localhost"
+    -- Need enum of permit flags.
+    -- Bitmap of allow/deny.
+    -- Routine to construct bitmap from "nice" permissions.
+    -- Routine takes care of "if has_build_perm(level)"
+
  +) NAME: (*) MCCHost
 
- +) User prefix/suffix for multiple heartbeat servers.
+ +) User prefix/suffix/namespace for multiple heartbeat servers.
  +) Backup while physics running --> Copy level.* then freeze physics.
     Copy can more easily do patchups.
 
@@ -107,7 +108,7 @@ Basic
 
 Extra
     Leaves removed if !Log
-    Shrub grows to tree
+    Shrub grows to tree --> /tree command
 
 Advanced
     Lava(Sand) -> Glass

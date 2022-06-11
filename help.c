@@ -11,6 +11,8 @@ struct help_text_t {
     char ** lines;
 };
 
+/*HELP Welcome 0 */
+
 /*HELP help H_CMD
 Commands can be listed with &T/commands
 To see help for a command type &T/help CommandName
