@@ -16,11 +16,15 @@ process_args(int argc, char **argv)
 
     getprogram(argv[0]);
 
-    for(int pass = 0; pass<2; pass++)
+    for(int pass2 = 0; pass2<2; pass2++)
     {
+	server_t tmpserver = {0};
+	if (!pass2)
+	    server = &tmpserver;
+
 	for(int ar = 1; ar<argc; ar++) {
 	    if (argv[ar][0] != '-') {
-		if (pass == 0)
+		if (!pass2)
 		    fprintf(stderr, "Skipping argument '%s'\n", argv[ar]);
 		continue;
 	    }
@@ -29,22 +33,23 @@ process_args(int argc, char **argv)
 	    do {
 		if (ar+1 < argc) {
 		    if (strcmp(argv[ar], "-name") == 0) {
-			strncpy(server.name, argv[ar+1], sizeof(server.name)-1);
+			strncpy(IGNORE_VOLATILE_CHARP(server->name), argv[ar+1], sizeof(server->name)-1);
 			ar++; addarg++;
 			break;
 		    }
 
 		    if (strcmp(argv[ar], "-motd") == 0) {
-			strncpy(server.motd, argv[ar+1], sizeof(server.motd)-1);
+			strncpy(IGNORE_VOLATILE_CHARP(server->motd), argv[ar+1], sizeof(server->motd)-1);
 			ar++; addarg++;
 			break;
 		    }
 
 		    if (strcmp(argv[ar], "-salt") == 0 || strcmp(argv[ar], "-secret") == 0) {
 			ar++; addarg++;
-			strncpy(server.secret, argv[ar], sizeof(server.secret)-1);
+			strncpy(IGNORE_VOLATILE_CHARP(server->secret), argv[ar], sizeof(server->secret)-1);
 			// Try to hide the argument used as salt from ps(1)
-			for(char * p = argv[ar]; *p; p++) *p = 'X';
+			if (pass2)
+			    for(char * p = argv[ar]; *p; p++) *p = 'X';
 			break;
 		    }
 
@@ -68,8 +73,8 @@ process_args(int argc, char **argv)
 		    }
 
 		    if (strcmp(argv[ar], "-dir") == 0) {
-			if (pass == 0)
-			    if(chdir(strdup(argv[ar+1])) < 0) {
+			if (!pass2)
+			    if(chdir(argv[ar+1]) < 0) {
 				perror(argv[ar+1]);
 				exit(1);
 			    }
@@ -102,12 +107,12 @@ process_args(int argc, char **argv)
 		}
 
 		if (strcmp(argv[ar], "-private") == 0) {
-		    server.private = 1;
+		    server->private = 1;
 		    break;
 		}
 
 		if (strcmp(argv[ar], "-public") == 0) {
-		    server.private = 0;
+		    server->private = 0;
 		    break;
 		}
 
@@ -130,17 +135,19 @@ process_args(int argc, char **argv)
 
 		if (strcmp(argv[ar], "-log-stderr") == 0) {
 		    log_to_stderr = 1;
-		    addarg = 1;
 		    break;
 		}
 
-		if (strcmp(argv[ar], "-nocpe") == 0) { server.cpe_disabled = 1; break; }
+		if (strcmp(argv[ar], "-nocpe") == 0) {
+		    server->cpe_disabled = 1;
+		    break;
+		}
 
 		fprintf(stderr, "Invalid argument '%s'\n", argv[ar]);
 		exit(1);
 	    } while(0);
 
-	    if (pass == 0 && addarg) {
+	    if (!pass2 && addarg) {
 		if (addarg == 2) {
 		    program_args[bc++] = strdup(argv[ar-1]);
 		    plen += strlen(argv[ar-1])+1;
@@ -150,8 +157,22 @@ process_args(int argc, char **argv)
 	    }
 	}
 
-	if (pass == 0)
+	if (!pass2) {
+	    server = 0;
+	    open_system_conf();
+
+	    if (server->magic != MAP_MAGIC || server->magic2 != MAP_MAGIC2)
+		*server = (server_t){
+		    .magic = MAP_MAGIC, .magic2 = MAP_MAGIC2,
+		    .software = "MCCHost",
+		    .name = "MCCHost Server",
+		    .main_level = "main",
+		    .save_interval = 300,
+		    .backup_interval = 86400,
+		};
+
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);
+	}
     }
 
     // Pad the program args so we get some space after a restart.
@@ -164,14 +185,14 @@ process_args(int argc, char **argv)
     gettimeofday(&now, 0);
     srandom(now.tv_sec ^ (now.tv_usec*4294U));
 
-    if (enable_heartbeat_poll && server.secret[0] == 0) {
+    if (enable_heartbeat_poll && server->secret[0] == 0) {
 	// A pretty trivial semi-random code, maybe 20-30bits of randomness.
 	static char base62[] =
 	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	for(int i=0; i<16; i++)
-	    server.secret[i] = base62[((unsigned)random())%62];
-	server.secret[16] = 0;
-	fprintf(stderr, "Generated server secret %s\n", server.secret);
+	    server->secret[i] = base62[((unsigned)random())%62];
+	server->secret[16] = 0;
+	fprintf(stderr, "Generated server secret %s\n", server->secret);
     }
 }
 

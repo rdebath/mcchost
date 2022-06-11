@@ -40,7 +40,8 @@
 #define SHMID_BLOCKQ	2
 #define SHMID_CHAT	3
 #define SHMID_CLIENTS	4
-#define SHMID_COUNT	5
+#define SHMID_SYSCONF	5
+#define SHMID_COUNT	6
 
 typedef struct shmem_t shmem_t;
 struct shmem_t {
@@ -424,6 +425,19 @@ stop_chat_queue()
 	level_chat_queue = 0;
 	wipe_last_chat_queue_id();
     }
+}
+
+void
+open_system_conf()
+{
+    char sharename[256];
+
+    // if (server) stop_system_conf();
+    if (server) return;
+
+    sprintf(sharename, SYS_CONF_NAME);
+    allocate_shared(sharename, sizeof(*client_list), shdat.dat+SHMID_SYSCONF, 1);
+    server = shdat.dat[SHMID_SYSCONF].ptr;
 }
 
 LOCAL int

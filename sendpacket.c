@@ -74,7 +74,7 @@ nb_texid(uint8_t **ptr, int texid)
 }
 
 void
-send_server_id_pkt(char * servername, char * servermotd, int user_type)
+send_server_id_pkt(volatile char * servername, volatile char * servermotd, int user_type)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -282,7 +282,7 @@ send_op_pkt(int opflg)
 }
 
 void
-send_extinfo_pkt(char * appname, int num_extn)
+send_extinfo_pkt(volatile char * appname, int num_extn)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;

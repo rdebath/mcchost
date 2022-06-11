@@ -59,17 +59,28 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     section = "server";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-	INI_STRARRAYCP437("Name", server.name);
-	INI_STRARRAYCP437("Motd", server.motd);
-	INI_STRARRAYCP437("Main", server.main_level);
+#define WC(_x_) (st->write && !st->no_unsafe) ?"; " _x_:_x_
 
-	if (!st->no_unsafe) {
-	    INI_STRARRAY(st->write?"; Salt":"Salt", server.secret);	//Base62
-	    INI_BOOLVAL(st->write?"; Runonce":"Runonce", server_runonce);
+	if (st->write && !st->no_unsafe) {
+	    ini_write_section(st, section);
+	    fprintf(st->fd,
+		"; ; These options are shared in '%s'.\n",
+		SYS_CONF_NAME);
 	}
 
-	INI_BOOLVAL("NoCPE", server.cpe_disabled);
-	INI_BOOLVAL("Private", server.private);
+	INI_STRARRAYCP437(WC("Software"), server->software);
+	INI_STRARRAYCP437(WC("Name"), server->name);
+	INI_STRARRAYCP437(WC("Motd"), server->motd);
+	INI_STRARRAYCP437(WC("Main"), server->main_level);
+
+	if (!st->no_unsafe) {
+	    INI_STRARRAY(WC("Salt"), server->secret);	//Base62
+	}
+
+	INI_BOOLVAL(WC("NoCPE"), server->cpe_disabled);
+	INI_BOOLVAL(WC("Private"), server->private);
+
+	if (st->write) fprintf(st->fd, ";\n\n");
 
 	INI_STRARRAY("Logfile", logfile_pattern);		//Binary
 
@@ -81,6 +92,10 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("Inetd", inetd_mode);
 	INI_BOOLVAL("Detach", detach_tcp_server);
 	INI_BOOLVAL("OPFlag", server_id_op_flag);
+
+	if (!st->no_unsafe) {
+	    INI_BOOLVAL(WC("Runonce"), server_runonce);
+	}
     }
 
     return found;
@@ -93,14 +108,16 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     char *section = "", *fld;
     int found = 0;
 
-    // When writing include a copy of the system stuff.
+    // When writing include a copy of some system stuff.
     // Skip it quietly on read.
     if (st->write) {
-	int i = st->no_unsafe;
-	st->no_unsafe = 1;
-	system_ini_fields(st, fieldname, fieldvalue);
-	st->no_unsafe = i;
-    } else if (st->curr_section && strcmp("server", st->curr_section) == 0)
+	section = "source";
+	INI_STRARRAYCP437("Software", server->software);
+	INI_STRARRAYCP437("Name", server->name);
+	INI_STRARRAYCP437("Motd", server->motd);
+	INI_STRARRAYCP437("Level", current_level_name);
+
+    } else if (st->curr_section && strcmp("source", st->curr_section) == 0)
 	return 1;
 
     section = "level";
@@ -340,24 +357,34 @@ ini_decode_lable(char **line, char *buf, int len)
 }
 
 LOCAL void
-ini_write_str(ini_state_t *st, char * section, char *fieldname, char *value)
+ini_write_section(ini_state_t *st, char * section)
 {
+    if (!st->write) return;
     if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
 	if (st->curr_section) free(st->curr_section);
 	st->curr_section = strdup(section);
 	fprintf(st->fd, "\n[%s]\n", section);
     }
-    fprintf(st->fd, "%s =%s%s\n", fieldname, *value?" ":"", value);
 }
 
 LOCAL void
-ini_write_cp437(ini_state_t *st, char * section, char *fieldname, char *value)
+ini_write_str(ini_state_t *st, char * section, char *fieldname, volatile char *value)
 {
-    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
-	if (st->curr_section) free(st->curr_section);
-	st->curr_section = strdup(section);
-	fprintf(st->fd, "\n[%s]\n", section);
-    }
+    ini_write_section(st, section);
+    char *v = IGNORE_VOLATILE_CHARP(value);
+    fprintf(st->fd, "%s =%s%s\n", fieldname, *v?" ":"", v);
+}
+
+LOCAL void
+ini_read_str(volatile char * buf, int len, char *value)
+{
+    snprintf(IGNORE_VOLATILE_CHARP(buf), len, "%s", value);
+}
+
+LOCAL void
+ini_write_cp437(ini_state_t *st, char * section, char *fieldname, volatile char *value)
+{
+    ini_write_section(st, section);
     fprintf(st->fd, "%s =%s", fieldname, *value?" ":"\n");
     if (*value == 0) return;
     while(*value)
@@ -366,23 +393,19 @@ ini_write_cp437(ini_state_t *st, char * section, char *fieldname, char *value)
 }
 
 LOCAL void
-ini_read_cp437(char * buf, int len, char *value)
+ini_read_cp437(volatile char * buf, int len, char *value)
 {
     int vlen = strlen(value);
     convert_to_cp437(value, &vlen);
     if (vlen >= len) vlen = len-1;
-    memcpy(buf, value, vlen);
+    memcpy(IGNORE_VOLATILE_CHARP(buf), value, vlen);
     buf[vlen] = 0;
 }
 
 LOCAL void
 ini_write_nbtstr(ini_state_t *st, char * section, char *fieldname, volatile nbtstr_t *value)
 {
-    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
-	if (st->curr_section) free(st->curr_section);
-	st->curr_section = strdup(section);
-	fprintf(st->fd, "\n[%s]\n", section);
-    }
+    ini_write_section(st, section);
     fprintf(st->fd, "%s =%s", fieldname, value->c[0]?" ":"\n");
     if (value->c[0] == 0) return;
     for(int i = 0; value->c[i]; i++)
@@ -405,11 +428,7 @@ ini_read_nbtstr(volatile nbtstr_t * buf, char *value)
 LOCAL void
 ini_write_int(ini_state_t *st, char * section, char *fieldname, int value)
 {
-    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
-	if (st->curr_section) free(st->curr_section);
-	st->curr_section = strdup(section);
-	fprintf(st->fd, "\n[%s]\n", section);
-    }
+    ini_write_section(st, section);
     fprintf(st->fd, "%s = %d\n", fieldname, value);
 }
 
@@ -418,22 +437,14 @@ ini_write_int_blk(ini_state_t *st, char * section, char *fieldname, int value)
 {
     if (value < 0 || value >= BLOCKMAX) return; // Skip illegal values.
 
-    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
-	if (st->curr_section) free(st->curr_section);
-	st->curr_section = strdup(section);
-	fprintf(st->fd, "\n[%s]\n", section);
-    }
+    ini_write_section(st, section);
     fprintf(st->fd, "%s = %d\n", fieldname, value);
 }
 
 LOCAL void
 ini_write_hexint(ini_state_t *st, char * section, char *fieldname, int value)
 {
-    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
-	if (st->curr_section) free(st->curr_section);
-	st->curr_section = strdup(section);
-	fprintf(st->fd, "\n[%s]\n", section);
-    }
+    ini_write_section(st, section);
     if (value < 0)
 	fprintf(st->fd, "%s = %d\n", fieldname, value);
     else
@@ -443,11 +454,7 @@ ini_write_hexint(ini_state_t *st, char * section, char *fieldname, int value)
 LOCAL void
 ini_write_bool(ini_state_t *st, char * section, char *fieldname, int value)
 {
-    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
-	if (st->curr_section) free(st->curr_section);
-	st->curr_section = strdup(section);
-	fprintf(st->fd, "\n[%s]\n", section);
-    }
+    ini_write_section(st, section);
     fprintf(st->fd, "%s = %s\n", fieldname, value?"true":"false");
 }
 
@@ -471,11 +478,7 @@ ini_read_int_scale(char * value, int scalefactor)
 LOCAL void
 ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value, int scalefactor)
 {
-    if (!st->curr_section || strcmp(st->curr_section, section) != 0) {
-	if (st->curr_section) free(st->curr_section);
-	st->curr_section = strdup(section);
-	fprintf(st->fd, "\n[%s]\n", section);
-    }
+    ini_write_section(st, section);
     double svalue = (double)value / scalefactor;
     int digits = 0, sd = 1;
     while (sd < scalefactor) { digits++; sd *= 10; }
@@ -488,7 +491,7 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
-                snprintf((_var), sizeof(_var), "%s", *fieldvalue); \
+                ini_read_str((_var), sizeof(_var), *fieldvalue); \
             else \
                 ini_write_str(st, section, fld, (_var)); \
         }

@@ -37,7 +37,7 @@ cmd_maps(UNUSED char * cmd, char * arg)
 {
     DIR *directory = opendir("map");
     if (!directory) {
-	printf_chat("#No maps found... WTF where is %s‼", server.main_level);
+	printf_chat("#No maps found... WTF where is %s‼", main_level());
 	return;
     }
 

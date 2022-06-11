@@ -157,7 +157,7 @@ tcpserver()
 	alarm_sig = 0;
     }
 
-    if (enable_heartbeat_poll && !server.private) {
+    if (enable_heartbeat_poll && !server->private) {
 	fprintf(stderr, "Shutting down service\n");
 	send_heartbeat_poll();
     } else
@@ -399,7 +399,7 @@ send_heartbeat_poll()
     char cmdbuf[4096];
     char namebuf[256];
     char softwarebuf[256];
-    int valid_salt = (*server.secret != 0 && *server.secret != '-');
+    int valid_salt = (*server->secret != 0 && *server->secret != '-');
 
     // {"errors":[["Only first 256 unicode codepoints may be used in server names."]],"response":"","status":"fail"}
     //
@@ -422,12 +422,12 @@ send_heartbeat_poll()
 	heartbeat_url,
 	"port=",tcp_port_no,
 	"max=",255,
-	"public=",server.private||term_sig?"False":"True",
+	"public=",server->private||term_sig?"False":"True",
 	"version=",7,
 	"users=",current_user_count(),
-	"salt=",valid_salt?server.secret:"0000000000000000",
-	"name=",ccnet_cp437_quoteurl(server.name, namebuf, sizeof(namebuf)),
-	"software=",ccnet_cp437_quoteurl(server.software, softwarebuf, sizeof(softwarebuf)),
+	"salt=",valid_salt?server->secret:"0000000000000000",
+	"name=",ccnet_cp437_quoteurl(server->name, namebuf, sizeof(namebuf)),
+	"software=",ccnet_cp437_quoteurl(server->software, softwarebuf, sizeof(softwarebuf)),
 	"web=","False"
 	);
 
@@ -444,7 +444,7 @@ send_heartbeat_poll()
 }
 
 LOCAL char *
-ccnet_cp437_quoteurl(char *s, char *dest, int len)
+ccnet_cp437_quoteurl(volatile char *s, char *dest, int len)
 {
     char * d = dest;
     for(; *s && d<dest+len-1; s++) {
@@ -499,7 +499,7 @@ start_backup_process()
     time_t now;
     time(&now);
     if (alarm_sig == 0 && last_backup != 0) {
-        if ((now-last_backup) < server.save_interval) {
+        if ((now-last_backup) < server->save_interval) {
 	    if ((now-last_unload) >= 15) {
 		scan_and_save_levels(1);
 		last_unload = now;

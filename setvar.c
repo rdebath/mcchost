@@ -71,15 +71,21 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 	    printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
 	    return;
 	}
-    } else
-    if (!level_ini_fields(st, varname, &value)) {
-	printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
-	return;
-    }
 
-    level_prop->dirty_save = 1;
-    level_prop->metadata_generation++;
-    level_prop->last_modified = time(0);
+	if (!strcasecmp("private", varname)) {
+	    if (alarm_handler_pid)
+		kill(alarm_handler_pid, SIGALRM);
+	}
+    } else {
+	if (!level_ini_fields(st, varname, &value)) {
+	    printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
+	    return;
+	}
+
+	level_prop->dirty_save = 1;
+	level_prop->metadata_generation++;
+	level_prop->last_modified = time(0);
+    }
 
     printf_chat("&SSet %s.%s=\"%s\" ok.", section, varname, value);
 }

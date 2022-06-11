@@ -18,6 +18,7 @@
 
 typedef struct server_t server_t;
 struct server_t {
+    int magic;
     char software[NB_SLEN];
     char name[NB_SLEN];
     char motd[NB_SLEN];
@@ -27,6 +28,7 @@ struct server_t {
     char main_level[NB_SLEN];
     time_t save_interval;
     time_t backup_interval;
+    int magic2;
 };
 #endif
 
@@ -40,13 +42,20 @@ int inetd_mode = 0;
 
 char program_name[512];
 
-server_t server = {
-    .software = "MCCHost",
-    .name = "MCCHost Server",
-    .main_level = "main",
-    .save_interval = 300,
-    .backup_interval = 86400,
+#if 0
+server_t server[1] =
+{
+    (server_t){
+	.software = "MCCHost",
+	.name = "MCCHost Server",
+	.main_level = "main",
+	.save_interval = 300,
+	.backup_interval = 86400,
+    }
 };
+#endif
+
+volatile server_t *server = 0;
 
 nbtstr_t client_software = {"(unknown)"};
 
@@ -84,8 +93,11 @@ main(int argc, char **argv)
     if (*logfile_pattern)
 	set_logfile(logfile_pattern, 0);
 
-    if (save_conf)
+    if (save_conf) {
 	save_ini_file(system_ini_fields, SERVER_CONF_NAME);
+	fprintf(stderr, "Configuration saved\n");
+	exit(0);
+    }
 
     init_dirs();
 
@@ -93,7 +105,7 @@ main(int argc, char **argv)
 
     if (start_tcp_server) {
 	memset(proc_args_mem, 0, proc_args_len);
-	snprintf(proc_args_mem, proc_args_len, "%s port %d", server.software, tcp_port_no);
+	snprintf(proc_args_mem, proc_args_len, "%s port %d", server->software, tcp_port_no);
 
 	tcpserver();
     } else {
@@ -115,12 +127,12 @@ process_connection()
     login();
 
     memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "%s (%s)", server.software, user_id);
+    snprintf(proc_args_mem, proc_args_len, "%s (%s)", server->software, user_id);
 
     // If in classic mode, don't allow place of bedrock.
     if (!cpe_requested) server_id_op_flag = 0;
 
-    if (cpe_requested && !server.cpe_disabled) {
+    if (cpe_requested && !server->cpe_disabled) {
 	send_ext_list();
 	cpe_pending = 1;
     }
@@ -128,7 +140,7 @@ process_connection()
     if (!cpe_pending)
 	complete_connection();
 
-    cpe_enabled = (cpe_requested && !server.cpe_disabled);
+    cpe_enabled = (cpe_requested && !server->cpe_disabled);
 }
 
 void
@@ -137,7 +149,7 @@ complete_connection()
     if (extn_evilbastard)
 	fatal("Server is incompatible with Evil bastard extension");
 
-    send_server_id_pkt(server.name, server.motd, server_id_op_flag);
+    send_server_id_pkt(server->name, server->motd, server_id_op_flag);
     cpe_pending = 0;
 
     // List of users
@@ -148,8 +160,8 @@ complete_connection()
 
     // Open level mmap files.
     char fixname[MAXLEVELNAMELEN*4];
-    fix_fname(fixname, sizeof(fixname), server.main_level);
-    start_level(server.main_level, fixname);
+    fix_fname(fixname, sizeof(fixname), main_level());
+    start_level(main_level(), fixname);
     open_level_files(fixname, 0);
     if (level_prop)
 	create_block_queue(fixname);
@@ -242,7 +254,7 @@ login()
     else
 	fprintf_logfile("Logging in user '%s'", user_id);
 
-    if (*server.secret != 0 && *server.secret != '-') {
+    if (*server->secret != 0 && *server->secret != '-') {
 	if (strlen(mppass) != 32 && !client_ipv4_localhost)
 	    quiet_drop("Login failed!");
     }
@@ -255,9 +267,9 @@ login()
 
     if (*mppass == 0 && client_ipv4_localhost)
 	user_authenticated = 1;
-    else if (*server.secret != 0 && *server.secret != '-') {
+    else if (*server->secret != 0 && *server->secret != '-') {
 	char hashbuf[NB_SLEN*2];
-	strcpy(hashbuf, server.secret);
+	strcpy(hashbuf, IGNORE_VOLATILE_CHARP(server->secret));
 	strcat(hashbuf, user_id);
 
 	MD5_CTX mdContext;
@@ -376,4 +388,14 @@ show_args_help()
     fprintf(stderr, "  -saveconf Save current system conf in server.ini for next time.\n");
 
     exit(1);
+}
+
+char *
+main_level()
+{
+    static char main_level_cpy[NB_SLEN];
+    volatile char *s = server->main_level;
+    char * d = main_level_cpy;
+    while ( STFU(*d++ = *s++) );
+    return main_level_cpy;
 }

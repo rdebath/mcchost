@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <errno.h>
 
 #include "loadsave.h"
 #include "inline.h"
@@ -115,24 +116,24 @@ cmd_goto(UNUSED char * cmd, char * arg)
 void
 cmd_main(UNUSED char * cmd, UNUSED char * arg)
 {
-    if (strcmp(server.main_level, current_level_name) == 0) {
+    if (strcmp(main_level(), current_level_name) == 0) {
 	printf_chat("&SYou're already on &7%s", current_level_name);
 	return;
     }
 
     char fixedname[NB_SLEN];
-    fix_fname(fixedname, sizeof(fixedname), server.main_level);
+    fix_fname(fixedname, sizeof(fixedname), main_level());
 
     stop_shared();
 
-    start_level(server.main_level, fixedname);
+    start_level(main_level(), fixedname);
     open_level_files(fixedname, 0);
     if (!level_prop)
 	fatal("Failed to load main.");
     send_map_file();
     send_spawn_pkt(255, user_id, level_prop->spawn);
 
-    printf_chat("@&S%s went to &7%s", user_id, server.main_level);
+    printf_chat("@&S%s went to &7%s", user_id, main_level());
 
     read_only_message();
 }
@@ -187,32 +188,147 @@ cmd_save(UNUSED char * cmd, char * arg)
 }
 
 int
-save_level_in_map(char * level_fname)
+save_level(char * level_fname, char * level_name, int save_bkp)
 {
-    char buf1[256], buf2[256];
-    snprintf(buf1, sizeof(buf1), LEVEL_TMP_NAME, level_fname);
-    snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, level_fname);
-    if (access(buf2, F_OK) == 0 && access(buf2, W_OK) != 0) {
+    // Process ...
+    // 1) Save map to .tmp
+    // 2) Link .cw to .bak
+    // 3) Rename .tmp to .cw
+    // 4) Rename .bak to backup/...cw
+    //
+    // If not backup omit (2) and (4) has nothing to ren.
+
+    // Return 0=> ok, 1=> ok, to discard changes, -1=> save didn't work.
+
+    char tmp_fn[256], map_fn[256], bak_fn[256];
+    snprintf(tmp_fn, sizeof(tmp_fn), LEVEL_TMP_NAME, level_fname);
+    snprintf(map_fn, sizeof(map_fn), LEVEL_CW_NAME, level_fname);
+    snprintf(bak_fn, sizeof(bak_fn), LEVEL_BAK_NAME, level_fname);
+    if (access(map_fn, F_OK) == 0 && access(map_fn, W_OK) != 0) {
 	// map _file_ is write protected; don't replace.
-	return 1;
+	fprintf(stderr, "Discarding changes to %s -- write protected.\n", level_fname);
+	level_prop->dirty_save = 0;
+	level_prop->readonly = 1;
+	return 0;
     }
 
     fprintf(stderr, "Saving %s to map directory\n", level_fname);
 
+    time_t backup_sav = level_prop->last_backup;
+    if (save_bkp) {
+	// We're gonna do the backup.
+	level_prop->last_backup = time(0);
+    }
+
     lock_shared();
-    if (save_map_to_file(buf1, 1) < 0) {
-	(void)unlink(buf1);
-	fprintf(stderr, "map save of '%s' to '%s' failed\n", level_fname, buf1);
+    if (save_map_to_file(tmp_fn, 1) < 0) {
+	int e = errno;
+	(void) unlink(tmp_fn);
+	errno = e;
+	level_prop->last_backup = backup_sav;
+
+	fprintf(stderr, "map save of '%s' to '%s' failed\n", level_fname, tmp_fn);
 	return -1;
-    } else if (rename(buf1, buf2) < 0) {
+    }
+
+    if (save_bkp) {
+	if (access(map_fn, F_OK) == 0) {
+	    // Do anything else on backup failure?
+	    if (link(map_fn, bak_fn) < 0)
+		level_prop->last_backup = backup_sav;
+	}
+    }
+
+    if (rename(tmp_fn, map_fn) < 0) {
 	perror("save rename failed");
-	(void)unlink(buf1);
+	int e = errno;
+	(void) unlink(tmp_fn);
+	errno = e;
 	return -1;
-    } else
-	level_prop->dirty_save = 0;
+    }
+
+    level_prop->dirty_save = 0;
     unlock_shared();
 
+    if (access(bak_fn, F_OK) == 0) {
+	char hst_fn[256];
+	next_backup_filename(hst_fn, sizeof(hst_fn), level_fname);
+
+	// rename or copy/del bak_fn to hst_fn
+	if (rename(bak_fn, hst_fn) < 0) {
+	    int txok = 1;
+	    if (errno != EXDEV) {
+		perror("Rename of bak file to history failed");
+		txok = 0;
+	    } else {
+		snprintf(tmp_fn, sizeof(tmp_fn), "%s/%s.tmp", LEVEL_BACKUP_DIR_NAME, level_fname);
+
+		FILE *ifd, *ofd;
+		ifd = fopen(bak_fn, "r");
+		if (ifd) {
+		    ofd = fopen(tmp_fn, "w");
+		    if (!ofd) txok = 0;
+		    else {
+			char buf[4096];
+			int c;
+			while(txok && (c=fread(buf, 1, sizeof(buf), ifd)) > 0)
+			    txok = (fwrite(buf, 1, c, ofd) == c);
+			fclose(ofd);
+		    }
+		    fclose(ifd);
+		} else
+		    txok = 0;
+
+		if (txok && rename(tmp_fn, hst_fn) < 0) {
+		    txok = 0;
+		}
+		if (!txok) {
+		    perror("Backup copy and rename failed");
+		    int e = errno;
+		    (void) unlink(tmp_fn);
+		    errno = e;
+		} else
+		    (void) unlink(bak_fn);
+	    }
+
+	    if (txok) {
+		fprintf(stderr, "Saved backup %s\n", hst_fn);
+	    } else {
+		printf_chat("@&SSaving of backup for level \"%s\" failed", level_name);
+	    }
+	}
+    } else
+	level_prop->last_backup = backup_sav;
+
     return 0;
+}
+
+void
+next_backup_filename(char * bk_name, int bk_len, char * fixedname)
+{
+    int backup_id = 1;
+
+    // Find the next unused number
+    struct dirent *entry;
+    DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
+    if (directory) {
+	int l = strlen(fixedname);
+	while( (entry=readdir(directory)) )
+	{
+	    if (strncmp(entry->d_name, fixedname, l) == 0
+		&& entry->d_name[l] == '.') {
+		char * s = entry->d_name+l+1;
+		int v = 0;
+		while(*s>='0' && *s<='9') { v=v*10+(*s-'0'); s++; }
+		if (v>=backup_id && strcmp(s, ".cw") == 0) {
+		    backup_id = v+1;
+		}
+	    }
+	}
+	closedir(directory);
+    }
+
+    snprintf(bk_name, bk_len, LEVEL_BACKUP_NAME, fixedname, backup_id);
 }
 
 void
@@ -233,7 +349,7 @@ scan_and_save_levels(int unlink_only)
 
 	nbtstr_t lv = shdat.client->levels[lvid].level;
 	level_name = lv.c;
-	this_is_main = (strcmp(level_name, server.main_level) == 0);
+	this_is_main = (strcmp(level_name, main_level()) == 0);
 
 	char fixedname[MAXLEVELNAMELEN*4];
 	fix_fname(fixedname, sizeof(fixedname), level_name);
@@ -245,22 +361,14 @@ scan_and_save_levels(int unlink_only)
 
 	if (!level_prop->readonly && !unlink_only) {
 	    if (level_prop->dirty_save) {
-		// TODO: 1) Save map to .tmp
-		//       2) Link .cw to .bak
-		//       3) Rename .tmp to .cw
-		//       4) Rename .bak to backup/...cw
-		//
-		// If not backup omit (2) and (4) has nothing to ren.
-		// Current has hole when .cw is not available.
 
-		try_backup(fixedname);
+		// Time to backup ?
+		time_t now = time(0);
+		int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
+		int rv = save_level(fixedname, level_name, do_bkp);
 
-		int rv = save_level_in_map(fixedname);
-		if (rv == 1) {
-		    fprintf(stderr, "Level %s write protected", fixedname);
-		    level_prop->dirty_save = 0;
-		    level_prop->readonly = 1;
-		}
+		if (rv < 0)
+		    printf_chat("@&WSave of level \"%s\" failed", level_name);
 	    }
 	}
 
@@ -295,55 +403,6 @@ scan_and_save_levels(int unlink_only)
     }
 
     stop_client_list();
-}
-
-void
-try_backup(char * fixedname)
-{
-    char filename[256];
-    snprintf(filename, sizeof(filename), LEVEL_CW_NAME, fixedname);
-
-    // Time to save ?
-    time_t now = time(0);
-    if (now-server.backup_interval < level_prop->last_backup) return;
-
-    // Anything to save
-    if (access(filename, F_OK) != 0) return;
-
-    int backup_id = 1;
-
-    // Find the next unused number
-    struct dirent *entry;
-    DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
-    if (directory) {
-	int l = strlen(fixedname);
-	while( (entry=readdir(directory)) )
-	{
-	    if (strncmp(entry->d_name, fixedname, l) == 0
-		&& entry->d_name[l] == '.') {
-		char * s = entry->d_name+l+1;
-		int v = 0;
-		while(*s>='0' && *s<='9') { s++; v=v*10+(*s-'0'); }
-		if (v>backup_id && strcmp(s, ".cw") == 0) {
-		    backup_id = v+1;
-		}
-	    }
-	}
-	closedir(directory);
-    }
-
-    // Rename it to there
-    char backupname[256];
-    sprintf(backupname, LEVEL_BACKUP_NAME, fixedname, backup_id);
-    if (rename(filename, backupname) < 0) {
-	fprintf(stderr, "Error on backup of %s to %s\n", filename, backupname);
-	return;
-    }
-
-    fprintf(stderr, "Saved backup %s\n", backupname);
-
-    // We saved the previous
-    level_prop->last_backup = now;
 }
 
 /* This only finds ASCII case insensitive, not CP437. This is probably fine.
@@ -446,7 +505,7 @@ choose_random_level(char * fixedname, int name_len)
     DIR *directory = opendir(LEVEL_MAP_DIR_NAME);
 
     if (!directory) {
-        printf_chat("#No maps found... WTF where is %s‼", server.main_level);
+        printf_chat("#No maps found... WTF where is %s‼", main_level());
         return;
     }
 
