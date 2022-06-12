@@ -28,6 +28,7 @@ OBJ2=lib_text.o
 
 # We like a longer name so the command line is bigger for our argv mangling.
 INAME=mcchost-server
+INSTDIR="${HOME}/bin"
 
 ${PROG}: ${OBJ} ${OBJ2}
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -o ${PROG} ${OBJ} ${OBJ2} $(LDFLAGS)
@@ -35,7 +36,7 @@ ${PROG}: ${OBJ} ${OBJ2}
 .PHONY: install clean makeheaders lib_text
 
 install: ${PROG}
-	cp -fp ${PROG} "${HOME}/bin/${INAME}"
+	cp -fp ${PROG} "${INSTDIR}/${INAME}"
 
 ifeq ($(MAKECMDGOALS),clean)
 clean:

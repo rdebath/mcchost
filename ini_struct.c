@@ -141,7 +141,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTHEX("HacksFlags", level_prop->hacks_flags);
 
 	INI_NBTSTR("Texture", level_prop->texname);
-	INI_INTVAL("EnvWeatherType", level_prop->weather);
+	INI_INTVAL("WeatherType", level_prop->weather);
 
 	INI_INTHEX("SkyColour", level_prop->sky_colour);
 	INI_INTHEX("CloudColour", level_prop->cloud_colour);

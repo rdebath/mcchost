@@ -159,6 +159,7 @@ process_args(int argc, char **argv)
 
 	if (!pass2) {
 	    server = 0;
+	    init_dirs();
 	    open_system_conf();
 
 	    if (server->magic != MAP_MAGIC || server->magic2 != MAP_MAGIC2)

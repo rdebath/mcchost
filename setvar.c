@@ -6,7 +6,7 @@
 #include "setvar.h"
 
 #if INTERFACE
-#define CMD_SETVAR  {N"setvar", &cmd_setvar}, {N"set", &cmd_setvar}
+#define CMD_SETVAR  {N"setvar", &cmd_setvar, .dup=1}, {N"set", &cmd_setvar}
 #endif
 
 /*HELP setvar,set H_CMD
@@ -21,6 +21,14 @@ SkyboxColour SideBlock EdgeBlock SideLevel SideOffset
 CloudHeight MaxFog CloudsSpeed WeatherSpeed WeatherFade
 ExpFog SkyboxHorSpeed SkyboxVerSpeed
 
+*/
+
+/*HELP set_block H_CMD
+&W TODO
+*/
+
+/*HELP set_system H_CMD
+&W TODO
 */
 
 void

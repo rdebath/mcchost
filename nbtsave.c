@@ -19,6 +19,9 @@
  *
  * I've put the block arrays at the end of the file, this should allow a
  * quick scan of the properties if necessary.
+ *
+ * Some decoders insist on specific integer widths so standard fields
+ * have defined widths.
  */
 int
 save_map_to_file(char * fn, int background)
@@ -35,7 +38,7 @@ save_map_to_file(char * fn, int background)
     }
 
     bc_compound(savefile, "ClassicWorld");
-    bc_ent_int(savefile, "FormatVersion", 1);
+    bc_ent_int8(savefile, "FormatVersion", 1);
     {
 	char buf[16] = {0};
 	bc_ent_bytes(savefile, "UUID", buf, sizeof(buf));
@@ -66,7 +69,7 @@ save_map_to_file(char * fn, int background)
     // Written by CC
     if (level_prop->click_distance >= 0) {
 	bc_compound(savefile, "ClickDistance");
-	bc_ent_int(savefile, "Distance", level_prop->click_distance);
+	bc_ent_int16(savefile, "Distance", level_prop->click_distance);
 	bc_end(savefile);
     }
 

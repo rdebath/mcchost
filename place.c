@@ -4,6 +4,7 @@
 #include "place.h"
 
 int player_mode_paint = 0;
+int player_mode_mode = -1;
 
 /*HELP place,pl H_CMD
 &T/place b [x y z] [X Y Z]
@@ -17,13 +18,19 @@ Alias: &T/pl
 When paint mode is on your held block replaces any deleted block.
 Alias: &T/p
 */
+/*HELP mode H_CMD
+&T/mode [BlockNo]
+Always place &TBlockNo&S rather than your held block.
+Useful for hidden block types.
+*/
 
 #if INTERFACE
 #define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}, \
-                   {N"paint", &cmd_paint}, {N"p", &cmd_paint, .dup=1}
+                   {N"paint", &cmd_paint}, {N"p", &cmd_paint, .dup=1}, \
+                   {N"mode", &cmd_mode}
 #endif
 void
-cmd_place(UNUSED char * cmd, char * arg)
+cmd_place(char * cmd, char * arg)
 {
     int args[8] = {0};
     int cnt = 0;
@@ -32,12 +39,18 @@ cmd_place(UNUSED char * cmd, char * arg)
 	for(int i = 0; i<8; i++) {
 	    char * p = strtok(ar, " "); ar = 0;
 	    if (p == 0) break;
-	    // if (i == 0) check block name; else
-	    // check for relative x/y/z posn
-	    args[i] = atoi(p);
+	    if (i == 0) {
+		args[i] = block_name(p);
+		if (args[i] == BLOCKMAX) {
+		    printf_chat("&WUnknown block '%s'", p);
+		    return;
+		}
+	    } else
+		args[i] = atoi(p);
 	    cnt = i+1;
 	}
     if (cnt != 1 && cnt != 4 && cnt != 7) {
+	if (cnt == 0) return cmd_help("", cmd);
 	printf_chat("&WUsage: /place b [x y z] [X Y Z]");
 	return;
     }
@@ -106,6 +119,25 @@ cmd_paint(UNUSED char * cmd, UNUSED char * arg)
 }
 
 void
+cmd_mode(UNUSED char * cmd, char * arg)
+{
+    char * block = strtok(arg, " ");
+    if (!block) {
+	player_mode_mode = -1;
+	printf_chat("&SPlayer /mode command turned off");
+    } else {
+	player_mode_mode = -1;
+	block_t b = block_name(block);
+	if (b >= BLOCKMAX) {
+	    printf_chat("&WUnknown block '%s'", block);
+	    return;
+	}
+	player_mode_mode = b;
+	printf_chat("&SPlayer /mode set to block %d", player_mode_mode);
+    }
+}
+
+void
 process_player_setblock(pkt_setblock pkt)
 {
     if (level_prop->readonly && !level_prop->allowchange) {
@@ -115,6 +147,11 @@ process_player_setblock(pkt_setblock pkt)
 
     if (player_mode_paint) {
 	pkt.block = pkt.heldblock;
+	pkt.mode = 2;
+    }
+
+    if (player_mode_mode >= 0 && pkt.mode) {
+	pkt.block = player_mode_mode;
 	pkt.mode = 2;
     }
 

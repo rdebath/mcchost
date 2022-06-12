@@ -17,12 +17,12 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) backup/ on different filesystem
- +) Aliases in /set command
+ +) Aliases in /set command, more help, option lists.
  +) Allow for extend of .queue file without triggering reloads.
- +) Move server_t structure to shared memory. (Multiple ports?)
 
- +) /mode command.
+ +) Merge ini and nbt processing.
+
+ +) /sendcmd command
  +) /about command
  +) /z and /m commands with setblock capture.
 
@@ -34,20 +34,16 @@ See "/help todo" for notes.
     -- SQLite3 ? Multiple keys ? Just user names?
     -- https://github.com/symisc/unqlite  ??
 
- +) Command that sets level properties using ini file loader. (inprogress)
-    -- List of options.
-
  +) Command line option to restart server and unload levels.
     -- So we know this version will run! Find pid by port no.
     -- SIGALRM: Command line routine to "unload" level file
     -- Precheck so levels can be unloaded by old version.
     -- Precheck so users processes can be restarted too?
 
- +) Multiple Levels. (/newlvl, /goto, /main, /maps) (inprogress)
  +) /resize, /copylvl, /deletelvl, /save(backup)
  +) /restore & /museum
- +) /newlvl, create cw file in ini file format.
  +) Import -- download *.cw file from web.
+ +) /newlvl, generate "nice" levels.
 
  +) Block/User history records.
     -- Combined history needs user id numbers --> user file/table.
@@ -66,14 +62,16 @@ See "/help todo" for notes.
 
  +) /spawn command
  +) /tp command
+ +) /summon command
  +) /afk command (and auto)
  +) /info command
 
- +) Add command to save all help texts as real files.
+ +) Command to save all help texts as real files.
 	no overwrite -- save to *.bak in this case?
 
  +) Run external command with stdout/err sent to client (</dev/null)
     -- Map gen? Import?
+    -- Sent to level chat ? -- Physics?
 
  +) Log user commands ?
 
