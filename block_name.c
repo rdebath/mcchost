@@ -37,9 +37,11 @@ block_name(char * name)
 	    return i;
     }
 
+#ifdef OLDBLOCKNAMES
     for(int i=0; oldblock_names[i]; i++)
 	if (block_name_match(bnb, oldblock_names[i]))
 	    return i;
+#endif
 
     for(int i=0; i < Block_CPE; i++)
 	if (block_name_match(bnb, default_blocks[i].name.c))

@@ -1,4 +1,8 @@
 
+#if INTERFACE
+#define OLDBLOCKNAMES
+#endif
+
 char * oldblock_names[] = {
     "air", "stone", "grass", "dirt", "cobblestone", "wood",
     "plant", "adminium", "active_water", "water", "active_lava",

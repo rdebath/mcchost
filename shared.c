@@ -436,7 +436,7 @@ open_system_conf()
     if (server) return;
 
     sprintf(sharename, SYS_CONF_NAME);
-    allocate_shared(sharename, sizeof(*client_list), shdat.dat+SHMID_SYSCONF, 1);
+    allocate_shared(sharename, sizeof(*server), shdat.dat+SHMID_SYSCONF, 1);
     server = shdat.dat[SHMID_SYSCONF].ptr;
 }
 

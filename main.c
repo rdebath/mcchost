@@ -369,23 +369,27 @@ void
 show_args_help()
 {
     fprintf(stderr, "Usage: %s [-inetd|-tcp|-net] ...\n", program_name);
-    fprintf(stderr, "  -inetd    Assume socket is stdin/out from inetd or similar\n");
-    fprintf(stderr, "  -tcp      Open a tcp socket for listening, no default secret.\n");
-    fprintf(stderr, "  -net      Open a socket, register secret at:\n%10s%s\n", "", heartbeat_url);
-    fprintf(stderr, "  -port X   Set port number listened to.\n");
-    fprintf(stderr, "  -dir X    Change to directory before opening data files.\n");
-    fprintf(stderr, "  -private -public\n");
-    fprintf(stderr, "            When registering set privacy state.\n");
+    fprintf(stderr, "  -dir X     Change to directory before opening data files.\n\n");
 
-    fprintf(stderr, "  -name X   Set server name\n");
-    fprintf(stderr, "  -motd X   Set server motd\n");
+    fprintf(stderr, "  -tcp       Open a tcp socket for listening, no default secret.\n");
+    fprintf(stderr, "  -net       Open a socket, register the secret at:\n%16s%s\n", "", heartbeat_url);
+    fprintf(stderr, "  -port X    Set port number listened to.\n\n");
+    fprintf(stderr, "  -inetd     Assume socket is stdin/out from inetd or similar\n");
+    fprintf(stderr, "  -detach    Background self, eg if starting from command line.\n");
+    fprintf(stderr, "  -no-detach Do not background; starting from init, systemd, docker.\n");
+
+    fprintf(stderr, "  -private -public\n");
+    fprintf(stderr, "             When registering set privacy state.\n");
+
+    fprintf(stderr, "  -name X    Set server name\n");
+    fprintf(stderr, "  -motd X    Set server motd\n");
     fprintf(stderr, "  -secret X\n");
-    fprintf(stderr, "  -salt X   Set server salt/secret\n");
-    fprintf(stderr, "  -heartbeat X\n");
-    fprintf(stderr, "            Change hearbeat url\n");
-    fprintf(stderr, "  -runonce  Accept a connection but don't fork, for debugging.\n");
-    fprintf(stderr, "  -nocpe    Don't accept a CPE request.\n");
-    fprintf(stderr, "  -saveconf Save current system conf in server.ini for next time.\n");
+    fprintf(stderr, "  -salt X    Set server salt/secret\n");
+    fprintf(stderr, "  -heartbeat http://host.xz/path\n");
+    fprintf(stderr, "             Change hearbeat url\n");
+    fprintf(stderr, "  -runonce   Accept one connection without forking, for debugging.\n");
+    fprintf(stderr, "  -nocpe     Don't accept a CPE request.\n");
+    fprintf(stderr, "  -saveconf  Save current system conf and exit\n");
 
     exit(1);
 }
