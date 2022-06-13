@@ -7,7 +7,6 @@
  * TODO: Should unknown sections give warnings?
  * TODO: Comment preserving ini file save.
  *
- * Server.MaxPlayers
  * Server.WhiteList
  * Server.Antispam
  */
@@ -59,7 +58,8 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     section = "server";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-#define WC(_x_) (st->write && !st->no_unsafe) ?"; " _x_:_x_
+#define WC(_x) WC2(!st->no_unsafe, _x)
+#define WC2(_c, _x) (st->write && (_c)) ?"; " _x:_x
 
 	if (st->write && !st->no_unsafe) {
 	    ini_write_section(st, section);
@@ -75,27 +75,37 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	if (!st->no_unsafe) {
 	    INI_STRARRAY(WC("Salt"), server->secret);	//Base62
+	} else if (st->write) {
+	    INI_STRARRAY(WC("Salt"), "XXXXXXXXXXXXXXXX");
 	}
 
-	INI_BOOLVAL(WC("NoCPE"), server->cpe_disabled);
 	INI_BOOLVAL(WC("Private"), server->private);
+	INI_BOOLVAL(WC("NoCPE"), server->cpe_disabled);
 
-	if (st->write) fprintf(st->fd, ";\n\n");
-
-	INI_STRARRAY("Logfile", logfile_pattern);		//Binary
+	if (st->write) fprintf(st->fd, "\n");
 
 	INI_BOOLVAL("tcp", start_tcp_server);
-	INI_STRARRAY("Heartbeat", heartbeat_url);		//ASCII
-	INI_BOOLVAL("PollHeartbeat", enable_heartbeat_poll);
-	INI_INTVAL(st->write && tcp_port_no==25565?"; Port":"Port", tcp_port_no);
-
+	INI_INTVAL("Port", tcp_port_no);
 	INI_BOOLVAL("Inetd", inetd_mode);
 	INI_BOOLVAL("Detach", detach_tcp_server);
-	INI_BOOLVAL("OPFlag", server_id_op_flag);
+	INI_STRARRAY("Heartbeat", heartbeat_url);		//ASCII
+	INI_BOOLVAL("PollHeartbeat", enable_heartbeat_poll);
 
-	if (!st->no_unsafe) {
-	    INI_BOOLVAL(WC("Runonce"), server_runonce);
+	if (st->write) fprintf(st->fd, "\n; ; Other options\n");
+	INI_BOOLVAL(WC("Runonce"), server_runonce);
+	INI_BOOLVAL(WC("OPFlag"), server_id_op_flag);
+	INI_STRARRAY(WC2(!*logfile_pattern, "Logfile"), logfile_pattern);
+	INI_FIXEDP(WC("SaveIntervalMins"), server->save_interval, 60);
+	INI_FIXEDP(WC("BackupIntervalHours"), server->backup_interval, 3600);
+	if (!st->write) {
+	    INI_FIXEDP(WC("SaveIntervalHours"), server->save_interval, 3600);
+	    INI_FIXEDP(WC("BackupIntervalMins"), server->backup_interval, 60);
+	    INI_FIXEDP(WC("SaveIntervalDays"), server->save_interval, 86400);
+	    INI_FIXEDP(WC("BackupIntervalDays"), server->backup_interval, 86400);
+	    INI_INTVAL(WC("SaveInterval"), server->save_interval);
+	    INI_INTVAL(WC("BackupInterval"), server->backup_interval);
 	}
+	INI_INTVAL(WC("MaxPlayers"), server->max_players);
     }
 
     return found;
@@ -133,8 +143,8 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_FIXEDP("Spawn.X", level_prop->spawn.x, 32);
 	INI_FIXEDP("Spawn.Y", level_prop->spawn.y, 32);
 	INI_FIXEDP("Spawn.Z", level_prop->spawn.z, 32);
-	INI_INTVAL("Spawn.H", level_prop->spawn.h);
-	INI_INTVAL("Spawn.V", level_prop->spawn.v);
+	INI_FIXEDP2("Spawn.H", level_prop->spawn.h, 256, 360);
+	INI_FIXEDP2("Spawn.V", level_prop->spawn.v, 256, 360);
 
 	INI_FIXEDP("ClickDistance", level_prop->click_distance, 32);
 
@@ -468,20 +478,20 @@ ini_read_bool(volatile int *var, char * value)
 }
 
 LOCAL int
-ini_read_int_scale(char * value, int scalefactor)
+ini_read_int_scale(char * value, int scalefactor, int scalefactor2)
 {
     double nval = strtod(value, 0);
-    nval = round(nval * scalefactor);
+    nval = round(nval * scalefactor / scalefactor2);
     return (int)nval;
 }
 
 LOCAL void
-ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value, int scalefactor)
+ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value, int scalefactor, int scalefactor2)
 {
     ini_write_section(st, section);
-    double svalue = (double)value / scalefactor;
+    double svalue = (double)value * scalefactor2 / scalefactor;
     int digits = 0, sd = 1;
-    while (sd < scalefactor) { digits++; sd *= 10; }
+    while (sd < scalefactor / scalefactor2) { digits++; sd *= 10; }
     fprintf(st->fd, "%s = %.*f\n", fieldname, digits, svalue);
 }
 
@@ -551,9 +561,19 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
-                _var = ini_read_int_scale(*fieldvalue, _scale); \
+                _var = ini_read_int_scale(*fieldvalue, _scale, 1); \
             else \
-                ini_write_int_scale(st, section, fld, (_var), _scale); \
+                ini_write_int_scale(st, section, fld, (_var), _scale, 1); \
+        }
+
+#define INI_FIXEDP2(_field, _var, _scale, _scale2) \
+        fld = _field; \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                _var = ini_read_int_scale(*fieldvalue, _scale, _scale2); \
+            else \
+                ini_write_int_scale(st, section, fld, (_var), _scale, _scale2); \
         }
 
 #define INI_BOOLVAL(_field, _var) \

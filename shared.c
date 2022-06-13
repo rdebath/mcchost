@@ -321,8 +321,8 @@ create_block_queue(char * levelname)
 	queue_count -= 8;
     }
 
-    // If it's sort of close, don't change it.
-    if (file_queue_count > queue_count/2) queue_count = file_queue_count;
+    // If it's more, don't change it.
+    if (file_queue_count > queue_count) queue_count = file_queue_count;
 
     stop_block_queue();
 
@@ -341,11 +341,8 @@ create_block_queue(char * levelname)
 	level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
     } else {
 	level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
-	if (queue_count > level_block_queue->queue_len) {
-	    level_block_queue->generation += 2;
-	    level_block_queue->curr_offset = 0;
+	if (queue_count > level_block_queue->queue_len)
 	    level_block_queue->queue_len = queue_count;
-	}
     }
 
     unlock_shared();
@@ -439,6 +436,14 @@ open_system_conf()
     allocate_shared(sharename, sizeof(*server), shdat.dat+SHMID_SYSCONF, 1);
     server = shdat.dat[SHMID_SYSCONF].ptr;
 }
+
+// These flags are not strictly required, but probably a good idea
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0
+#endif
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
 
 LOCAL int
 allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm, int close_fd)

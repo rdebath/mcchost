@@ -18,9 +18,13 @@ See "/help todo" for notes.
 
 /*HELP todo
  +) Aliases in /set command, more help, option lists.
- +) Allow for extend of .queue file without triggering reloads.
-
  +) Merge ini and nbt processing.
+
+ +) User count, flag clones on connect & disconnect.
+
+ +) If lots of maps loaded, unload them quicker ?
+ +) Config paths for "backup" and "map" directories ?
+ +) reset_hotbar_on_mapload is a level option in the CW file ?
 
  +) /sendcmd command
  +) /about command
@@ -37,8 +41,9 @@ See "/help todo" for notes.
  +) Command line option to restart server and unload levels.
     -- So we know this version will run! Find pid by port no.
     -- SIGALRM: Command line routine to "unload" level file
-    -- Precheck so levels can be unloaded by old version.
+    -- Precheck so levels can be unloaded (saved) by old version.
     -- Precheck so users processes can be restarted too?
+	-- Needs state save and reload for extn_* variables.
 
  +) /resize, /copylvl, /deletelvl, /save(backup)
  +) /restore & /museum

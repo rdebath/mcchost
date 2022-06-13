@@ -28,6 +28,15 @@ save_map_to_file(char * fn, int background)
 {
     if (!fn || *fn == 0) return -1;
 
+    // CC works with 2^^31 blocks (with cosmetic errors) so allow just one byte
+    // over the limit. Note, however, that this does not apply to the CW file.
+    // The last block in the array will thus become Block_Air.
+    if (level_prop->total_blocks > 0x7FFFFFFF + (int64_t)1 ) {
+	fprintf(stderr, "Oversized map \"%s\" (%d,%d,%d) failed to save\n",
+	    fn, level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
+	return -1;
+    }
+
     gzFile savefile = gzopen(fn, "w9");
 
     if (!savefile) {
@@ -186,6 +195,7 @@ save_map_to_file(char * fn, int background)
 
     bc_compound(savefile, "MCCHost");
     bc_ent_int(savefile, "AllowChange", level_prop->allowchange);
+    bc_ent_int(savefile, "ReadOnly", level_prop->readonly);
     bc_end(savefile);
 
     /* TODO -- server level ?
@@ -206,10 +216,16 @@ save_map_to_file(char * fn, int background)
 
     if (level_blocks) {
 	int flg = 0, flg2 = 0;
-	// Written by CC
-	bc_ent_bytes_header(savefile, "BlockArray", level_prop->total_blocks);
 
-	for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
+	// Save as much as we can, lost blocks would be at the top of the Y axis.
+	int saveable_blocks = level_prop->total_blocks;
+	if (level_prop->total_blocks > 0x7FFFFFFF)
+	    saveable_blocks = 0x7FFFFFFF;
+
+	// Written by CC
+	bc_ent_bytes_header(savefile, "BlockArray", saveable_blocks);
+
+	for (intptr_t i = 0; i<saveable_blocks; i++) {
 	    int b = level_blocks[i];
 	    // if (b>=BLOCKMAX) b = BLOCKMAX-1;
 	    if (b>=CPELIMIT) {flg2 = 1; b &= 0xFF; }
@@ -220,9 +236,9 @@ save_map_to_file(char * fn, int background)
 	// Written by CC
 	if (flg) {
 	    // BlockArray2 can only have 0..767 so we need BlockArray3
-	    bc_ent_bytes_header(savefile, "BlockArray2", level_prop->total_blocks);
+	    bc_ent_bytes_header(savefile, "BlockArray2", saveable_blocks);
 
-	    for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
+	    for (intptr_t i = 0; i<saveable_blocks; i++) {
 		int b = level_blocks[i];
 		// if (b>=BLOCKMAX) b = BLOCKMAX-1;
 		if (b>=CPELIMIT) b &= 0xFF;
@@ -235,9 +251,9 @@ save_map_to_file(char * fn, int background)
 	    // What format should I use for this?
 	    // Currently it's a corrected high byte but this means BA2 makes
 	    // a random block in 0..767. This byte is only set if BA2 is wrong.
-	    bc_ent_bytes_header(savefile, "BlockArray3", level_prop->total_blocks);
+	    bc_ent_bytes_header(savefile, "BlockArray3", saveable_blocks);
 
-	    for (intptr_t i = 0; i<level_prop->total_blocks; i++) {
+	    for (intptr_t i = 0; i<saveable_blocks; i++) {
 		int b = level_blocks[i];
 		// if (b>=BLOCKMAX) b=BLOCKMAX-1;
 		if (b>=CPELIMIT)
@@ -294,7 +310,7 @@ bc_ent_string(gzFile ofd, char * name, char * str, int len)
 }
 
 LOCAL void
-bc_ent_bytes_header(gzFile ofd, char * name, int len)
+bc_ent_bytes_header(gzFile ofd, char * name, uint32_t len)
 {
     gzputc(ofd, NBT_I8ARRAY);
     bc_ent_label(ofd, name);
@@ -305,7 +321,7 @@ bc_ent_bytes_header(gzFile ofd, char * name, int len)
 }
 
 LOCAL void
-bc_ent_bytes(gzFile ofd, char * name, char * bstr, int len)
+bc_ent_bytes(gzFile ofd, char * name, char * bstr, uint32_t len)
 {
     bc_ent_bytes_header(ofd, name, len);
     gzwrite(ofd, bstr, len);

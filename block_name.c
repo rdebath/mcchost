@@ -4,8 +4,37 @@
 
 #include "block_name.h"
 
+char *
+block_name(block_t block)
+{
+#define BBUFLEN 4
+    static int bid = 0;
+    static char name[BBUFLEN][NB_SLEN];
+    volatile char * n = 0;
+    if (block >= BLOCKMAX)
+	return "Invalid Block";
+
+    if (level_prop->blockdef[block].defined)
+	if (level_prop->blockdef[block].name.c[0])
+	    n = level_prop->blockdef[block].name.c;
+
+    if (block < Block_CPE)
+	if (default_blocks[block].name.c[0])
+	    n = default_blocks[block].name.c;
+
+    bid++; if (bid>=BBUFLEN) bid = 0;
+    char *d = name[bid];
+    if (n)
+	while (*n && d<name[bid]+NB_SLEN-1)
+	    *d++ = *n++;
+    *d = 0;
+    if (!name[bid][0])
+	snprintf(name[bid], NB_SLEN, "@%d", block);
+    return name[bid];
+}
+
 block_t
-block_name(char * name)
+block_id(char * name)
 {
     char bnb[256];
     char *s, *d;

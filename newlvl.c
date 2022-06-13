@@ -23,6 +23,18 @@ cmd_newlvl(UNUSED char * cmd, char * arg)
     char * sy = strtok(0, " ");
     char * sz = strtok(0, " ");
 
+    char userlevel[256];
+
+    if (!client_ipv4_localhost) {
+	snprintf(userlevel, sizeof(userlevel), "%s+", user_id);
+	if (strcmp(levelname, "+") == 0 || strcmp(levelname, userlevel) == 0) {
+	    levelname = userlevel;
+	} else {
+	    printf_chat("&WPermission denied");
+	    return;
+	}
+    }
+
     if (!levelname || (sx && !sz)) return cmd_help(0, cmd);
 
     char fixedname[NB_SLEN], buf2[256];

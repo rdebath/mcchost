@@ -49,14 +49,6 @@ load_map_from_file(char * filename, char * level_fname)
 	return -1;
     }
 
-    if (level_prop->last_map_download_size < 16384) {
-	struct stat info;
-	if (stat(filename, &info) == 0) {
-	    if (info.st_size < level_prop->total_blocks*sizeof(block_t))
-		level_prop->last_map_download_size = info.st_size*3/2;
-	}
-    }
-
     return 0;
 }
 
@@ -116,9 +108,10 @@ read_element(gzFile ifd, int etype)
     if (etype == NBT_END) {
 	// EOF
     } else if (etype == NBT_I8ARRAY) {
-	int i, len = 0, ch;
+	int i, ch;
+	int32_t len = 0;
 
-	/* NB: Only lengths 0 ..0x7FFFFFFF are valid. */
+	/* NB: Only lengths 0 .. 0x7FFFFFFF are valid. */
 	for(i=0; i<4; i++)
 	    len = (len<<8) + (ch = gzgetc(ifd));
 
@@ -131,12 +124,12 @@ read_element(gzFile ifd, int etype)
 	if (strcmp(last_lbl, "BlockArray3") == 0 && len>0)
 	    return read_blockarray3(ifd, len);
 
-	if (len < 0 || len > 256) {
+	uint8_t bin_buf[256];
+	if (len < 0 || len > sizeof(bin_buf)) {
 	    for(i=0; i<len; i++) {
 		if ((ch = gzgetc(ifd)) == EOF) return 0;
 	    }
 	} else {
-	    uint8_t bin_buf[256];
 	    for(i=0; i<len; i++) {
 		if ((ch = gzgetc(ifd)) == EOF) return 0;
 		if (i<sizeof(bin_buf)) bin_buf[i] = ch;
@@ -193,13 +186,6 @@ read_element(gzFile ifd, int etype)
 		return 1;
 	    }
 
-
-#if 0
-static char *entpropnames[6] = {
-    "ModelRotX", "ModelRotY", "ModelRotZ",
-    "ModelScaleX", "ModelScaleY", "ModelScaleZ"
-    };
-#endif
 	    if (!read_element(ifd, NBT_LABEL)) return 0;
 	    if (!read_element(ifd, etype)) return 0;
 	}
@@ -257,7 +243,7 @@ static char *entpropnames[6] = {
 }
 
 LOCAL int
-read_blockarray(gzFile ifd, int len)
+read_blockarray(gzFile ifd, uint32_t len)
 {
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
     if (open_blocks(current_level_fname) < 0)
@@ -271,7 +257,7 @@ read_blockarray(gzFile ifd, int len)
     memcpy((void*)(level_blocks+level_prop->total_blocks),
 	    &test_map, sizeof(map_len_t));
 
-    for(int i=0; i<len; i++) {
+    for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
 	level_blocks[i] = (level_blocks[i] & 0xFF00) + (ch&0xFF);
@@ -280,7 +266,7 @@ read_blockarray(gzFile ifd, int len)
 }
 
 LOCAL int
-read_blockarray2(gzFile ifd, int len)
+read_blockarray2(gzFile ifd, uint32_t len)
 {
 
     if (level_blocks == 0 || level_prop->total_blocks < len) {
@@ -289,7 +275,7 @@ read_blockarray2(gzFile ifd, int len)
     }
 
     for(int i=0; i<len; i++) {
-	int ch;
+	uint32_t ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
 	level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
     }
@@ -297,7 +283,7 @@ read_blockarray2(gzFile ifd, int len)
 }
 
 LOCAL int
-read_blockarray3(gzFile ifd, int len)
+read_blockarray3(gzFile ifd, uint32_t len)
 {
 
     if (level_blocks == 0 || level_prop->total_blocks < len) {
@@ -305,7 +291,7 @@ read_blockarray3(gzFile ifd, int len)
 	return 0;
     }
 
-    for(int i=0; i<len; i++) {
+    for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
 	if (ch)
@@ -455,6 +441,7 @@ change_int_value(char * section, char * item, long long value)
     } else if (strcmp(section, "MCCHost") == 0) {
 
 	if (strcmp(item, "AllowChange") == 0) level_prop->allowchange = value;
+	if (strcmp(item, "ReadOnly") == 0) level_prop->readonly = value;
 
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {
@@ -633,7 +620,6 @@ try_asciimode(gzFile ifd, char * levelname)
     fprintf(stderr, "Trying to load level \"%s\" as ini file\n", levelname);
 
     init_map_null();
-    level_prop->last_map_download_size = 20400;
     level_prop->time_created = time(0);
     level_prop->dirty_save = 1;
 

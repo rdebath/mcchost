@@ -10,6 +10,7 @@
 
 BEGIN{
     flg=0;count=0;
+    print "/* ⇉⇉⇉ This file was automatically generated.  Do not edit! ⇇⇇⇇ */"
     print "#include \"lib_text.h\"\n"
 }
 

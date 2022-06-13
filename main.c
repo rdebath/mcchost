@@ -28,6 +28,7 @@ struct server_t {
     char main_level[NB_SLEN];
     time_t save_interval;
     time_t backup_interval;
+    int max_players;
     int magic2;
 };
 #endif
@@ -87,8 +88,11 @@ main(int argc, char **argv)
     proc_args_mem = argv[0];
     proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0] + 1;
 
-    if (!inetd_mode && !start_tcp_server && (isatty(0) || isatty(1)))
+    if (!inetd_mode && !start_tcp_server && !save_conf && (isatty(0) || isatty(1)))
 	show_args_help();
+
+    if (!inetd_mode && !start_tcp_server)
+	start_tcp_server = 1;
 
     if (*logfile_pattern)
 	set_logfile(logfile_pattern, 0);
@@ -105,7 +109,7 @@ main(int argc, char **argv)
 
     if (start_tcp_server) {
 	memset(proc_args_mem, 0, proc_args_len);
-	snprintf(proc_args_mem, proc_args_len, "%s port %d", server->software, tcp_port_no);
+	snprintf(proc_args_mem, proc_args_len, "%s server", server->software);
 
 	tcpserver();
     } else {

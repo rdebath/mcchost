@@ -170,6 +170,7 @@ process_args(int argc, char **argv)
 		    .main_level = "main",
 		    .save_interval = 300,
 		    .backup_interval = 86400,
+		    .max_players = 255,
 		};
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);
@@ -177,6 +178,7 @@ process_args(int argc, char **argv)
     }
 
     // Pad the program args so we get some space after a restart.
+    // Also we must turn off -detach to keep the same pid.
     do {
 	program_args[bc++] = strdup("-no-detach");
 	plen += 11;

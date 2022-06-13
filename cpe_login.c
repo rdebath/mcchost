@@ -10,6 +10,7 @@ struct ext_list_t {
     int version;
     int *enabled_flag;
     int enabled;
+    int disabled;
 };
 #endif
 
@@ -93,7 +94,8 @@ send_ext_list()
     send_extinfo_pkt(server->software, count);
 
     for(i = 0; extensions[i].version; i++)
-	send_extentry_pkt(extensions[i].name, extensions[i].version);
+	if (!extensions[i].disabled)
+	    send_extentry_pkt(extensions[i].name, extensions[i].version);
 }
 
 void
@@ -103,6 +105,7 @@ process_extentry(pkt_extentry * pkt)
         cpe_extn_remaining--;
 
     for(int i=0; extensions[i].version; i++) {
+	if (extensions[i].disabled) continue;
 	if (extensions[i].version != pkt->version) continue;
 	if (strcmp(extensions[i].name, pkt->extname) != 0)
 	    continue;

@@ -156,7 +156,7 @@ struct blockdef_t {
 #define Block_Wood 5
 #define Block_Sapling 6
 #define Block_Bedrock 7
-#define Block_Water 8
+#define Block_ActiveWater 8
 #define Block_StillWater 9
 #define Block_ActiveLava 10
 #define Block_StillLava 11

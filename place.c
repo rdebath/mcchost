@@ -40,7 +40,7 @@ cmd_place(char * cmd, char * arg)
 	    char * p = strtok(ar, " "); ar = 0;
 	    if (p == 0) break;
 	    if (i == 0) {
-		args[i] = block_name(p);
+		args[i] = block_id(p);
 		if (args[i] == BLOCKMAX) {
 		    printf_chat("&WUnknown block '%s'", p);
 		    return;
@@ -127,13 +127,21 @@ cmd_mode(UNUSED char * cmd, char * arg)
 	printf_chat("&SPlayer /mode command turned off");
     } else {
 	player_mode_mode = -1;
-	block_t b = block_name(block);
+	block_t b = block_id(block);
 	if (b >= BLOCKMAX) {
 	    printf_chat("&WUnknown block '%s'", block);
 	    return;
 	}
+
+	// Classic mode, don't let them place blocks they can't remove.
+	if (!server_id_op_flag && !cpe_requested) {
+	    if (b==Block_Bedrock) b=Block_Magma;
+	    if (b==Block_ActiveLava) b=Block_StillLava;
+	    if (b==Block_ActiveWater) b=Block_StillWater;
+	}
+
 	player_mode_mode = b;
-	printf_chat("&SPlayer /mode set to block %d", player_mode_mode);
+	printf_chat("&SPlayer /mode set to block &T%s", block_name(player_mode_mode));
     }
 }
 

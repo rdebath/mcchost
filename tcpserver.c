@@ -25,7 +25,7 @@ int detach_tcp_server = 0;
 int log_to_stderr = 0;
 int tcp_port_no = 25565;
 static int listen_socket = -1;
-int logger_pid = 0;
+static int logger_pid = 0;
 
 int enable_heartbeat_poll = 0;
 static time_t last_heartbeat = 0;
@@ -60,9 +60,31 @@ dont_panic()
 }
 
 void
+read_tcp_port_no()
+{
+    struct sockaddr_in my_addr;
+    socklen_t len = sizeof(my_addr);
+    if (getsockname(listen_socket, (struct sockaddr *)&my_addr, &len) < 0){
+	return;
+    }
+
+    tcp_port_no = ntohs(my_addr.sin_port);
+}
+
+void
 tcpserver()
 {
     listen_socket = start_listen_socket("0.0.0.0", tcp_port_no);
+
+    if (tcp_port_no == 0)
+	read_tcp_port_no();
+
+    if (log_to_stderr || isatty(2)) {
+	if (server_runonce)
+	    fprintf(stderr, "Waiting for connection on port %d.\n", tcp_port_no);
+	else
+	    fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
+    }
 
     if (!server_runonce) {
 	if (detach_tcp_server)
@@ -91,6 +113,9 @@ tcpserver()
 	if (detach_tcp_server)
 	    fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
     }
+
+    memset(proc_args_mem, 0, proc_args_len);
+    snprintf(proc_args_mem, proc_args_len, "%s port %d", server->software, tcp_port_no);
 
     while(!term_sig)
     {
@@ -273,11 +298,6 @@ start_listen_socket(char * listen_addr, int port)
     // start accept client connections (queue 10)
     E(listen(listen_sock, 10), "listen");
 
-    if (server_runonce)
-	fprintf(stderr, "Waiting for connection on port %d.\n", (int)port);
-    else
-	fprintf(stderr, "Accepting connections on port %d.\n", (int)port);
-
     return listen_sock;
 }
 
@@ -421,7 +441,7 @@ send_heartbeat_poll()
 	"%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s&%s%s",
 	heartbeat_url,
 	"port=",tcp_port_no,
-	"max=",255,
+	"max=",server->max_players,
 	"public=",server->private||term_sig?"False":"True",
 	"version=",7,
 	"users=",current_user_count(),

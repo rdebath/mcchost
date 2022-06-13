@@ -12,6 +12,7 @@ struct block_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
     uint32_t curr_offset;
     uint32_t queue_len;
+    uint32_t last_queue_len;
 
     xyzb_t updates[1];
 };
@@ -144,6 +145,7 @@ unlocked_update(int x, int y, int z, int b)
     if (++level_block_queue->curr_offset >= level_block_queue->queue_len) {
 	level_block_queue->curr_offset = 0;
 	level_block_queue->generation ++;
+	level_block_queue->last_queue_len = level_block_queue->queue_len;
     }
 }
 
@@ -161,6 +163,7 @@ send_update(int x, int y, int z, int b)
     if (++level_block_queue->curr_offset >= level_block_queue->queue_len) {
 	level_block_queue->curr_offset = 0;
 	level_block_queue->generation ++;
+	level_block_queue->last_queue_len = level_block_queue->queue_len;
     }
     unlock_shared();
 }
@@ -210,7 +213,8 @@ send_queued_blocks()
 	if (last_generation != level_block_queue->generation)
 	{
 	    int isok = 0;
-	    if (last_generation == level_block_queue->generation-1) {
+	    if (last_generation == level_block_queue->generation-1 &&
+		level_block_queue->queue_len == level_block_queue->last_queue_len) {
 		if (level_block_queue->curr_offset < last_id)
 		    isok = 1;
 	    }
