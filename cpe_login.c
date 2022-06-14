@@ -136,8 +136,12 @@ process_extentry(pkt_extentry * pkt)
 	customblock_pkt_sent = 1;
     }
 
-    if (!cpe_pending && enabled_extension)
-	printf_chat("&WClient enabled extension %s late -- Okay.", pkt->extname);
+    if (!cpe_pending) {
+	if (enabled_extension)
+	    printf_chat("&WClient enabled extension %s late -- Okay.", pkt->extname);
+	else
+	    printf_chat("&WClient sent unknown extension %s late -- Ignored.", pkt->extname);
+    }
 
     if (extn_blockdefn && extn_blockdefnext) {
 	if (client_block_limit < CPELIMITLO)
