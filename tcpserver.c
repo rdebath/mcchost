@@ -13,7 +13,6 @@
 #include <sys/select.h>
 
 #include "tcpserver.h"
-#include "inline.h"
 
 #if INTERFACE
 #include <netinet/in.h>
@@ -42,6 +41,8 @@ static volatile int alarm_sig = 0, term_sig = 0;
 static int signal_available = 0;
 
 pid_t alarm_handler_pid = 0;
+
+static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
 
 void
 handle_signal(int signo)

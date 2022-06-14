@@ -9,7 +9,6 @@
 #include <errno.h>
 
 #include "loadsave.h"
-#include "inline.h"
 
 /*HELP goto,g,gr H_CMD
 &T/goto [levelname]

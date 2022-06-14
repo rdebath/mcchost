@@ -6,7 +6,6 @@
 #include <assert.h>
 
 #include "requestloop.h"
-#include "inline.h"
 
 int64_t bytes_sent;
 static char *ttl_buf = 0;		/* Buffer for line output */
@@ -17,6 +16,7 @@ static int ttl_size = 0;
 static char line_inp_buf[65536];
 static char rcvdpkt[PKBUF];
 int in_rcvd = 0;
+static int ticks_with_pending_bytes = 0;
 
 time_t last_ping = 0;
 
@@ -159,7 +159,12 @@ on_select_timeout()
 {
     time_t now;
     int tc = 5;
-    if (cpe_pending) tc = 60;
+    if (cpe_pending) tc = 60;	// Not while CPE pending
+
+    // If a packet has not been received in full expect the rest soon.
+    if (in_rcvd>0 && ++ticks_with_pending_bytes > 1500) // Should be 15 seconds
+	fatal("Broken packet received -- protocol failure");
+
     time(&now);
     int secs = ((now-last_ping) & 0xFF);
     if (secs > tc) {
@@ -185,6 +190,7 @@ remote_received(char *str, int len)
 	cmd = (*str & 0xFF);
 	clen = msglen[cmd];
 	if (clen == len) {
+	    ticks_with_pending_bytes = 0;
 	    process_client_message(cmd, str);
 	    return;
 	}
@@ -196,10 +202,42 @@ remote_received(char *str, int len)
 	if (msglen[cmd] <= in_rcvd) {
 	    if (msglen[cmd] == 0)
 		fatal("Unknown packet type received");
+	    ticks_with_pending_bytes = 0;
 	    process_client_message(cmd, rcvdpkt);
 	    in_rcvd = 0;
 	}
     }
+}
+
+// This is for any string received from the client.
+//
+// NULs in the strings are not defined, however, the string received from
+// the client may have NULs in any location, embedded ones are converted
+// to 0xFF or 0x20 depending on extn_fullcp437, trailing ones are treated
+// as trailing spaces.
+//
+// In addition the client should only send CP437 after it has been
+// negotiated using CPE. Control characters (AKA Emoji) are more of
+// an issue as the classic client could use those, with "quirks".
+static inline void
+sanitise_nbstring(char *buf, char *str)
+{
+    int l = 0;
+    memcpy(buf, str, MB_STRLEN);
+    buf[MB_STRLEN] = 0;
+    for(int i = 0; i<MB_STRLEN; i++)
+	if (buf[i] != ' ' && buf[i] != 0) l = i+1;
+    if (extn_fullcp437) {
+	for(int i = 0; i<l; i++) if (buf[i] == 0) buf[i] = 0xFF;
+    } else {
+	for(int i = 0; i<l; i++)
+	    if (buf[i] == 0)
+		buf[i] = ' ';
+	    else if (buf[i] & 0x80)
+		buf[i] = cp437_ascii[buf[i] & 0x7F];
+    }
+    char * p = buf+MB_STRLEN;
+    while (p>buf && (p[-1] == ' ' || p[-1] == 0)) *(--p) = 0;
 }
 
 void
@@ -270,19 +308,26 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt_message pkt;
 	    if (extn_longermessages) {
 		pkt.message_type = *p++;
-		pkt.player_id = 0;
+		pkt.player_id = 0xFF;
 	    } else {
 		pkt.message_type = 0;
 		pkt.player_id = *p++;
 	    }
 	    if (pkt.message_type == 1) {
+		// Continuation messages are 64 bytes, *by definition*
+		// So replace all NULs by spaces rather than using
+		// the sanitise_nbstring() function.
+		// NB: CP437 is allowed rather than checked as the client
+		// probably negotiated it anyway.
+
 		char * b = pkt.message;
 		memcpy(b, p, MB_STRLEN);
-		for(int i = 0; i<MB_STRLEN; i++) if (b[i] == 0) b[i] = ' ';
+		for(int i = 0; i<MB_STRLEN; i++)
+		    if (b[i] == 0) b[i] = extn_fullcp437?0xFF:' ';
 		b[MB_STRLEN] = 0;
-	    } else {
-		cpy_nbstring(pkt.message, p); p+=64;
-	    }
+	    } else
+		sanitise_nbstring(pkt.message, p);
+	    // p+=64;
 	    process_chat_message(pkt.message_type, pkt.message);
 	}
 	break;
@@ -291,7 +336,9 @@ process_client_message(int cmd, char * pktbuf)
 	{
 	    char * p = pktbuf+1;
 	    int count;
-	    cpy_nbstring(client_software.c, p); p+=64;
+	    // Perhaps we want to sanitise this string after all the entries
+	    // have been received ... possibly including FullCP437.
+	    sanitise_nbstring(client_software.c, p); p+=64;
 	    count = IntBE16(p); p+=2;
 	    if (cpe_pending)
 		cpe_extn_remaining = count;
@@ -303,7 +350,7 @@ process_client_message(int cmd, char * pktbuf)
 	{
 	    char * p = pktbuf+1;
 	    pkt_extentry pkt;
-	    cpy_nbstring(pkt.extname, p); p+=64;
+	    sanitise_nbstring(pkt.extname, p); p+=64;
 	    pkt.version = IntBE32(p); p+=4;
 	    process_extentry(&pkt);
 	}
@@ -325,4 +372,15 @@ process_client_message(int cmd, char * pktbuf)
 	break;
 
     }
+}
+
+void
+convert_logon_packet(char * pktbuf, pkt_player_id * pkt)
+{
+    char * p = pktbuf+1;
+    pkt->protocol = *p++;
+    // These will always be sanitised to ASCII
+    sanitise_nbstring(pkt->user_id, p); p+=64;
+    sanitise_nbstring(pkt->mppass, p); p+=64;
+    pkt->cpe_flag = (*p++ == 0x42) && pkt->protocol == 7;
 }

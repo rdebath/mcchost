@@ -10,9 +10,6 @@
 
 #include "main.h"
 
-#define LIBINLINE
-#include "inline.h"
-
 #if INTERFACE
 #include <time.h>
 
@@ -36,7 +33,7 @@ struct server_t {
 int line_ofd = -1;
 int line_ifd = -1;
 
-char user_id[NB_SLEN];
+char user_id[NB_SLEN];	// This is ASCII not CP437 or UTF8
 int user_authenticated = 0;
 int server_id_op_flag = 1;
 int inetd_mode = 0;
@@ -205,10 +202,14 @@ send_disconnect_message()
 void
 login()
 {
-    char inbuf[1024];
+    char inbuf[256] = {0};
     int insize = 0, inptr = 0, rqsize = msglen[0];
+    pkt_player_id player = {0};
 
-    // We should get 
+    // First logon packet is read using this, not the normal loop.
+    // This prevents any processing of other packets and allows
+    // us to give special responses and short timeouts.
+    // Also; the normal processing loop can't do a login (again).
     time_t startup = time(0);
     fcntl(line_ifd, F_SETFL, (int)O_NONBLOCK);
     while(insize-inptr < rqsize)
@@ -221,9 +222,11 @@ login()
 	    time_t now = time(0);
 	    if (now-startup > 4) {
 		if (insize >= 2 && inbuf[inptr+1] >= 3 && inbuf[inptr+1] <= 7) {
-		    if (insize >= 66 && inbuf[inptr+1] > 0 && inbuf[inptr+1] < 7)
-			cpy_nbstring(user_id, inbuf+2);
-		    quiet_drop("Short logon packet received");
+		    if (insize >= 66 && inbuf[inptr+1] > 0 && inbuf[inptr+1] < 7) {
+			convert_logon_packet(inbuf, &player);
+			strcpy(user_id, player.user_id);
+		    }
+		    disconnect(0, "Short logon packet received");
 		} else
 		    teapot(inbuf+inptr, insize);
 	    } else
@@ -239,17 +242,16 @@ login()
     }
     fcntl(line_ifd, F_SETFL, 0);
 
-    char mppass[NB_SLEN];
-    cpy_nbstring(mppass, inbuf+64+2);
-    cpy_nbstring(user_id, inbuf+2);
+    convert_logon_packet(inbuf, &player);
+    strcpy(user_id, player.user_id);
 
-    if (inbuf[inptr+1] != 7)
-	quiet_drop("Only protocol version seven is supported");
+    if (player.protocol != 7)
+	disconnect(0, "Only protocol version seven is supported");
 
     for(int i = 0; user_id[i]; i++)
 	if (!isascii(user_id[i]) ||
 	    (!isalnum(user_id[i]) && user_id[i] != '.' && user_id[i] != '_')) {
-	    quiet_drop("Invalid user name");
+	    disconnect(0, "Invalid user name");
 	}
 
     if (client_ipv4_port)
@@ -259,17 +261,17 @@ login()
 	fprintf_logfile("Logging in user '%s'", user_id);
 
     if (*server->secret != 0 && *server->secret != '-') {
-	if (strlen(mppass) != 32 && !client_ipv4_localhost)
-	    quiet_drop("Login failed!");
+	if (strlen(player.mppass) != 32 && !client_ipv4_localhost)
+	    disconnect(0, "Login failed! Mppass required");
     }
 
-    if (*user_id == 0) quiet_drop("Username must be entered");
+    if (*user_id == 0) disconnect(0, "Username must be entered");
     if (strlen(user_id) > 16)
-	quiet_drop("Usernames must be between 1 and 16 characters");
+	disconnect(0, "Usernames must be between 1 and 16 characters");
 
-    cpe_requested = (inbuf[inptr+1] == 7 && inbuf[inptr+128+2] == 0x42);
+    cpe_requested = player.cpe_flag;
 
-    if (*mppass == 0 && client_ipv4_localhost)
+    if (client_ipv4_localhost && (!*player.mppass || strcmp("(none)", player.mppass) == 0))
 	user_authenticated = 1;
     else if (*server->secret != 0 && *server->secret != '-') {
 	char hashbuf[NB_SLEN*2];
@@ -285,8 +287,8 @@ login()
 	for (int i = 0; i < 16; i++)
 	    sprintf(hashbuf+i*2, "%02x", mdContext.digest[i]);
 
-	if (strcasecmp(hashbuf, mppass) != 0)
-	    quiet_drop("Login failed! Close the game and sign in again.");
+	if (strcasecmp(hashbuf, player.mppass) != 0)
+	    disconnect(0, "Login failed! Close the game and sign in again.");
 
 	user_authenticated = 1;
     }
@@ -308,15 +310,6 @@ void
 logout(char * emsg)
 {
     printf_chat("@&W- &7%s &S%s", user_id, emsg);
-    disconnect(0, emsg);
-}
-
-LOCAL void
-quiet_drop(char * emsg)
-{
-    for(int i = 0; user_id[i]; i++)
-	if (user_id[i] <= ' ' || user_id[i] == '\'' || user_id[i] > '~')
-	    user_id[i] = '*';
     disconnect(0, emsg);
 }
 

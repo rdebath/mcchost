@@ -171,6 +171,8 @@ read_element(gzFile ifd, int etype)
 	}
 
 	if (etype == NBT_STR) {
+	    int l = strlen(str_buf);
+	    convert_to_cp437(str_buf, &l);
 	    change_str_value(last_sect, last_lbl, str_buf);
 	}
 
@@ -562,12 +564,12 @@ change_str_value(char * section, char * item, char * value)
 {
     if (strcmp(section, "EnvMapAppearance") == 0) {
 	if (strcmp(item, "TextureURL") == 0) {
-	    cpy_nstr(level_prop->texname.c, value, MB_STRLEN);
+	    cpy_nstr(level_prop->texname.c, value);
 	}
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "Name") == 0) {
 	    if (current_block >= 0 && current_block < BLOCKMAX) {
-		cpy_nstr(level_prop->blockdef[current_block].name.c, value, MB_STRLEN);
+		cpy_nstr(level_prop->blockdef[current_block].name.c, value);
 	    }
 	}
 
@@ -601,13 +603,13 @@ change_str_value(char * section, char * item, char * value)
 }
 
 LOCAL void
-cpy_nstr(volatile char *buf, char *str, int len)
+cpy_nstr(volatile char *buf, char *str)
 {
     volatile char *d = buf;
     char * s;
     for(s=str; s && *s; s++) {
 	*d++ = *s;
-	if (d == buf+len-1) break;
+	if (d == buf+NB_SLEN-1) break;
     }
     *d = 0;
 }

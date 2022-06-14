@@ -61,9 +61,9 @@
 typedef struct pkt_player_id pkt_player_id;
 struct pkt_player_id {
     int protocol;
-    char username[NB_SLEN];
-    char verify_key[NB_SLEN];
-    char unused;
+    char user_id[NB_SLEN];
+    char mppass[NB_SLEN];
+    char cpe_flag;
 };
 
 typedef struct pkt_setblock pkt_setblock;
@@ -84,7 +84,7 @@ struct pkt_player_posn {
 typedef struct pkt_message pkt_message;
 struct pkt_message {
     uint8_t player_id;
-    int8_t message_type;
+    uint8_t message_type;
     char message[NB_SLEN];
 };
 

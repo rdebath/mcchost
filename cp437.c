@@ -68,6 +68,34 @@ convert_to_cp437(char *buf, int *l)
     *l = d;
 }
 
+void
+convert_to_utf8(char *buf, int len, char *s)
+{
+    char * d = buf;
+    int ch;
+    for(; (ch=*s) != 0; s++)
+    {
+	int uc = cp437rom[ch & 0xFF];
+	int c1, c2, c3;
+	if (d-buf>len-4) break;
+
+	c2 = (uc/64);
+	c1 = uc - c2*64;
+	c3 = (c2/64);
+	c2 = c2 - c3 * 64;
+	if (uc < 128 && uc >= 0) {
+	    *d++ = uc;
+	} else if (uc < 2048) {
+	    *d++ = c2+192; *d++ = c1+128;
+	} else if (uc < 65536) {
+	    *d++ = c3+224; *d++ = c2+128; *d++ = c1+128;
+	} else {
+	    *d++ = 0xef; *d++ = 0xbf; *d++ = 0xbd;
+	}
+    }
+    *d = 0;
+}
+
 char cp437_ascii[] =
 	"CueaaaaceeeiiiAAE**ooouuyOUc$YPs"
 	"aiounNao?++**!<>###||||++||+++++"
@@ -75,7 +103,7 @@ char cp437_ascii[] =
 	"aBTPEsyt******EN=+><++-=... n2* ";
 
 int cp437rom[256] = {
-    0x2400, 0x263a, 0x263b, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022,
+    0x0000, 0x263a, 0x263b, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022,
     0x25d8, 0x25cb, 0x25d9, 0x2642, 0x2640, 0x266a, 0x266b, 0x263c,
     0x25b6, 0x25c0, 0x2195, 0x203c, 0x00b6, 0x00a7, 0x25ac, 0x21a8,
     0x2191, 0x2193, 0x2192, 0x2190, 0x221f, 0x2194, 0x25b2, 0x25bc,

@@ -105,7 +105,7 @@ save_map_to_file(char * fn, int background)
     bc_ent_int8(savefile, "EdgeBlock", level_prop->edge_block);
     bc_ent_int16(savefile, "SideLevel", level_prop->side_level);
     nbtstr_t b = level_prop->texname;
-    bc_ent_string(savefile, "TextureURL", b.c, 0);
+    bc_ent_string(savefile, "TextureURL", b.c);
     bc_end(savefile);
 
     // Not written by CC
@@ -282,14 +282,9 @@ save_map_to_file(char * fn, int background)
 }
 
 LOCAL void
-bc_string(gzFile ofd, char * str, int len)
+bc_string(gzFile ofd, char * str)
 {
-    if (len) {
-        while(len>0 && (str[len-1] == ' ' || str[len-1] == 0))
-	    len--;
-    } else {
-        len = strlen(str);
-    }
+    int len = strlen(str);
     gzputc(ofd, len>>8);
     gzputc(ofd, len&0xFF);
     gzwrite(ofd, str, len);
@@ -298,15 +293,17 @@ bc_string(gzFile ofd, char * str, int len)
 LOCAL void
 bc_ent_label(gzFile ofd, char * name)
 {
-    bc_string(ofd, name, 0);
+    bc_string(ofd, name);
 }
 
 LOCAL void
-bc_ent_string(gzFile ofd, char * name, char * str, int len)
+bc_ent_string(gzFile ofd, char * name, char * str)
 {
+    char buf[NB_SLEN*4];
+    convert_to_utf8(buf, sizeof(buf), str);
     gzputc(ofd, NBT_STR);
     bc_ent_label(ofd, name);
-    bc_string(ofd, str, len);
+    bc_string(ofd, buf);
 }
 
 LOCAL void
@@ -444,7 +441,7 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
     bc_ent_int8(ofd, "ID", idno);
     bc_ent_int16(ofd, "ID2", idno);
 
-    bc_ent_string(ofd, "Name", blkdef->name.c, 64);
+    bc_ent_string(ofd, "Name", blkdef->name.c);
     bc_ent_int8(ofd, "CollideType", blkdef->collide);
     {
 //	double log2 = 0.693147180559945f;

@@ -16,7 +16,7 @@ struct xyzb_t { uint16_t x, y, z, b; };
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 
-typedef struct nbtstr_t nbtstr_t;
+typedef struct nbtstr_t nbtstr_t; // This is CP437, NUL terminated.
 struct nbtstr_t { char c[NB_SLEN]; };
 
 typedef uint16_t block_t;
