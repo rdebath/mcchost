@@ -10,7 +10,8 @@ struct ext_list_t {
     int version;
     int *enabled_flag;
     int enabled;
-    int disabled;
+    int disabled;  // Don't advertise this extension.
+    int nolate;    // Fatal error to enable this after startup.
 };
 #endif
 
@@ -20,7 +21,7 @@ static struct ext_list_t extensions[] = {
     { N"ClickDistance",       1, &extn_clickdistance },
     { N"CustomBlocks",        1, &extn_customblocks },
     { N"HeldBlock",           1, &extn_heldblock },
-//  { N"TextHotKey",          1  },				//ServerConf
+    { N"TextHotKey",          1, &extn_texthotkey },		//ServerConf
 //  { N"ExtPlayerList",       2  },
     { N"EnvColors",           1, &extn_envcolours },
 //**{ N"SelectionCuboid",     1  },				//MapConf
@@ -35,25 +36,27 @@ static struct ext_list_t extensions[] = {
     { N"FullCP437",           1, &extn_fullcp437 },
     { N"BlockDefinitions",    1, &extn_blockdefn },
     { N"BlockDefinitionsExt", 2, &extn_blockdefnext },
-//  { N"TextColors",          1  },				//ServerConf
+    { N"TextColors",          1, &extn_textcolours },		//ServerConf
 //  { N"BulkBlockUpdate",     1  },
     { N"EnvMapAspect",        1, &extn_envmapaspect },
-//  { N"PlayerClick",         1  },
+    { N"PlayerClick",         1, .disabled=1 },
 //  { N"EntityProperty",      1  },
 //  { N"ExtEntityPositions",  1  },
 //**{ N"TwoWayPing",          1  },
     { N"InventoryOrder",      1, &extn_inventory_order },
     { N"InstantMOTD",         1, &extn_instantmotd },
-    { N"FastMap",             1, &extn_fastmap },
-    { N"ExtendedTextures",    1, &extn_extendtexno },
+
+    { N"ExtendedTextures",    1, &extn_extendtexno, .nolate=1 },
+    { N"ExtendedBlocks",      1, &extn_extendblockno, .nolate=1 },
+    { N"FastMap",             1, &extn_fastmap, .nolate=1 },
+
     { N"SetHotbar",           1, &extn_sethotbar },
 //  { N"SetSpawnpoint",       1, },
-//  { N"VelocityControl",     1, },
-//  { N"CustomParticles",     1, },				//Conf&Use
-//  { N"CustomModels",        1, },				//Server,MapConf
-//  { N"PluginMessages",      1, },
 
-    { N"ExtendedBlocks",      1, &extn_extendblockno },
+    { N"VelocityControl",     1, .disabled=1 },
+    { N"CustomParticles",     1, .disabled=1 },
+    { N"CustomModels",        1, .disabled=1 },
+    { N"PluginMessages",      1, .disabled=1 },
 
     { N"EvilBastard" ,        1, &extn_evilbastard },
     {0}
@@ -79,6 +82,8 @@ int extn_longermessages = 0;
 int extn_messagetypes = 0;
 int extn_sethotbar = 0;
 int extn_setspawnpoint = 0;
+int extn_textcolours = 0;
+int extn_texthotkey = 0;
 int extn_weathertype = 0;
 
 int customblock_pkt_sent = 0;
@@ -89,7 +94,8 @@ send_ext_list()
 {
     int i, count = 0;
     for(i = 0; extensions[i].version; i++)
-	count++;
+	if (!extensions[i].disabled)
+	    count++;
 
     send_extinfo_pkt(server->software, count);
 
@@ -101,14 +107,25 @@ send_ext_list()
 void
 process_extentry(pkt_extentry * pkt)
 {
+    int enabled_extension = 0;
+
     if (cpe_extn_remaining > 0)
         cpe_extn_remaining--;
 
     for(int i=0; extensions[i].version; i++) {
-	if (extensions[i].disabled) continue;
 	if (extensions[i].version != pkt->version) continue;
 	if (strcmp(extensions[i].name, pkt->extname) != 0)
 	    continue;
+	if (extensions[i].enabled) return; // Don't repeat it.
+
+	if (extensions[i].nolate && !cpe_pending) {
+	    char ebuf[256];
+	    snprintf(ebuf, sizeof(ebuf),
+		"Extension \"%s\" cannot be enabled late.",
+		extensions[i].name);
+	    fatal(ebuf);
+	}
+	enabled_extension = 1;
 	extensions[i].enabled = 1;
 	if (extensions[i].enabled_flag)
 	    *extensions[i].enabled_flag = 1;
@@ -119,13 +136,8 @@ process_extentry(pkt_extentry * pkt)
 	customblock_pkt_sent = 1;
     }
 
-    if (cpe_pending && cpe_extn_remaining <= 0) {
-        cpe_pending |= 1;
-        if (!extn_customblocks)
-	    cpe_pending |= 2;
-        if (cpe_pending == 3)
-            complete_connection();
-    }
+    if (!cpe_pending && enabled_extension)
+	printf_chat("&WClient enabled extension %s late -- Okay.", pkt->extname);
 
     if (extn_blockdefn && extn_blockdefnext) {
 	if (client_block_limit < CPELIMITLO)
@@ -173,6 +185,14 @@ process_extentry(pkt_extentry * pkt)
 	    msglen[PKID_BLOCKDEF] = 80 + 3;
 	    msglen[PKID_BLOCKDEF2] = 88 + 6;
 	}
+    }
+
+    if (cpe_pending && cpe_extn_remaining <= 0) {
+        cpe_pending |= 1;
+        if (!extn_customblocks)
+	    cpe_pending |= 2;
+        if (cpe_pending == 3)
+            complete_connection();
     }
 }
 
