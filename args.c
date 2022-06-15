@@ -92,17 +92,27 @@ process_args(int argc, char **argv)
 
 		if (strcmp(argv[ar], "-inetd") == 0) {
 		    inetd_mode = 1;
+		    start_tcp_server = 0;
+		    enable_heartbeat_poll = 0;
 		    break;
 		}
 
 		if (strcmp(argv[ar], "-tcp") == 0) {
+		    inetd_mode = 0;
 		    start_tcp_server = 1;
+		    enable_heartbeat_poll = 0;
 		    break;
 		}
 
 		if (strcmp(argv[ar], "-net") == 0) {
+		    inetd_mode = 0;
 		    start_tcp_server = 1;
 		    enable_heartbeat_poll = 1;
+		    break;
+		}
+
+		if (strcmp(argv[ar], "-cron") == 0) {
+		    start_cron_task = 1;
 		    break;
 		}
 

@@ -15,6 +15,9 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Add Localnet config.
+ +) inetd_mode, start_tcp_server and cron_tasks: Use enum? Or just turn-offs
+
  +) Aliases in /set command, more help, option lists.
  +) Merge ini and nbt processing.
 

@@ -24,9 +24,9 @@ int detach_tcp_server = 0;
 int log_to_stderr = 0;
 int tcp_port_no = 25565;
 static int listen_socket = -1;
-static int logger_pid = 0;
+static int logger_pid = 0, heartbeat_pid = 0, backup_pid = 0;
 
-int enable_heartbeat_poll = 0;
+int enable_heartbeat_poll = 1;
 static time_t last_heartbeat = 0;
 static time_t last_backup = 0;
 static time_t last_unload = 0;
@@ -219,18 +219,26 @@ logger_process()
 
     if (pid2 != 0) {
 	// Parent process
-	E(dup2(pipefd[1], 1), "dup2(logger,1)");
+	logger_pid = pid2;
+
+	if (start_tcp_server || start_cron_task) {
+	    E(dup2(pipefd[1], 1), "dup2(logger,1)");
+	    E(dup2(pipefd[1], 2), "dup2(logger,2)");
+	    close(pipefd[0]);
+	    close(pipefd[1]);
+
+	    // Detach stdin.
+	    int nullfd = E(open("/dev/null", O_RDWR), "open(null)");
+	    E(dup2(nullfd, 0), "dup2(nullfd,0)");
+	    close(nullfd);
+	    return;
+	}
+
+	// Stdin/out should be line fd.
 	E(dup2(pipefd[1], 2), "dup2(logger,2)");
 	close(pipefd[0]);
 	close(pipefd[1]);
 
-	// Detach stdin.
-	int nullfd = E(open("/dev/null", O_RDWR), "open(null)");
-	E(dup2(nullfd, 0), "dup2(nullfd,0)");
-	close(nullfd);
-
-	logger_pid = pid2;
-	// Return parent.
 	return;
     }
 
@@ -340,6 +348,41 @@ accept_new_connection()
     return new_client_sock;
 }
 
+void
+check_client_ip()
+{
+    union {
+      struct sockaddr         sa;
+      struct sockaddr_in      s4;
+      struct sockaddr_in6     s6;
+      struct sockaddr_storage ss;
+    } addr;
+    socklen_t client_len = sizeof(addr);
+
+    if (line_ifd < 0) return;
+
+    if (getpeername(line_ifd, (struct sockaddr *)&addr, &client_len) < 0)
+	return;
+
+    if (addr.s4.sin_family == AF_INET)
+    {
+	inet_ntop(AF_INET, &addr.s4.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
+	client_ipv4_port = ntohs(addr.s4.sin_port);
+
+	uint32_t caddr = ntohl(addr.s4.sin_addr.s_addr);
+	if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost
+	    client_ipv4_localhost = 1;
+	if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
+	    client_ipv4_localhost = 1;
+    }
+
+    if (addr.s6.sin6_family == AF_INET6)
+    {
+	inet_ntop(AF_INET6, &addr.s6.sin6_addr, client_ipv4_str, INET6_ADDRSTRLEN);
+	client_ipv4_port = ntohs(addr.s6.sin6_port);
+    }
+}
+
 LOCAL void
 cleanup_zombies()
 {
@@ -364,6 +407,16 @@ cleanup_zombies()
 	    // Whup! that's our stderr! Try to respawn it.
 	    printlog("! Attempting to restart logger process");
 	    logger_process();
+	}
+	if (pid == heartbeat_pid) {
+	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+		printlog("! Heartbeat process %d failed", pid);
+	    heartbeat_pid = 0;
+	}
+	if (pid == backup_pid) {
+	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+		printlog("! Backup and unload process %d failed", pid);
+	    backup_pid = 0;
 	}
 
 	// No complaints on clean exit
@@ -468,15 +521,20 @@ send_heartbeat_poll()
 	"web=","False"
 	);
 
-    if (fork() == 0) {
-	close(listen_socket);
+    if ((heartbeat_pid = fork()) == 0) {
+	if (listen_socket>0) close(listen_socket);
+
 	// SHUT UP CURL!!
 	E(execlp("curl", "curl", "-s", "-S", "-o", "log/curl_resp.txt", cmdbuf, (char*)0), "exec of curl failed");
 	// Note: Returned string is web client URL, but the last
 	//       path part can be used to query the api; it's
 	//       the ip and port in ASCII hashed with MD5.
 	//       eg: echo -n 8.8.8.8:25565 | md5sum
-	exit(0);
+	exit(127);
+    }
+    if (heartbeat_pid<0) {
+	heartbeat_pid = 0;
+	perror("fork()");
     }
 }
 
@@ -531,6 +589,55 @@ ccnet_cp437_quoteurl(volatile char *s, char *dest, int len)
 }
 
 void
+run_timer_tasks()
+{
+    logger_process();
+    if (enable_heartbeat_poll)
+	send_heartbeat_poll();
+
+    start_backup_process();
+
+    // If we are being called from Systemd it has the nasty habit of killing
+    // All our processes when we return. So we MUST wait for all our children.
+    //
+    // Rather than waiting for them individually I just wait for the logger.
+
+    while(1) {
+	// fprintf(stderr, "Waiting for %d, %d, %d\n", backup_pid, heartbeat_pid, logger_pid);
+
+	// Close the pipe to the logger
+	if (backup_pid <= 0 && heartbeat_pid <= 0) {
+	    close(1); close(2);
+	}
+
+	// And wait for it to die.
+	int status = 0;
+	pid_t pid = waitpid(-1, &status, 0);
+	if (pid == logger_pid) break;
+
+	char * id = pid==heartbeat_pid?"(heartbeat)":pid==backup_pid?"(backup)":"?";
+
+	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+	    printlog("Process %d %s exited with status %d",
+		pid, id, WEXITSTATUS(status));
+	else if (WIFSIGNALED(status))
+	    printlog("Process %d %s was killed by signal %d%s",
+		pid, id, WTERMSIG(status), WCOREDUMP(status)?" (core dumped)":"");
+
+#if 0
+	else if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+	    printlog("Process %d %s completed successfully", pid, id);
+	else
+	    printlog("Process %d %s completed", pid, id);
+#endif
+
+	if (pid == heartbeat_pid) heartbeat_pid = 0;
+	if (pid == backup_pid) backup_pid = 0;
+    }
+    exit(0);
+}
+
+void
 start_backup_process()
 {
     time_t now;
@@ -547,7 +654,10 @@ start_backup_process()
     last_backup = now;
     last_unload = now;
 
-    if (E(fork(),"fork() for backup") != 0) return;
+    backup_pid = E(fork(),"fork() for backup");
+    if (backup_pid != 0) return;
+
+    if (listen_socket>0) close(listen_socket);
 
     scan_and_save_levels(0);
     exit(0);

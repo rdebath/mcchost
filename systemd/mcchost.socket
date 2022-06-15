@@ -1,0 +1,18 @@
+# put in system:
+#   sudo cp mcchost.socket /etc/systemd/system/mcchost.socket
+#   sudo cp mcchost@.service /etc/systemd/system/mcchost@.service
+#   sudo systemctl daemon-reload
+# Enable now:
+#   sudo systemctl start mcchost.socket
+# Enable boot:
+#   sudo systemctl enable mcchost.socket
+
+[Socket]
+# Listen on TCP port 25565 for IPv4 only
+ListenStream = 0.0.0.0:25565
+
+# Call accept(3) on the socket before handing it to the process
+Accept=yes
+
+[Install]
+WantedBy = sockets.target

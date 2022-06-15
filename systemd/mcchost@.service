@@ -1,0 +1,19 @@
+# Put in /etc/systemd/system/mcchost@.service
+[Unit]
+Description=MCChost Classicube server
+After=network.target
+
+[Service]
+# Note the - to make systemd ignore the exit code
+ExecStart=-/home/debian/bin/mcchost-server -dir /home/debian/mcchost -inetd
+
+# This is the part that makes it work like inetd
+StandardOutput=socket
+StandardInput=socket
+
+# Run as a other user
+User=debian
+Group=debian
+
+[Install]
+WantedBy=multi-user.target

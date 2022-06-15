@@ -23,6 +23,8 @@ cmd_newlvl(UNUSED char * cmd, char * arg)
     char * sy = strtok(0, " ");
     char * sz = strtok(0, " ");
 
+    if (!levelname || (sx && !sz)) return cmd_help(0, cmd);
+
     char userlevel[256];
 
     if (!client_ipv4_localhost) {
@@ -34,8 +36,6 @@ cmd_newlvl(UNUSED char * cmd, char * arg)
 	    return;
 	}
     }
-
-    if (!levelname || (sx && !sz)) return cmd_help(0, cmd);
 
     char fixedname[MAXLEVELNAMELEN*4], buf2[256], lvlname[MAXLEVELNAMELEN+1];
 

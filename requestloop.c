@@ -158,8 +158,7 @@ void
 on_select_timeout()
 {
     time_t now;
-    int tc = 5;
-    if (cpe_pending) tc = 60;	// Not while CPE pending
+    int tc = cpe_pending?60:5; // Not while CPE pending
 
     // If a packet has not been received in full expect the rest soon.
     if (in_rcvd>0 && ++ticks_with_pending_bytes > 1500) // Should be 15 seconds
@@ -168,6 +167,9 @@ on_select_timeout()
     time(&now);
     int secs = ((now-last_ping) & 0xFF);
     if (secs > tc) {
+	if (cpe_pending)
+	    fatal("CPE Protocol negotiation failure");
+
 	// Send keepalive.
 	send_ping_pkt();
 	time(&last_ping);
@@ -382,5 +384,6 @@ convert_logon_packet(char * pktbuf, pkt_player_id * pkt)
     // These will always be sanitised to ASCII
     sanitise_nbstring(pkt->user_id, p); p+=64;
     sanitise_nbstring(pkt->mppass, p); p+=64;
-    pkt->cpe_flag = (*p++ == 0x42) && pkt->protocol == 7;
+    int flg = (pkt->protocol == 6 || pkt->protocol == 7) ? *p++ : 0;
+    pkt->cpe_flag = pkt->protocol == 7 && flg == 0x42;
 }

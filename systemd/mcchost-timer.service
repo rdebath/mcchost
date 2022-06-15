@@ -1,0 +1,11 @@
+# Put in /etc/systemd/system/mcchost@.service
+[Unit]
+Description=MCChost Classicube server timer
+After=network.target
+
+[Service]
+ExecStart=-/home/debian/bin/mcchost-server -dir /home/debian/mcchost -cron
+
+# Run as a other user
+User=debian
+Group=debian

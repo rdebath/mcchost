@@ -37,6 +37,7 @@ char user_id[NB_SLEN];	// This is ASCII not CP437 or UTF8
 int user_authenticated = 0;
 int server_id_op_flag = 1;
 int inetd_mode = 0;
+int start_cron_task = 0;
 
 char program_name[512];
 
@@ -85,11 +86,12 @@ main(int argc, char **argv)
     proc_args_mem = argv[0];
     proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0] + 1;
 
-    if (!inetd_mode && !start_tcp_server && !save_conf && (isatty(0) || isatty(1)))
+    if (!inetd_mode && !start_tcp_server && !save_conf && !start_cron_task
+	&& (isatty(0) || isatty(1)))
 	show_args_help();
 
-    if (!inetd_mode && !start_tcp_server)
-	start_tcp_server = 1;
+    if (inetd_mode && start_tcp_server)
+	show_args_help();
 
     if (*logfile_pattern)
 	set_logfile(logfile_pattern, 0);
@@ -102,6 +104,9 @@ main(int argc, char **argv)
 
     init_dirs();
 
+    if (start_cron_task)
+        run_timer_tasks();
+
     delete_session_id(0, 0, 0);
 
     if (start_tcp_server) {
@@ -111,6 +116,10 @@ main(int argc, char **argv)
 	tcpserver();
     } else {
 	line_ofd = 1; line_ifd = 0;
+	if (inetd_mode) {
+	    check_client_ip();
+	    logger_process();
+	}
     }
 
     process_connection();
@@ -222,7 +231,7 @@ login()
 	    time_t now = time(0);
 	    if (now-startup > 4) {
 		if (insize >= 2 && inbuf[inptr+1] >= 3 && inbuf[inptr+1] <= 7) {
-		    if (insize >= 66 && inbuf[inptr+1] > 0 && inbuf[inptr+1] < 7) {
+		    if (insize >= 66) {
 			convert_logon_packet(inbuf, &player);
 			strcpy(user_id, player.user_id);
 		    }
@@ -237,6 +246,13 @@ login()
 	    teapot(inbuf+inptr, insize);
 	if (insize >= 2 && inbuf[inptr+1] < 3)
 	    teapot(inbuf+inptr, insize);
+	if (insize >= 2 && inbuf[inptr+1] != 7) {
+	    if (insize >= 66) {
+		convert_logon_packet(inbuf, &player);
+		strcpy(user_id, player.user_id);
+	    }
+	    disconnect(0, "Only protocol version seven is supported");
+	}
 	if (insize >= 2 && inbuf[inptr+1] < 6)
 	    rqsize = msglen[0] - 1;
     }
@@ -246,7 +262,7 @@ login()
     strcpy(user_id, player.user_id);
 
     if (player.protocol != 7)
-	disconnect(0, "Only protocol version seven is supported");
+	disconnect(0, "Only protocol version 7 is supported");
 
     for(int i = 0; user_id[i]; i++)
 	if (!isascii(user_id[i]) ||
@@ -328,6 +344,8 @@ teapot(uint8_t * buf, int len)
 	fprintf_logfile("Failed connect %s:%d, %s",
 	    client_ipv4_str, client_ipv4_port,
 	    len ? "invalid client hello": "no data.");
+    else if (len <= 0)
+	printlog("Nothing received from remote");
 
     for(int i = 0; i<len; i++)
 	hex_logfile(buf[i]);
@@ -390,6 +408,7 @@ show_args_help()
     fprintf(stderr, "  -salt X    Set server salt/secret\n");
     fprintf(stderr, "  -heartbeat http://host.xz/path\n");
     fprintf(stderr, "             Change hearbeat url\n");
+    fprintf(stderr, "  -cron      Run periodic tasks, heartbeat and backups\n");
     fprintf(stderr, "  -runonce   Accept one connection without forking, for debugging.\n");
     fprintf(stderr, "  -nocpe     Don't accept a CPE request.\n");
     fprintf(stderr, "  -saveconf  Save current system conf and exit\n");
