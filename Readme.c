@@ -15,13 +15,13 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) Add Localnet config.
  +) inetd_mode, start_tcp_server and cron_tasks: Use enum? Or just turn-offs
 
  +) Aliases in /set command, more help, option lists.
  +) Merge ini and nbt processing.
 
  +) User count, flag clones on connect & disconnect.
+ +) Rate limits, number of logon attempts.
 
  +) If lots of maps loaded, unload them quicker ?
  +) Config paths for "backup" and "map" directories ?

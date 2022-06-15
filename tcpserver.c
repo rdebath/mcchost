@@ -43,8 +43,8 @@ static int signal_available = 0;
 pid_t alarm_handler_pid = 0;
 
 // Addresses to be considered as managment interface, in adddion to localhost
-char localnet[64];
-uint32_t localnet_addr = 0, localnet_mask = ~0;
+char localnet_cidr[64];
+uint32_t localnet_addr = 1, localnet_mask = ~0;
 
 static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
 
@@ -121,6 +121,8 @@ tcpserver()
 
     memset(proc_args_mem, 0, proc_args_len);
     snprintf(proc_args_mem, proc_args_len, "%s port %d", server->software, tcp_port_no);
+
+    convert_localnet_cidr();
 
     while(!term_sig)
     {
@@ -364,6 +366,8 @@ check_client_ip()
     if (getpeername(line_ifd, (struct sockaddr *)&addr, &client_len) < 0)
 	return;
 
+    convert_localnet_cidr();
+
     if (addr.s4.sin_family == AF_INET)
     {
 	inet_ntop(AF_INET, &addr.s4.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
@@ -381,6 +385,33 @@ check_client_ip()
 	inet_ntop(AF_INET6, &addr.s6.sin6_addr, client_ipv4_str, INET6_ADDRSTRLEN);
 	client_ipv4_port = ntohs(addr.s6.sin6_port);
     }
+}
+
+void
+convert_localnet_cidr()
+{
+    localnet_addr = 1; localnet_mask = ~0; // Unused alias for 127.0.0.1
+
+    if (!*localnet_cidr) return;
+    char * class = strchr(localnet_cidr, '/');
+    if (class) {
+	int netsize = atoi(class+1);
+	if ((netsize > 0 || strcmp(class+1, "0") == 0) && netsize < 32) {
+	    if (netsize == 0)
+		localnet_mask = 0;
+	    else
+		localnet_mask = ~((1U<<(32-netsize))-1);
+	}
+	*class = 0;
+    }
+
+    struct in_addr ipaddr;
+    if (inet_pton(AF_INET, localnet_cidr, &ipaddr) == 1) {
+	localnet_addr = ntohl(ipaddr.s_addr);
+    } else
+	perror("Cannot convert Localnet address");
+
+    if (class) *class = '/';
 }
 
 LOCAL void
@@ -452,7 +483,7 @@ cleanup_zombies()
 
 		// Are the programs and core file likely okay?
 		int pgmok = 0;
-		if (program_name[0] == '/' || strchr(program_name, '/') == 0)
+		if (program_args[0][0] == '/' || strchr(program_args[0], '/') == 0)
 		    pgmok = 1;
 		if (pgmok && access("core", F_OK) != 0)
 		    pgmok = 0;
@@ -460,7 +491,7 @@ cleanup_zombies()
 		    pgmok = 0;
 
 		if (pgmok && sizeof(buf) > snprintf(buf, sizeof(buf),
-		    "/usr/bin/gdb -batch -ex 'backtrace full' -c core '%s'", program_name))
+		    "/usr/bin/gdb -batch -ex 'backtrace full' -c core '%s'", program_args[0]))
 		    system(buf);
 		else
 		    printlog("! Skipped running /usr/bin/gdb; checking exe and core files failed.");

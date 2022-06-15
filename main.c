@@ -338,27 +338,46 @@ logout(char * emsg)
 LOCAL void
 teapot(uint8_t * buf, int len)
 {
-    if (line_ofd < 0) return;
+    int dump_it = 1;
+    int rv = 4;
 
-    if (client_ipv4_port)
-	fprintf_logfile("Failed connect %s:%d, %s",
-	    client_ipv4_str, client_ipv4_port,
-	    len ? "invalid client hello": "no data.");
+    if (client_ipv4_port) {
+	if (buf[0] == 0x16 && buf[1] == 0x03 && buf[1] >= 1 && buf[1] <= 3) { 
+	    printlog("Received a TLS Client hello packet from %s:%d",
+		client_ipv4_str, client_ipv4_port);
+	    rv = dump_it = 0;
+	} else if (len > 0 && len < 5) {
+	    char hbuf[32] = "";
+	    for(int i=0; i<len; i++)
+		sprintf(hbuf+i*6, ", 0x%02x", buf[i]);
+	    printlog("Received byte%s %s from %s:%d",
+		len>1?"s":"", hbuf+2, client_ipv4_str, client_ipv4_port);
+	    rv = dump_it = 0;
+	} else
+	    fprintf_logfile("Failed connect %s:%d, %s",
+		client_ipv4_str, client_ipv4_port,
+		len ? "invalid client hello": "no data.");
+    }
     else if (len <= 0)
 	printlog("Nothing received from remote");
 
-    for(int i = 0; i<len; i++)
-	hex_logfile(buf[i]);
-    hex_logfile(EOF);
+    if (dump_it) {
+	for(int i = 0; i<len; i++)
+	    hex_logfile(buf[i]);
+	hex_logfile(EOF);
+    }
 
-    char msg[] = "418 I'm a teapot\n";
-    write_to_remote(msg, sizeof(msg)-1);
+    if (line_ofd > 0)
+    {
+	char msg[] = "418 I'm a teapot\n";
+	write_to_remote(msg, sizeof(msg)-1);
 
-    flush_to_remote();
-    shutdown(line_ofd, SHUT_RDWR);
-    if (line_ofd != line_ifd)
-	shutdown(line_ifd, SHUT_RDWR);
-    exit(4);
+	flush_to_remote();
+	shutdown(line_ofd, SHUT_RDWR);
+	if (line_ofd != line_ifd)
+	    shutdown(line_ifd, SHUT_RDWR);
+    }
+    exit(rv);
 }
 
 LOCAL void

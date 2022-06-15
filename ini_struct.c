@@ -106,6 +106,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_INTVAL(WC("BackupInterval"), server->backup_interval);
 	}
 	INI_INTVAL(WC("MaxPlayers"), server->max_players);
+	INI_STRARRAY(WC2(!*localnet_cidr, "Localnet"), localnet_cidr);
     }
 
     return found;
