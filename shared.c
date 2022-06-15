@@ -100,13 +100,16 @@ struct shared_data_t shdat;
  */
 
 /*
+ * open the level/$level.* files, if they don't exist they will be
+ * created, usually from a matching map/$level.cw file.
+ *
  * direct:
  *    0: open or create
- *    1: open or create just the props
- *    2: just open don't create
+ *    1: open or create just the properties file, not the blocks.
+ *    2: just open properties file don't create
  */
 void
-open_level_files(char * levelname, int direct)
+open_level_files(char * level_name, char * fixname, int direct)
 {
     char sharename[256];
     int del_on_err = 0, try_cw_file = 0;
@@ -114,11 +117,11 @@ open_level_files(char * levelname, int direct)
 
     stop_shared();
 
-    check_level_name(levelname); // Last check.
+    check_level_name(fixname); // Last check.
 
-    snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, levelname);
+    snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, fixname);
     del_on_err = access(sharename, F_OK);
-    snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, levelname);
+    snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, fixname);
     if (del_on_err == 0)
 	del_on_err = access(sharename, F_OK);
     if (del_on_err < 0) {
@@ -141,7 +144,7 @@ open_level_files(char * levelname, int direct)
 	// If it's not dirty, the cw file should be the master so okay to delete.
 	if (!level_prop->dirty_save) {
 	    char cwfilename[256];
-	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, levelname);
+	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, fixname);
 	    if (access(cwfilename, R_OK) == 0)
 		del_on_err = 1;
 	}
@@ -156,23 +159,23 @@ open_level_files(char * levelname, int direct)
 	int ok = 0;
 	// If level missing -- extract the matching *.cw file
 	char cwfilename[256];
-	snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, levelname);
+	snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, fixname);
 	if (access(cwfilename, R_OK) == 0) {
-	    ok = (load_map_from_file(cwfilename, levelname) >= 0);
+	    ok = (load_map_from_file(cwfilename, fixname, level_name) >= 0);
 	    // If the cw extraction fails we don't want to use anything
 	    // else as overwriting it might be bad.
 	    if (!ok)
 		goto open_failed;
 
 	    if (access(cwfilename, W_OK) != 0) {
-		fprintf(stderr, "Loaded read only map %s\n", cwfilename);
+		fprintf_logfile("Loaded read only map %s", cwfilename);
 		level_prop->readonly = 1;
 	    }
 	}
 
 	// If level missing -- extract a model *.cw file
 	if (!ok && access(MODEL_CW_NAME, R_OK) == 0) {
-	    ok = (load_map_from_file(MODEL_CW_NAME, levelname) >= 0);
+	    ok = (load_map_from_file(MODEL_CW_NAME, fixname, level_name) >= 0);
 	}
 
 	if (!ok) level_prop->version_no = 0;
@@ -183,11 +186,11 @@ open_level_files(char * levelname, int direct)
 	level_prop->version_no != MAP_VERSION ||
 	level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
     {
-	fprintf(stderr, "Level \"%s\" does not have valid file, creating map\n", levelname);
-	createmap(levelname);
+	fprintf_logfile("Level \"%s\" does not have valid file, creating map", level_name);
+	createmap(fixname);
     } else
         // NB: Missing file here makes an Air map.
-        if (open_blocks(levelname) < 0)
+        if (open_blocks(fixname) < 0)
 	    goto open_failed;
 
     if (level_prop->last_map_download_size <= 0) {
@@ -196,7 +199,7 @@ open_level_files(char * levelname, int direct)
 	    level_prop->last_map_download_size = 16384;
     }
 
-    create_block_queue(levelname);
+    create_block_queue(fixname);
     if (!level_block_queue)
 	goto open_failed;
 
@@ -206,7 +209,7 @@ open_level_files(char * levelname, int direct)
 open_failed:
     stop_shared();
     if (del_on_err)
-	unlink_level(levelname, 1);
+	unlink_level(fixname, 1);
 }
 
 int
@@ -268,9 +271,12 @@ unlink_level(char * levelname, int silent)
 
 LOCAL void check_level_name(char * levelname)
 {
-    if (strchr(levelname, '/') != 0 || strlen(levelname) > 64) {
+    if (strchr(levelname, '/') != 0
+	|| levelname[0] == '.'
+	|| strlen(levelname) > MAXLEVELNAMELEN*4) {
 	char buf[256];
-	snprintf(buf, sizeof(buf), "Illegal level name \"%.66s\"", levelname);
+	snprintf(buf, sizeof(buf),
+	    "Illegal level file name \"%.66s\"", levelname);
 	fatal(buf);
         return;
     }

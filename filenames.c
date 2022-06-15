@@ -80,8 +80,8 @@ void
 unfix_fname(char *buf, int len, char *s)
 {
     char *d = buf;
-    if (len<=0) return;
-    if (*s == 0 || *s == '.') { *buf = 0; return; }
+    *buf = 0;
+    if (len<2 || *s == 0 || *s == '.') return;
 
     for(char *p=s;*p;p++) {
 	if (d>=buf+len-1) { *buf=0; return; }

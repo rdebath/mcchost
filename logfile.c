@@ -9,6 +9,16 @@
 
 #include "logfile.h"
 
+/*
+ * Logging, I want the logfile to be in UTF-8 so any CP437 strings need to
+ * be converted. As the actual messages are in ASCII this is not a problem.
+ *
+ * The fprintf_logfile function converts it's arguments from CP437 to UTF-8
+ * Function log_chat_message does CP437 converstion AND chat colour removal.
+ *
+ * The printlog function does NOT do any conversion.
+ */
+
 static FILE * logfile = 0;
 static int logfile_raw;
 static char * file_name = "log/%s.log";
@@ -105,7 +115,7 @@ log_chat_message(char * str, int len)
 }
 
 void
-fprintf_logfile(char * fmt, ...)
+printlog(char * fmt, ...)
 {
     if (!logfile && !file_name) return;
 
@@ -126,4 +136,30 @@ fprintf_logfile(char * fmt, ...)
     va_end(ap);
 
     fprintf(logfile, "\n");
+}
+
+void
+fprintf_logfile(char * fmt, ...)
+{
+    if (!logfile && !file_name) return;
+
+    char bufcp437[4096], bufutf8[8192];
+
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(bufcp437, sizeof(bufcp437), fmt, ap);
+    va_end(ap);
+
+    convert_to_utf8(bufutf8, sizeof(bufutf8), bufcp437);
+
+    time_t now;
+    time(&now);
+    struct tm * tm = localtime(&now);
+
+    check_reopen_logfile(tm);
+
+    fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d %s\n",
+        tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+        tm->tm_hour, tm->tm_min, tm->tm_sec,
+	bufutf8);
 }

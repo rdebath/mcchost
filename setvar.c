@@ -67,7 +67,7 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 	    return printf_chat("&WPermission denied, only available on level %s", buf);
     }
 
-    fprintf(stderr, "%s: Set %s %s = %s\n", user_id, section, varname, value);
+    fprintf_logfile("%s: Set %s %s = %s", user_id, section, varname, value);
 
     ini_state_t stv = {.no_unsafe=1}, *st = &stv;
     st->curr_section = section;

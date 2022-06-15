@@ -37,9 +37,14 @@ cmd_newlvl(UNUSED char * cmd, char * arg)
 
     if (!levelname || (sx && !sz)) return cmd_help(0, cmd);
 
-    char fixedname[NB_SLEN], buf2[256];
+    char fixedname[MAXLEVELNAMELEN*4], buf2[256], lvlname[MAXLEVELNAMELEN+1];
 
     fix_fname(fixedname, sizeof(fixedname), levelname);
+    unfix_fname(lvlname, sizeof(lvlname), fixedname);
+    if (!*lvlname) {
+	printf_chat("&WUnusable level name, try another");
+	return;
+    }
     snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
     if (access(buf2, F_OK) == 0) {
 	printf_chat("&WMap '%s' already exists", levelname);

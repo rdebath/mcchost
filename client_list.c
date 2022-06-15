@@ -271,7 +271,7 @@ delete_session_id(int pid, char * killed_user, int len)
 	    cleaned ++;
 	    if (killed_user)
 		snprintf(killed_user, len, "%s", shdat.client->user[i].name.c);
-	    fprintf(stderr, "Wiped session %d (%.32s)\n", i, shdat.client->user[i].name.c);
+	    fprintf_logfile("Wiped session %d (%.32s)", i, shdat.client->user[i].name.c);
 	    shdat.client->generation++;
 	    shdat.client->user[i].session_id = 0;
 	    shdat.client->user[i].active = 0;

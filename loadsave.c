@@ -41,7 +41,7 @@ Return to the system main level
 void
 cmd_goto(UNUSED char * cmd, char * arg)
 {
-    char fixedname[NB_SLEN], buf2[256], levelname[MAXLEVELNAMELEN+1];
+    char fixedname[MAXLEVELNAMELEN*4], buf2[256], levelname[MAXLEVELNAMELEN+1];
     char userlevel[256], fixeduserlevel[NB_SLEN];
     if (!arg && strcmp(cmd, "gr") != 0) { cmd_help(0,"goto"); return; }
     if (!arg) arg = "";
@@ -83,7 +83,7 @@ cmd_goto(UNUSED char * cmd, char * arg)
 
     unfix_fname(levelname, sizeof(levelname), fixedname);
     if (*levelname == 0) {
-	fprintf(stderr, "Error on map name for \"/goto %s\" file:\"%s\"\n", arg, fixedname);
+	fprintf_logfile("Error on map name for \"/goto %s\" file:\"%s\"", arg, fixedname);
 	if (*arg && !*fixedname)
 	    printf_chat("&SNo levels match \"%s\"", arg);
 	else
@@ -99,7 +99,7 @@ cmd_goto(UNUSED char * cmd, char * arg)
     stop_shared();
 
     start_level(levelname, fixedname);
-    open_level_files(fixedname, 0);
+    open_level_files(levelname, fixedname, 0);
     if (!level_prop) {
 	printf_chat("&WLevel load failed, returning to main");
 	cmd_main("","");
@@ -126,7 +126,7 @@ cmd_main(UNUSED char * cmd, UNUSED char * arg)
     stop_shared();
 
     start_level(main_level(), fixedname);
-    open_level_files(fixedname, 0);
+    open_level_files(main_level(), fixedname, 0);
     if (!level_prop)
 	fatal("Failed to load main.");
     send_map_file();
@@ -205,13 +205,13 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     snprintf(bak_fn, sizeof(bak_fn), LEVEL_BAK_NAME, level_fname);
     if (access(map_fn, F_OK) == 0 && access(map_fn, W_OK) != 0) {
 	// map _file_ is write protected; don't replace.
-	fprintf(stderr, "Discarding changes to %s -- write protected.\n", level_fname);
+	fprintf_logfile("Discarding changes to %s -- write protected.", level_fname);
 	level_prop->dirty_save = 0;
 	level_prop->readonly = 1;
 	return 0;
     }
 
-    fprintf(stderr, "Saving %s to map directory\n", level_fname);
+    fprintf_logfile("Saving \"%s\" to map directory", level_name);
 
     time_t backup_sav = level_prop->last_backup;
     if (save_bkp) {
@@ -226,7 +226,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	errno = e;
 	level_prop->last_backup = backup_sav;
 
-	fprintf(stderr, "map save of '%s' to '%s' failed\n", level_fname, tmp_fn);
+	fprintf_logfile("map save of '%s' to '%s' failed", level_name, tmp_fn);
 	return -1;
     }
 
@@ -291,7 +291,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	    }
 
 	    if (txok) {
-		fprintf(stderr, "Saved backup %s\n", hst_fn);
+		fprintf_logfile("Saved back of \"%s\" to %s", level_name, hst_fn);
 	    } else {
 		printf_chat("@&SSaving of backup for level \"%s\" failed", level_name);
 	    }
@@ -352,7 +352,7 @@ scan_and_save_levels(int unlink_only)
 
 	char fixedname[MAXLEVELNAMELEN*4];
 	fix_fname(fixedname, sizeof(fixedname), level_name);
-	open_level_files(fixedname, 2);
+	open_level_files(level_name, fixedname, 2);
 	if (!level_prop) continue;
 
 	if (level_prop->readonly)
@@ -396,7 +396,7 @@ scan_and_save_levels(int unlink_only)
 	// unload.
 	unlink_level(fixedname, 0);
 	shdat.client->levels[lvid].loaded = 0;
-	fprintf(stderr, "Unloaded level files %s\n", fixedname);
+	fprintf_logfile("Unloaded level files %s", level_name);
 
 	unlock_client_data();
     }
@@ -452,6 +452,12 @@ find_file_match(char * fixedname, char * levelname)
 
 	    if (my_strcasestr(nbuf, fixedname) != 0)
 	    {
+		// Looks like a match, will it load ?
+		char lvlname[MAXLEVELNAMELEN+1];
+		*lvlname = 0;
+		unfix_fname(lvlname, sizeof(lvlname), nbuf);
+		if (*lvlname == 0) continue;
+
 		if (matchcount < NMATCH)
 		    match[matchcount] = strdup(nbuf);
 		matchcount++;
@@ -471,7 +477,7 @@ find_file_match(char * fixedname, char * levelname)
 	return p;
     }
     if (matchcount == 0) {
-	fprintf(stderr, "No level file found to match \"%s\"\n", fixedname);
+	fprintf_logfile("No level file found to match \"%s\"", levelname);
 	printf_chat("&SNo levels match \"%s\"", levelname);
 	return 0;
     }
@@ -482,13 +488,13 @@ find_file_match(char * fixedname, char * levelname)
 
     int l = 0;
     for(int i = 0; i<NMATCH && i<matchcount; i++)
-	l += strlen(match[i]) + 3;
+	l += strlen(match[i]) + 3; // fixed names are longer, so ok.
     char * line = calloc(l, 1);
     for(int i = 0; i<NMATCH && i<matchcount; i++) {
 	if (i) strcat(line, ", ");
 	char lvlname[MAXLEVELNAMELEN+1];
 	unfix_fname(lvlname, sizeof(lvlname), match[i]);
-	strcat(line, match[i]);
+	strcat(line, lvlname);
     }
     printf_chat("&S%s", line);
     free(line);

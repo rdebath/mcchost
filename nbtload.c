@@ -33,7 +33,7 @@ static int current_block = -1;
 static int inventory_block = -1;
 
 int
-load_map_from_file(char * filename, char * level_fname)
+load_map_from_file(char * filename, char * level_fname, char * level_name)
 {
     gzFile ifd;
 
@@ -41,7 +41,7 @@ load_map_from_file(char * filename, char * level_fname)
 	perror(filename);
 	return -1;
     }
-    load_cwfile(ifd, level_fname);
+    load_cwfile(ifd, level_fname, level_name);
 
     int rv = gzclose(ifd);
     if (rv) {
@@ -53,7 +53,7 @@ load_map_from_file(char * filename, char * level_fname)
 }
 
 LOCAL void
-load_cwfile(gzFile ifd, char * level_fname)
+load_cwfile(gzFile ifd, char * level_fname, char * level_name)
 {
     int ClassicWorld_found = 0;
     int ch = gzgetc(ifd);
@@ -86,20 +86,20 @@ load_cwfile(gzFile ifd, char * level_fname)
 	    ClassicWorld_found = !strcmp("CPEPacketLog", last_lbl);
 
 	if (!ClassicWorld_found) {
-	    fprintf(stderr, "Level \"%s\" incorrect NBT schema label \"%s\".\n", level_fname, last_lbl);
+	    fprintf_logfile("Level \"%s\" incorrect NBT schema label \"%s\".", level_name, last_lbl);
 	    return;
 	}
-	fprintf(stderr, "Loading ClassicWorld map from \"%s\": ", level_fname);
-	open_level_files(level_fname, 1);
+	fprintf_logfile("Loading ClassicWorld map for \"%s\": ", level_name);
+	open_level_files(level_name, level_fname, 1);
 	init_map_null();
 	read_element(ifd, ch);
     } else if (ch == EOF || !try_asciimode(ifd, level_fname)) {
-	fprintf(stderr, "Level \"%s\" NBT and INI load failed.\n", level_fname);
+	fprintf_logfile("Level \"%s\" NBT and INI load failed.", level_name);
 	return;
     }
 
     if (ClassicWorld_found || (level_prop->cells_x>0 && level_prop->cells_y>0 && level_prop->cells_z>0))
-	fprintf(stderr, "Load done.\n");
+	fprintf_logfile("Load done.");
 }
 
 LOCAL int
@@ -173,6 +173,7 @@ read_element(gzFile ifd, int etype)
 	if (etype == NBT_STR) {
 	    int l = strlen(str_buf);
 	    convert_to_cp437(str_buf, &l);
+	    str_buf[l] = 0;
 	    change_str_value(last_sect, last_lbl, str_buf);
 	}
 
@@ -615,15 +616,14 @@ cpy_nstr(volatile char *buf, char *str)
 }
 
 LOCAL int
-try_asciimode(gzFile ifd, char * levelname)
+try_asciimode(gzFile ifd, char * levelfile)
 {
-    ini_state_t st = {.quiet = 0, .filename = levelname};
+    ini_state_t st = {.quiet = 0, .filename = levelfile};
 
-    fprintf(stderr, "Trying to load level \"%s\" as ini file\n", levelname);
+    printlog("Trying to load \"%s\" as an ini file", levelfile);
 
     init_map_null();
     level_prop->time_created = time(0);
-    level_prop->dirty_save = 1;
 
     char ibuf[BUFSIZ];
     while(gzgets(ifd, ibuf, sizeof(ibuf))) {
@@ -635,7 +635,9 @@ try_asciimode(gzFile ifd, char * levelname)
 
     xyzhv_t oldsize = {0};
     patch_map_nulls(oldsize);
-    open_blocks(levelname);
+    level_prop->dirty_save = 1;
+
+    open_blocks(levelfile);
     init_flat_level();
 
     // Don't want to keep the ini file -- no blocks.

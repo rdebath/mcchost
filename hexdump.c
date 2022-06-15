@@ -32,10 +32,10 @@ static int pos = 0;
    if((ch == EOF) != (pos == 0))
    {
       if (hexdump_address != -1) {
-         fprintf_logfile("%04x: %.66s", hexdump_address, linebuf);
+         printlog("%04x: %.66s", hexdump_address, linebuf);
          hexdump_address += 16;
       } else
-         fprintf_logfile(": %.66s", linebuf);
+         printlog(": %.66s", linebuf);
       pos = 0;
    }
    if (ch == EOF) hexdump_address = 0;

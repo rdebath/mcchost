@@ -42,6 +42,10 @@ static int signal_available = 0;
 
 pid_t alarm_handler_pid = 0;
 
+// Addresses to be considered as managment interface, in adddion to localhost
+char localnet[64];
+uint32_t localnet_addr = 0, localnet_mask = ~0;
+
 static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
 
 void
@@ -112,7 +116,7 @@ tcpserver()
     if (!log_to_stderr) {
 	logger_process();
 	if (detach_tcp_server)
-	    fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
+	    fprintf(stderr, "Accepting connections on port %d (pid:%d).\n", tcp_port_no, getpid());
     }
 
     memset(proc_args_mem, 0, proc_args_len);
@@ -189,6 +193,9 @@ tcpserver()
     } else
 	fprintf(stderr, "Terminating service\n");
 
+    alarm_sig = 1;
+    start_backup_process();
+    fprintf(stderr, "Exit process pid %d\n", getpid());
     exit(0);
 }
 
@@ -247,7 +254,7 @@ logger_process()
     while(fgets(logbuf, sizeof(logbuf), ilog)) {
 	char *p = logbuf+strlen(logbuf);
 	while(p>logbuf && p[-1] == '\n') {p--; p[0] = 0; }
-	fprintf_logfile("| %s", logbuf);
+	printlog("| %s", logbuf);
     }
 
     if (ferror(ilog))
@@ -258,7 +265,7 @@ logger_process()
 LOCAL void
 do_restart()
 {
-    fprintf_logfile("Restarting %s ...", program_args[0]);
+    printlog("Restarting %s ...", program_args[0]);
 
     (void)signal(SIGHUP, SIG_DFL);
     (void)signal(SIGCHLD, SIG_DFL);
@@ -312,14 +319,23 @@ accept_new_connection()
     new_client_sock = E(accept(listen_socket, (struct sockaddr *)&client_addr, &client_len), "accept()");
 
     inet_ntop(AF_INET, &client_addr.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
-    client_ipv4_port = client_addr.sin_port;
+    client_ipv4_port = ntohs(client_addr.sin_port);
+
+    if (client_addr.sin_family == AF_INET)
+    {
+	uint32_t caddr = ntohl(client_addr.sin_addr.s_addr);
+	if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost
+	    client_ipv4_localhost = 1;
+	if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
+	    client_ipv4_localhost = 1;
+    }
 
     if (server_runonce)
 	fprintf(stderr, "Connected, closing listen socket.\n");
     else
-	fprintf(stderr, "Incoming connection from %s:%d.\n", client_ipv4_str, client_addr.sin_port);
-
-    client_ipv4_localhost = !strcmp("127.0.0.1", client_ipv4_str);
+	fprintf(stderr, "Incoming connection from %s%s:%d.\n",
+	    client_ipv4_localhost?"trusted host ":"",
+	    client_ipv4_str, client_ipv4_port);
 
     return new_client_sock;
 }
@@ -346,14 +362,14 @@ cleanup_zombies()
 
 	if (pid == logger_pid) {
 	    // Whup! that's our stderr! Try to respawn it.
-	    fprintf_logfile("! Attempting to restart logger process");
+	    printlog("! Attempting to restart logger process");
 	    logger_process();
 	}
 
 	// No complaints on clean exit
 	if (WIFEXITED(status)) {
 	    if (WEXITSTATUS(status)) {
-		fprintf_logfile("! Process %d had exit status %d",
+		printlog("! Process %d had exit status %d",
 		    pid, WEXITSTATUS(status));
 		snprintf(msgbuf, sizeof(msgbuf),
 		    "kicked by panic with exit status %d",
@@ -363,7 +379,7 @@ cleanup_zombies()
 	    died_badly = delete_session_id(pid, userid, sizeof(userid));
 	}
 	if (WIFSIGNALED(status)) {
-	    fprintf_logfile("! Process %d was killed by signal %s (%d)%s",
+	    printlog("! Process %d was killed by signal %s (%d)%s",
 		pid,
 		strsignal(WTERMSIG(status)),
 		WTERMSIG(status),
@@ -394,7 +410,7 @@ cleanup_zombies()
 		    "/usr/bin/gdb -batch -ex 'backtrace full' -c core '%s'", program_name))
 		    system(buf);
 		else
-		    fprintf_logfile("! Skipped running /usr/bin/gdb; checking exe and core files failed.");
+		    printlog("! Skipped running /usr/bin/gdb; checking exe and core files failed.");
 	    }
 	}
 

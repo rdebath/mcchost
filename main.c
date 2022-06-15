@@ -163,7 +163,7 @@ complete_connection()
     char fixname[MAXLEVELNAMELEN*4];
     fix_fname(fixname, sizeof(fixname), main_level());
     start_level(main_level(), fixname);
-    open_level_files(fixname, 0);
+    open_level_files(main_level(), fixname, 0);
     if (level_prop)
 	create_block_queue(fixname);
 
@@ -301,9 +301,15 @@ fatal(char * emsg)
     assert(!in_fatal);
     in_fatal = 1;
 
+    fprintf(stderr, "FATAL(%d): %s\n", getpid(), emsg);
+
     if (level_chat_queue)
 	printf_chat("@&W- &7%s &WCrashed: &S%s", user_id, emsg);
-    disconnect(1, emsg);
+
+    if (line_ofd > 0)
+	disconnect(1, emsg);
+
+    exit(42);
 }
 
 void

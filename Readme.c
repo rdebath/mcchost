@@ -12,8 +12,6 @@ See "/help todo" for notes.
 &3and so far has rather limited features.
  
      &4♥ ♥ ♥ &dPlease try to crash it!&4 ♥ ♥ ♥
- 
-&eSource is at https://github.com/rdebath/mcchost
 */
 
 /*HELP todo
@@ -88,17 +86,19 @@ All files in subdirectories.
     system.ini  --> move?
     model.cw    --> move?
     model.ini   --> move?
-    *.ini --> ?
     map/${level}.cw
-    system/...
+    system/chat.queue
+    system/system.dat
+    system/userlevels.dat
     level/${level}.*
-    level/${level}.${id}.* -- museum unpack
     help/${helpname}.txt
-    blockdb/levelname.bdb
     log/YYYY-MM-DD.log
-    backup/${level}.${id}.cw -- museum
-    backup/${level}.cw -- current backup
+    backup/${level}.${id}.cw -- "museum"
+
+    *.ini --> ?
     recycle-bin/${level}.cw
+    level/${level}.${id}.* -- museum unpack
+    blockdb/levelname.bdb
 
     ${level} uses %2E for '.' in level name.
 

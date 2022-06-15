@@ -97,7 +97,7 @@ cmd_help(char * prefix, char *cmdargs)
 	}
     }
 
-    fprintf(stderr, "Failed /help \"%s\",\"%s\" file \"%s.txt\"\n",
+    fprintf_logfile("Failed /help \"%s\",\"%s\" file \"%s.txt\"",
 	prefix?prefix:"", cmdargs, helptopic);
 
     if (prefix == 0)
@@ -121,9 +121,12 @@ cmd_clear(UNUSED char * prefix, UNUSED char *cmdargs)
 
 /*HELP faq H_CMD
 &cFAQ&f:
-&fExample: What does this server run on? This server runs on MCCHost
+&fExample: What does this server run on?
+    This server runs on MCCHost
+&fWhere is the source?
+    &eSource is at https://github.com/rdebath/mcchost
 */
 
 /*HELP news H_CMD
-No news today.
+No news is good news.
 */
