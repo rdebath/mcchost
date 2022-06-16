@@ -102,6 +102,21 @@ init_map_null()
 	    .click_distance = 160,
 	};
 
+    for(int i = 0; i<sizeof(level_prop->uuid); i++)
+    {
+#ifdef PCG32_INITIALIZER
+        int by = pcg32_boundedrand(256);
+#else
+        int by = random() % 256;
+#endif
+	level_prop->uuid[i] = by;
+    }
+    // Not documented, but make it the bytes for a real UUID (big endian).
+    level_prop->uuid[6] &= 0x0F;
+    level_prop->uuid[6] |= 0x40;
+    level_prop->uuid[10] &= 0x3F;
+    level_prop->uuid[10] |= 0x80;
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
     memcpy(level_prop->blockdef, default_blocks, sizeof(default_blocks));

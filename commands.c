@@ -42,7 +42,7 @@ run_command(char * msg)
 	}
     }
 
-    printf_chat("&SUnknown command \"%s\".", cmd);
+    printf_chat("&SUnknown command \"%s\" -- see &T/cmds", cmd);
     return;
 }
 
@@ -58,12 +58,17 @@ Logout with RAGEQUIT!!
 /*HELP crash H_CMD
 &T/crash
 Crash the server &T/crash 666&S really do it!
+&T/crash 616&S kill-9
+&T/crash 696&S just exit
 */
 #if INTERFACE
 #define CMD_QUITS  {N"quit", &cmd_quit}, {N"rq", &cmd_quit}, \
     {N"hax", &cmd_quit, .dup=1}, {N"hacks", &cmd_quit, .dup=1}, \
     {N"crash", &cmd_quit, .dup=1}, {N"servercrash", &cmd_quit, .dup=1}
 #endif
+
+int *crash_ptr = 0;
+
 void
 cmd_quit(char * cmd, char * arg)
 {
@@ -79,6 +84,8 @@ cmd_quit(char * cmd, char * arg)
 	    kill(getpid(), SIGKILL);
 	if (crash_type && strcmp(crash_type, "696") == 0)
 	    exit(254);
+	if (crash_type && strcmp(crash_type, "606") == 0)
+	    printf_chat("Value should fail %d", *crash_ptr);
 	fatal("Server crash! Error code 42");
     }
 

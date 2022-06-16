@@ -216,7 +216,7 @@ read_element(gzFile ifd, int etype)
 	return 0;
 
     } else if (NbtLen[etype] > 0) {
-	long long V = 0;
+	int64_t V = 0;
 	int i;
 	for(i=0; i<NbtLen[etype]; i++) {
 	    V = (V<<8) + (gzgetc(ifd) & 0xFF);
@@ -232,6 +232,10 @@ read_element(gzFile ifd, int etype)
 	    union { int32_t i32; float f32; } bad;
 	    bad.i32 = V;
 	    V = bad.f32 * 1000;
+	} else if (etype == NBT_F64) {
+	    union { int64_t i64; double f64; } bad;
+	    bad.i64 = V;
+	    V = bad.f64 * 1000000;
 	} else {
 	    ;
 	}
@@ -316,7 +320,7 @@ set_colour(volatile int *colour, int by, int value)
 }
 
 LOCAL void
-change_int_value(char * section, char * item, long long value)
+change_int_value(char * section, char * item, int64_t value)
 {
     if (*section == 0 ||
 	    strcmp(section, "ClassicWorld") == 0 ||
@@ -543,19 +547,20 @@ change_bin_value(char * section, char * item, uint8_t * value, int len)
 	    level_prop->blockdef[current_block].textures[5] += value[6+1] * 256;
 
 	} else if (strcmp(item, "Fog") == 0) {
-	    int i;
 	    if (len < 4) return;
-	    for(i=0; i<4; i++) {
+	    for(int i=0; i<4; i++) {
 		level_prop->blockdef[current_block].fog[i] = value[i];
 	    }
 
 	} else if (strcmp(item, "Coords") == 0) {
-	    int i;
 	    if (len < 6) return;
-	    for(i=0; i<6; i++) {
+	    for(int i=0; i<6; i++) {
 		level_prop->blockdef[current_block].coords[i] = value[i];
 	    }
 
+	} else if (strcmp(item, "UUID") == 0) {
+	    for(int i=0; i<sizeof(level_prop->uuid) && i<len; i++)
+		level_prop->uuid[i] = value[i];
 	}
     }
 }

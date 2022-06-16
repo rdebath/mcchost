@@ -48,10 +48,7 @@ save_map_to_file(char * fn, int background)
 
     bc_compound(savefile, "ClassicWorld");
     bc_ent_int8(savefile, "FormatVersion", 1);
-    {
-	char buf[16] = {0};
-	bc_ent_bytes(savefile, "UUID", buf, sizeof(buf));
-    }
+    bc_ent_bytes(savefile, "UUID", (char*)level_prop->uuid, sizeof(level_prop->uuid));
 
     bc_ent_int16(savefile, "X", level_prop->cells_x);
     bc_ent_int16(savefile, "Y", level_prop->cells_y);

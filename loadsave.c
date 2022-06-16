@@ -337,6 +337,8 @@ scan_and_save_levels(int unlink_only)
     int this_is_main = 0;
 
     open_client_list();
+    if (!shdat.client) return;
+
     stop_shared();
     stop_block_queue();
 
@@ -548,7 +550,11 @@ choose_random_level(char * fixedname, int name_len)
 
     *fixedname = 0;
     if (maplist_cnt>0) {
+#ifdef PCG32_INITIALIZER
+        int which = pcg32_boundedrand(maplist_cnt);
+#else
 	int which = random() % maplist_cnt;
+#endif
 	snprintf(fixedname, name_len, "%s", maplist[which]);
     }
 

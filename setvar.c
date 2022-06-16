@@ -67,16 +67,16 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 	    return printf_chat("&WPermission denied, only available on level %s", buf);
     }
 
-    fprintf_logfile("%s: Set %s %s = %s", user_id, section, varname, value);
-
     ini_state_t stv = {.no_unsafe=1}, *st = &stv;
     st->curr_section = section;
 
-    if (strcasecmp(section, "server") == 0) {
+    if (strcasecmp(section, "server") == 0 || strcasecmp(section, "system") == 0) {
 	if (!system_ini_fields(st, varname, &value)) {
 	    if (!client_ipv4_localhost)
 		return printf_chat("&WPermission denied, need to be localhost.");
-	    printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
+
+	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
+	    printf_chat("&WOption not available &S[%s] %s = %s", section, varname, value);
 	    return;
 	}
 
@@ -86,7 +86,8 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 	}
     } else {
 	if (!level_ini_fields(st, varname, &value)) {
-	    printf_chat("&WOption not available &S[%s] %s= %s", section, varname, value);
+	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
+	    printf_chat("&WOption not available &S[%s] %s = %s", section, varname, value);
 	    return;
 	}
 
@@ -95,5 +96,6 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 	level_prop->last_modified = time(0);
     }
 
+    fprintf_logfile("%s: Set %s %s = %s", user_id, section, varname, value);
     printf_chat("&SSet %s.%s=\"%s\" ok.", section, varname, value);
 }

@@ -5,15 +5,15 @@ After=network.target
 
 [Service]
 # Note the - to make systemd ignore the exit code
-ExecStart=-/home/debian/bin/mcchost-server -dir /home/debian/mcchost -inetd
+ExecStart=-/home/mcchost/bin/mcchost-server -dir /home/mcchost/mcchost -inetd
 
 # This is the part that makes it work like inetd
 StandardOutput=socket
 StandardInput=socket
 
 # Run as a other user
-User=debian
-Group=debian
+User=mcchost
+Group=mcchost
 
 [Install]
 WantedBy=multi-user.target

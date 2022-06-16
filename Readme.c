@@ -16,6 +16,7 @@ See "/help todo" for notes.
 
 /*HELP todo
  +) inetd_mode, start_tcp_server and cron_tasks: Use enum? Or just turn-offs
+ +) Tickless physics ? Call usleep() till next event.
 
  +) Aliases in /set command, more help, option lists.
  +) Merge ini and nbt processing.
@@ -144,3 +145,25 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
     --> *256 blocks packet need queue?
 
 // vim:set syntax=none: */
+
+/*HELP usecases
+mcchost-server -tcp [-detach]
+    TCP server, is "-detach" is given backgrounds self after opening socket.
+    The server process also schedules background tasks.
+
+mcchost-server -net [-detach]
+    TCP server with classicube.net registration. (Also -detach & tasks)
+
+mcchost-server -inetd
+    Run from inetd; stdin & stdout are socket (Also used for systemd)
+
+mcchost-server -cron
+    Run periodic tasks, map unloads, backups and classicube.net poll.
+
+Pipe method
+    Client starts process directly like -inetd, but with pipe() not socket()
+
+mcchost-server -runonce
+    Opens port and accepts one connection, without calling fork()
+
+*/

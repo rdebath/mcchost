@@ -196,14 +196,28 @@ process_args(int argc, char **argv)
 
     struct timeval now;
     gettimeofday(&now, 0);
+#ifdef PCG32_INITIALIZER
+    // Somewhat better random seed, the whole time, pid and ASLR
+    pcg32_srandom(
+	now.tv_sec*(uint64_t)1000000 + now.tv_usec,
+	(((uintptr_t)&program_args) >> 12) +
+	((int64_t)(getpid()) << sizeof(uintptr_t)*4) );
+#else
+    // A pretty trivial semi-random code, maybe 24bits of randomness.
     srandom(now.tv_sec ^ (now.tv_usec*4294U));
+#endif
 
     if (enable_heartbeat_poll && server->secret[0] == 0) {
-	// A pretty trivial semi-random code, maybe 20-30bits of randomness.
 	static char base62[] =
 	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	for(int i=0; i<16; i++)
-	    server->secret[i] = base62[((unsigned)random())%62];
+	for(int i=0; i<16; i++) {
+#ifdef PCG32_INITIALIZER
+	    int ch = pcg32_boundedrand(62);
+#else
+	    int ch = random() % 62;
+#endif
+	    server->secret[i] = base62[ch];
+	}
 	server->secret[16] = 0;
 	fprintf(stderr, "Generated server secret %s\n", server->secret);
     }

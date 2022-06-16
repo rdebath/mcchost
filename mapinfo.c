@@ -48,6 +48,7 @@ struct map_info_t {
     time_t last_modified;	// Time of last save
     time_t last_backup;		// Time of previous backup
 
+    uint8_t uuid[16];
     uint8_t hacks_flags;
     int16_t hacks_jump;
 

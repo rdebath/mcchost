@@ -16,6 +16,7 @@ struct help_text_t {
 /*HELP help H_CMD
 Commands can be listed with &T/commands
 To see help for a command type &T/help CommandName
+Examples include &T/goto&S, &T/maps&S.
 Also see /faq and /news.
 */
 
