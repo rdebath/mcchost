@@ -94,6 +94,7 @@ cmd_place(char * cmd, char * arg)
 	// Too large and this will trigger a /reload as it'll
 	// run too fast so buzzing the lock isn't needed
 	lock_shared();
+	my_user.dirty = 1;
 	block_t b = args[0];
 	if (b >= BLOCKMAX) b = BLOCKMAX-1;
 	for(y=args[2]; y<=args[5]; y++)
@@ -102,8 +103,9 @@ cmd_place(char * cmd, char * arg)
 		{
 		    uintptr_t index = World_Pack(x, y, z);
 		    if (level_blocks[index] == b) continue;
+		    if (b == 0) my_user.blocks_deleted++; else my_user.blocks_placed++;
 		    level_blocks[index] = b;
-		    unlocked_update(x, y, z, b);
+		    prelocked_update(x, y, z, b);
 		}
 	unlock_shared();
     }

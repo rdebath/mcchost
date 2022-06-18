@@ -8,8 +8,7 @@
 
 #include "nbtload.h"
 
-/* NOTE: Do we want to be able to load other file formats?
- */
+// NOTE: Do we want to be able to load other file formats?
 
 #if INTERFACE
 enum NbtTagType {
@@ -45,7 +44,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 
     int rv = gzclose(ifd);
     if (rv) {
-	fprintf(stderr, "Load '%s' failed error Z%d\n", filename, rv);
+	printlog("Load '%s' failed error Z%d\n", filename, rv);
 	return -1;
     }
 
@@ -99,7 +98,7 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
     }
 
     if (ClassicWorld_found || (level_prop->cells_x>0 && level_prop->cells_y>0 && level_prop->cells_z>0))
-	fprintf_logfile("Load done.");
+	printlog("Load done.");
 }
 
 LOCAL int
@@ -172,6 +171,12 @@ read_element(gzFile ifd, int etype)
 
 	if (etype == NBT_STR) {
 	    int l = strlen(str_buf);
+	    // This uses Java's Modified UTF-8 which is CESU-8 with a
+	    // special overlong encoding of the NUL character (U+0000)
+	    // as the two-byte sequence C0 80. CESU-8 is Unicode first
+	    // encoded with UTF-16 then UTF-8 so that codes over 65535
+	    // take 6 bytes not 4. This technicality does not impact
+	    // this decoder as no CP437 character is over U+FFFF.
 	    convert_to_cp437(str_buf, &l);
 	    str_buf[l] = 0;
 	    change_str_value(last_sect, last_lbl, str_buf);
@@ -243,7 +248,7 @@ read_element(gzFile ifd, int etype)
 	change_int_value(last_sect, last_lbl, V);
 
     } else {
-	fprintf(stderr, "# UNIMPL: %s\n", NbtName[etype]);
+	printlog("# UNIMPL: %s\n", NbtName[etype]);
 	return 0;
     }
     return 1;
@@ -277,7 +282,7 @@ read_blockarray2(gzFile ifd, uint32_t len)
 {
 
     if (level_blocks == 0 || level_prop->total_blocks < len) {
-	fprintf(stderr, "Incorrect BlockArray2 found\n");
+	printlog("Incorrect BlockArray2 found\n");
 	return 0;
     }
 
@@ -294,7 +299,7 @@ read_blockarray3(gzFile ifd, uint32_t len)
 {
 
     if (level_blocks == 0 || level_prop->total_blocks < len) {
-	fprintf(stderr, "Incorrect BlockArray3 found\n");
+	printlog("Incorrect BlockArray3 found\n");
 	return 0;
     }
 

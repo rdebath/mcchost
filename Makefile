@@ -9,14 +9,11 @@ endif
 endif
 
 DEFS=
+# Use -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
 # Set WARN=-w to silence warnings.
 WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign
-# The _FILE_OFFSET_BITS define allows larger maps with a 32bit compile
-CFLAGS=-O2 -g3 -D_FILE_OFFSET_BITS=64 ${WARN} ${DEFS}
-LDFLAGS=-lz -lm
-
-# Link ZLib in staticly
-#LDFLAGS=-Wl,-Bstatic -lz -Wl,-Bdynamic -lm
+CFLAGS=-O2 -g3 ${WARN} ${DEFS}
+LDFLAGS=-lz -lm -llmdb
 
 # May be needed for older systems (eg: Debian Etch on x86)
 # CC=c99 -D_GNU_SOURCE

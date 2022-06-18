@@ -205,7 +205,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     snprintf(bak_fn, sizeof(bak_fn), LEVEL_BAK_NAME, level_fname);
     if (access(map_fn, F_OK) == 0 && access(map_fn, W_OK) != 0) {
 	// map _file_ is write protected; don't replace.
-	fprintf_logfile("Discarding changes to %s -- write protected.", level_fname);
+	printlog("Discarding changes to %s -- write protected.", level_fname);
 	level_prop->dirty_save = 0;
 	level_prop->readonly = 1;
 	return 0;
@@ -291,7 +291,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	    }
 
 	    if (txok) {
-		fprintf_logfile("Saved back of \"%s\" to %s", level_name, hst_fn);
+		fprintf_logfile("Saved backup of \"%s\" to %s", level_name, hst_fn);
 	    } else {
 		printf_chat("@&SSaving of backup for level \"%s\" failed", level_name);
 	    }

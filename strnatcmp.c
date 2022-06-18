@@ -143,12 +143,24 @@ static int strnatcmp0(nat_char const *a, nat_char const *b, int fold_case)
      while (1) {
 	  ca = a[ai]; cb = b[bi];
 
-	  /* skip over leading spaces or zeros */
+	  /* skip over leading spaces */
+	  int at = ai, bt = bi;
 	  while (nat_isspace(ca))
 	       ca = a[++ai];
 
 	  while (nat_isspace(cb))
 	       cb = b[++bi];
+
+	  /* RdB:BUT only for numbers or multiple spaces. */
+	  if (!nat_isdigit(ca)) { //RdB
+	       while (at+1<ai) at++;
+	       ai = at; ca = a[ai];
+	  }
+
+	  if (!nat_isdigit(cb)) { //RdB
+	       while (bt+1<bi) bt++;
+	       bi = bt; cb = b[bi];
+	  }
 
 	  /* process run of digits */
 	  if (nat_isdigit(ca)  &&  nat_isdigit(cb)) {
@@ -170,10 +182,11 @@ static int strnatcmp0(nat_char const *a, nat_char const *b, int fold_case)
 	  }
 
 	  if (fold_case) {
-	       ca = nat_toupper(ca);
-	       cb = nat_toupper(cb);
+	       at = nat_toupper(ca);
+	       bt = nat_toupper(cb);
+	       if (at != bt) { ca = at; cb = bt; }
 
-	       /* Reorder non-alphanumeric characters. */
+	       /* Reorder non-alphanumeric characters. (RdB) */
 	       if (ca != 0 && !nat_isalnum(ca) && !nat_isspace(ca)) {
 		    if (ca >= ' ' && ca <= '~') ca += 256;
 		    else ca += 512;

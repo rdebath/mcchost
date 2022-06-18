@@ -73,6 +73,15 @@ nb_texid(uint8_t **ptr, int texid)
         nb_short(ptr, texid);
 }
 
+static inline void
+nb_entcoord(uint8_t **ptr, int vec)
+{
+    if (!extn_extentityposn)
+        nb_short_clamp(ptr, vec);
+    else
+        nb_int(ptr, vec);
+}
+
 void
 send_server_id_pkt(volatile char * servername, volatile char * servermotd, int user_type)
 {
@@ -157,9 +166,9 @@ send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
     *p++ = PKID_SPAWN;
     *p++ = player_id;
     p += nb_string_write(p, playername);
-    nb_short_clamp(&p, posn.x);
-    nb_short_clamp(&p, posn.y+51);
-    nb_short_clamp(&p, posn.z);
+    nb_entcoord(&p, posn.x);
+    nb_entcoord(&p, posn.y+51);
+    nb_entcoord(&p, posn.z);
     *p++ = posn.h;
     *p++ = posn.v;
     write_to_remote(packetbuf, p-packetbuf);
@@ -195,12 +204,12 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
     default:
 	*p++ = PKID_POSN;
 	*p++ = player_id;
-	nb_short_clamp(&p, posn.x);
+	nb_entcoord(&p, posn.x);
 	if (player_id == 255)
-	    nb_short_clamp(&p, posn.y+29);
+	    nb_entcoord(&p, posn.y+29);
 	else
-	    nb_short_clamp(&p, posn.y+51);
-	nb_short_clamp(&p, posn.z);
+	    nb_entcoord(&p, posn.y+51);
+	nb_entcoord(&p, posn.z);
 	*p++ = posn.h;
 	*p++ = posn.v;
 	break;

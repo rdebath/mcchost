@@ -180,6 +180,8 @@ on_select_timeout()
     check_metadata_update();
     send_queued_chats(0);
     send_queued_blocks();
+    if (my_user.dirty)
+	write_userrec(0);
 }
 
 void
@@ -291,9 +293,15 @@ process_client_message(int cmd, char * pktbuf)
 		pkt.player_id = (uint8_t)(*p++);
 		pkt.held_block = -1;
 	    }
-	    pkt.pos.x = IntBE16(p); p+=2;
-	    pkt.pos.y = IntBE16(p); p+=2;
-	    pkt.pos.z = IntBE16(p); p+=2;
+	    if (extn_extentityposn) {
+		pkt.pos.x = IntBE32(p); p+=4;
+		pkt.pos.y = IntBE32(p); p+=4;
+		pkt.pos.z = IntBE32(p); p+=4;
+	    } else {
+		pkt.pos.x = IntBE16(p); p+=2;
+		pkt.pos.y = IntBE16(p); p+=2;
+		pkt.pos.z = IntBE16(p); p+=2;
+	    }
 	    pkt.pos.h = *p++;
 	    pkt.pos.v = *p++;
 	    pkt.pos.valid = 1;

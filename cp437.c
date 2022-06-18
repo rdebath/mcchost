@@ -102,6 +102,9 @@ char cp437_ascii[] =
 	"+--|-+||++--|-+----++++++++##||#"
 	"aBTPEsyt******EN=+><++-=... n2* ";
 
+/* NOTE: The zero entry could be U+2400, this would be reasonable for
+ *       display and debugging. */
+
 int cp437rom[256] = {
     0x0000, 0x263a, 0x263b, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022,
     0x25d8, 0x25cb, 0x25d9, 0x2642, 0x2640, 0x266a, 0x266b, 0x263c,

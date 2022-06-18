@@ -41,6 +41,10 @@ update_block(pkt_setblock pkt)
     // No update needed.
     if (level_blocks[index] == b && pkt.mode != 2) return;
 
+    // User counters
+    if (b == 0) my_user.blocks_deleted++; else my_user.blocks_placed++;
+    my_user.dirty = 1;
+
     // Physics Like updates ... these are trivial instant updates that allow
     // the classic client to enter blocks not in it's menu.
 
@@ -133,7 +137,7 @@ grow_dirt_block(int x, int y, int z, block_t blk)
 }
 
 void
-unlocked_update(int x, int y, int z, int b)
+prelocked_update(int x, int y, int z, int b)
 {
     level_prop->dirty_save = 1;
     level_prop->last_modified = time(0);

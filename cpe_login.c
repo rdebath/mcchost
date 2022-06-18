@@ -17,32 +17,32 @@ struct ext_list_t {
 
 #define N .name= /*STFU*/
 static struct ext_list_t extensions[] = {
-//  { N"EnvMapAppearance",    1  },				//Old
+//  { N"EnvMapAppearance",    1, },				//Old
     { N"ClickDistance",       1, &extn_clickdistance },
     { N"CustomBlocks",        1, &extn_customblocks },
     { N"HeldBlock",           1, &extn_heldblock },
     { N"TextHotKey",          1, &extn_texthotkey },		//ServerConf
-//  { N"ExtPlayerList",       2  },
+//  { N"ExtPlayerList",       2, },
     { N"EnvColors",           1, &extn_envcolours },
-//**{ N"SelectionCuboid",     1  },				//MapConf
+    { N"SelectionCuboid",     1, &extn_selectioncuboid },	//MapConf
     { N"BlockPermissions",    1, &extn_block_permission },	//UserMapConf
-//  { N"ChangeModel",         1  },				//UserBotConf
-//  { N"EnvMapAppearance",    2  },				//Old
+    { N"ChangeModel",         1, &extn_changemodel },		//UserBotConf
+//  { N"EnvMapAppearance",    2, },				//Old
     { N"EnvWeatherType",      1, &extn_weathertype },
-//  { N"HackControl",         1  },
-    { N"EmoteFix",            1  }, // Included in FullCP437
+    { N"HackControl",         1, &extn_hackcontrol },
+    { N"EmoteFix",            1, }, // Included in FullCP437
     { N"MessageTypes",        1, &extn_messagetypes },
     { N"LongerMessages",      1, &extn_longermessages },
     { N"FullCP437",           1, &extn_fullcp437 },
     { N"BlockDefinitions",    1, &extn_blockdefn },
     { N"BlockDefinitionsExt", 2, &extn_blockdefnext },
     { N"TextColors",          1, &extn_textcolours },		//ServerConf
-//  { N"BulkBlockUpdate",     1  },
+//  { N"BulkBlockUpdate",     1, },
     { N"EnvMapAspect",        1, &extn_envmapaspect },
-    { N"PlayerClick",         1, .disabled=1 },
-//  { N"EntityProperty",      1  },
-//  { N"ExtEntityPositions",  1  },
-//**{ N"TwoWayPing",          1  },
+    { N"PlayerClick",         1, .disabled=1 },			// Client sends
+//  { N"EntityProperty",      1, },
+    { N"ExtEntityPositions",  1, &extn_extentityposn, .nolate=1 },
+//**{ N"TwoWayPing",          1, },
     { N"InventoryOrder",      1, &extn_inventory_order },
     { N"InstantMOTD",         1, &extn_instantmotd },
 
@@ -51,7 +51,7 @@ static struct ext_list_t extensions[] = {
     { N"FastMap",             1, &extn_fastmap, .nolate=1 },
 
     { N"SetHotbar",           1, &extn_sethotbar },
-//  { N"SetSpawnpoint",       1, },
+    { N"SetSpawnpoint",       1, &extn_setspawnpoint },
 
     { N"VelocityControl",     1, .disabled=1 },
     { N"CustomParticles",     1, .disabled=1 },
@@ -68,18 +68,23 @@ int extn_blockdefnext = 0;
 int extn_clickdistance = 0;
 int extn_customblocks = 0;
 int extn_envcolours = 0;
+
 int extn_block_permission = 0;
+int extn_changemodel = 0;
+int extn_extentityposn = 0;
 int extn_envmapaspect = 0;
 int extn_evilbastard = 0;
 int extn_extendblockno = 0;
 int extn_extendtexno = 0;
-int extn_fastmap = 0; // CC Crashes with 10bit gzip maps.
+int extn_fastmap = 0; // CC Crashes with 10bit gzip maps. pre 1.3.3
 int extn_fullcp437 = 0;
+int extn_hackcontrol = 0;
 int extn_heldblock = 0;
 int extn_instantmotd = 0;
 int extn_inventory_order = 0;
 int extn_longermessages = 0;
 int extn_messagetypes = 0;
+int extn_selectioncuboid = 0;
 int extn_sethotbar = 0;
 int extn_setspawnpoint = 0;
 int extn_textcolours = 0;
@@ -152,8 +157,30 @@ process_extentry(pkt_extentry * pkt)
 
     // Note: most of these lengths are not used because the send_*_pkt
     // functions define the size based on contents.
+
+    // The important ones are the ones we _receive_ from the client,
+    // for which we must know the size of before be actually decode them.
+
+    // Also for some combinations the PKID_POSN packet has different
+    // sizes depending on the direction. This is because the "PlayerID"
+    // field is replaced by the "Held Block" in client->server and this
+    // field grows when 10bit block numbers are enabled.
+
     if (extn_fastmap)
 	msglen[PKID_LVLINIT] = 5;
+
+    if (extn_extentityposn) {
+	// Client Behavior: Client must read 32 instead of 16
+	// bit integers for the AddEntity, EntityTeleport(8),
+	// ExtAddEntity2 packets. It must write 32 instead of 16
+	// bit integers for the Position and Orientation packet
+	// sent to the server.
+	msglen[PKID_SPAWN] = (2+64+6+2) + 6;
+	msglen[PKID_POSN] = (2+6+2) + 6;
+	msglen[PKID_ADDENT] = 138 + 6;
+	// MCGalaxy/Network/Packets/Packet.cs:389
+	msglen[PKID_SETSPAWN] = (1+6+2) + 6;
+    }
 
     if (extn_extendblockno) {
 	// Set Block (0x05)          Block type  short     Client -> Server
@@ -183,6 +210,11 @@ process_extentry(pkt_extentry * pkt)
 	if (extn_extendtexno) {
 	    msglen[PKID_BLOCKDEF] = 81 + 3;
 	    msglen[PKID_BLOCKDEF2] = 89 + 6;
+	}
+
+	if (extn_extentityposn) {
+	    // This is for client->server only NOT server->client
+	    msglen[PKID_POSN] = (2+6+2) + 1 + 6;
 	}
     } else {
 	if (extn_extendtexno) {

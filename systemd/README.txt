@@ -1,7 +1,7 @@
 Files for strting MCChost using systemd.
 
 # put in system:
-sudo cp mcchost* /etc/systemd/system/mcchost.socket
+sudo cp mcchost* /etc/systemd/system/
 sudo systemctl daemon-reload
 
 # Enable now:

@@ -265,7 +265,7 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet, int no_unsafe)
 	return -1;
     }
 
-    // fprintf(stderr, "Loading ini file \"%s\"\n", filename);
+    // printlog("Loading ini file \"%s\"\n", filename);
 
     char ibuf[BUFSIZ];
     while(fgets(ibuf, sizeof(ibuf), ifd)) {
@@ -293,14 +293,14 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
     int rv = ini_decode_lable(&p, label, sizeof(label));
     if (!rv) {
 	if (st->quiet)
-	    fprintf(stderr, "Invalid label %s in %s section %s\n", ibuf, st->filename, st->curr_section?:"-");
+	    printlog("Invalid label %s in %s section %s\n", ibuf, st->filename, st->curr_section?:"-");
 	else
 	    printf_chat("&WInvalid label &S%s&W in &S%s&W section &S%s&W", ibuf, st->filename, st->curr_section?:"-");
 	return 0;
     }
     if (!st->curr_section || !filetype(st, label, &p)) {
 	if (st->quiet) {
-	    fprintf(stderr, "Unknown item \"%s\" in file \"%s\" section \"%s\" -- label \"%s\" value \"%s\"\n",
+	    printlog("Unknown item \"%s\" in file \"%s\" section \"%s\" -- label \"%s\" value \"%s\"\n",
 		ibuf, st->filename, st->curr_section?:"-", label, p);
 	} else
 	    printf_chat("&WUnknown item&S \"%s\" section \"%s\"", ibuf, st->curr_section?:"-");

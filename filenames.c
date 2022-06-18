@@ -20,6 +20,8 @@
 #define LEVEL_BACKUP_DIR_NAME "backup"
 #define LEVEL_BACKUP_NAME LEVEL_BACKUP_DIR_NAME "/%s.%d.cw"
 
+#define USERDB_DIR "userdb"
+
 #define MODEL_CW_NAME "model.cw"
 #define MODEL_INI_NAME "model.ini"
 #define SYS_CONF_NAME "system/system.dat"
@@ -32,6 +34,7 @@ static char * dirlist[] = {
     "level",
     LEVEL_MAP_DIR_NAME,
     LEVEL_BACKUP_DIR_NAME,
+    USERDB_DIR,
     "help",
     "log",
     0

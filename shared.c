@@ -19,10 +19,8 @@
  *		pthread_mutexattr_setrobust to use "robust futexes"
  *		However, it goes into an error state.
  *
- *       SysV semops with SEM_UNDO do this.
- *
+ *       SysV semops with SEM_UNDO do, but are sometimes pooly implemented.
  *       POSIX Semephores do NOT release on process termination. (sem_wait(1))
- *
  */
 
 #include "shared.h"
@@ -168,7 +166,7 @@ open_level_files(char * level_name, char * fixname, int direct)
 		goto open_failed;
 
 	    if (access(cwfilename, W_OK) != 0) {
-		fprintf_logfile("Loaded read only map %s", cwfilename);
+		printlog("Loaded read only map %s", cwfilename);
 		level_prop->readonly = 1;
 	    }
 	}

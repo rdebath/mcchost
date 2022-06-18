@@ -16,4 +16,13 @@
 #define IGNORE_VOLATILE_CHARP(_x_) ((char*)(_x_))
 
 #define STFU(_x_) (_x_)
+
+#ifndef __has_include
+#define __has_include(_x) 0
 #endif
+#if __has_include(<stdatomic.h>)
+#include <stdatomic.h>
+#define STDATOMIC
+#endif
+
+#endif /*INTERFACE*/

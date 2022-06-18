@@ -117,8 +117,8 @@ main(int argc, char **argv)
     } else {
 	line_ofd = 1; line_ifd = 0;
 	if (inetd_mode) {
-	    check_client_ip();
 	    logger_process();
+	    check_client_ip();
 	}
     }
 
@@ -135,6 +135,8 @@ process_connection()
     open_client_list();
 
     login();
+
+    write_userrec(1);
 
     memset(proc_args_mem, 0, proc_args_len);
     snprintf(proc_args_mem, proc_args_len, "%s (%s)", server->software, user_id);
@@ -205,7 +207,7 @@ void
 send_disconnect_message()
 {
     printf_chat("@&c- &7%s &Sdisconnected", user_id);
-    fprintf_logfile("Connection dropped for %s", user_id);
+    printlog("Connection dropped for %s", user_id);
 }
 
 void
@@ -221,6 +223,7 @@ login()
     // Also; the normal processing loop can't do a login (again).
     time_t startup = time(0);
     fcntl(line_ifd, F_SETFL, (int)O_NONBLOCK);
+    int sleeps = 0;
     while(insize-inptr < rqsize)
     {
 	int cc = read(line_ifd, inbuf+insize, rqsize-insize);
@@ -238,20 +241,25 @@ login()
 		    disconnect(0, "Short logon packet received");
 		} else
 		    teapot(inbuf+inptr, insize);
-	    } else
+	    } else {
 		usleep(50000);
+		sleeps++;
+	    }
 	}
 
-	if (insize >= 1 && inbuf[inptr] != 0) // Special exit for weird caller.
-	    teapot(inbuf+inptr, insize);
-	if (insize >= 2 && inbuf[inptr+1] < 3)
-	    teapot(inbuf+inptr, insize);
-	if (insize >= 2 && inbuf[inptr+1] != 7) {
-	    if (insize >= 66) {
-		convert_logon_packet(inbuf, &player);
-		strcpy(user_id, player.user_id);
+	if (insize >= 20 || sleeps > 5) {
+	    // Special quick exits for bad callers.
+	    if (insize >= 1 && inbuf[inptr] != 0)
+		teapot(inbuf+inptr, insize);
+	    if (insize >= 2 && inbuf[inptr+1] < 3)
+		teapot(inbuf+inptr, insize);
+	    if (insize >= 2 && inbuf[inptr+1] != 7) {
+		if (insize >= 66) {
+		    convert_logon_packet(inbuf, &player);
+		    strcpy(user_id, player.user_id);
+		}
+		disconnect(0, "Only protocol version seven is supported");
 	    }
-	    disconnect(0, "Only protocol version seven is supported");
 	}
 	if (insize >= 2 && inbuf[inptr+1] < 6)
 	    rqsize = msglen[0] - 1;
@@ -271,10 +279,10 @@ login()
 	}
 
     if (client_ipv4_port)
-	fprintf_logfile("Logging in user '%s' from %s:%d",
+	printlog("Logging in user '%s' from %s:%d",
 	    user_id, client_ipv4_str, client_ipv4_port);
     else
-	fprintf_logfile("Logging in user '%s'", user_id);
+	printlog("Logging in user '%s'", user_id);
 
     if (*server->secret != 0 && *server->secret != '-') {
 	if (strlen(player.mppass) != 32 && !client_ipv4_localhost)
@@ -340,22 +348,33 @@ teapot(uint8_t * buf, int len)
 {
     int dump_it = 1;
     int rv = 4;
+    int send_new_logout = 0;
 
     if (client_ipv4_port) {
+	int fm = 1;
 	if (buf[0] == 0x16 && buf[1] == 0x03 && buf[1] >= 1 && buf[1] <= 3) { 
 	    printlog("Received a TLS Client hello packet from %s:%d",
 		client_ipv4_str, client_ipv4_port);
-	    rv = dump_it = 0;
+	    fm = rv = dump_it = 0;
 	} else if (len > 0 && len < 5) {
 	    char hbuf[32] = "";
 	    for(int i=0; i<len; i++)
 		sprintf(hbuf+i*6, ", 0x%02x", buf[i]);
 	    printlog("Received byte%s %s from %s:%d",
 		len>1?"s":"", hbuf+2, client_ipv4_str, client_ipv4_port);
-	    rv = dump_it = 0;
-	} else
-	    fprintf_logfile("Failed connect %s:%d, %s",
-		client_ipv4_str, client_ipv4_port,
+	    fm = rv = dump_it = 0;
+	} else if (len > 12 && buf[1] == 0 && buf[0] >= 12 && buf[0] < len && buf[0] < 32 &&
+	    buf[buf[0]-2] == ((tcp_port_no>>8)&0xFF) && buf[buf[0]-1] == (tcp_port_no&0xFF)) {
+	    // This looks like a current protocol packet.
+	    printlog("Failed connect to %d, %s:%d, %s",
+		tcp_port_no, client_ipv4_str, client_ipv4_port,
+		"Using newer Minecraft protocol.");
+	    fm = rv = dump_it = 0;
+	    send_new_logout = 1;
+	}
+	if (fm)
+	    printlog("Failed connect to %d, %s:%d, %s",
+		tcp_port_no, client_ipv4_str, client_ipv4_port,
 		len ? "invalid client hello": "no data.");
     }
     else if (len <= 0)
@@ -369,8 +388,22 @@ teapot(uint8_t * buf, int len)
 
     if (line_ofd > 0)
     {
-	char msg[] = "418 I'm a teapot\n";
-	write_to_remote(msg, sizeof(msg)-1);
+	if (send_new_logout) {
+	    // This should be a new protocol disconnect message.
+	    char msg[] =  {
+		     70,   0,  68, '{', '"', 't', 'e', 'x', 't', '"',
+		    ':', ' ', '"', 'O', 'n', 'l', 'y', ' ', 'c', 'l',
+		    'a', 's', 's', 'i', 'c', ' ', 'p', 'r', 'o', 't',
+		    'o', 'c', 'o', 'l', ' ', 's', 'e', 'v', 'e', 'n',
+		    ' ', 'i', 's', ' ', 's', 'u', 'p', 'p', 'o', 'r',
+		    't', 'e', 'd', '"', ',', ' ', '"', 'c', 'o', 'l',
+		    'o', 'r', '"', ':', ' ', '"', 'r', 'e', 'd', '"',
+		    '}', 1, 0, 0 };
+	    write_to_remote(msg, sizeof(msg)-1);
+	} else {
+	    char msg[] = "418 I'm a teapot\n";
+	    write_to_remote(msg, sizeof(msg)-1);
+	}
 
 	flush_to_remote();
 	shutdown(line_ofd, SHUT_RDWR);
@@ -386,15 +419,15 @@ disconnect(int rv, char * emsg)
     if (line_ofd < 0) return;
 
     if (client_ipv4_port && *user_id)
-	fprintf_logfile("Disconnect %s:%d, user '%s', %s",
+	printlog("Disconnect %s:%d, user '%s', %s",
 	    client_ipv4_str, client_ipv4_port, user_id, emsg);
     else if (client_ipv4_port)
-	fprintf_logfile("Disconnect %s:%d, %s",
+	printlog("Disconnect %s:%d, %s",
 	    client_ipv4_str, client_ipv4_port, emsg);
     else if (*user_id)
-	fprintf_logfile("Disconnect user '%s', %s", user_id, emsg);
+	printlog("Disconnect user '%s', %s", user_id, emsg);
     else
-	fprintf_logfile("Disconnect %s", emsg);
+	printlog("Disconnect %s", emsg);
 
     stop_user();
     send_discon_msg_pkt(emsg);

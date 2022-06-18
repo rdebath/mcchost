@@ -64,16 +64,16 @@ dont_panic()
     restart_sig = 1;
 }
 
-void
-read_tcp_port_no()
+int
+read_sock_port_no(int sock_fd)
 {
     struct sockaddr_in my_addr;
     socklen_t len = sizeof(my_addr);
-    if (getsockname(listen_socket, (struct sockaddr *)&my_addr, &len) < 0){
-	return;
+    if (getsockname(sock_fd, (struct sockaddr *)&my_addr, &len) < 0){
+	return 0;
     }
 
-    tcp_port_no = ntohs(my_addr.sin_port);
+    return ntohs(my_addr.sin_port);
 }
 
 void
@@ -82,7 +82,7 @@ tcpserver()
     listen_socket = start_listen_socket("0.0.0.0", tcp_port_no);
 
     if (tcp_port_no == 0)
-	read_tcp_port_no();
+	tcp_port_no = read_sock_port_no(listen_socket);
 
     if (log_to_stderr || isatty(2)) {
 	if (server_runonce)
@@ -343,9 +343,9 @@ accept_new_connection()
     if (server_runonce)
 	fprintf(stderr, "Connected, closing listen socket.\n");
     else
-	fprintf(stderr, "Incoming connection from %s%s:%d.\n",
+	fprintf(stderr, "Incoming connection from %s%s:%d on port %d.\n",
 	    client_ipv4_localhost?"trusted host ":"",
-	    client_ipv4_str, client_ipv4_port);
+	    client_ipv4_str, client_ipv4_port, tcp_port_no);
 
     return new_client_sock;
 }
@@ -385,6 +385,13 @@ check_client_ip()
 	inet_ntop(AF_INET6, &addr.s6.sin6_addr, client_ipv4_str, INET6_ADDRSTRLEN);
 	client_ipv4_port = ntohs(addr.s6.sin6_port);
     }
+
+    // In inetd mode our port is also unknown
+    tcp_port_no = read_sock_port_no(line_ifd);
+
+    fprintf(stderr, "Inetd connection from %s%s:%d on port %d.\n",
+	client_ipv4_localhost?"trusted host ":"",
+	client_ipv4_str, client_ipv4_port, tcp_port_no);
 }
 
 void
@@ -554,9 +561,11 @@ send_heartbeat_poll()
 
     if ((heartbeat_pid = fork()) == 0) {
 	if (listen_socket>0) close(listen_socket);
+	char logbuf[256];
+	sprintf(logbuf, "log/curl-%d.txt", tcp_port_no);
 
 	// SHUT UP CURL!!
-	E(execlp("curl", "curl", "-s", "-S", "-o", "log/curl_resp.txt", cmdbuf, (char*)0), "exec of curl failed");
+	E(execlp("curl", "curl", "-s", "-S", "-o", logbuf, cmdbuf, (char*)0), "exec of curl failed");
 	// Note: Returned string is web client URL, but the last
 	//       path part can be used to query the api; it's
 	//       the ip and port in ASCII hashed with MD5.

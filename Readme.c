@@ -16,17 +16,26 @@ See "/help todo" for notes.
 
 /*HELP todo
  +) inetd_mode, start_tcp_server and cron_tasks: Use enum? Or just turn-offs
- +) Tickless physics ? Call usleep() till next event.
+ +) Multiple servers in one directory; which items show be/not be per port.
+    -- CPE Disable?
+    -- Private?
+    -- Salt?
+    -- Localnet
+
+ +) Require /newlvl + to make your level (for x,y,z)
+    -- Perms; No create, create personal, create any.
+
+ +) Fix player detail "struct user"
+    -- Time spent on server
+    -- Kick
+    -- IP address/clones (for logged on user count) (Rate limits?)
 
  +) Aliases in /set command, more help, option lists.
- +) Merge ini and nbt processing.
-
- +) User count, flag clones on connect & disconnect.
- +) Rate limits, number of logon attempts.
+ +) reset_hotbar_on_mapload is a level option in the CW file ?
+ +) Merge ini and nbt processing ?
 
  +) If lots of maps loaded, unload them quicker ?
  +) Config paths for "backup" and "map" directories ?
- +) reset_hotbar_on_mapload is a level option in the CW file ?
 
  +) /sendcmd command
  +) /about command
@@ -35,10 +44,6 @@ See "/help todo" for notes.
  +) Colour definitions for &S,&W etc.
  +) Level limited chat -- primitive chatroom.
  +) Team chat, less primitive chatroom.
-
- +) Create player detail "struct user" (for saving in SQL? blob store.)
-    -- SQLite3 ? Multiple keys ? Just user names?
-    -- https://github.com/symisc/unqlite  ??
 
  +) Command line option to restart server and unload levels.
     -- So we know this version will run! Find pid by port no.
@@ -110,6 +115,7 @@ All files in subdirectories.
 Physics:
 
 Physics queue is a level/${level}.* file which can be extended at any time.
+ +) Tickless physics ? Call usleep() till next event.
 
 Basic
     Grass, Slabs
@@ -166,4 +172,5 @@ Pipe method
 mcchost-server -runonce
     Opens port and accepts one connection, without calling fork()
 
+TODO: -log-stderr option?
 */

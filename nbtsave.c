@@ -15,7 +15,8 @@
  * BEWARE: MCGalaxy's reader is very badly pedantic with many limitations
  *         beyond the specifications of the format.
  *
- *         One specific one being that every "path" must be unique.
+ *         One specific one being that every "path" must be unique which
+ *         this encoder does NOT check.
  *
  * I've put the block arrays at the end of the file, this should allow a
  * quick scan of the properties if necessary.
@@ -30,9 +31,12 @@ save_map_to_file(char * fn, int background)
 
     // CC works with 2^^31 blocks (with cosmetic errors) so allow just one byte
     // over the limit. Note, however, that this does not apply to the CW file.
-    // The last block in the array will thus become Block_Air.
+    // The last block in the array will thus become Block_Air (or undefined).
+
+    // For MCGalaxy the size must not exceed (2^31-2^16) or [4681,128,3584]
+
     if (level_prop->total_blocks > 0x7FFFFFFF + (int64_t)1 ) {
-	fprintf(stderr, "Oversized map \"%s\" (%d,%d,%d) failed to save\n",
+	printlog("Oversized map \"%s\" (%d,%d,%d) failed to save\n",
 	    fn, level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
 	return -1;
     }
@@ -269,7 +273,7 @@ save_map_to_file(char * fn, int background)
     int rv = gzclose(savefile);
     if (rv) {
 	if (background)
-	    fprintf(stderr, "Save failed error Z%d\n", rv);
+	    printlog("gzclose('%s') failed, error %d\n", fn, rv);
 	else
 	    printf_chat("&WSave failed error Z%d", rv);
     }
