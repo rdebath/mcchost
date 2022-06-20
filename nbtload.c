@@ -452,7 +452,8 @@ change_int_value(char * section, char * item, int64_t value)
 
     } else if (strcmp(section, "MCCHost") == 0) {
 
-	if (strcmp(item, "AllowChange") == 0) level_prop->allowchange = value;
+	if (strcmp(item, "AllowChange") == 0) level_prop->disallowchange = !value;
+	if (strcmp(item, "DisallowChange") == 0) level_prop->disallowchange = value;
 	if (strcmp(item, "ReadOnly") == 0) level_prop->readonly = value;
 
     } else if (strncmp(section, "Block", 5) == 0) {

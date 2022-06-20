@@ -15,33 +15,49 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) INI file allow section and key on same line.
+
+ +) /set readonly t/f -- does chmod ? Force save ?
+
  +) inetd_mode, start_tcp_server and cron_tasks: Use enum? Or just turn-offs
- +) Multiple servers in one directory; which items show be/not be per port.
+
+ +) Multiple servers in one directory; which items should (not)be per port.
     -- CPE Disable?
     -- Private?
     -- Salt?
-    -- Localnet
+    -- Localnet? --> Add bind address ?
+    -- Heartbeat? --> User namespaces.
+
+ +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
  +) Require /newlvl + to make your level (for x,y,z)
     -- Perms; No create, create personal, create any.
+    -- Don't allow "/goto +" without level file.
 
  +) Fix player detail "struct user"
     -- Time spent on server
     -- Kick
     -- IP address/clones (for logged on user count) (Rate limits?)
+    -- Make TSV in blob? -- Strings in UTF8
+    -- Make INI in blob?
 
  +) Aliases in /set command, more help, option lists.
  +) reset_hotbar_on_mapload is a level option in the CW file ?
  +) Merge ini and nbt processing ?
 
  +) If lots of maps loaded, unload them quicker ?
+    -- Define "lots"
+
  +) Config paths for "backup" and "map" directories ?
+    -- Symlinks work now. Enough?
 
  +) /sendcmd command
  +) /about command
  +) /z and /m commands with setblock capture.
 
  +) Colour definitions for &S,&W etc.
+    -- System level
+
  +) Level limited chat -- primitive chatroom.
  +) Team chat, less primitive chatroom.
 
@@ -52,13 +68,15 @@ See "/help todo" for notes.
     -- Precheck so users processes can be restarted too?
 	-- Needs state save and reload for extn_* variables.
 
- +) /resize, /copylvl, /deletelvl, /save(backup)
- +) /restore & /museum
- +) Import -- download *.cw file from web.
+ +) /resizelvl, /copylvl, /deletelvl, /savelvl (to mapdir)
+ +) /backup, /restore & /museum
+ +) /import -- download *.cw file from web.
+    -- Rename file to strict % form, don't overwrite.
+    -- Output of curl command to user ?
+
  +) /newlvl, generate "nice" levels.
 
  +) Block/User history records.
-    -- Combined history needs user id numbers --> user file/table.
 
  +) Permissions -- currently "client_ipv4_localhost"
     -- Need enum of permit flags.
@@ -68,7 +86,6 @@ See "/help todo" for notes.
 
  +) NAME: (*) MCCHost
 
- +) User prefix/suffix/namespace for multiple heartbeat servers.
  +) Backup while physics running --> Copy level.* then freeze physics.
     Copy can more easily do patchups.
 
@@ -86,10 +103,11 @@ See "/help todo" for notes.
     -- Sent to level chat ? -- Physics?
 
  +) Log user commands ?
+    -- Logging options; system level.
 
 Features:
     -- CW file also contains pending physics operations.
-    -- edlin ? to edit help files and blockdef prop files?
+    -- edlin ? to edit help files and blockdef ini files?
 
 All files in subdirectories.
     system.ini  --> move?
@@ -114,8 +132,7 @@ All files in subdirectories.
 
 Physics:
 
-Physics queue is a level/${level}.* file which can be extended at any time.
- +) Tickless physics ? Call usleep() till next event.
+Physics queue is a level/${level}.physics file.
 
 Basic
     Grass, Slabs
@@ -142,6 +159,7 @@ Other components
     -- physics process does non-trivial physics.
     -- crash catcher restarts server process without dropping connection.
     -- physics save to *.cw -- locking modes ?
+    -- No Tickless physics ? Users make events.
 
 Make sure text anti-spam is in place.
     (Only echo duplicates back to self?)
@@ -154,7 +172,7 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
 
 /*HELP usecases
 mcchost-server -tcp [-detach]
-    TCP server, is "-detach" is given backgrounds self after opening socket.
+    TCP server, if "-detach" is given backgrounds self after opening socket.
     The server process also schedules background tasks.
 
 mcchost-server -net [-detach]
@@ -162,15 +180,20 @@ mcchost-server -net [-detach]
 
 mcchost-server -inetd
     Run from inetd; stdin & stdout are socket (Also used for systemd)
+    -- Should -inetd imply (force?) -no-detach ?
 
 mcchost-server -cron
     Run periodic tasks, map unloads, backups and classicube.net poll.
-
-Pipe method
-    Client starts process directly like -inetd, but with pipe() not socket()
+    -- Need cron without cc.net poll?
 
 mcchost-server -runonce
     Opens port and accepts one connection, without calling fork()
+    Will not detach. Will not create logger process.
+    -- Physics process?
+
+Pipe method ?
+    Client starts process directly like -inetd, but with pipe() not socket()
+    -- Identical to -inetd ?
 
 TODO: -log-stderr option?
 */

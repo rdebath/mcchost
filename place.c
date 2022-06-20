@@ -150,7 +150,7 @@ cmd_mode(UNUSED char * cmd, char * arg)
 void
 process_player_setblock(pkt_setblock pkt)
 {
-    if (level_prop->readonly && !level_prop->allowchange) {
+    if (level_prop->disallowchange) {
 	revert_client(pkt);
 	return;
     }

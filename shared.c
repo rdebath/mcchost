@@ -252,7 +252,6 @@ void
 unlink_level(char * levelname, int silent)
 {
     char sharename[256];
-    check_level_name(levelname);
 
     snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, levelname);
     if (unlink(sharename) < 0 && !silent)

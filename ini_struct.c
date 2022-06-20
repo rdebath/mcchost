@@ -176,7 +176,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_FIXEDP("SkyboxHorSpeed", level_prop->skybox_hor_speed, 1024);
 	INI_FIXEDP("SkyboxVerSpeed", level_prop->skybox_ver_speed, 1024);
 
-	INI_BOOLVAL("AllowChange", level_prop->allowchange);
+	INI_BOOLVAL("DisallowChange", level_prop->disallowchange);
 	INI_BOOLVAL("ReadOnly", level_prop->readonly);
     }
 

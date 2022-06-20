@@ -195,12 +195,10 @@ complete_connection()
 void
 read_only_message()
 {
-    if (level_prop->readonly) {
-	if (level_prop->allowchange)
-	    printf_chat("&WLoaded read only map, any changes you make will be discarded when the level unloads");
-	else
-	    printf_chat("&WLoaded read only map");
-    }
+    if (!level_prop->readonly) return;
+    if (level_prop->disallowchange && extn_inventory_order && extn_sethotbar) return;
+
+    printf_chat("&WLoaded read only map, changes won't be saved.");
 }
 
 void

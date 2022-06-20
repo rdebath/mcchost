@@ -195,7 +195,7 @@ save_map_to_file(char * fn, int background)
 	bc_end(savefile);
 
     bc_compound(savefile, "MCCHost");
-    bc_ent_int(savefile, "AllowChange", level_prop->allowchange);
+    bc_ent_int(savefile, "DisallowChange", level_prop->disallowchange);
     bc_ent_int(savefile, "ReadOnly", level_prop->readonly);
     bc_end(savefile);
 
