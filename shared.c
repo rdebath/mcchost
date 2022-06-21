@@ -440,6 +440,15 @@ open_system_conf()
     server = shdat.dat[SHMID_SYSCONF].ptr;
 }
 
+void
+stop_system_conf()
+{
+    if (server) {
+	deallocate_shared(SHMID_SYSCONF);
+	server = 0;
+    }
+}
+
 // These flags are not strictly required, but probably a good idea
 #ifndef O_NOFOLLOW
 #define O_NOFOLLOW 0

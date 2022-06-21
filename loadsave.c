@@ -335,6 +335,7 @@ scan_and_save_levels(int unlink_only)
 {
     char * level_name = 0;
     int this_is_main = 0;
+    int loaded_levels = 0;
 
     open_client_list();
     if (!shdat.client) return;
@@ -347,6 +348,7 @@ scan_and_save_levels(int unlink_only)
 
     for(int lvid=0; lvid<MAX_LEVEL; lvid++) {
 	if (!shdat.client->levels[lvid].loaded) continue;
+	loaded_levels++;
 
 	nbtstr_t lv = shdat.client->levels[lvid].level;
 	level_name = lv.c;
@@ -399,10 +401,12 @@ scan_and_save_levels(int unlink_only)
 	unlink_level(fixedname, 0);
 	shdat.client->levels[lvid].loaded = 0;
 	fprintf_logfile("Unloaded level files %s", level_name);
+	loaded_levels--;
 
 	unlock_client_data();
     }
 
+    server->loaded_levels = loaded_levels;
     stop_client_list();
 }
 

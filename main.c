@@ -26,6 +26,7 @@ struct server_t {
     time_t save_interval;
     time_t backup_interval;
     int max_players;
+    int loaded_levels;
     int magic2;
 };
 #endif

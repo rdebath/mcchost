@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/select.h>
+#include <limits.h>
 
 #include "tcpserver.h"
 
@@ -30,6 +31,7 @@ int enable_heartbeat_poll = 1;
 static time_t last_heartbeat = 0;
 static time_t last_backup = 0;
 static time_t last_unload = 0;
+static time_t last_execheck = 0;
 
 char client_ipv4_str[INET_ADDRSTRLEN];
 int client_ipv4_port = 0;
@@ -190,6 +192,8 @@ tcpserver()
 
 	start_backup_process();
 
+	check_new_exe();
+
 	alarm_sig = 0;
     }
 
@@ -247,6 +251,8 @@ logger_process()
 
 	return;
     }
+
+    stop_system_conf(); // Not needed.
 
     // Logger
     if (listen_socket>=0)
@@ -705,4 +711,44 @@ start_backup_process()
 
     scan_and_save_levels(0);
     exit(0);
+}
+
+void
+check_new_exe()
+{
+    if (!proc_self_exe_ok) return;
+
+    time_t now;
+    time(&now);
+    if (alarm_sig == 0 && now-last_execheck <= 30)
+	return;
+    last_execheck = now;
+
+    // Is /proc/self/exe still okay?
+    char buf[PATH_MAX*2];
+    int l = readlink("/proc/self/exe", buf, sizeof(buf)-1);
+    buf[sizeof(buf)-1] = 0;
+
+    // /proc/self/exe gives something runnable.
+    if (l > 0 && access(buf, X_OK) == 0) {
+	// Yup
+	return;
+    }
+
+    // The link has broken, take that as a signal to restart.
+    // BUT only if nobody is logged on.
+
+    // Though, don't want to do it if our exe has gone.
+    if (access(proc_self_exe, X_OK) != 0)
+	return;
+
+    open_client_list();
+    if (!shdat.client) return;
+    lock_client_data();
+
+    if (server->loaded_levels == 0)
+	restart_sig = 1;
+
+    unlock_client_data();
+    stop_client_list();
 }

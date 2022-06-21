@@ -7,6 +7,8 @@
 #include "args.h"
 
 char ** program_args = 0;
+int proc_self_exe_ok = 0;
+char * proc_self_exe = 0;
 
 void
 process_args(int argc, char **argv)
@@ -226,19 +228,26 @@ process_args(int argc, char **argv)
 LOCAL void
 getprogram(char * argv0)
 {
-    // Is argv0 absolute or a $PATH lookup?
-    if (argv0[0] == '/' || strchr(argv0, '/') == 0) {
-	program_args[0] = strdup(argv0);
-	return;
-    }
-
-    // For relative paths try something different.
+    // See if /proc/self/exe looks ok.
     char buf[PATH_MAX*2];
     int l = readlink("/proc/self/exe", buf, sizeof(buf)-1);
     buf[sizeof(buf)-1] = 0;
 
     // /proc/self/exe gives something runnable.
     if (l > 0 && access(buf, X_OK) == 0) {
+	// Yup
+	proc_self_exe_ok = 1;
+	proc_self_exe = strdup(buf);
+    }
+
+    // Is argv0 absolute or a $PATH lookup? Then use it for restart.
+    if (argv0[0] == '/' || strchr(argv0, '/') == 0) {
+	program_args[0] = strdup(argv0);
+	return;
+    }
+
+    // Otherwise use /proc/self/exe if it's okay.
+    if (proc_self_exe_ok) {
 	// Save it away because we use it for restart after it's been recreated.
 	program_args[0] = strdup(buf);
 	return;
