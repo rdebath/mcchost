@@ -70,11 +70,11 @@ END{
     print "};"
 
     print ""
-    print "#define N .name="
+    print "#define N .name= /*STFU*/"
     print "command_t command_list[] ="
     print "{"
     print cmdlist;
-    print "    {.name = 0}"
+    print "    {N(0)}"
     print "};"
     print "#undef N"
 }

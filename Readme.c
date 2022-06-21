@@ -30,6 +30,8 @@ See "/help todo" for notes.
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
+ +) Backup setting in server.ini, force backup of all map files before "date"
+
  +) Require /newlvl + to make your level (for x,y,z)
     -- Perms; No create, create personal, create any.
     -- Don't allow "/goto +" without level file.

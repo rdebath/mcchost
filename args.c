@@ -239,11 +239,12 @@ getprogram(char * argv0)
 
     // /proc/self/exe gives something runnable.
     if (l > 0 && access(buf, X_OK) == 0) {
+	// Save it away because we use it for restart after it's been recreated.
 	program_args[0] = strdup(buf);
 	return;
     }
 
-    // Last try, just use the exe name
+    // Last try, assume the PATH will get fixed sometime.
     char * p = strrchr(argv0, '/');
     program_args[0] = p?strdup(p+1):strdup("");
 }

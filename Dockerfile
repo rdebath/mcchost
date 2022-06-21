@@ -9,11 +9,14 @@ ARG UID=1000
 ARG GID=1000
 ARG MPATH=/home/user
 
+# Add gdb here, if you want to make the image seven times larger.
+ARG EPACKS=
+
 RUN set -eu;_() { echo "$@";};(\
-_ 'apk add --no-cache -t build-packages \';\
-_ '    build-base zlib-dev git curl tini';\
+_ 'apk add --no-cache -t build-packages build-base gdb git \';\
+_ '    curl tini zlib-dev lmdb-dev $EPACKS';\
 _ 'apk add --no-cache -t run-packages --repositories-file /dev/null \';\
-_ '    zlib curl tini';\
+_ '    curl tini zlib lmdb $EPACKS';\
 _ '';\
 _ 'git clone https://github.com/rdebath/mcchost.git mcchost';\
 _ 'make -j -C mcchost INSTDIR=/usr/local/bin install';\

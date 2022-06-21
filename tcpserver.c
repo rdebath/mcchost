@@ -157,6 +157,10 @@ tcpserver()
 		{
 		    if (!detach_tcp_server)
 			setsid();
+#ifdef HAS_CORELIMIT
+		    if (access("/usr/bin/gdb", X_OK) == 0)
+			enable_coredump();
+#endif
 		    (void)signal(SIGHUP, SIG_DFL);
 		    (void)signal(SIGCHLD, SIG_DFL);
 		    (void)signal(SIGALRM, SIG_DFL);
