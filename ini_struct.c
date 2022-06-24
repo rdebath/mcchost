@@ -61,52 +61,49 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 #define WC(_x) WC2(!st->no_unsafe, _x)
 #define WC2(_c, _x) (st->write && (_c)) ?"; " _x:_x
 
-	if (st->write && !st->no_unsafe) {
-	    ini_write_section(st, section);
-	    fprintf(st->fd,
-		"; ; These options are shared in '%s'.\n",
-		SYS_CONF_NAME);
-	}
-
-	INI_STRARRAYCP437(WC("Software"), server->software);
-	INI_STRARRAYCP437(WC("Name"), server->name);
-	INI_STRARRAYCP437(WC("Motd"), server->motd);
-	INI_STRARRAYCP437(WC("Main"), server->main_level);
+	INI_STRARRAYCP437("Software", server->software);
+	INI_STRARRAYCP437("Name", server->name);
+	INI_STRARRAYCP437("Motd", server->motd);
+	INI_STRARRAYCP437("Main", server->main_level);
 
 	if (!st->no_unsafe) {
-	    INI_STRARRAY(WC("Salt"), server->secret);	//Base62
+	    INI_STRARRAY("Salt", server->secret);	//Base62
 	} else if (st->write) {
-	    INI_STRARRAY(WC("Salt"), "XXXXXXXXXXXXXXXX");
+	    INI_STRARRAY("Salt", "XXXXXXXXXXXXXXXX");
 	}
 
-	INI_BOOLVAL(WC("Private"), server->private);
-	INI_BOOLVAL(WC("NoCPE"), server->cpe_disabled);
+	INI_BOOLVAL("Private", server->private);
+	INI_BOOLVAL("NoCPE", server->cpe_disabled);
 
 	if (st->write) fprintf(st->fd, "\n");
 
-	INI_BOOLVAL("tcp", start_tcp_server);
-	INI_INTVAL("Port", tcp_port_no);
-	INI_BOOLVAL("Inetd", inetd_mode);
-	INI_BOOLVAL("Detach", detach_tcp_server);
-	INI_STRARRAY("Heartbeat", heartbeat_url);		//ASCII
-	INI_BOOLVAL("PollHeartbeat", enable_heartbeat_poll);
+	INI_BOOLVAL("tcp", ini_settings.start_tcp_server);
+	INI_INTVAL("Port", ini_settings.tcp_port_no);
+	INI_BOOLVAL("Inetd", ini_settings.inetd_mode);
+	INI_BOOLVAL("Detach", ini_settings.detach_tcp_server);
+	INI_STRARRAY("Heartbeat", ini_settings.heartbeat_url);
+	INI_BOOLVAL("PollHeartbeat", ini_settings.enable_heartbeat_poll);
+	INI_BOOLVAL("Runonce", ini_settings.server_runonce);
 
-	if (st->write) fprintf(st->fd, "\n; ; Other options\n");
-	INI_BOOLVAL(WC("Runonce"), server_runonce);
-	INI_BOOLVAL(WC("OPFlag"), server_id_op_flag);
+	if (st->write) fprintf(st->fd, "\n");
+
+	INI_BOOLVAL("OPFlag", server_id_op_flag);
+	INI_INTVAL("MaxPlayers", server->max_players);
+	INI_STRARRAY(WC2(!*localnet_cidr, "Localnet"), localnet_cidr);
+
 	INI_STRARRAY(WC2(!*logfile_pattern, "Logfile"), logfile_pattern);
-	INI_FIXEDP(WC("SaveIntervalMins"), server->save_interval, 60);
-	INI_FIXEDP(WC("BackupIntervalHours"), server->backup_interval, 3600);
+
 	if (!st->write) {
-	    INI_FIXEDP(WC("SaveIntervalHours"), server->save_interval, 3600);
+	    INI_FIXEDP(WC("SaveIntervalMins"), server->save_interval, 60);
 	    INI_FIXEDP(WC("BackupIntervalMins"), server->backup_interval, 60);
+	    INI_FIXEDP(WC("SaveIntervalHours"), server->save_interval, 3600);
+	    INI_FIXEDP(WC("BackupIntervalHours"), server->backup_interval, 3600);
 	    INI_FIXEDP(WC("SaveIntervalDays"), server->save_interval, 86400);
 	    INI_FIXEDP(WC("BackupIntervalDays"), server->backup_interval, 86400);
-	    INI_INTVAL(WC("SaveInterval"), server->save_interval);
-	    INI_INTVAL(WC("BackupInterval"), server->backup_interval);
 	}
-	INI_INTVAL(WC("MaxPlayers"), server->max_players);
-	INI_STRARRAY(WC2(!*localnet_cidr, "Localnet"), localnet_cidr);
+	INI_INTVAL("SaveInterval", server->save_interval);
+	INI_INTVAL("BackupInterval", server->backup_interval);
+
     }
 
     return found;
@@ -239,18 +236,19 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     return found;
 }
 
-void
+int
 save_ini_file(ini_func_t filetype, char * filename)
 {
     ini_state_t st = (ini_state_t){.all=1, .write=1};
     st.fd = fopen(filename, "w");
     if (!st.fd) {
 	perror(filename);
-	return;
+	return -1;
     }
     filetype(&st,0,0);
     fclose(st.fd);
     if (st.curr_section) free(st.curr_section);
+    return 0;
 }
 
 int

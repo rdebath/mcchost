@@ -8,6 +8,7 @@
 
 #if INTERFACE
 #define SERVER_CONF_NAME "server.ini"
+#define SERVER_CONF_TMP "server.%d.tmp"
 #define LEVEL_PROPS_NAME "level/%s.props"
 #define LEVEL_BLOCKS_NAME "level/%s.blocks"
 #define LEVEL_QUEUE_NAME "level/%s.queue"

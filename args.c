@@ -186,6 +186,14 @@ process_args(int argc, char **argv)
 		};
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);
+
+	    start_tcp_server = ini_settings.start_tcp_server;
+	    tcp_port_no = ini_settings.tcp_port_no;
+	    inetd_mode = ini_settings.inetd_mode;
+	    detach_tcp_server = ini_settings.detach_tcp_server;
+	    enable_heartbeat_poll = ini_settings.enable_heartbeat_poll;
+	    server_runonce = ini_settings.server_runonce;
+	    strcpy(heartbeat_url, ini_settings.heartbeat_url);
 	}
     }
 
@@ -202,8 +210,14 @@ process_args(int argc, char **argv)
     // Somewhat better random seed, the whole time, pid and ASLR
     pcg32_srandom(
 	now.tv_sec*(uint64_t)1000000 + now.tv_usec,
-	(((uintptr_t)&program_args) >> 12) +
+	(((uintptr_t)&process_args) >> 12) +
 	((int64_t)(getpid()) << sizeof(uintptr_t)*4) );
+
+// NB: for x86/x64
+//              0x88000888
+// On 32bit     0x99XXX000 --> Only *8*bits of ASLR
+// On 64bit 0x91XXXXXXX000 --> 28bits of ASLR
+//      0x8888800000000888
 #else
     // A pretty trivial semi-random code, maybe 24bits of randomness.
     srandom(now.tv_sec ^ (now.tv_usec*4294U));

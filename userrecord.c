@@ -129,9 +129,9 @@ copy_user_key(char *p, char * user_id)
     {
 	char *hex = "0123456789ABCDEF";
 	int ch = *s & 0xFF;
-	if ((ch >= '0' && ch < '9') || ch == '_' || ch == '.' || (ch >= 'a' && ch < 'z'))
+	if ((ch >= '0' && ch <= '9') || ch == '_' || ch == '.' || (ch >= 'a' && ch <= 'z'))
 	    *p++ = ch;
-	else if (ch >= 'A' && ch < 'Z')
+	else if (ch >= 'A' && ch <= 'Z')
 	    *p++ = ch - 'Z' + 'z';
 	else {
 	    *p++ = '%';

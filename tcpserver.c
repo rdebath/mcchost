@@ -546,14 +546,19 @@ send_heartbeat_poll()
     //
     // Printable ASCII are fine.
     //
-    // Control characters (☺☻♥♦♣♠•◘○◙♂♀♪♫☼▶◀↕‼¶§▬↨↑↓→←∟↔▲▼) appear to fail
-    // The website doesn't error, but the ClassiCube doesn't show it.
+    // Control characters (☺☻♥♦♣♠•◘○◙♂♀♪♫☼▶◀↕‼¶§▬↨↑↓→←∟↔▲▼) fail with the
+    // abover error too.
     //
     // High controls (ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒ) are baaad
     // --> Oopsie Woopsie! Uwu We made a fucky wucky!! A wittle fucko boingo!
     // --> The code monkeys at our headquarters are working VEWY HAWD to fix this!
     //
+    // The character ⌂ is useable
     // Characters above 160 appear to work "correctly".
+    //
+    //  áíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐
+    //  └┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀
+    //  αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ 
 
     snprintf(cmdbuf, sizeof(cmdbuf),
 	"%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s&%s%s",
@@ -573,9 +578,20 @@ send_heartbeat_poll()
 	if (listen_socket>0) close(listen_socket);
 	char logbuf[256];
 	sprintf(logbuf, "log/curl-%d.txt", tcp_port_no);
+	char dumpbuf[256];
+	sprintf(dumpbuf, "log/curl-%d-h.txt", tcp_port_no);
 
 	// SHUT UP CURL!!
-	E(execlp("curl", "curl", "-s", "-S", "-o", logbuf, cmdbuf, (char*)0), "exec of curl failed");
+	// -s   Complete silence ... WTF
+	// -S   Okay yes, show error message
+	// -f   Yes, and error meesages from the web server.
+	E(execlp("curl", "curl",
+	    "-s", "-S", "-f",
+	    "-o", logbuf,
+	    "-D", dumpbuf,
+	    cmdbuf,
+	    (char*)0), "exec of curl failed");
+
 	// Note: Returned string is web client URL, but the last
 	//       path part can be used to query the api; it's
 	//       the ip and port in ASCII hashed with MD5.

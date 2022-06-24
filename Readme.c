@@ -16,21 +16,56 @@ See "/help todo" for notes.
 
 /*HELP todo
  +) INI file allow section and key on same line.
+ +) INI file preserve (some?) comments.
+ +) INI file time interval for backups, levelsaves
+
+ +) Decode Json return from cc.net, place in log.
+    -- Or just record if different ?
 
  +) /set readonly t/f -- does chmod ? Force save ?
+    -- New Use case: save current and preserve.
+    -- To preserve currently saved use a backup command.
 
- +) inetd_mode, start_tcp_server and cron_tasks: Use enum? Or just turn-offs
+ +) Key rotation, Keep previous "salt" allow this and previous keys.
+    Add timed rotation every N hours.
+    Add command to rotate key now.
+
+    Salt lines in ini file:
+    -- salt= XXXXXXXXXX
+    -- salt= XXXXXXXXXX,ExpireTime
+    -- salt= XXXXXXXXXX,ExpireTime,Namespace
+    -- newsalt = interval
+	--> Every interval create a new salt record with expire time of twice
+	    the interval and cleanup expired records.
+
+ +) inetd_mode, start_tcp_server and cron_tasks: Use enum? Or just bools?
+
+ +) inetd_mode: Remove need for -cron to cleanup old levels.
+    -- Cleanups are 5min, perhaps.
+    -- Place last cleanup time in userlevel[]
+    -- Only cc.net register needs calls every minute.
+    -- Separate -register command. (-net -cron ?)
 
  +) Multiple servers in one directory; which items should (not)be per port.
+    -- Need port-12345.ini file ?
+	--> Only record if different from system.ini values.
+
+    -- "level & map & backup" need to be shared as a set.
+	--> Declared only by system.ini
+
     -- CPE Disable?
     -- Private?
-    -- Salt?
     -- Localnet? --> Add bind address ?
-    -- Heartbeat? --> User namespaces.
+
+    -- Salt? --> Multiple salts on one port --> User namespaces.
+    -- Heartbeat? --> Distinct salt --> User namespaces.
+
+ +) Dump/load userDB as ini file.
+    -- Also single user and delete "username".
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
- +) Backup setting in server.ini, force backup of all map files before "date"
+ +) Add backup setting in server.ini, force backup of all map files before "date"
 
  +) Require /newlvl + to make your level (for x,y,z)
     -- Perms; No create, create personal, create any.
@@ -74,7 +109,7 @@ See "/help todo" for notes.
  +) /backup, /restore & /museum
  +) /import -- download *.cw file from web.
     -- Rename file to strict % form, don't overwrite.
-    -- Output of curl command to user ?
+    -- Output of curl import command to user ?
 
  +) /newlvl, generate "nice" levels.
 
@@ -107,12 +142,20 @@ See "/help todo" for notes.
  +) Log user commands ?
     -- Logging options; system level.
 
+ +) Scripting language interface
+    -- Lua ?
+    -- Python ?
+    -- https://github.com/tweag/nickel ?
+
+    -- External command that sends commands and queries as if it's
+       the user? Map access ?
+
 Features:
     -- CW file also contains pending physics operations.
     -- edlin ? to edit help files and blockdef ini files?
 
 All files in subdirectories.
-    system.ini  --> move?
+    system.ini  --> move? ... Map directory ?
     model.cw    --> move?
     model.ini   --> move?
     map/${level}.cw
@@ -179,6 +222,7 @@ mcchost-server -tcp [-detach]
 
 mcchost-server -net [-detach]
     TCP server with classicube.net registration. (Also -detach & tasks)
+    The frequent registration is a background task.
 
 mcchost-server -inetd
     Run from inetd; stdin & stdout are socket (Also used for systemd)

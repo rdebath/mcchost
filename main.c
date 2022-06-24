@@ -29,6 +29,17 @@ struct server_t {
     int loaded_levels;
     int magic2;
 };
+
+typedef struct server_ini_t server_ini_t;
+struct server_ini_t {
+    int start_tcp_server;
+    int tcp_port_no;
+    int inetd_mode;
+    int detach_tcp_server;
+    int server_runonce;
+    int enable_heartbeat_poll;
+    char heartbeat_url[1024];
+};
 #endif
 
 int line_ofd = -1;
@@ -42,19 +53,6 @@ int start_cron_task = 0;
 
 char program_name[512];
 
-#if 0
-server_t server[1] =
-{
-    (server_t){
-	.software = "MCCHost",
-	.name = "MCCHost Server",
-	.main_level = "main",
-	.save_interval = 300,
-	.backup_interval = 86400,
-    }
-};
-#endif
-
 volatile server_t *server = 0;
 
 nbtstr_t client_software = {"(unknown)"};
@@ -66,6 +64,8 @@ char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 char logfile_pattern[1024] = "";
 int server_runonce = 0;
 int save_conf = 0;
+
+server_ini_t ini_settings;
 
 int cpe_enabled = 0;	// Set if this session is using CPE
 int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
@@ -98,6 +98,14 @@ main(int argc, char **argv)
 	set_logfile(logfile_pattern, 0);
 
     if (save_conf) {
+        ini_settings.start_tcp_server = start_tcp_server;
+        ini_settings.tcp_port_no = tcp_port_no;
+        ini_settings.inetd_mode = inetd_mode;
+        ini_settings.detach_tcp_server = detach_tcp_server;
+        ini_settings.enable_heartbeat_poll = enable_heartbeat_poll;
+        ini_settings.server_runonce = server_runonce;
+        strcpy(ini_settings.heartbeat_url, heartbeat_url);
+
 	save_ini_file(system_ini_fields, SERVER_CONF_NAME);
 	fprintf(stderr, "Configuration saved\n");
 	exit(0);
@@ -183,7 +191,6 @@ complete_connection()
 	fatal("Unable to load initial map file -- sorry");
 
     send_map_file();
-    send_spawn_pkt(255, user_id, level_prop->spawn);
 
     printf_chat("&SWelcome &7%s", user_id);
     printf_chat("@&a+ &7%s &Sconnected", user_id);
@@ -348,20 +355,24 @@ teapot(uint8_t * buf, int len)
     int dump_it = 1;
     int rv = 4;
     int send_new_logout = 0;
+    int send_tls_fail = 0;
 
     if (client_ipv4_port) {
 	int fm = 1;
-	if (buf[0] == 0x16 && buf[1] == 0x03 && buf[1] >= 1 && buf[1] <= 3) { 
-	    printlog("Received a TLS Client hello packet from %s:%d",
-		client_ipv4_str, client_ipv4_port);
-	    fm = rv = dump_it = 0;
-	} else if (len > 0 && len < 5) {
+	if (len == 0)
+	    rv = dump_it = 0;
+	else if (len > 0 && len < 5) {
 	    char hbuf[32] = "";
 	    for(int i=0; i<len; i++)
 		sprintf(hbuf+i*6, ", 0x%02x", buf[i]);
 	    printlog("Received byte%s %s from %s:%d",
 		len>1?"s":"", hbuf+2, client_ipv4_str, client_ipv4_port);
 	    fm = rv = dump_it = 0;
+	} else if (buf[0] == 0x16 && buf[1] == 0x03 && buf[1] >= 1 && buf[1] <= 3) { 
+	    printlog("Received a TLS Client hello packet from %s:%d",
+		client_ipv4_str, client_ipv4_port);
+	    fm = rv = dump_it = 0;
+	    send_tls_fail = 1;
 	} else if (len > 12 && buf[1] == 0 && buf[0] >= 12 && buf[0] < len && buf[0] < 32 &&
 	    buf[buf[0]-2] == ((tcp_port_no>>8)&0xFF) && buf[buf[0]-1] == (tcp_port_no&0xFF)) {
 	    // This looks like a current protocol packet.
@@ -399,6 +410,9 @@ teapot(uint8_t * buf, int len)
 		    'o', 'r', '"', ':', ' ', '"', 'r', 'e', 'd', '"',
 		    '}', 1, 0, 0 };
 	    write_to_remote(msg, sizeof(msg)-1);
+	} else if (send_tls_fail) {
+	    char msg[] = { 0x15, 0x03, 0x01, 0x00, 0x02, 0x02, 80 };
+	    write_to_remote(msg, sizeof(msg));
 	} else {
 	    char msg[] = "418 I'm a teapot\n";
 	    write_to_remote(msg, sizeof(msg)-1);

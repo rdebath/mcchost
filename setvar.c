@@ -2,6 +2,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "setvar.h"
 
@@ -78,6 +80,16 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s] %s = %s", section, varname, value);
 	    return;
+	}
+
+	{
+	    char buf[256];
+	    snprintf(buf, sizeof(buf), SERVER_CONF_TMP, getpid());
+	    if (save_ini_file(system_ini_fields, buf) >= 0) {
+		if (rename(buf, SERVER_CONF_NAME) < 0)
+		    perror("rename server.ini");
+	    }
+	    unlink(buf);
 	}
 
 	if (!strcasecmp("private", varname)) {

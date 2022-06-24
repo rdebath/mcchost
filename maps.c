@@ -93,6 +93,11 @@ cmd_maps(UNUSED char * cmd, char * arg)
     else { start--; end = start + 30; }
     if (end>maplist_cnt) end = maplist_cnt;
 
+    if (!maplist_cnt) {
+	printf_chat("&WNo levels have been saved yet");
+	return;
+    }
+
     printf_chat("&SShowing levels %d-%d (out of %d)", start+1,end,maplist_cnt);
     for(int i = start; i<end; i++) {
 	char * s = maplist[i];

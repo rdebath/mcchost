@@ -55,15 +55,22 @@ Aliases: /rq
 &T/rq
 Logout with RAGEQUIT!!
 */
+/*HELP hax H_CMD
+&T/hax [Reason]
+Perform various server hacks, OPERATORS ONLY!
+Aliases: /hacks
+*/
 /*HELP crash H_CMD
 &T/crash
-Crash the server &T/crash 666&S really do it!
-&T/crash 616&S kill-9
+Crash the server, fake by default, but ...
+&T/crash 666&S really do it!
+&T/crash 616&S Segmentation violation
+&T/crash 606&S kill-9
 &T/crash 696&S just exit
 */
 #if INTERFACE
 #define CMD_QUITS  {N"quit", &cmd_quit}, {N"rq", &cmd_quit}, \
-    {N"hax", &cmd_quit, .dup=1}, {N"hacks", &cmd_quit, .dup=1}, \
+    {N"hax", &cmd_quit}, {N"hacks", &cmd_quit, .dup=1}, \
     {N"crash", &cmd_quit, .dup=1}, {N"servercrash", &cmd_quit, .dup=1}
 #endif
 
@@ -80,11 +87,11 @@ cmd_quit(char * cmd, char * arg)
     if (strcasecmp(cmd, "crash") == 0 || strcasecmp(cmd, "servercrash") == 0) {
 	char * crash_type = arg;
 	assert(!crash_type || strcmp(crash_type, "666"));
-	if (crash_type && strcmp(crash_type, "616") == 0)
+	if (crash_type && strcmp(crash_type, "606") == 0)
 	    kill(getpid(), SIGKILL);
 	if (crash_type && strcmp(crash_type, "696") == 0)
 	    exit(254);
-	if (crash_type && strcmp(crash_type, "606") == 0)
+	if (crash_type && strcmp(crash_type, "616") == 0)
 	    printf_chat("Value should fail %d", *crash_ptr);
 	fatal("Server crash! Error code 42");
     }

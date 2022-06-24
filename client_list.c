@@ -74,9 +74,9 @@ check_user()
     gettimeofday(&now, 0);
     if (last_check.tv_sec == 0) last_check = now;
 
-    int32_t msnow = now.tv_sec * 1000 + now.tv_usec / 1000;
-    int32_t mslast = last_check.tv_sec * 1000 + last_check.tv_usec / 1000;
-    if (msnow-(mslast+100)<=0)
+    uint32_t msnow = now.tv_sec * 1000 + now.tv_usec / 1000;
+    uint32_t mslast = last_check.tv_sec * 1000 + last_check.tv_usec / 1000;
+    if (msnow-mslast<100 || msnow==mslast)
 	return;
     last_check = now;
 
@@ -112,8 +112,11 @@ check_user()
 void
 reset_player_list()
 {
-    for(int i=0; i<MAX_USER; i++)
+    for(int i=0; i<MAX_USER; i++) {
+	if (myuser[i].visible)
+	    send_despawn_pkt(i);
 	myuser[i].visible = myuser[i].active = 0;
+    }
 
     send_spawn_pkt(255, user_id, level_prop->spawn);
     if (myuser[my_user_no].posn.valid)
