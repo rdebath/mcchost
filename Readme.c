@@ -15,7 +15,6 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) INI file allow section and key on same line.
  +) INI file preserve (some?) comments.
  +) INI file time interval for backups, levelsaves
 

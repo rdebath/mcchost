@@ -284,8 +284,10 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
     for(p=ibuf; *p == ' ' || *p == '\t'; p++);
     if (*p == '#' || *p == ';' || *p == 0) return 1;
     if (*p == '[') {
-	ini_extract_section(st, p);
-	return 1;
+	p = ini_extract_section(st, p);
+	if (p) for(; *p == ' ' || *p == '\t'; p++);
+	if (!p || *p == 0)
+	    return 1;
     }
     char label[64];
     int rv = ini_decode_lable(&p, label, sizeof(label));
@@ -307,17 +309,17 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
     return 1;
 }
 
-LOCAL int
+LOCAL char *
 ini_extract_section(ini_state_t *st, char *line)
 {
     if (st->curr_section) { free(st->curr_section); st->curr_section = 0; }
 
     char buf[BUFSIZ];
     char *d = buf, *p = line;
-    if (*p != '[') return 0;
+    if (*p != '[') return p;
     for(p++; *p; p++) {
 	if (*p == ' ' || *p == '_' || *p == '\t') continue;
-	if (*p == ']') break;
+	if (*p == ']') { p++; break; }
 	if (*p >= 'A' && *p <= 'Z') {
 	    *d++ = *p - 'A' + 'a';
 	    continue;
@@ -331,9 +333,9 @@ ini_extract_section(ini_state_t *st, char *line)
 	// Other chars are ignored.
     }
     *d = 0;
-    if (*buf == 0) return 0;
-    st->curr_section = strdup(buf);
-    return 1;
+    if (*buf)
+	st->curr_section = strdup(buf);
+    return p;
 }
 
 LOCAL int
