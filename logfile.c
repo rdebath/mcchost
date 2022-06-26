@@ -29,13 +29,14 @@ void
 set_logfile(char * logfile_name, int israw)
 {
     file_name = logfile_name;
+    if (file_name && *file_name == 0) file_name = 0;
     logfile_raw = israw;
 }
 
 LOCAL void
 open_logfile()
 {
-    if (!file_name) return;
+    if (log_to_stderr || !file_name) { logfile = stderr; return; }
 
     char * fname = malloc(strlen(file_name) + 16);
     strcpy(fname, file_name);
@@ -58,22 +59,24 @@ open_logfile()
     free(fname);
 }
 
-LOCAL void
+LOCAL int
 check_reopen_logfile(struct tm * tm)
 {
-    if (!file_name) return;
     if (logfile)
 	if (file_tm.tm_year == tm->tm_year &&
 	    file_tm.tm_mon == tm->tm_mon &&
 	    file_tm.tm_mday == tm->tm_mday)
-	    return;
+	    return 1;
 
     open_logfile();
+    return logfile != 0;
 }
 
 void
 close_logfile()
 {
+    if (log_to_stderr || !file_name) return;
+
     if (logfile)
 	fclose(logfile);
     logfile = 0;
@@ -82,18 +85,17 @@ close_logfile()
 void
 log_chat_message(char * str, int len)
 {
-    if (!logfile && !file_name) return;
-
     int cf = 0;
     time_t now;
     time(&now);
     struct tm * tm = localtime(&now);
 
-    check_reopen_logfile(tm);
+    if (!check_reopen_logfile(tm)) return;
 
-    fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d ",
-	tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-	tm->tm_hour, tm->tm_min, tm->tm_sec);
+    if (!log_to_stderr)
+	fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d ",
+	    tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+	    tm->tm_hour, tm->tm_min, tm->tm_sec);
 
     for(int i=0; i<len; i++) {
 	if (cf) {
@@ -119,19 +121,18 @@ log_chat_message(char * str, int len)
 void
 printlog(char * fmt, ...)
 {
-    if (!logfile && !file_name) return;
-
     va_list ap;
 
     time_t now;
     time(&now);
     struct tm * tm = localtime(&now);
 
-    check_reopen_logfile(tm);
+    if (!check_reopen_logfile(tm)) return;
 
-    fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d ",
-        tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-        tm->tm_hour, tm->tm_min, tm->tm_sec);
+    if (!log_to_stderr)
+	fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d ",
+	    tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+	    tm->tm_hour, tm->tm_min, tm->tm_sec);
 
     va_start(ap, fmt);
     vfprintf(logfile, fmt, ap);
@@ -143,8 +144,6 @@ printlog(char * fmt, ...)
 void
 fprintf_logfile(char * fmt, ...)
 {
-    if (!logfile && !file_name) return;
-
     char bufcp437[4096], bufutf8[8192];
 
     va_list ap;
@@ -158,10 +157,13 @@ fprintf_logfile(char * fmt, ...)
     time(&now);
     struct tm * tm = localtime(&now);
 
-    check_reopen_logfile(tm);
+    if (!check_reopen_logfile(tm)) return;
 
-    fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d %s\n",
-        tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-        tm->tm_hour, tm->tm_min, tm->tm_sec,
-	bufutf8);
+    if (!log_to_stderr)
+	fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d %s\n",
+	    tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+	    tm->tm_hour, tm->tm_min, tm->tm_sec,
+	    bufutf8);
+    else
+	fprintf(logfile, "%s\n", bufutf8);
 }

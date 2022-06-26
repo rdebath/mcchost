@@ -30,6 +30,9 @@ struct server_t {
     time_t backup_interval;
     int max_players;
     int loaded_levels;
+    time_t last_heartbeat;
+    time_t last_backup;
+    time_t last_unload;
     int magic2;
 };
 
@@ -129,8 +132,9 @@ main(int argc, char **argv)
     } else {
 	line_ofd = 1; line_ifd = 0;
 	if (inetd_mode) {
-	    logger_process();
-	    check_client_ip();
+	    if (!log_to_stderr)
+		logger_process();
+	    check_inetd_connection();
 	}
     }
 
@@ -138,6 +142,16 @@ main(int argc, char **argv)
     run_request_loop();
     send_disconnect_message();
     stop_user();
+
+    if (inetd_mode) {
+	// Port got disconnected so we disconnect our end.
+	close(line_ofd);
+	if (line_ofd != line_ifd)
+	    close(line_ifd);
+	// Cleanup
+	scan_and_save_levels(0);
+    }
+
     return 0;
 }
 
@@ -288,13 +302,12 @@ login()
 	}
 
     if (client_ipv4_port)
-	printlog("Logging in user '%s' from %s:%d",
-	    user_id, client_ipv4_str, client_ipv4_port);
+	printlog("Logging in user '%s' from %s", user_id, client_ipv4_str);
     else
 	printlog("Logging in user '%s'", user_id);
 
     if (*server->secret != 0 && *server->secret != '-') {
-	if (strlen(player.mppass) != 32 && !client_ipv4_localhost)
+	if (strlen(player.mppass) != 32 && !client_trusted)
 	    disconnect(0, "Login failed! Mppass required");
     }
 
@@ -304,7 +317,7 @@ login()
 
     cpe_requested = player.cpe_flag;
 
-    if (client_ipv4_localhost && (!*player.mppass || strcmp("(none)", player.mppass) == 0))
+    if (client_trusted && (!*player.mppass || strcmp("(none)", player.mppass) == 0))
 	user_authenticated = 1;
     else if (*server->secret != 0 && *server->secret != '-') {
 	char hashbuf[NB_SLEN*2];
@@ -368,26 +381,24 @@ teapot(uint8_t * buf, int len)
 	    char hbuf[32] = "";
 	    for(int i=0; i<len; i++)
 		sprintf(hbuf+i*6, ", 0x%02x", buf[i]);
-	    printlog("Received byte%s %s from %s:%d",
-		len>1?"s":"", hbuf+2, client_ipv4_str, client_ipv4_port);
+	    printlog("Received byte%s %s from %s",
+		len>1?"s":"", hbuf+2, client_ipv4_str);
 	    fm = rv = dump_it = 0;
 	} else if (buf[0] == 0x16 && buf[1] == 0x03 && buf[1] >= 1 && buf[1] <= 3) { 
-	    printlog("Received a TLS Client hello packet from %s:%d",
-		client_ipv4_str, client_ipv4_port);
+	    printlog("Received a TLS Client hello packet from %s",
+		client_ipv4_str);
 	    fm = rv = dump_it = 0;
 	    send_tls_fail = 1;
 	} else if (len > 12 && buf[1] == 0 && buf[0] >= 12 && buf[0] < len && buf[0] < 32 &&
 	    buf[buf[0]-2] == ((tcp_port_no>>8)&0xFF) && buf[buf[0]-1] == (tcp_port_no&0xFF)) {
 	    // This looks like a current protocol packet.
-	    printlog("Failed connect to %d, %s:%d, %s",
-		tcp_port_no, client_ipv4_str, client_ipv4_port,
+	    printlog("Failed connect from %s, %s", client_ipv4_str,
 		"Using newer Minecraft protocol.");
 	    fm = rv = dump_it = 0;
 	    send_new_logout = 1;
 	}
 	if (fm)
-	    printlog("Failed connect to %d, %s:%d, %s",
-		tcp_port_no, client_ipv4_str, client_ipv4_port,
+	    printlog("Failed connect from %s, %s", client_ipv4_str,
 		len ? "invalid client hello": "no data.");
     }
     else if (len <= 0)
@@ -434,12 +445,10 @@ disconnect(int rv, char * emsg)
 {
     if (line_ofd < 0) return;
 
-    if (client_ipv4_port && *user_id)
-	printlog("Disconnect %s:%d, user '%s', %s",
-	    client_ipv4_str, client_ipv4_port, user_id, emsg);
-    else if (client_ipv4_port)
-	printlog("Disconnect %s:%d, %s",
-	    client_ipv4_str, client_ipv4_port, emsg);
+    if (client_ipv4_port > 0 && *user_id)
+	printlog("Disconnect %s, user '%s', %s", client_ipv4_str, user_id, emsg);
+    else if (client_ipv4_port > 0)
+	printlog("Disconnect %s, %s", client_ipv4_str, emsg);
     else if (*user_id)
 	printlog("Disconnect user '%s', %s", user_id, emsg);
     else
@@ -451,35 +460,46 @@ disconnect(int rv, char * emsg)
     shutdown(line_ofd, SHUT_RDWR);
     if (line_ofd != line_ifd)
 	shutdown(line_ifd, SHUT_RDWR);
+
+    if (inetd_mode && user_authenticated) {
+	close(line_ofd);
+	if (line_ofd != line_ifd)
+	    close(line_ifd);
+	// Cleanup
+	scan_and_save_levels(0);
+    }
     exit(rv);
 }
 
 void
 show_args_help()
 {
-    fprintf(stderr, "Usage: %s [-inetd|-tcp|-net] ...\n", program_name);
-    fprintf(stderr, "  -dir X     Change to directory before opening data files.\n\n");
+    FILE * f = stderr;
+    fprintf(f, "Usage: %s [-inetd|-tcp|-net] ...\n", program_name);
+    fprintf(f, "  -dir X     Change to directory before opening data files.\n\n");
 
-    fprintf(stderr, "  -tcp       Open a tcp socket for listening, no default secret.\n");
-    fprintf(stderr, "  -net       Open a socket, register the secret at:\n%16s%s\n", "", heartbeat_url);
-    fprintf(stderr, "  -port X    Set port number listened to.\n\n");
-    fprintf(stderr, "  -inetd     Assume socket is stdin/out from inetd or similar\n");
-    fprintf(stderr, "  -detach    Background self, eg if starting from command line.\n");
-    fprintf(stderr, "  -no-detach Do not background; starting from init, systemd, docker.\n");
+    fprintf(f, "  -tcp       Open a tcp socket for listening, no default secret.\n");
+    fprintf(f, "  -net       Open a socket, register the secret at:\n%16s%s\n", "", heartbeat_url);
+    fprintf(f, "  -port X    Set port number listened to.\n\n");
+    fprintf(f, "  -inetd     Assume socket is stdin/out from inetd or similar\n");
+    fprintf(f, "  -detach    Background self, eg if starting from command line.\n");
+    fprintf(f, "  -no-detach Do not background; starting from init, systemd, docker.\n");
 
-    fprintf(stderr, "  -private -public\n");
-    fprintf(stderr, "             When registering set privacy state.\n");
+    fprintf(f, "  -private -public\n");
+    fprintf(f, "             When registering set privacy state.\n");
 
-    fprintf(stderr, "  -name X    Set server name\n");
-    fprintf(stderr, "  -motd X    Set server motd\n");
-    fprintf(stderr, "  -secret X\n");
-    fprintf(stderr, "  -salt X    Set server salt/secret\n");
-    fprintf(stderr, "  -heartbeat http://host.xz/path\n");
-    fprintf(stderr, "             Change hearbeat url\n");
-    fprintf(stderr, "  -cron      Run periodic tasks, heartbeat and backups\n");
-    fprintf(stderr, "  -runonce   Accept one connection without forking, for debugging.\n");
-    fprintf(stderr, "  -nocpe     Don't accept a CPE request.\n");
-    fprintf(stderr, "  -saveconf  Save current system conf and exit\n");
+    fprintf(f, "  -name X    Set server name\n");
+    fprintf(f, "  -motd X    Set server motd\n");
+    fprintf(f, "  -secret X\n");
+    fprintf(f, "  -salt X    Set server salt/secret\n");
+    fprintf(f, "  -heartbeat http://host.xz/path\n");
+    fprintf(f, "             Change hearbeat url\n");
+    fprintf(f, "  -nocpe     Don't accept a CPE request.\n");
+
+    fprintf(f, "  -cron      Run periodic tasks, heartbeat and backups\n");
+    fprintf(f, "  -runonce   Accept one connection without forking, for debugging.\n");
+    fprintf(f, "  -logstderr Logs to stderr, not log files.\n");
+    fprintf(f, "  -saveconf  Save current system conf and exit\n");
 
     exit(1);
 }

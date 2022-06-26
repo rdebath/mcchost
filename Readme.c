@@ -18,7 +18,6 @@ See "/help todo" for notes.
  +) Slow map loads, do I need to poll client chat?
 
  +) INI file preserve (some?) comments.
- +) INI file time interval for backups, levelsaves
 
  +) Decode Json return from cc.net, place in log.
     -- Or just record if different ?
@@ -70,10 +69,6 @@ See "/help todo" for notes.
 
  +) Add backup setting in server.ini, force backup of all map files before "date"
 
- +) Require /newlvl + to make your level (for x,y,z)
-    -- Perms; No create, create personal, create any.
-    -- Don't allow "/goto +" without level file.
-
  +) Fix player detail "struct user"
     -- Time spent on server
     -- Kick
@@ -114,11 +109,13 @@ See "/help todo" for notes.
     -- Rename file to strict % form, don't overwrite.
     -- Output of curl import command to user ?
 
+ +) /newlvl Perms; No create, create personal, create any.
+
  +) /newlvl, generate "nice" levels.
 
  +) Block/User history records.
 
- +) Permissions -- currently "client_ipv4_localhost"
+ +) Permissions -- currently "client_trusted"
     -- Need enum of permit flags.
     -- Bitmap of allow/deny.
     -- Routine to construct bitmap from "nice" permissions.
@@ -153,12 +150,14 @@ See "/help todo" for notes.
     -- External command that sends commands and queries as if it's
        the user? Map access ?
 
+    -- External command that acts like a client?
+
 Features:
     -- CW file also contains pending physics operations.
     -- edlin ? to edit help files and blockdef ini files?
 
 All files in subdirectories.
-    system.ini  --> move? ... Map directory ?
+    system.ini  --> move?
     model.cw    --> move?
     model.ini   --> move?
     map/${level}.cw
@@ -176,7 +175,6 @@ All files in subdirectories.
     blockdb/levelname.bdb
 
     ${level} uses %2E for '.' in level name.
-
 
 Physics:
 
@@ -229,7 +227,11 @@ mcchost-server -net [-detach]
 
 mcchost-server -inetd
     Run from inetd; stdin & stdout are socket (Also used for systemd)
+    On disconnect will usually unload maps.
+
     -- Should -inetd imply (force?) -no-detach ?
+
+    eg: socat TCP-LISTEN:25565,fork EXEC:'mcchost-server -inetd',nofork
 
 mcchost-server -cron
     Run periodic tasks, map unloads, backups and classicube.net poll.
@@ -240,9 +242,11 @@ mcchost-server -runonce
     Will not detach. Will not create logger process.
     -- Physics process?
 
-Pipe method ?
-    Client starts process directly like -inetd, but with pipe() not socket()
-    -- Identical to -inetd ?
+mcchost-server -pipe
+    Client starts process directly like -inetd, but with connection created
+    by socketpair(AF_UNIX,) or two unnamed pipes.
+    Mostly identical to -inetd, but -pipe is assumed to be trusted.
 
-TODO: -log-stderr option?
+    eg: socat TCP-LISTEN:25565,reuseaddr EXEC:'mcchost-server -pipe',pipes
+
 */

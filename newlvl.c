@@ -27,12 +27,12 @@ cmd_newlvl(UNUSED char * cmd, char * arg)
 
     char userlevel[256];
 
-    if (!client_ipv4_localhost) {
+    if (!client_trusted) {
 	snprintf(userlevel, sizeof(userlevel), "%s+", user_id);
 	if (strcmp(levelname, "+") == 0 || strcmp(levelname, userlevel) == 0) {
 	    levelname = userlevel;
 	} else {
-	    printf_chat("&WPermission denied");
+	    printf_chat("&WPermission denied, your level name is '%s'", userlevel);
 	    return;
 	}
     }

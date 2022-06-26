@@ -35,14 +35,10 @@ static int listen_socket = -1;
 static int logger_pid = 0, heartbeat_pid = 0, backup_pid = 0;
 
 int enable_heartbeat_poll = 1;
-static time_t last_heartbeat = 0;
-static time_t last_backup = 0;
-static time_t last_unload = 0;
-static time_t last_execheck = 0;
 
-char client_ipv4_str[INET_ADDRSTRLEN];
+char client_ipv4_str[INET_ADDRSTRLEN+10];
 int client_ipv4_port = 0;
-int client_ipv4_localhost = 0;
+int client_trusted = 0;
 int disable_restart = 0;
 
 static volatile int restart_sig = 0, child_sig = 0;
@@ -53,7 +49,7 @@ pid_t alarm_handler_pid = 0;
 
 // Addresses to be considered as managment interface, in adddion to localhost
 char localnet_cidr[64];
-uint32_t localnet_addr = 1, localnet_mask = ~0;
+uint32_t localnet_addr = 0x7f000001, localnet_mask = ~0;
 
 static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
 
@@ -78,11 +74,16 @@ read_sock_port_no(int sock_fd)
 {
     struct sockaddr_in my_addr;
     socklen_t len = sizeof(my_addr);
-    if (getsockname(sock_fd, (struct sockaddr *)&my_addr, &len) < 0){
-	return 0;
+    if (getsockname(sock_fd, (struct sockaddr *)&my_addr, &len) < 0) {
+	return -1;
     }
 
-    return ntohs(my_addr.sin_port);
+    if (my_addr.sin_family == AF_INET)
+	return ntohs(my_addr.sin_port);
+    if (my_addr.sin_family == AF_INET6)
+	return ntohs(my_addr.sin_port);
+
+    return -1;
 }
 
 void
@@ -93,12 +94,8 @@ tcpserver()
     if (tcp_port_no == 0)
 	tcp_port_no = read_sock_port_no(listen_socket);
 
-    if (log_to_stderr || isatty(2)) {
-	if (server_runonce)
-	    fprintf(stderr, "Waiting for connection on port %d.\n", tcp_port_no);
-	else
-	    fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
-    }
+    if (isatty(2) && !log_to_stderr && !server_runonce)
+	fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
 
     if (!server_runonce) {
 	if (detach_tcp_server)
@@ -122,11 +119,13 @@ tcpserver()
 	alarm_handler_pid = getpid(); // For the children to signal us.
     }
 
-    if (!log_to_stderr) {
+    if (!log_to_stderr)
 	logger_process();
-	if (detach_tcp_server)
-	    fprintf(stderr, "Accepting connections on port %d (pid:%d).\n", tcp_port_no, getpid());
-    }
+
+    if (server_runonce)
+	printlog("Waiting for a connection on port %d.", tcp_port_no);
+    else
+	printlog("Accepting connections on port %d (pid:%d).", tcp_port_no, getpid());
 
     memset(proc_args_mem, 0, proc_args_len);
     snprintf(proc_args_mem, proc_args_len, "%s port %d", server->software, tcp_port_no);
@@ -205,14 +204,14 @@ tcpserver()
     }
 
     if (enable_heartbeat_poll && !server->private) {
-	fprintf(stderr, "Shutting down service\n");
+	printlog("Shutting down service");
 	send_heartbeat_poll();
     } else
-	fprintf(stderr, "Terminating service\n");
+	printlog("Terminating service");
 
     alarm_sig = 1;
     start_backup_process();
-    fprintf(stderr, "Exit process pid %d\n", getpid());
+    printlog("Exit process pid %d", getpid());
     exit(0);
 }
 
@@ -339,6 +338,8 @@ start_listen_socket(char * listen_addr, int port)
 LOCAL int
 accept_new_connection()
 {
+    client_trusted = 0;
+
     struct sockaddr_in client_addr;
     memset(&client_addr, 0, sizeof(client_addr));
     socklen_t client_len = sizeof(client_addr);
@@ -347,28 +348,29 @@ accept_new_connection()
 
     inet_ntop(AF_INET, &client_addr.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
     client_ipv4_port = ntohs(client_addr.sin_port);
+    sprintf(client_ipv4_str+strlen(client_ipv4_str), ":%d", client_ipv4_port);
 
     if (client_addr.sin_family == AF_INET)
     {
 	uint32_t caddr = ntohl(client_addr.sin_addr.s_addr);
-	if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost
-	    client_ipv4_localhost = 1;
+	if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost (network)
+	    client_trusted = 1;
 	if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
-	    client_ipv4_localhost = 1;
+	    client_trusted = 1;
     }
 
     if (server_runonce)
-	fprintf(stderr, "Connected, closing listen socket.\n");
+	printlog("Connected, closing listen socket.");
     else
-	fprintf(stderr, "Incoming connection from %s%s:%d on port %d.\n",
-	    client_ipv4_localhost?"trusted host ":"",
-	    client_ipv4_str, client_ipv4_port, tcp_port_no);
+	printlog("Incoming connection from %s%s on port %d.",
+	    client_trusted?"trusted host ":"",
+	    client_ipv4_str, tcp_port_no);
 
     return new_client_sock;
 }
 
 void
-check_client_ip()
+check_inetd_connection()
 {
     union {
       struct sockaddr         sa;
@@ -378,43 +380,57 @@ check_client_ip()
     } addr;
     socklen_t client_len = sizeof(addr);
 
-    if (line_ifd < 0) return;
-
-    if (getpeername(line_ifd, (struct sockaddr *)&addr, &client_len) < 0)
-	return;
-
+    strcpy(client_ipv4_str, "pipe");
     convert_localnet_cidr();
 
-    if (addr.s4.sin_family == AF_INET)
-    {
-	inet_ntop(AF_INET, &addr.s4.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
-	client_ipv4_port = ntohs(addr.s4.sin_port);
+    if (line_ifd < 0) return;
 
-	uint32_t caddr = ntohl(addr.s4.sin_addr.s_addr);
-	if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost
-	    client_ipv4_localhost = 1;
-	if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
-	    client_ipv4_localhost = 1;
+    client_ipv4_port = -1;
+
+    if (isatty(line_ifd))
+	strcpy(client_ipv4_str, "tty");
+
+    if (getpeername(line_ifd, (struct sockaddr *)&addr, &client_len) >= 0) {
+
+	strcpy(client_ipv4_str, "socket");
+
+	if (addr.s4.sin_family == AF_INET)
+	{
+	    inet_ntop(AF_INET, &addr.s4.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
+	    client_ipv4_port = ntohs(addr.s4.sin_port);
+	    sprintf(client_ipv4_str+strlen(client_ipv4_str), ":%d", client_ipv4_port);
+
+	    uint32_t caddr = ntohl(addr.s4.sin_addr.s_addr);
+	    if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost (network)
+		client_trusted = 1;
+	    if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
+		client_trusted = 1;
+	}
+
+	if (addr.s6.sin6_family == AF_INET6)
+	{
+	    inet_ntop(AF_INET6, &addr.s6.sin6_addr, client_ipv4_str, INET6_ADDRSTRLEN);
+	    client_ipv4_port = ntohs(addr.s6.sin6_port);
+	    sprintf(client_ipv4_str+strlen(client_ipv4_str), ":%d", client_ipv4_port);
+	}
     }
 
-    if (addr.s6.sin6_family == AF_INET6)
-    {
-	inet_ntop(AF_INET6, &addr.s6.sin6_addr, client_ipv4_str, INET6_ADDRSTRLEN);
-	client_ipv4_port = ntohs(addr.s6.sin6_port);
-    }
-
-    // In inetd mode our port is also unknown
+    // In inetd mode our port is unknown
     tcp_port_no = read_sock_port_no(line_ifd);
 
-    fprintf(stderr, "Inetd connection from %s%s:%d on port %d.\n",
-	client_ipv4_localhost?"trusted host ":"",
-	client_ipv4_str, client_ipv4_port, tcp_port_no);
+    if (tcp_port_no > 0)
+	printlog("Inetd connection from %s%s on port %d.",
+	    client_trusted?"trusted host ":"",
+	    client_ipv4_str, tcp_port_no);
+    else
+	printlog("%sonnection from %s.",
+	    client_trusted?"Trusted c":"C", client_ipv4_str);
 }
 
 void
 convert_localnet_cidr()
 {
-    localnet_addr = 1; localnet_mask = ~0; // Unused alias for 127.0.0.1
+    localnet_addr = 0x7f000001; localnet_mask = ~0; // 127.0.0.1
 
     if (!*localnet_cidr) return;
     char * class = strchr(localnet_cidr, '/');
@@ -460,17 +476,17 @@ cleanup_zombies()
 
 	if (pid == logger_pid) {
 	    // Whup! that's our stderr! Try to respawn it.
-	    printlog("! Attempting to restart logger process");
+	    printlog("Attempting to restart logger process");
 	    logger_process();
 	} else
 	if (pid == heartbeat_pid) {
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
-		printlog("! Heartbeat process %d failed", pid);
+		printlog("Heartbeat process %d failed", pid);
 	    heartbeat_pid = 0;
 	} else
 	if (pid == backup_pid) {
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
-		printlog("! Backup and unload process %d failed", pid);
+		printlog("Backup and unload process %d failed", pid);
 	    backup_pid = 0;
 	} else
 	    client_process_finished++;
@@ -478,7 +494,7 @@ cleanup_zombies()
 	// No complaints on clean exit
 	if (WIFEXITED(status)) {
 	    if (WEXITSTATUS(status)) {
-		printlog("! Process %d had exit status %d",
+		printlog("Process %d had exit status %d",
 		    pid, WEXITSTATUS(status));
 		snprintf(msgbuf, sizeof(msgbuf),
 		    "kicked by panic with exit status %d",
@@ -489,7 +505,7 @@ cleanup_zombies()
 	}
 	if (WIFSIGNALED(status)) {
 #if _POSIX_C_SOURCE >= 200809L
-	    printlog("! Process %d was killed by signal %s (%d)%s",
+	    printlog("Process %d was killed by signal %s (%d)%s",
 		pid,
 		strsignal(WTERMSIG(status)),
 		WTERMSIG(status),
@@ -501,7 +517,7 @@ cleanup_zombies()
 		WTERMSIG(status),
 		WCOREDUMP_X(status)?" (core dumped)":"");
 #else
-	    printlog("! Process %d was killed by signal %d %s",
+	    printlog("Process %d was killed by signal %d %s",
 		pid,
 		WTERMSIG(status),
 		WCOREDUMP_X(status)?" (core dumped)":"");
@@ -531,7 +547,7 @@ cleanup_zombies()
 		    "/usr/bin/gdb -batch -ex 'backtrace full' -c core '%s'", program_args[0]))
 		    system(buf);
 		else
-		    printlog("! Skipped running /usr/bin/gdb; checking exe and core files failed.");
+		    printlog("Skipped running /usr/bin/gdb; checking exe and core files failed.");
 	    }
 	}
 
@@ -551,11 +567,11 @@ send_heartbeat_poll()
 {
     time_t now;
     time(&now);
-    if (alarm_sig == 0 && last_heartbeat != 0 && !term_sig) {
-	if ((now-last_heartbeat) < 45)
+    if (alarm_sig == 0 && server->last_heartbeat != 0 && !term_sig) {
+	if ((now-server->last_heartbeat) < 45)
 	    return;
     }
-    last_heartbeat = now;
+    server->last_heartbeat = now;
 
     char cmdbuf[4096];
     char namebuf[256];
@@ -570,7 +586,7 @@ send_heartbeat_poll()
     // Printable ASCII are fine.
     //
     // Control characters (☺☻♥♦♣♠•◘○◙♂♀♪♫☼▶◀↕‼¶§▬↨↑↓→←∟↔▲▼) fail with the
-    // abover error too.
+    // above error too.
     //
     // High controls (ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒ) are baaad
     // --> Oopsie Woopsie! Uwu We made a fucky wucky!! A wittle fucko boingo!
@@ -677,6 +693,7 @@ ccnet_cp437_quoteurl(volatile char *s, char *dest, int len)
     return dest;
 }
 
+// Run the timer tasks from the command line.
 void
 run_timer_tasks()
 {
@@ -688,18 +705,18 @@ run_timer_tasks()
 
     // If we are being called from Systemd it has the nasty habit of killing
     // All our processes when we return. So we MUST wait for all our children.
-    //
-    // Rather than waiting for them individually I just wait for the logger.
 
+    int stderr_open = 1;
     while(1) {
-	// fprintf(stderr, "Waiting for %d, %d, %d\n", backup_pid, heartbeat_pid, logger_pid);
+	// printlog("Waiting for %d, %d, %d", backup_pid, heartbeat_pid, logger_pid);
 
 	// Close the pipe to the logger
-	if (backup_pid <= 0 && heartbeat_pid <= 0) {
+	if (stderr_open && backup_pid <= 0 && heartbeat_pid <= 0) {
 	    close(1); close(2);
+	    // And wait for it to die.
+	    stderr_open = 0;
 	}
 
-	// And wait for it to die.
 	int status = 0;
 	pid_t pid = waitpid(-1, &status, 0);
 	if (pid == logger_pid) break;
@@ -713,13 +730,6 @@ run_timer_tasks()
 	    printlog("Process %d %s was killed by signal %d%s",
 		pid, id, WTERMSIG(status), WCOREDUMP_X(status)?" (core dumped)":"");
 
-#if 0
-	else if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-	    printlog("Process %d %s completed successfully", pid, id);
-	else
-	    printlog("Process %d %s completed", pid, id);
-#endif
-
 	if (pid == heartbeat_pid) heartbeat_pid = 0;
 	if (pid == backup_pid) backup_pid = 0;
     }
@@ -731,17 +741,17 @@ start_backup_process()
 {
     time_t now;
     time(&now);
-    if (alarm_sig == 0 && last_backup != 0) {
-        if ((now-last_backup) < server->save_interval) {
-	    if ((now-last_unload) >= 15) {
+    if (alarm_sig == 0 && server->last_backup != 0) {
+        if ((now-server->last_backup) < server->save_interval) {
+	    if ((now-server->last_unload) >= 15) {
 		scan_and_save_levels(1);
-		last_unload = now;
+		server->last_unload = now;
 	    }
             return;
 	}
     }
-    last_backup = now;
-    last_unload = now;
+    server->last_backup = now;
+    server->last_unload = now;
 
     backup_pid = E(fork(),"fork() for backup");
     if (backup_pid != 0) return;
@@ -755,6 +765,8 @@ start_backup_process()
 void
 check_new_exe()
 {
+static time_t last_execheck = 0;
+
     if (!proc_self_exe_ok) return;
 
     // Normally check 30 seconds

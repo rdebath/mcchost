@@ -99,6 +99,14 @@ process_args(int argc, char **argv)
 		    break;
 		}
 
+		if (strcmp(argv[ar], "-pipe") == 0) {
+		    inetd_mode = 1;
+		    start_tcp_server = 0;
+		    enable_heartbeat_poll = 0;
+		    client_trusted = 1;
+		    break;
+		}
+
 		if (strcmp(argv[ar], "-tcp") == 0) {
 		    inetd_mode = 0;
 		    start_tcp_server = 1;
@@ -130,6 +138,7 @@ process_args(int argc, char **argv)
 
 		if (strcmp(argv[ar], "-runonce") == 0) {
 		    server_runonce = 1;
+		    log_to_stderr = 1;
 		    break;
 		}
 
@@ -145,7 +154,7 @@ process_args(int argc, char **argv)
 		    break;
 		}
 
-		if (strcmp(argv[ar], "-log-stderr") == 0) {
+		if (strcmp(argv[ar], "-logstderr") == 0) {
 		    log_to_stderr = 1;
 		    break;
 		}

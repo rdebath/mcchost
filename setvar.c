@@ -62,7 +62,7 @@ cmd_setvar(UNUSED char * cmd, char * arg)
     if (section == 0 || varname == 0)
 	return cmd_help(0, cmd);
 
-    if (!client_ipv4_localhost) {
+    if (!client_trusted) {
 	char buf[128];
 	sprintf(buf, "%s+", user_id);
 	if (strcmp(current_level_name, buf) != 0)
@@ -74,8 +74,8 @@ cmd_setvar(UNUSED char * cmd, char * arg)
 
     if (strcasecmp(section, "server") == 0 || strcasecmp(section, "system") == 0) {
 	if (!system_ini_fields(st, varname, &value)) {
-	    if (!client_ipv4_localhost)
-		return printf_chat("&WPermission denied, need to be localhost.");
+	    if (!client_trusted)
+		return printf_chat("&WPermission denied, need to be admin.");
 
 	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s] %s = %s", section, varname, value);

@@ -37,7 +37,7 @@ save_map_to_file(char * fn, int background)
     // For MCGalaxy the size must not exceed (2^31-2^16) or [4681,128,3584]
 
     if (level_prop->total_blocks > 0x7FFFFFFF + (int64_t)1 ) {
-	printlog("Oversized map \"%s\" (%d,%d,%d) failed to save\n",
+	printlog("Oversized map \"%s\" (%d,%d,%d) failed to save",
 	    fn, level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
 	return -1;
     }
@@ -274,7 +274,7 @@ save_map_to_file(char * fn, int background)
     int rv = gzclose(savefile);
     if (rv) {
 	if (background)
-	    printlog("gzclose('%s') failed, error %d\n", fn, rv);
+	    printlog("gzclose('%s') failed, error %d", fn, rv);
 	else
 	    printf_chat("&WSave failed error Z%d", rv);
     }

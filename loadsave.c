@@ -144,7 +144,7 @@ cmd_main(UNUSED char * cmd, UNUSED char * arg)
 void
 cmd_load(UNUSED char * cmd, char * arg)
 {
-    if (!client_ipv4_localhost)
+    if (!client_trusted)
 	printf_chat("&WUsage: /load [Auth] filename");
     else if (!arg || !*arg)
 	printf_chat("&WUsage: /load filename");
@@ -174,7 +174,7 @@ cmd_load(UNUSED char * cmd, char * arg)
 void
 cmd_save(UNUSED char * cmd, char * arg)
 {
-    if (!client_ipv4_localhost)
+    if (!client_trusted)
 	printf_chat("&WUsage: /save [Auth] filename");
     else if (!arg || !*arg)
 	printf_chat("&WUsage: /save filename");

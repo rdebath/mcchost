@@ -37,7 +37,7 @@ struct userrec_t
 static inline int ERR_MDB(int n, char * tn, char *fn, int ln)
 {
     if (n == MDB_SUCCESS || n == MDB_NOTFOUND) return n;
-    fprintf(stderr, "%s:%d: %s: %s\n", fn, ln, tn, mdb_strerror(n)),
+    printlog("%s:%d: %s: %s", fn, ln, tn, mdb_strerror(n)),
     abort();
 }
 

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <strings.h>
 #include <math.h>
+#include <ctype.h>
 
 #include "ini_struct.h"
 /*
@@ -94,16 +95,8 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_STRARRAY(WC2(!*logfile_pattern, "Logfile"), logfile_pattern);
 
-	if (!st->write) {
-	    INI_FIXEDP(WC("SaveIntervalMins"), server->save_interval, 60);
-	    INI_FIXEDP(WC("BackupIntervalMins"), server->backup_interval, 60);
-	    INI_FIXEDP(WC("SaveIntervalHours"), server->save_interval, 3600);
-	    INI_FIXEDP(WC("BackupIntervalHours"), server->backup_interval, 3600);
-	    INI_FIXEDP(WC("SaveIntervalDays"), server->save_interval, 86400);
-	    INI_FIXEDP(WC("BackupIntervalDays"), server->backup_interval, 86400);
-	}
-	INI_INTVAL("SaveInterval", server->save_interval);
-	INI_INTVAL("BackupInterval", server->backup_interval);
+	INI_DURATION("SaveInterval", server->save_interval);
+	INI_DURATION("BackupInterval", server->backup_interval);
 
     }
 
@@ -264,8 +257,6 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet, int no_unsafe)
 	return -1;
     }
 
-    // printlog("Loading ini file \"%s\"\n", filename);
-
     char ibuf[BUFSIZ];
     while(fgets(ibuf, sizeof(ibuf), ifd)) {
 	if (load_ini_line(&st, filetype, ibuf) == 0) { rv = -1; break; }
@@ -294,14 +285,14 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
     int rv = ini_decode_lable(&p, label, sizeof(label));
     if (!rv) {
 	if (st->quiet)
-	    printlog("Invalid label %s in %s section %s\n", ibuf, st->filename, st->curr_section?:"-");
+	    printlog("Invalid label %s in %s section %s", ibuf, st->filename, st->curr_section?:"-");
 	else
 	    printf_chat("&WInvalid label &S%s&W in &S%s&W section &S%s&W", ibuf, st->filename, st->curr_section?:"-");
 	return 0;
     }
     if (!st->curr_section || !filetype(st, label, &p)) {
 	if (st->quiet) {
-	    printlog("Unknown item \"%s\" in file \"%s\" section \"%s\" -- label \"%s\" value \"%s\"\n",
+	    printlog("Unknown item \"%s\" in file \"%s\" section \"%s\" -- label \"%s\" value \"%s\"",
 		ibuf, st->filename, st->curr_section?:"-", label, p);
 	} else
 	    printf_chat("&WUnknown item&S \"%s\" section \"%s\"", ibuf, st->curr_section?:"-");
@@ -497,6 +488,45 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
     fprintf(st->fd, "%s = %.*f\n", fieldname, digits, svalue);
 }
 
+static struct time_units_t { char id; int scale; } time_units[] = 
+{
+    {'s', 1},
+    {'m', 60},
+    {'h', 3600},
+    {'d', 24*3600},
+    {'w', 7*24*3600},
+    {0, 0}
+};
+
+LOCAL int
+ini_read_int_duration(char * value)
+{
+    char * unit = 0;
+    int nval = strtod(value, &unit);
+    int ch = tolower((uint8_t)*unit);
+    for(int i = 0; time_units[i].id; i++)
+	if (ch == time_units[i].id) {
+	    nval *= time_units[i].scale;
+	    break;
+	}
+    return nval;
+}
+
+LOCAL void
+ini_write_int_duration(ini_state_t *st, char * section, char *fieldname, int value)
+{
+    ini_write_section(st, section);
+    int unit = 0;
+    for(int i = 0; time_units[i].id; i++)
+	if (value/time_units[i].scale*time_units[i].scale == value) {
+	    unit = i;
+	    break;
+	}
+    fprintf(st->fd, "%s = %d%c\n", fieldname,
+	value/time_units[unit].scale, time_units[unit].id);
+}
+
+
 #if INTERFACE
 #define INI_STRARRAY(_field, _var) \
         fld = _field; \
@@ -576,6 +606,16 @@ ini_write_int_scale(ini_state_t *st, char * section, char *fieldname, int value,
                 _var = ini_read_int_scale(*fieldvalue, _scale, _scale2); \
             else \
                 ini_write_int_scale(st, section, fld, (_var), _scale, _scale2); \
+        }
+
+#define INI_DURATION(_field, _var) \
+        fld = _field; \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                _var = ini_read_int_duration(*fieldvalue); \
+            else \
+                ini_write_int_duration(st, section, fld, (_var)); \
         }
 
 #define INI_BOOLVAL(_field, _var) \

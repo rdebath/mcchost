@@ -45,7 +45,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 
     int rv = gzclose(ifd);
     if (rv) {
-	printlog("Load '%s' failed error Z%d\n", filename, rv);
+	printlog("Load '%s' failed error Z%d", filename, rv);
 	return -1;
     }
 
@@ -249,7 +249,7 @@ read_element(gzFile ifd, int etype)
 	change_int_value(last_sect, last_lbl, V);
 
     } else {
-	printlog("# UNIMPL: %s\n", NbtName[etype]);
+	printlog("# UNIMPL: %s", NbtName[etype]);
 	return 0;
     }
     return 1;
@@ -283,7 +283,7 @@ read_blockarray2(gzFile ifd, uint32_t len)
 {
 
     if (level_blocks == 0 || level_prop->total_blocks < len) {
-	printlog("Incorrect BlockArray2 found\n");
+	printlog("Incorrect BlockArray2 found");
 	return 0;
     }
 
@@ -300,7 +300,7 @@ read_blockarray3(gzFile ifd, uint32_t len)
 {
 
     if (level_blocks == 0 || level_prop->total_blocks < len) {
-	printlog("Incorrect BlockArray3 found\n");
+	printlog("Incorrect BlockArray3 found");
 	return 0;
     }
 
@@ -652,7 +652,7 @@ try_asciimode(gzFile ifd, char * levelfile)
     open_blocks(levelfile);
     init_flat_level();
 
-    // Don't want to keep the ini file -- no blocks.
+    // Don't want to backup the ini file, not a real cw file.
     level_prop->last_backup = level_prop->time_created;
 
     return 1;
