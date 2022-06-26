@@ -15,11 +15,15 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Slow map loads, do I need to poll client chat?
+
  +) INI file preserve (some?) comments.
  +) INI file time interval for backups, levelsaves
 
  +) Decode Json return from cc.net, place in log.
     -- Or just record if different ?
+
+ +) lmdb appears with Debian jessie, do I want a replacement ?
 
  +) /set readonly t/f -- does chmod ? Force save ?
     -- New Use case: save current and preserve.

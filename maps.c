@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <dirent.h>
 
 #include "maps.h"
@@ -59,7 +60,7 @@ cmd_maps(UNUSED char * cmd, char * arg)
     while( (entry=readdir(directory)) )
     {
 
-#ifdef _DIRENT_HAVE_D_TYPE
+#if defined(_DIRENT_HAVE_D_TYPE) && defined(DT_REG) && defined(DT_UNKNOWN)
 	if (entry->d_type != DT_REG && entry->d_type != DT_UNKNOWN)
 	    continue;
 #endif

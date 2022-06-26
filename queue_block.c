@@ -202,7 +202,7 @@ send_queued_blocks()
     int counter = 0;
     if (reload_pending && !bytes_queued_to_send()) {
 	if (reload_pending == 1)
-	    usleep(500000);  // Half a second leeway to allow network to clear.
+	    msleep(500);  // Half a second leeway to allow network to clear.
 	reload_pending = 0;
 	send_map_file();
 	return;

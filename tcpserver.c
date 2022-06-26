@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <errno.h>
@@ -18,6 +19,12 @@
 #if INTERFACE
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
+
+#ifdef WCOREDUMP
+#define WCOREDUMP_X(X) WCOREDUMP(X)
+#else
+#define WCOREDUMP_X(X) 0
 #endif
 
 int start_tcp_server = 0;
@@ -159,7 +166,7 @@ tcpserver()
 		{
 		    if (!detach_tcp_server)
 			setsid();
-#ifdef HAS_CORELIMIT
+#if defined(HAS_CORELIMIT) && defined(WCOREDUMP)
 		    if (access("/usr/bin/gdb", X_OK) == 0)
 			enable_coredump();
 #endif
@@ -480,22 +487,34 @@ cleanup_zombies()
 	    died_badly = delete_session_id(pid, userid, sizeof(userid));
 	}
 	if (WIFSIGNALED(status)) {
+#if _POSIX_C_SOURCE >= 200809L
 	    printlog("! Process %d was killed by signal %s (%d)%s",
 		pid,
 		strsignal(WTERMSIG(status)),
 		WTERMSIG(status),
-		WCOREDUMP(status)?" (core dumped)":"");
+		WCOREDUMP_X(status)?" (core dumped)":"");
 
 	    snprintf(msgbuf, sizeof(msgbuf),
 		"kicked by signal %s (%d)%s",
 		strsignal(WTERMSIG(status)),
 		WTERMSIG(status),
-		WCOREDUMP(status)?" (core dumped)":"");
+		WCOREDUMP_X(status)?" (core dumped)":"");
+#else
+	    printlog("! Process %d was killed by signal %d %s",
+		pid,
+		WTERMSIG(status),
+		WCOREDUMP_X(status)?" (core dumped)":"");
+
+	    snprintf(msgbuf, sizeof(msgbuf),
+		"kicked by signal %d %s",
+		WTERMSIG(status),
+		WCOREDUMP_X(status)?" (core dumped)":"");
+#endif
 
 	    died_badly = delete_session_id(pid, userid, sizeof(userid));
 
 	    // If there was a core dump try to spit out something.
-	    if (WCOREDUMP(status)) {
+	    if (WCOREDUMP_X(status)) {
 		char buf[1024];
 
 		// Are the programs and core file likely okay?
@@ -688,7 +707,7 @@ run_timer_tasks()
 		pid, id, WEXITSTATUS(status));
 	else if (WIFSIGNALED(status))
 	    printlog("Process %d %s was killed by signal %d%s",
-		pid, id, WTERMSIG(status), WCOREDUMP(status)?" (core dumped)":"");
+		pid, id, WTERMSIG(status), WCOREDUMP_X(status)?" (core dumped)":"");
 
 #if 0
 	else if (WIFEXITED(status) && WEXITSTATUS(status) == 0)

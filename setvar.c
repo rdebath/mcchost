@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <signal.h>
 #include <sys/types.h>

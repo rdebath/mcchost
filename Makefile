@@ -10,10 +10,10 @@ endif
 
 DEFS=
 # Use -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
-# Set WARN=-w to silence warnings.
 WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign
 CFLAGS=-O2 -g3 ${WARN} ${DEFS}
 LDFLAGS=-lz -lm -llmdb
+HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
 
 # May be needed for older systems (eg: Debian Etch on x86)
 # CC=c99 -D_GNU_SOURCE
@@ -72,6 +72,12 @@ lib/makeheaders: lib/makeheaders.c
 	$(CC) -O2 -o $@ $<
 
 lib_text.o: lib_text.c
+
+ifeq ($(findstring s,$(MFLAGS)),)
+%.o: %.c
+	@echo "$(CC) [flags] -c -o" $@ $<
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c -o $@ $<
+endif
 
 export TARGET_ARCH DEFS LDFLAGS
 

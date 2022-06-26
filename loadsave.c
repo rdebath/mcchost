@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <strings.h>
 #include <assert.h>
 #include <sys/stat.h>
 #include <ctype.h>
@@ -525,10 +526,10 @@ choose_random_level(char * fixedname, int name_len)
 
     while( (entry=readdir(directory)) )
     {
-    #ifdef _DIRENT_HAVE_D_TYPE
+#if defined(_DIRENT_HAVE_D_TYPE) && defined(DT_REG) && defined(DT_UNKNOWN)
 	if (entry->d_type != DT_REG && entry->d_type != DT_UNKNOWN)
 	    continue;
-    #endif
+#endif
 	int l = strlen(entry->d_name);
 	if (l<=3 || strcmp(entry->d_name+l-3, ".cw") != 0) continue;
 

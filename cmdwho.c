@@ -1,5 +1,5 @@
 
-#include "who.h"
+#include "cmdwho.h"
 
 /*HELP who H_CMD
 &T/who

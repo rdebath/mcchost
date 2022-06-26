@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <strings.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
@@ -248,7 +249,7 @@ login()
 		} else
 		    teapot(inbuf+inptr, insize);
 	    } else {
-		usleep(50000);
+		msleep(50);
 		sleeps++;
 	    }
 	}

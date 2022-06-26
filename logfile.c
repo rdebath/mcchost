@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <ctype.h>
 #include <sys/time.h>
@@ -52,7 +53,8 @@ open_logfile()
 
     if (logfile) fclose(logfile);
     logfile = fopen(fname, "a");
-    setlinebuf(logfile);
+    // Sigh: setlinebuf(logfile);
+    setvbuf(logfile, NULL, _IOLBF, 0);
     free(fname);
 }
 

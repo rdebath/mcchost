@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
+#if _POSIX_VERSION >= 200112L
+#include <sys/select.h>
+#endif
 
 #include "requestloop.h"
 
