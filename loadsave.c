@@ -43,7 +43,6 @@ void
 cmd_goto(UNUSED char * cmd, char * arg)
 {
     char fixedname[MAXLEVELNAMELEN*4], buf2[256], levelname[MAXLEVELNAMELEN+1];
-    char userlevel[256], fixeduserlevel[NB_SLEN];
     if (!arg && strcmp(cmd, "gr") != 0) { cmd_help(0,"goto"); return; }
     if (!arg) arg = "";
 
@@ -61,24 +60,28 @@ cmd_goto(UNUSED char * cmd, char * arg)
 	}
     } else if (strcmp(cmd, "gr") == 0 || strcasecmp(arg, "-random") == 0) {
 	choose_random_level(fixedname, sizeof(fixedname));
-    } else {
+    } else if (strcasecmp(arg, "+") == 0 || strcasecmp(arg, "-") == 0) {
+	char userlevel[256];
 	snprintf(userlevel, sizeof(userlevel), "%.60s+", user_id);
-	fix_fname(fixeduserlevel, sizeof(fixeduserlevel), userlevel);
+	fix_fname(fixedname, sizeof(fixedname), userlevel);
+	snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+	if (access(buf2, F_OK) != 0) {
+	    printf_chat("&SYour Level \"%s\" does not exist, use /newlvl to created it", userlevel);
+	    return;
+	}
 
+    } else {
 	fix_fname(fixedname, sizeof(fixedname), arg);
-	if (strcmp(arg, "+") == 0 || strcmp(arg, userlevel) == 0) {
-	    strcpy(fixedname, fixeduserlevel);
-	} else {
-	    snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
-	    if (access(buf2, F_OK) != 0) {
-		char * newfixed = find_file_match(fixedname, arg);
 
-		if (newfixed != 0) {
-		    snprintf(fixedname, sizeof(fixedname), "%s", newfixed);
-		    free(newfixed);
-		}
-		else return;
+	snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+	if (access(buf2, F_OK) != 0) {
+	    char * newfixed = find_file_match(fixedname, arg);
+
+	    if (newfixed != 0) {
+		snprintf(fixedname, sizeof(fixedname), "%s", newfixed);
+		free(newfixed);
 	    }
+	    else return;
 	}
     }
 

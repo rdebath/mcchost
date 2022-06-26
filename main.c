@@ -7,6 +7,8 @@
 #include <errno.h>
 #include <ctype.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <signal.h>
 #include <sys/socket.h>
 
 #include "main.h"

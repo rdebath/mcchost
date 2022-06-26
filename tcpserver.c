@@ -189,7 +189,9 @@ tcpserver()
 		break;
 	}
 
-	if (restart_sig)
+	check_new_exe();
+
+	if (restart_sig && backup_pid == 0)
 	    do_restart();
 
 	cleanup_zombies();
@@ -198,8 +200,6 @@ tcpserver()
 	    send_heartbeat_poll();
 
 	start_backup_process();
-
-	check_new_exe();
 
 	alarm_sig = 0;
     }
@@ -259,7 +259,7 @@ logger_process()
 	return;
     }
 
-    stop_system_conf(); // Not needed.
+    stop_system_conf(); // No longer needed.
 
     // Logger
     if (listen_socket>=0)
@@ -299,7 +299,7 @@ do_restart()
     (void)signal(SIGALRM, SIG_DFL);
     (void)signal(SIGTERM, SIG_DFL);
     signal_available = 0;
-    close(listen_socket);
+    if (listen_socket>=0) close(listen_socket);
     close_logfile();
 
     // Doing this properly means looking in /proc/self/fd or /dev/fd
@@ -446,7 +446,7 @@ cleanup_zombies()
     child_sig = 0;
     char msgbuf[256];
     char userid[64];
-    int died_badly = 0;
+    int died_badly = 0, client_process_finished = 0;
 
     while ((pid = waitpid(-1, &status, WNOHANG)) != 0)
     {
@@ -462,17 +462,18 @@ cleanup_zombies()
 	    // Whup! that's our stderr! Try to respawn it.
 	    printlog("! Attempting to restart logger process");
 	    logger_process();
-	}
+	} else
 	if (pid == heartbeat_pid) {
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		printlog("! Heartbeat process %d failed", pid);
 	    heartbeat_pid = 0;
-	}
+	} else
 	if (pid == backup_pid) {
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		printlog("! Backup and unload process %d failed", pid);
 	    backup_pid = 0;
-	}
+	} else
+	    client_process_finished++;
 
 	// No complaints on clean exit
 	if (WIFEXITED(status)) {
@@ -539,6 +540,9 @@ cleanup_zombies()
 	    printf_chat("@&W- &7%s: &W%s", userid, msgbuf);
 	    stop_chat_queue();
 	}
+
+	if (client_process_finished) //
+	    alarm_sig = 1;
     }
 }
 
@@ -594,7 +598,7 @@ send_heartbeat_poll()
 	);
 
     if ((heartbeat_pid = fork()) == 0) {
-	if (listen_socket>0) close(listen_socket);
+	if (listen_socket>=0) close(listen_socket);
 	char logbuf[256];
 	sprintf(logbuf, "log/curl-%d.txt", tcp_port_no);
 	char dumpbuf[256];
@@ -742,7 +746,7 @@ start_backup_process()
     backup_pid = E(fork(),"fork() for backup");
     if (backup_pid != 0) return;
 
-    if (listen_socket>0) close(listen_socket);
+    if (listen_socket>=0) close(listen_socket);
 
     scan_and_save_levels(0);
     exit(0);
@@ -753,6 +757,7 @@ check_new_exe()
 {
     if (!proc_self_exe_ok) return;
 
+    // Normally check 30 seconds
     time_t now;
     time(&now);
     if (alarm_sig == 0 && now-last_execheck <= 30)

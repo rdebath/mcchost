@@ -3,7 +3,6 @@
 #include <strings.h>
 #include <sys/types.h>
 #include <signal.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "setvar.h"
