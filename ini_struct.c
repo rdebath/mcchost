@@ -518,10 +518,8 @@ ini_write_int_duration(ini_state_t *st, char * section, char *fieldname, int val
     ini_write_section(st, section);
     int unit = 0;
     for(int i = 0; time_units[i].id; i++)
-	if (value/time_units[i].scale*time_units[i].scale == value) {
+	if (value/time_units[i].scale*time_units[i].scale == value)
 	    unit = i;
-	    break;
-	}
     fprintf(st->fd, "%s = %d%c\n", fieldname,
 	value/time_units[unit].scale, time_units[unit].id);
 }
