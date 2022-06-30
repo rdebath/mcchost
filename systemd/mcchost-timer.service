@@ -1,4 +1,6 @@
 # Put in /etc/systemd/system/mcchost@.service
+# This item needs to call classicube.net every minute.
+# In addition it does timed saves and backups
 [Unit]
 Description=MCChost Classicube server timer
 After=network.target

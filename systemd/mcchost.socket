@@ -7,6 +7,8 @@
 # Enable boot:
 #   sudo systemctl enable mcchost.socket
 
+# Used to call mcchost@.service on connection from client.
+
 [Socket]
 # Listen on TCP port 25565 for IPv4 only
 ListenStream = 0.0.0.0:25565

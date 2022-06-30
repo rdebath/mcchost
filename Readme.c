@@ -15,7 +15,23 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Record data rates for server bytes/s I/O
+
+ +) Switch to recv(MSG_PEEK) for initial login process.
+    We can then pass the socket to a filtering process.
+    -- Websocket, SSL, Web server.
+    -- https://github.com/vi/websocat ?
+    -- https login and web client download.
+
+    -- websockify is 53MB (python, openssl)
+    -- gdb is 115MB (python, openssl, readline)
+
  +) Slow map loads, do I need to poll client chat?
+
+ +) Option to never unload main.
+    -- Any map ?
+    -- Save to map ? -- Only for backup ?
+    -- Force unload on shutdown/restart ?
 
  +) INI file preserve (some?) comments.
 
@@ -41,12 +57,6 @@ See "/help todo" for notes.
 	    the interval and cleanup expired records.
 
  +) inetd_mode, start_tcp_server and cron_tasks: Use enum? Or just bools?
-
- +) inetd_mode: Remove need for -cron to cleanup old levels.
-    -- Cleanups are 5min, perhaps.
-    -- Place last cleanup time in userlevel[]
-    -- Only cc.net register needs calls every minute.
-    -- Separate -register command. (-net -cron ?)
 
  +) Multiple servers in one directory; which items should (not)be per port.
     -- Need port-12345.ini file ?
@@ -80,15 +90,18 @@ See "/help todo" for notes.
  +) reset_hotbar_on_mapload is a level option in the CW file ?
  +) Merge ini and nbt processing ?
 
- +) If lots of maps loaded, unload them quicker ?
-    -- Define "lots"
-
  +) Config paths for "backup" and "map" directories ?
     -- Symlinks work now. Enough?
 
  +) /sendcmd command
  +) /about command
  +) /z and /m commands with setblock capture.
+
+ +) /spawn command
+ +) /tp command
+ +) /summon command
+ +) /afk command (and auto)
+ +) /info command
 
  +) Colour definitions for &S,&W etc.
     -- System level
@@ -125,12 +138,6 @@ See "/help todo" for notes.
 
  +) Backup while physics running --> Copy level.* then freeze physics.
     Copy can more easily do patchups.
-
- +) /spawn command
- +) /tp command
- +) /summon command
- +) /afk command (and auto)
- +) /info command
 
  +) Command to save all help texts as real files.
 	no overwrite -- save to *.bak in this case?

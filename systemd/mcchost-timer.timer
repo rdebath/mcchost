@@ -1,3 +1,4 @@
+# Call mcchost-timer.service every minute.
 [Unit]
 Description=MCChost tick
 

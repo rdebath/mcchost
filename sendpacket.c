@@ -489,7 +489,7 @@ send_sethotbar_pkt(int slot, int block)
 }
 
 void
-send_blockperm_pkt(block_t block, int delok, int placeok)
+send_blockperm_pkt(block_t block, int placeok, int delok)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;

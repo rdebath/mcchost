@@ -1,10 +1,18 @@
 # Put in /etc/systemd/system/mcchost@.service
+# This is called by mcchost.socket to run MCCHost as if from inetd.
+#
+# The process sometimes returns non-zero exit codes for moderatly exceptional
+# conditions, we don't want systemd to do anthing with this.
+#
+# Note: in inetd mode MCCHost will unload all maps before exiting when
+# the client disconnects.
+
 [Unit]
 Description=MCChost Classicube server
 After=network.target
 
 [Service]
-# Note the - to make systemd ignore the exit code
+# Note the - to make systemd ignores the exit code
 ExecStart=-/home/mcchost/bin/mcchost-server -dir /home/mcchost/mcchost -inetd
 
 # This is the part that makes it work like inetd

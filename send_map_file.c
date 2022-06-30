@@ -21,6 +21,8 @@ static uint32_t metadata_generation = 0;
 static block_t max_defined_block = 0;
 
 int reset_hotbar_on_mapload = 0;
+int client_blockperm_state = 3;
+int client_inventory_custom = 0;
 
 // Convert from Map block numbers to ones the client will understand.
 block_t
@@ -304,6 +306,7 @@ send_inventory_order()
     if (level_prop->readonly && level_prop->disallowchange) {
 	for(int inv = 0; inv < client_block_limit; inv++)
 	    send_inventory_order_pkt(inv, 0);
+	client_inventory_custom = 1;
 	if (extn_sethotbar) {
 	    reset_hotbar_on_mapload = 1;
 	    for(int id = 0; id<9; id++)
@@ -326,7 +329,9 @@ send_inventory_order()
 
     int inv_block[BLOCKMAX] = {0};
     block_t b;
-    for(b=0; b < client_block_limit && b<BLOCKMAX; b++) {
+    int nondefault = 0;
+
+    for(b=1; b < client_block_limit && b<BLOCKMAX; b++) {
 	int inv = b;
 	if (!level_prop->blockdef[b].defined) {
 	    if (b >= Block_CPE) continue;
@@ -336,26 +341,40 @@ send_inventory_order()
 	if (inv == (block_t)-1) inv = b;
 	if (inv <= 0 || inv >= client_block_limit) {
 	    send_inventory_order_pkt(0, b);
+	    nondefault = 1;
 	    continue;
 	}
 	inv_block[inv] = b;
+	if (inv != b) nondefault = 1;
     }
+
+    if (!nondefault && !client_inventory_custom) return;
+
+    send_inventory_order_pkt(0, 0); // Hmmm.
 
     for(int inv = 0; inv < client_block_limit; inv++)
 	if (inv_block[inv] != 0)
 	    send_inventory_order_pkt(inv, inv_block[inv]);
+
+    client_inventory_custom = nondefault;
 }
 
 void
 send_block_permission()
 {
     if (!extn_block_permission) return;
-    int rok = 1, dok = 1;
+    int pok = 1, dok = 1;
     block_t b;
 
     if (level_prop->disallowchange)
-	rok = dok = 0;
+	pok = dok = 0;
 
-    for(b=0; b< client_block_limit; b++)
-	send_blockperm_pkt(b, rok, dok);
+    if (client_blockperm_state == (pok<<1)+dok) return;
+
+    // send_blockperm_pkt(0, 1, 1); // Block 0 action is undefined.
+
+    for(b=1; b< client_block_limit; b++)
+	send_blockperm_pkt(b, pok, dok);
+
+    client_blockperm_state = (pok<<1)+dok;
 }

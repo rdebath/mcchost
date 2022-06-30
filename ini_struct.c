@@ -193,6 +193,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 		break;
 	}
 
+	INI_BOOLVAL(WC("Defined"), level_prop->blockdef[bn].defined);
 	INI_NBTSTR("Name", level_prop->blockdef[bn].name);
 	INI_INTVAL("Collide", level_prop->blockdef[bn].collide);
 	INI_INTVAL("TransmitsLight", level_prop->blockdef[bn].transmits_light);
@@ -461,13 +462,14 @@ ini_write_bool(ini_state_t *st, char * section, char *fieldname, int value)
     fprintf(st->fd, "%s = %s\n", fieldname, value?"true":"false");
 }
 
-LOCAL void
-ini_read_bool(volatile int *var, char * value)
+LOCAL int
+ini_read_bool(char * value)
 {
-    if (strcasecmp(value, "true") == 0) *var = 1; else
-    if (strcasecmp(value, "yes") == 0) *var = 1; else
-    if (atoi(value) != 0) *var = 1; else
-    *var = 0;
+    int rv = 0;
+    if (strcasecmp(value, "true") == 0) rv = 1; else
+    if (strcasecmp(value, "yes") == 0) rv = 1; else
+    if (atoi(value) != 0) rv = 1;
+    return rv;
 }
 
 LOCAL int
@@ -621,7 +623,7 @@ ini_write_int_duration(ini_state_t *st, char * section, char *fieldname, int val
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
-                ini_read_bool(&(_var), *fieldvalue); \
+                _var = ini_read_bool(*fieldvalue); \
             else \
                 ini_write_bool(st, section, fld, (_var)); \
         }

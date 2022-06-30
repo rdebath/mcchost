@@ -480,8 +480,10 @@ cleanup_zombies()
 	    logger_process();
 	} else
 	if (pid == heartbeat_pid) {
-	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 		printlog("Heartbeat process %d failed", pid);
+		server->last_heartbeat -= 30;
+	    }
 	    heartbeat_pid = 0;
 	} else
 	if (pid == backup_pid) {

@@ -215,7 +215,8 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	return 0;
     }
 
-    fprintf_logfile("Saving \"%s\" to map directory", level_name);
+    fprintf_logfile("Saving \"%s\" to map directory%s",
+	level_name, save_bkp?" with backup of previous":"");
 
     time_t backup_sav = level_prop->last_backup;
     if (save_bkp) {
@@ -396,16 +397,15 @@ scan_and_save_levels(int unlink_only)
 		user_count++;
 	}
 
-	if (user_count>0) {
-	    unlock_client_data();
-	    continue;
+	if (user_count == 0) {
+	    if (shdat.client->levels[lvid].loaded) {
+		// unload.
+		unlink_level(fixedname, 0);
+		shdat.client->levels[lvid].loaded = 0;
+		fprintf_logfile("Unloaded level files %s", level_name);
+	    }
+	    loaded_levels--;
 	}
-
-	// unload.
-	unlink_level(fixedname, 0);
-	shdat.client->levels[lvid].loaded = 0;
-	fprintf_logfile("Unloaded level files %s", level_name);
-	loaded_levels--;
 
 	unlock_client_data();
     }
