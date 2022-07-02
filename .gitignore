@@ -11,13 +11,14 @@ lib_text.c
 # Except
 !inline.h
 
-# Crashing, debugging etc
+# Editing, crashing, debugging etc
 tags
 core
 core.*
 gmon.out
 
 # If you run it in this directory.
+model.ini
 server.ini
 backup/
 help/
@@ -25,3 +26,4 @@ level/
 log/
 map/
 system/
+userdb/

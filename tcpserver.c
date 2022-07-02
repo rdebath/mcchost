@@ -35,15 +35,18 @@ static int listen_socket = -1;
 static int logger_pid = 0, heartbeat_pid = 0, backup_pid = 0;
 
 int enable_heartbeat_poll = 1;
+time_t last_heartbeat = 0;
 
 char client_ipv4_str[INET_ADDRSTRLEN+10];
 int client_ipv4_port = 0;
+uint32_t client_ipv4_addr = 0;
 int client_trusted = 0;
 int disable_restart = 0;
 
 static volatile int restart_sig = 0, child_sig = 0;
 static volatile int alarm_sig = 0, term_sig = 0;
 static int signal_available = 0;
+int restart_on_unload = 0;
 
 pid_t alarm_handler_pid = 0;
 
@@ -353,6 +356,7 @@ accept_new_connection()
     if (client_addr.sin_family == AF_INET)
     {
 	uint32_t caddr = ntohl(client_addr.sin_addr.s_addr);
+	client_ipv4_addr = caddr;
 	if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost (network)
 	    client_trusted = 1;
 	if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
@@ -401,6 +405,7 @@ check_inetd_connection()
 	    sprintf(client_ipv4_str+strlen(client_ipv4_str), ":%d", client_ipv4_port);
 
 	    uint32_t caddr = ntohl(addr.s4.sin_addr.s_addr);
+	    client_ipv4_addr = caddr;
 	    if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost (network)
 		client_trusted = 1;
 	    if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
@@ -482,7 +487,7 @@ cleanup_zombies()
 	if (pid == heartbeat_pid) {
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 		printlog("Heartbeat process %d failed", pid);
-		server->last_heartbeat -= 30;
+		last_heartbeat = time(0) - 30;
 	    }
 	    heartbeat_pid = 0;
 	} else
@@ -569,11 +574,21 @@ send_heartbeat_poll()
 {
     time_t now;
     time(&now);
-    if (alarm_sig == 0 && server->last_heartbeat != 0 && !term_sig) {
-	if ((now-server->last_heartbeat) < 45)
+    if (last_heartbeat == 0 && server->last_heartbeat_port == tcp_port_no)
+	last_heartbeat = server->last_heartbeat;
+
+    if (alarm_sig == 0 && last_heartbeat != 0 && !term_sig) {
+	if ((now-last_heartbeat) < 45)
 	    return;
     }
-    server->last_heartbeat = now;
+    last_heartbeat = now;
+    server->last_heartbeat = last_heartbeat;
+    server->last_heartbeat_port = tcp_port_no;
+
+    if (heartbeat_pid) {
+	heartbeat_pid = 0;
+	return;
+    }
 
     char cmdbuf[4096];
     char namebuf[256];
@@ -608,7 +623,7 @@ send_heartbeat_poll()
 	"max=",server->max_players,
 	"public=",server->private||term_sig?"False":"True",
 	"version=",7,
-	"users=",current_user_count(),
+	"users=",unique_ip_count(),
 	"salt=",valid_salt?server->secret:"0000000000000000",
 	"name=",ccnet_cp437_quoteurl(server->name, namebuf, sizeof(namebuf)),
 	"software=",ccnet_cp437_quoteurl(server->software, softwarebuf, sizeof(softwarebuf)),
@@ -721,7 +736,7 @@ run_timer_tasks()
 
 	int status = 0;
 	pid_t pid = waitpid(-1, &status, 0);
-	if (pid == logger_pid) break;
+	if (pid == logger_pid || pid == -1) break;
 
 	char * id = pid==heartbeat_pid?"(heartbeat)":pid==backup_pid?"(backup)":"?";
 
@@ -802,6 +817,8 @@ static time_t last_execheck = 0;
 
     if (server->loaded_levels == 0)
 	restart_sig = 1;
+    else
+	restart_on_unload = 1;
 
     unlock_client_data();
     stop_client_list();

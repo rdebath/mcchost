@@ -75,7 +75,7 @@ lib_text.o: lib_text.c
 
 ifeq ($(findstring s,$(MFLAGS)),)
 %.o: %.c
-	@echo "$(CC) [flags] -c -o" $@ $<
+	@echo "$(CC) \$$FLAGS -c -o" $@ $<
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c -o $@ $<
 endif
 

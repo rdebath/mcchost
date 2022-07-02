@@ -376,8 +376,9 @@ scan_and_save_levels(int unlink_only)
 	// Time to backup ?
 	time_t now = time(0);
 	int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
+	int no_unload = (level_prop->no_unload && !restart_on_unload);
 
-	if (!level_prop->readonly && !unlink_only && (!level_prop->no_unload || do_bkp)) {
+	if (!level_prop->readonly && !unlink_only && (!no_unload || do_bkp)) {
 	    if (level_prop->dirty_save) {
 
 		int rv = save_level(fixedname, level_name, do_bkp);
@@ -388,7 +389,6 @@ scan_and_save_levels(int unlink_only)
 	}
 
 	int level_dirty = level_prop->dirty_save;
-	int no_unload = level_prop->no_unload;
 
 	stop_shared();
 

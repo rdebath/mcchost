@@ -27,7 +27,7 @@ See "/help todo" for notes.
  +) Decode Json return from cc.net, place in log.
     -- Or just record if different ?
 
- +) lmdb appears with Debian jessie, do I want a replacement ?
+ +) lmdb appears with Debian jessie, do I want a fallback ?
 
  +) /set readonly t/f -- does chmod ? Force save ?
     -- New Use case: save current and preserve.

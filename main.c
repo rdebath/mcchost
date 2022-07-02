@@ -33,6 +33,7 @@ struct server_t {
     time_t last_heartbeat;
     time_t last_backup;
     time_t last_unload;
+    int last_heartbeat_port;
     int magic2;
 };
 

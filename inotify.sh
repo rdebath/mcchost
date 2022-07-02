@@ -5,6 +5,7 @@ PREV=''
 FN2=''
 FND='/dev/null'
 
+tail "$(date +%F).log"
 inotifywait -q -e modify -e create -m . |
 while read dot event FN
 do

@@ -31,6 +31,8 @@ struct client_entry_t {
     xyzhv_t posn;
     uint8_t active;
     uint8_t visible;
+    uint8_t ip_dup;
+    uint32_t ip_address;
     time_t afk_time;	//TODO
     pid_t session_id;
 };
@@ -197,6 +199,7 @@ start_user()
     shdat.client->user[my_user_no].name = t;
     shdat.client->user[my_user_no].client_software = client_software;
     shdat.client->user[my_user_no].on_level = -1;
+    shdat.client->user[my_user_no].ip_address = client_ipv4_addr;
 
     unlock_client_data();
 }
@@ -298,4 +301,39 @@ current_user_count()
     }
     if(flg) stop_client_list();
     return users;
+}
+
+int
+unique_ip_count()
+{
+    int flg = (shdat.client == 0);
+    if(flg) open_client_list();
+    if (!shdat.client) return 0;
+
+    // No need to lock -- unimportant statistic.
+    int users = 0;
+    int ip_addrs = 0;
+
+    for(int i=0; i<MAX_USER; i++)
+	shdat.client->user[i].ip_dup = 0;
+
+    for(int i=0; i<MAX_USER; i++) {
+	if (shdat.client->user[i].active == 1) {
+	    users ++;
+	    if (shdat.client->user[i].ip_dup == 0) {
+		ip_addrs ++;
+		for(int j = i+1; j<MAX_USER; j++) {
+		    if (shdat.client->user[j].active == 1 &&
+			shdat.client->user[i].ip_address ==
+			shdat.client->user[j].ip_address)
+		    {
+			shdat.client->user[j].ip_dup = 1;
+		    }
+		}
+	    }
+	}
+    }
+
+    if(flg) stop_client_list();
+    return ip_addrs;
 }
