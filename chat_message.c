@@ -92,6 +92,8 @@ post_chat(int where, int type, char * chat, int chat_len)
 
     if (where == 0)
 	log_chat_message(chat, chat_len);
+    else if (!user_logged_in)
+	return; // Would go to everyone eventually.
 
     int s, d, ws = -1, wd = -1, add_gt = 0, el = 1;
     for(d = s = 0; s<chat_len; s++) {

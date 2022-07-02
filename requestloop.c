@@ -184,7 +184,7 @@ on_select_timeout()
     send_queued_chats(0);
     send_queued_blocks();
     if (my_user.dirty)
-	write_userrec(0);
+	write_current_user(0);
 }
 
 void

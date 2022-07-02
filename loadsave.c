@@ -362,7 +362,13 @@ scan_and_save_levels(int unlink_only)
 	char fixedname[MAXLEVELNAMELEN*4];
 	fix_fname(fixedname, sizeof(fixedname), level_name);
 	open_level_files(level_name, fixedname, 2);
-	if (!level_prop) continue;
+	if (!level_prop)
+	{
+	    // I can't open the level ... hmmm.
+	    fprintf_logfile("Failed to open level '%s' for save", level_name);
+	    ignore_broken_level(lvid, &loaded_levels);
+	    continue;
+	}
 
 	if (level_prop->readonly)
 	    level_prop->dirty_save = 0;
@@ -418,6 +424,29 @@ scan_and_save_levels(int unlink_only)
 
     server->loaded_levels = loaded_levels;
     stop_client_list();
+}
+
+LOCAL void
+ignore_broken_level(int lvid, int *loaded_levels)
+{
+    lock_client_data();
+
+    int user_count = 0;
+    for(int uid=0; uid<MAX_USER; uid++)
+    {
+	if (shdat.client->user[uid].active != 1) continue;
+	// NB: Only unload main when the _total_ user count hits zero.
+	if (lvid == shdat.client->user[uid].on_level)
+	    user_count++;
+    }
+
+    if (user_count == 0) {
+	if (shdat.client->levels[lvid].loaded)
+	    shdat.client->levels[lvid].loaded = 0;
+	(*loaded_levels)--;
+    }
+
+    unlock_client_data();
 }
 
 /* This only finds ASCII case insensitive, not CP437. This is probably fine.

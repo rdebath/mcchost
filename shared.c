@@ -227,7 +227,10 @@ open_blocks(char * levelname)
     if((uintptr_t)l != l || (off_t)l != l || (size_t)l != l) {
 	errno = EINVAL;
 	perror("Server address space too small for this map");
-	fatal("Map too large for this server compilation.");
+	printf_chat("Map is too large (%d,%d,%d) -> %jd cells",
+	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
+	    (intmax_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z);
+	return -1;
     }
     if (allocate_shared(sharename, l, shdat.dat+SHMID_BLOCKS, 1) < 0)
 	return -1;

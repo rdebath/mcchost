@@ -53,6 +53,7 @@ int line_ifd = -1;
 
 char user_id[NB_SLEN];	// This is ASCII not CP437 or UTF8
 int user_authenticated = 0;
+int user_logged_in = 0;
 int server_id_op_flag = 1;
 int inetd_mode = 0;
 int start_cron_task = 0;
@@ -162,10 +163,12 @@ process_connection()
 
     login();
 
-    write_userrec(1);
+    write_current_user(1);
 
     memset(proc_args_mem, 0, proc_args_len);
     snprintf(proc_args_mem, proc_args_len, "%s (%s)", server->software, user_id);
+
+    user_logged_in = 1; // May not be "authenticated", but they exist.
 
     // If in classic mode, don't allow place of bedrock.
     if (!cpe_requested) server_id_op_flag = 0;

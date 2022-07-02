@@ -41,18 +41,21 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 	perror(filename);
 	return -1;
     }
-    load_cwfile(ifd, level_fname, level_name);
+
+    int load_ok = load_cwfile(ifd, level_fname, level_name);
 
     int rv = gzclose(ifd);
     if (rv) {
 	printlog("Load '%s' failed error Z%d", filename, rv);
 	return -1;
     }
+    if (!load_ok)
+	return -1;
 
     return 0;
 }
 
-LOCAL void
+LOCAL int
 load_cwfile(gzFile ifd, char * level_fname, char * level_name)
 {
     int ClassicWorld_found = 0;
@@ -79,7 +82,8 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
 
     if (ch == NBT_COMPOUND) {
 	*last_lbl = *last_sect = 0;
-	read_element(ifd, NBT_LABEL);
+	if (!read_element(ifd, NBT_LABEL))
+	    return 0;
 
 	ClassicWorld_found = !strcmp("ClassicWorld", last_lbl);
 	if (!ClassicWorld_found)
@@ -87,19 +91,22 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
 
 	if (!ClassicWorld_found) {
 	    fprintf_logfile("Level \"%s\" incorrect NBT schema label \"%s\".", level_name, last_lbl);
-	    return;
+	    return 0;
 	}
 	fprintf_logfile("Loading ClassicWorld map for \"%s\": ", level_name);
 	open_level_files(level_name, level_fname, 1);
 	init_map_null();
-	read_element(ifd, ch);
+	if (!read_element(ifd, ch))
+	    return 0;
     } else if (ch == EOF || !try_asciimode(ifd, level_fname)) {
 	fprintf_logfile("Level \"%s\" NBT and INI load failed.", level_name);
-	return;
+	return 0;
     }
 
     if (ClassicWorld_found || (level_prop->cells_x>0 && level_prop->cells_y>0 && level_prop->cells_z>0))
 	printlog("Load done.");
+
+    return 1;
 }
 
 LOCAL int
@@ -650,7 +657,9 @@ try_asciimode(gzFile ifd, char * levelfile)
     patch_map_nulls(oldsize);
     level_prop->dirty_save = 1;
 
-    open_blocks(levelfile);
+    if (open_blocks(levelfile) < 0)
+	return 0;
+
     init_flat_level();
 
     // Don't want to backup the ini file, not a real cw file.

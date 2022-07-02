@@ -1,24 +1,9 @@
 #!/bin/sh -
 cd "${1:-$HOME/mcchost/log}" || exit
 
-FN="$(date +%F).log"
-inotifywait -q -e create -m . |
-while 
-  tail -f "$FN" & PID=$!
-  read dot event NF
-do  case "$NF" in
-    *-*-*.log) FN="$NF" ;;
-    esac
-    kill $PID
-done
-
-exit
-
-DIR="${1:-$HOME/mcchost/log}"
 PREV=''
 FN2=''
 FND='/dev/null'
-cd "$DIR" || exit
 
 inotifywait -q -e modify -e create -m . |
 while read dot event FN
@@ -44,6 +29,20 @@ do
 	sed -e '/^[0-9]*a$/d' -e '/^\.$/d' -e '/^[0-9,]*d$/d'
 
     mv /tmp/_in_log.new /tmp/_in_log.old
+done
+
+exit
+
+# This leaves "tail" commands running.
+FN="$(date +%F).log"
+inotifywait -q -e create -m . |
+while
+  tail -f "$FN" & PID=$!
+  read dot event NF
+do  case "$NF" in
+    *-*-*.log) FN="$NF" ;;
+    esac
+    kill $PID
 done
 
 exit
