@@ -198,6 +198,7 @@ save_map_to_file(char * fn, int background)
     bc_compound(savefile, "MCCHost");
     bc_ent_int(savefile, "DisallowChange", level_prop->disallowchange);
     bc_ent_int(savefile, "ReadOnly", level_prop->readonly);
+    bc_ent_int(savefile, "NoUnload", level_prop->no_unload);
     bc_end(savefile);
 
     /* TODO -- server level ?

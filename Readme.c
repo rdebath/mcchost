@@ -17,20 +17,9 @@ See "/help todo" for notes.
 /*HELP todo
  +) Record data rates for server bytes/s I/O
 
- +) Switch to recv(MSG_PEEK) for initial login process.
-    We can then pass the socket to a filtering process.
-    -- Websocket, SSL, Web server.
-    -- https://github.com/vi/websocat ?
-    -- https login and web client download.
-
-    -- websockify is 53MB (python, openssl)
-    -- gdb is 115MB (python, openssl, readline)
-
  +) Slow map loads, do I need to poll client chat?
 
  +) Option to never unload main.
-    -- Any map ?
-    -- Save to map ? -- Only for backup ?
     -- Force unload on shutdown/restart ?
 
  +) INI file preserve (some?) comments.
@@ -56,8 +45,6 @@ See "/help todo" for notes.
 	--> Every interval create a new salt record with expire time of twice
 	    the interval and cleanup expired records.
 
- +) inetd_mode, start_tcp_server and cron_tasks: Use enum? Or just bools?
-
  +) Multiple servers in one directory; which items should (not)be per port.
     -- Need port-12345.ini file ?
 	--> Only record if different from system.ini values.
@@ -72,8 +59,19 @@ See "/help todo" for notes.
     -- Salt? --> Multiple salts on one port --> User namespaces.
     -- Heartbeat? --> Distinct salt --> User namespaces.
 
+ +) We use MSG_PEEK so can pass the socket to a filtering process.
+    -- Websocket, SSL, Web server.
+    -- https://github.com/vi/websocat ?
+    -- https login and web client download.
+
+    -- websockify is 53MB (python, openssl)
+    -- gdb is 115MB (python, openssl, readline)
+    -- both are 150MB (python, openssl, readline)
+
  +) Dump/load userDB as ini file.
     -- Also single user and delete "username".
+    -- Use mdb_dump and mdb_load ?
+    -- Switch to CSV records ?
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 

@@ -367,12 +367,13 @@ scan_and_save_levels(int unlink_only)
 	if (level_prop->readonly)
 	    level_prop->dirty_save = 0;
 
-	if (!level_prop->readonly && !unlink_only) {
+	// Time to backup ?
+	time_t now = time(0);
+	int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
+
+	if (!level_prop->readonly && !unlink_only && (!level_prop->no_unload || do_bkp)) {
 	    if (level_prop->dirty_save) {
 
-		// Time to backup ?
-		time_t now = time(0);
-		int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
 		int rv = save_level(fixedname, level_name, do_bkp);
 
 		if (rv < 0)
@@ -381,10 +382,15 @@ scan_and_save_levels(int unlink_only)
 	}
 
 	int level_dirty = level_prop->dirty_save;
+	int no_unload = level_prop->no_unload;
 
 	stop_shared();
 
+	// Don't unload a map that failed to save
 	if (level_dirty) continue;
+
+	// Don't unload if it's turned off
+	if (no_unload) continue;
 
 	lock_client_data();
 

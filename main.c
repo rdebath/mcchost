@@ -237,7 +237,7 @@ void
 login()
 {
     char inbuf[256] = {0};
-    int insize = 0, inptr = 0, rqsize = msglen[0];
+    int insize = 0, rqsize = msglen[0];
     pkt_player_id player = {0};
 
     // First logon packet is read using this, not the normal loop.
@@ -247,36 +247,37 @@ login()
     time_t startup = time(0);
     fcntl(line_ifd, F_SETFL, (int)O_NONBLOCK);
     int sleeps = 0;
-    while(insize-inptr < rqsize)
+    while(insize < rqsize)
     {
-	int cc = read(line_ifd, inbuf+insize, rqsize-insize);
-	if (cc>0) insize += cc;
+	int cc = recv(line_ifd, inbuf, sizeof(inbuf), MSG_PEEK);
+	if (cc>0) insize = cc;
 	if (cc<=0) {
 	    if (errno != EAGAIN && errno != EINTR)
-		teapot(inbuf+inptr, insize);
-	    time_t now = time(0);
-	    if (now-startup > 4) {
-		if (insize >= 2 && inbuf[inptr+1] >= 3 && inbuf[inptr+1] <= 7) {
-		    if (insize >= 66) {
-			convert_logon_packet(inbuf, &player);
-			strcpy(user_id, player.user_id);
-		    }
-		    disconnect(0, "Short logon packet received");
-		} else
-		    teapot(inbuf+inptr, insize);
-	    } else {
-		msleep(50);
-		sleeps++;
-	    }
+		teapot(inbuf, insize);
+	}
+
+	time_t now = time(0);
+	if (now-startup > 4) {
+	    if (insize >= 2 && inbuf[1] >= 3 && inbuf[1] <= 7) {
+		if (insize >= 66) {
+		    convert_logon_packet(inbuf, &player);
+		    strcpy(user_id, player.user_id);
+		}
+		disconnect(0, "Short logon packet received");
+	    } else
+		teapot(inbuf, insize);
+	} else {
+	    msleep(50);
+	    sleeps++;
 	}
 
 	if (insize >= 20 || sleeps > 5) {
 	    // Special quick exits for bad callers.
-	    if (insize >= 1 && inbuf[inptr] != 0)
-		teapot(inbuf+inptr, insize);
-	    if (insize >= 2 && inbuf[inptr+1] < 3)
-		teapot(inbuf+inptr, insize);
-	    if (insize >= 2 && inbuf[inptr+1] != 7) {
+	    if (insize >= 1 && inbuf[0] != 0)
+		teapot(inbuf, insize);
+	    if (insize >= 2 && inbuf[1] < 3)
+		teapot(inbuf, insize);
+	    if (insize >= 2 && inbuf[1] != 7) {
 		if (insize >= 66) {
 		    convert_logon_packet(inbuf, &player);
 		    strcpy(user_id, player.user_id);
@@ -284,7 +285,7 @@ login()
 		disconnect(0, "Only protocol version seven is supported");
 	    }
 	}
-	if (insize >= 2 && inbuf[inptr+1] < 6)
+	if (insize >= 2 && inbuf[1] < 6)
 	    rqsize = msglen[0] - 1;
     }
     fcntl(line_ifd, F_SETFL, 0);
