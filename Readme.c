@@ -19,9 +19,6 @@ See "/help todo" for notes.
 
  +) Slow map loads, do I need to poll client chat?
 
- +) Option to never unload main.
-    -- Force unload on shutdown/restart ?
-
  +) INI file preserve (some?) comments.
 
  +) Decode Json return from cc.net, place in log.
@@ -71,7 +68,6 @@ See "/help todo" for notes.
  +) Dump/load userDB as ini file.
     -- Also single user and delete "username".
     -- Use mdb_dump and mdb_load ?
-    -- Switch to CSV records ?
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
@@ -80,9 +76,7 @@ See "/help todo" for notes.
  +) Fix player detail "struct user"
     -- Time spent on server
     -- Kick
-    -- IP address/clones (for logged on user count) (Rate limits?)
-    -- Make TSV in blob? -- Strings in UTF8
-    -- Make INI in blob?
+    -- IP address/clones
 
  +) Aliases in /set command, more help, option lists.
  +) reset_hotbar_on_mapload is a level option in the CW file ?
@@ -115,6 +109,7 @@ See "/help todo" for notes.
 	-- Needs state save and reload for extn_* variables.
 
  +) /resizelvl, /copylvl, /deletelvl, /savelvl (to mapdir)
+    -- deletelvl moves current into backup (not copy)
  +) /backup, /restore & /museum
  +) /import -- download *.cw file from web.
     -- Rename file to strict % form, don't overwrite.
@@ -175,7 +170,6 @@ All files in subdirectories.
     backup/${level}.${id}.cw -- "museum"
 
     *.ini --> ?
-    recycle-bin/${level}.cw
     level/${level}.${id}.* -- museum unpack
     blockdb/levelname.bdb
 

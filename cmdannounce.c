@@ -1,5 +1,5 @@
 
-#include "announce.h"
+#include "cmdannounce.h"
 
 /*HELP announce,an H_CMD
 &T/announce message

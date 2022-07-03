@@ -7,8 +7,9 @@
 #include "newlvl.h"
 
 /*HELP newlvl H_CMD
-&T/newlvl name X Y Z
-Create a new level
+&T/newlvl name [width height length]
+Create a new level, if size is not set it uses the default.
+The name "+" is a shorthand for your personal level.
 */
 
 #if INTERFACE
@@ -27,14 +28,12 @@ cmd_newlvl(UNUSED char * cmd, char * arg)
 
     char userlevel[256];
 
-    if (!client_trusted) {
-	snprintf(userlevel, sizeof(userlevel), "%s+", user_id);
-	if (strcmp(levelname, "+") == 0 || strcmp(levelname, userlevel) == 0) {
-	    levelname = userlevel;
-	} else {
-	    printf_chat("&WPermission denied, your level name is '%s'", userlevel);
-	    return;
-	}
+    snprintf(userlevel, sizeof(userlevel), "%s+", user_id);
+    if (strcmp(levelname, "+") == 0 || strcmp(levelname, userlevel) == 0) {
+	levelname = userlevel;
+    } else if (!client_trusted) {
+	printf_chat("&WPermission denied, your level name is '%s'", userlevel);
+	return;
     }
 
     char fixedname[MAXLEVELNAMELEN*4], buf2[256], lvlname[MAXLEVELNAMELEN+1];

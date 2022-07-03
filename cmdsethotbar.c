@@ -2,7 +2,7 @@
 #include <string.h>
 #include <strings.h>
 
-#include "sethotbar.h"
+#include "cmdsethotbar.h"
 
 /*HELP sethotbar,chb H_CMD
 &T/sethotbar Slot [Block]
