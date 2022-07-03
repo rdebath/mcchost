@@ -158,9 +158,9 @@ cmd_load(UNUSED char * cmd, char * arg)
 	}
 	strcpy(d, ".ini");
 
-	lock_shared();
+	lock_fn(level_lock);
 	int rv = load_ini_file(level_ini_fields, buf, 0, 1);
-	unlock_shared();
+	unlock_fn(level_lock);
 
 	if (rv == 0) {
 	    printf_chat("&SFile loaded");
@@ -224,7 +224,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	level_prop->last_backup = time(0);
     }
 
-    lock_shared();
+    lock_fn(level_lock);
     if (save_map_to_file(tmp_fn, 1) < 0) {
 	int e = errno;
 	(void) unlink(tmp_fn);
@@ -252,7 +252,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     }
 
     level_prop->dirty_save = 0;
-    unlock_shared();
+    unlock_fn(level_lock);
 
     if (access(bak_fn, F_OK) == 0) {
 	char hst_fn[256];
@@ -398,7 +398,7 @@ scan_and_save_levels(int unlink_only)
 	// Don't unload if it's turned off
 	if (no_unload) continue;
 
-	lock_client_data();
+	lock_fn(system_lock);
 
 	int user_count = 0;
 	for(int uid=0; uid<MAX_USER; uid++)
@@ -413,13 +413,20 @@ scan_and_save_levels(int unlink_only)
 	    if (shdat.client->levels[lvid].loaded) {
 		// unload.
 		unlink_level(fixedname, 0);
+
+		// We known nobody has the level lock and we have the system
+		// lock, so it's safe to delete the pthread mutex file too.
+		char sharename[256];
+		snprintf(sharename, sizeof(sharename), LEVEL_LOCK_NAME, fixedname);
+		(void)unlink(sharename);
+
 		shdat.client->levels[lvid].loaded = 0;
 		fprintf_logfile("Unloaded level files %s", level_name);
 	    }
 	    loaded_levels--;
 	}
 
-	unlock_client_data();
+	unlock_fn(system_lock);
     }
 
     server->loaded_levels = loaded_levels;
@@ -429,7 +436,7 @@ scan_and_save_levels(int unlink_only)
 LOCAL void
 ignore_broken_level(int lvid, int *loaded_levels)
 {
-    lock_client_data();
+    lock_fn(system_lock);
 
     int user_count = 0;
     for(int uid=0; uid<MAX_USER; uid++)
@@ -446,7 +453,7 @@ ignore_broken_level(int lvid, int *loaded_levels)
 	(*loaded_levels)--;
     }
 
-    unlock_client_data();
+    unlock_fn(system_lock);
 }
 
 /* This only finds ASCII case insensitive, not CP437. This is probably fine.

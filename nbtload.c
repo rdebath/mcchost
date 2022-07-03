@@ -74,7 +74,7 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
 	    gzungetc(ch1, ifd);
 	    if (ch2 < 4 || ch2 > 30) { // Reasonable lengths
 		gzungetc(ch, ifd);
-		ch = 0;
+		ch = 0xFF;
 	    }
 	}
     } else
@@ -93,12 +93,15 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
 	    fprintf_logfile("Level \"%s\" incorrect NBT schema label \"%s\".", level_name, last_lbl);
 	    return 0;
 	}
-	fprintf_logfile("Loading ClassicWorld map for \"%s\": ", level_name);
-	open_level_files(level_name, level_fname, 1);
+	fprintf_logfile("Loading %s map for \"%s\": ", last_lbl, level_name);
+	create_property_file(level_name, level_fname);
 	init_map_null();
 	if (!read_element(ifd, ch))
 	    return 0;
-    } else if (ch == EOF || !try_asciimode(ifd, level_fname)) {
+    } else if (ch == EOF || (ch&0x80) != 0) {
+	fprintf_logfile("Level \"%s\" unknown file format", level_name);
+	return 0;
+    } else if (!try_asciimode(ifd, level_fname)) {
 	fprintf_logfile("Level \"%s\" NBT and INI load failed.", level_name);
 	return 0;
     }

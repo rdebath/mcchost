@@ -120,7 +120,8 @@ reset_player_list()
 	myuser[i].visible = myuser[i].active = 0;
     }
 
-    send_spawn_pkt(255, user_id, level_prop->spawn);
+    if (level_prop)
+	send_spawn_pkt(255, user_id, level_prop->spawn);
     if (myuser[my_user_no].posn.valid)
 	send_posn_pkt(255, 0, myuser[my_user_no].posn);
 
@@ -152,7 +153,7 @@ start_user()
 {
     int new_one = -1, kicked = 0;
 
-    lock_client_data();
+    lock_fn(system_lock);
     if (!shdat.client) fatal("Connection failed");
 
     for(int i=0; i<MAX_USER; i++)
@@ -183,7 +184,7 @@ start_user()
     }
 
     if (new_one < 0 || new_one >= MAX_USER) {
-	unlock_client_data();
+	unlock_fn(system_lock);
 	if (kicked)
 	    fatal("Too many sessions, please try again");
 	else
@@ -201,7 +202,7 @@ start_user()
     shdat.client->user[my_user_no].on_level = -1;
     shdat.client->user[my_user_no].ip_address = client_ipv4_addr;
 
-    unlock_client_data();
+    unlock_fn(system_lock);
 }
 
 void
@@ -214,7 +215,7 @@ start_level(char * levelname, char * levelfile)
     strcpy(current_level_name, levelname);
     strcpy(current_level_fname, levelfile);
 
-    lock_client_data();
+    lock_fn(system_lock);
 
     for(int i=0; i<MAX_LEVEL; i++) {
 	if (!shdat.client->levels[i].loaded) {
@@ -238,7 +239,7 @@ start_level(char * levelname, char * levelfile)
 
     shdat.client->user[my_user_no].on_level = level_id;
 
-    unlock_client_data();
+    unlock_fn(system_lock);
 }
 
 void

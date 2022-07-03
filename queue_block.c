@@ -156,7 +156,7 @@ prelocked_update(int x, int y, int z, int b)
 void
 send_update(int x, int y, int z, int b)
 {
-    lock_shared();
+    lock_fn(level_lock);
     level_prop->dirty_save = 1;
     level_prop->last_modified = time(0);
     int id = level_block_queue->curr_offset;
@@ -169,7 +169,7 @@ send_update(int x, int y, int z, int b)
 	level_block_queue->generation ++;
 	level_block_queue->last_queue_len = level_block_queue->queue_len;
     }
-    unlock_shared();
+    unlock_fn(level_lock);
 }
 
 void
@@ -177,10 +177,10 @@ set_last_block_queue_id()
 {
     if (!level_block_queue) return;
 
-    lock_shared();
+    lock_fn(level_lock);
     last_id = level_block_queue->curr_offset;
     last_generation = level_block_queue->generation;
-    unlock_shared();
+    unlock_fn(level_lock);
 }
 
 void
@@ -213,7 +213,7 @@ send_queued_blocks()
     for(;counter < 1024; counter++)
     {
 	xyzb_t upd;
-	lock_shared();
+	lock_fn(level_lock);
 	if (last_generation != level_block_queue->generation)
 	{
 	    int isok = 0;
@@ -225,13 +225,13 @@ send_queued_blocks()
 	    if (!isok) {
 		wipe_last_block_queue_id();
 		reload_pending = 1;
-		unlock_shared();
+		unlock_fn(level_lock);
 		return;
 	    }
 	}
 	if (last_id == level_block_queue->curr_offset) {
 	    // Nothing more to send.
-	    unlock_shared();
+	    unlock_fn(level_lock);
 	    return;
 	}
 	upd = level_block_queue->updates[last_id++];
@@ -239,7 +239,7 @@ send_queued_blocks()
 	    last_generation ++;
 	    last_id = 0;
 	}
-	unlock_shared();
+	unlock_fn(level_lock);
 
 	send_setblock_pkt(upd.x, upd.y, upd.z, block_convert(upd.b));
     }

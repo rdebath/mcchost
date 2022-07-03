@@ -35,7 +35,7 @@ update_chat(pkt_message *pkt)
     if (!level_chat_queue || level_chat_queue->curr_offset >= level_chat_queue->queue_len)
 	create_chat_queue();
 
-    lock_chat_shared();
+    lock_fn(chat_queue_lock);
     int id = level_chat_queue->curr_offset;
     level_chat_queue->updates[id].to_level_id = 0;
     level_chat_queue->updates[id].to_player_id = 0;
@@ -45,7 +45,7 @@ update_chat(pkt_message *pkt)
 	level_chat_queue->curr_offset = 0;
 	level_chat_queue->generation ++;
     }
-    unlock_chat_shared();
+    unlock_fn(chat_queue_lock);
 }
 
 void
@@ -53,10 +53,10 @@ set_last_chat_queue_id()
 {
     if (!level_chat_queue) create_chat_queue();
 
-    lock_chat_shared();
+    lock_fn(chat_queue_lock);
     last_id = level_chat_queue->curr_offset;
     last_generation = level_chat_queue->generation;
-    unlock_chat_shared();
+    unlock_fn(chat_queue_lock);
 }
 
 void
@@ -74,7 +74,7 @@ send_queued_chats(int flush)
     for(;;)
     {
 	chat_entry_t upd;
-	lock_chat_shared();
+	lock_fn(chat_queue_lock);
 	if (last_generation != level_chat_queue->generation)
 	{
 	    int isok = 0;
@@ -85,14 +85,14 @@ send_queued_chats(int flush)
 	    if (!isok) {
 		// Buffer wrapped too far; generation incremented twice.
 		// Skip everything and try again next tick.
-		unlock_chat_shared();
+		unlock_fn(chat_queue_lock);
 		set_last_chat_queue_id();
 		break;
 	    }
 	}
 	if (last_id == level_chat_queue->curr_offset) {
 	    // Nothing more to send.
-	    unlock_chat_shared();
+	    unlock_fn(chat_queue_lock);
 	    break;
 	}
 	upd = level_chat_queue->updates[last_id++];
@@ -100,7 +100,7 @@ send_queued_chats(int flush)
 	    last_generation ++;
 	    last_id = 0;
 	}
-	unlock_chat_shared();
+	unlock_fn(chat_queue_lock);
 
 	send_msg_pkt_filtered(upd.msg.message_type, upd.msg.message);
     }

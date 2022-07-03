@@ -56,7 +56,31 @@ f_block_convert(block_t in)
 void
 send_map_file()
 {
-    if (!level_prop || !level_blocks) return;
+    if (!level_prop || !level_blocks) {
+#if 1
+	char empty_zlib[] = {0xe3, 0x64, 0x00, 0x00};
+	char empty_gzip[] = {
+	    0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+	    0x00, 0x03, 0x63, 0x60, 0x60, 0x60, 0xe2, 0x64,
+	    0x00, 0x00, 0x84, 0xce, 0x84, 0x63, 0x06, 0x00,
+	    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	send_lvlinit_pkt(2);
+	if (extn_fastmap)
+	    send_lvldata_pkt(empty_zlib, 4, 0);
+	else
+	    send_lvldata_pkt(empty_gzip, 0x1a, 0);
+	send_lvldone_pkt(1, 2, 1);
+	if (extn_envcolours) {
+	    for(int i = 0; i<6; i++)
+		send_envsetcolour_pkt(i, 0);
+	}
+	player_posn.x = player_posn.z = 16; player_posn.y = 256;
+	player_posn.v = player_posn.h = 0;
+	send_spawn_pkt(255, user_id, player_posn);
+#endif
+	printf_chat("&WCannot send level data, file not mapped");
+	return;
+    }
 
     uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
 

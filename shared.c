@@ -19,16 +19,11 @@
  *		pthread_mutexattr_setrobust to use "robust futexes"
  *		However, it goes into an error state.
  *
- *       SysV semops with SEM_UNDO do, but are sometimes pooly implemented.
+ *       SysV semops with SEM_UNDO do this.
  *       POSIX Semephores do NOT release on process termination. (sem_wait(1))
  */
 
 #include "shared.h"
-
-// Is -pthreads option provided.
-#ifndef _REENTRANT
-// ...
-#endif
 
 #if INTERFACE
 #include <stdint.h>
@@ -66,14 +61,13 @@ struct shared_data_t {
 #define level_chat_queue shdat.chat
 #endif
 
-#define fcntl_fd shdat.dat[SHMID_PROP].lock_fd
-#define client_fd shdat.dat[SHMID_CLIENTS].lock_fd
-#define chat_fd shdat.dat[SHMID_CHAT].lock_fd
-
 #define level_block_queue_len shdat.dat[SHMID_BLOCKQ].len
 #define level_chat_queue_len shdat.dat[SHMID_CHAT].len
 
 struct shared_data_t shdat;
+
+filelock_t chat_queue_lock[1] = {{.name = CHAT_LOCK_NAME}};
+filelock_t level_lock[1];
 
 /*****************************************************************************
  * Shared resources.
@@ -101,21 +95,23 @@ struct shared_data_t shdat;
  * open the level/$level.* files, if they don't exist they will be
  * created, usually from a matching map/$level.cw file.
  *
- * direct:
- *    0: open or create
- *    1: open or create just the properties file, not the blocks.
- *    2: just open properties file don't create
+ * to_unload:
+ *    ==0: open or create
+ *    !=0: just open files don't create
  */
 void
-open_level_files(char * level_name, char * fixname, int direct)
+open_level_files(char * level_name, char * fixname, int to_unload)
 {
     char sharename[256];
     int del_on_err = 0, try_cw_file = 0;
-    if (level_prop && level_blocks) return;
 
     stop_shared();
 
     check_level_name(fixname); // Last check.
+
+    snprintf(sharename, sizeof(sharename), LEVEL_LOCK_NAME, fixname);
+    level_lock->name = strdup(sharename);
+    lock_start(level_lock);
 
     snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, fixname);
     del_on_err = access(sharename, F_OK);
@@ -127,9 +123,11 @@ open_level_files(char * level_name, char * fixname, int direct)
 	else del_on_err = 1;
     } else del_on_err = 0;
 
-    if (del_on_err && direct == 2) return;
+    if (del_on_err && to_unload) return;
 
-    if (allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP, 0) < 0)
+    lock_fn(level_lock);
+
+    if (allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP) < 0)
 	goto open_failed;
 
     level_prop = shdat.dat[SHMID_PROP].ptr;
@@ -146,10 +144,6 @@ open_level_files(char * level_name, char * fixname, int direct)
 	    if (access(cwfilename, R_OK) == 0)
 		del_on_err = 1;
 	}
-
-    if (direct == 1) return;
-
-    lock_shared();
 
     // Haven't got any reasonable level files, ok to overwrite.
     if (try_cw_file) {
@@ -201,13 +195,31 @@ open_level_files(char * level_name, char * fixname, int direct)
     if (!level_block_queue)
 	goto open_failed;
 
-    unlock_shared();
+    unlock_fn(level_lock);
     return;
 
 open_failed:
     stop_shared();
-    if (del_on_err)
+    if (del_on_err) {
 	unlink_level(fixname, 1);
+	// NB: Cannot safely removed the lock file without checking for
+	//     other users (nearly) on this level.
+    }
+}
+
+void
+create_property_file(char * level_name, char * fixname)
+{
+    stop_shared_mmap();
+
+    char sharename[256];
+    snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, fixname);
+    if (allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP) < 0) {
+	printf_chat("&WLevel open failed for %s", level_name);
+	return;
+    }
+
+    level_prop = shdat.dat[SHMID_PROP].ptr;
 }
 
 int
@@ -232,7 +244,7 @@ open_blocks(char * levelname)
 	    (intmax_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z);
 	return -1;
     }
-    if (allocate_shared(sharename, l, shdat.dat+SHMID_BLOCKS, 1) < 0)
+    if (allocate_shared(sharename, l, shdat.dat+SHMID_BLOCKS) < 0)
 	return -1;
 
     level_blocks = shdat.dat[SHMID_BLOCKS].ptr;
@@ -242,6 +254,13 @@ open_blocks(char * levelname)
 void
 stop_shared(void)
 {
+    stop_shared_mmap();
+    stop_shared_lock();
+}
+
+void
+stop_shared_mmap(void)
+{
     deallocate_shared(SHMID_PROP);
     deallocate_shared(SHMID_BLOCKS);
     level_prop = 0;
@@ -249,6 +268,13 @@ stop_shared(void)
 
     if (level_block_queue)
 	stop_block_queue();
+}
+
+void
+stop_shared_lock(void)
+{
+    lock_stop(level_lock);
+    if (level_lock->name) { free(level_lock->name); level_lock->name = 0; }
 }
 
 void
@@ -271,14 +297,12 @@ unlink_level(char * levelname, int silent)
 
 LOCAL void check_level_name(char * levelname)
 {
-    if (strchr(levelname, '/') != 0
-	|| levelname[0] == '.'
+    if (strchr(levelname, '/') != 0 || levelname[0] == '.'
 	|| strlen(levelname) > MAXLEVELNAMELEN*4) {
 	char buf[256];
 	snprintf(buf, sizeof(buf),
 	    "Illegal level file name \"%.66s\"", levelname);
 	fatal(buf);
-        return;
     }
 }
 
@@ -297,12 +321,12 @@ create_block_queue(char * levelname)
 
     // First minimum size.
     level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
-    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ, 1) < 0)
+    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0)
 	return;
     level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
 
     // Now try to extend it.
-    lock_shared();
+    lock_fn(level_lock);
 
     // First init check
     if (level_block_queue->generation == 0 ||
@@ -334,13 +358,13 @@ create_block_queue(char * levelname)
 
     // Now try the size we want.
     level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
-    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ, 1) < 0) {
+    if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0) {
 	if (file_queue_count == queue_count)
 	    fatal("Cannot open block queue");
 
 	// Hummph. How about the size it is.
 	level_block_queue_len = sizeof(*level_block_queue) + file_queue_count * sizeof(xyzb_t);
-	if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ, 1) < 0)
+	if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0)
 	    fatal("Shared area allocation failure");
 
 	queue_count = file_queue_count;
@@ -351,7 +375,7 @@ create_block_queue(char * levelname)
 	    level_block_queue->queue_len = queue_count;
     }
 
-    unlock_shared();
+    unlock_fn(level_lock);
 }
 
 void
@@ -372,7 +396,7 @@ open_client_list()
     if (client_list) stop_client_list();
 
     sprintf(sharename, SYS_STAT_NAME);
-    allocate_shared(sharename, sizeof(*client_list), shdat.dat+SHMID_CLIENTS, 0);
+    allocate_shared(sharename, sizeof(*client_list), shdat.dat+SHMID_CLIENTS);
     client_list = shdat.dat[SHMID_CLIENTS].ptr;
     if (!client_list) return;
 
@@ -400,12 +424,14 @@ create_chat_queue()
     stop_chat_queue();
     wipe_last_chat_queue_id();
 
+    lock_start(chat_queue_lock);
+    lock_fn(chat_queue_lock);
+
     sprintf(sharename, CHAT_QUEUE_NAME);
     level_chat_queue_len = sizeof(*level_chat_queue) + queue_count * sizeof(chat_entry_t);
-    allocate_shared(sharename, level_chat_queue_len, shdat.dat+SHMID_CHAT, 0);
+    allocate_shared(sharename, level_chat_queue_len, shdat.dat+SHMID_CHAT);
     level_chat_queue = shdat.dat[SHMID_CHAT].ptr;
 
-    lock_chat_shared();
     if (    level_chat_queue->generation == 0 ||
 	    level_chat_queue->generation > 0x0FFFFFFF ||
 	    level_chat_queue->queue_len != queue_count ||
@@ -413,9 +439,8 @@ create_chat_queue()
 	level_chat_queue->generation = 2;
 	level_chat_queue->curr_offset = 0;
 	level_chat_queue->queue_len = queue_count;
-	unlock_chat_shared();
-    } else
-	unlock_chat_shared();
+    }
+    unlock_fn(chat_queue_lock);
 
     set_last_chat_queue_id();
 }
@@ -427,6 +452,7 @@ stop_chat_queue()
 	deallocate_shared(SHMID_CHAT);
 	level_chat_queue = 0;
 	wipe_last_chat_queue_id();
+	lock_stop(chat_queue_lock);
     }
 }
 
@@ -439,7 +465,7 @@ open_system_conf()
     if (server) return;
 
     sprintf(sharename, SYS_CONF_NAME);
-    allocate_shared(sharename, sizeof(*server), shdat.dat+SHMID_SYSCONF, 1);
+    allocate_shared(sharename, sizeof(*server), shdat.dat+SHMID_SYSCONF);
     server = shdat.dat[SHMID_SYSCONF].ptr;
 }
 
@@ -461,7 +487,7 @@ stop_system_conf()
 #endif
 
 LOCAL int
-allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm, int close_fd)
+allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
 {
     uintptr_t sz;
     void * shm_p;
@@ -504,10 +530,8 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm, int close
         return -1;
     }
 
-    if (close_fd) {
-	close(shared_fd);
-	shared_fd = 0;
-    }
+    close(shared_fd);
+    shared_fd = 0;
 
     shm->ptr = shm_p;
     shm->len = sz;
@@ -531,62 +555,3 @@ deallocate_shared(int share_id)
 	shdat.dat[share_id].lock_fd = 0;
     }
 }
-
-void
-lock_shared(void)
-{
-   share_lock(fcntl_fd, F_SETLKW, F_WRLCK);
-}
-
-void
-unlock_shared(void)
-{
-   share_lock(fcntl_fd, F_SETLK, F_UNLCK);
-}
-
-void
-lock_chat_shared(void)
-{
-   share_lock(chat_fd, F_SETLKW, F_WRLCK);
-}
-
-void
-unlock_chat_shared(void)
-{
-   share_lock(chat_fd, F_SETLK, F_UNLCK);
-}
-
-void
-lock_client_data(void)
-{
-   share_lock(client_fd, F_SETLKW, F_WRLCK);
-}
-
-void
-unlock_client_data(void)
-{
-   share_lock(client_fd, F_SETLK, F_UNLCK);
-}
-
-LOCAL void
-share_lock(int fd, int mode, int l_type)
-{
-   struct flock lck;
-   int rv;
-
-   for(;;)
-   {
-      lck.l_type = l_type;
-      lck.l_whence = SEEK_SET;
-      lck.l_start = 0;
-      lck.l_len = 0;
-
-      rv = fcntl(fd, mode, &lck);
-      if (rv >= 0) return;
-      if (rv < 0 && errno != EINTR) {
-	 perror("Problem locking shared area");
-	 return;
-      }
-   }
-}
-

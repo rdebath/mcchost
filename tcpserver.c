@@ -813,13 +813,13 @@ static time_t last_execheck = 0;
 
     open_client_list();
     if (!shdat.client) return;
-    lock_client_data();
+    lock_fn(system_lock);
 
     if (server->loaded_levels == 0)
 	restart_sig = 1;
     else
 	restart_on_unload = 1;
 
-    unlock_client_data();
+    unlock_fn(system_lock);
     stop_client_list();
 }

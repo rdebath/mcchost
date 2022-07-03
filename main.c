@@ -61,6 +61,7 @@ int start_cron_task = 0;
 
 char program_name[512];
 
+filelock_t system_lock[1] = {{.name = SYS_LOCK_NAME}};
 volatile server_t *server = 0;
 
 nbtstr_t client_software = {"(unknown)"};
@@ -120,6 +121,19 @@ main(int argc, char **argv)
     }
 
     init_dirs();
+
+    lock_start(system_lock);
+
+    {
+	// Check main level lock
+	char fixname[MAXLEVELNAMELEN*4];
+	char sharename[256];
+	fix_fname(fixname, sizeof(fixname), main_level());
+	snprintf(sharename, sizeof(sharename), LEVEL_LOCK_NAME, fixname);
+	level_lock->name = strdup(sharename);
+	lock_start(level_lock);
+	lock_stop(level_lock);
+    }
 
     if (start_cron_task)
         run_timer_tasks();
@@ -205,11 +219,8 @@ complete_connection()
     fix_fname(fixname, sizeof(fixname), main_level());
     start_level(main_level(), fixname);
     open_level_files(main_level(), fixname, 0);
-    if (level_prop)
-	create_block_queue(fixname);
 
-    if (!level_prop)
-	fatal("Unable to load initial map file -- sorry");
+    if (!level_prop) fatal("Unable to load initial map file -- sorry");
 
     send_map_file();
 
@@ -224,7 +235,7 @@ complete_connection()
 void
 read_only_message()
 {
-    if (!level_prop->readonly) return;
+    if (!level_prop || !level_prop->readonly) return;
     if (level_prop->disallowchange && extn_inventory_order && extn_sethotbar) return;
 
     printf_chat("&WLoaded read only map, changes won't be saved.");

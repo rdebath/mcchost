@@ -55,6 +55,8 @@ cmd_place(char * cmd, char * arg)
 	return;
     }
 
+    if (!level_block_queue || !level_blocks) return;
+
     pkt_setblock pkt;
     pkt.heldblock = args[0];
     pkt.mode = 3;
@@ -93,7 +95,7 @@ cmd_place(char * cmd, char * arg)
 	//
 	// Too large and this will trigger a /reload as it'll
 	// run too fast so buzzing the lock isn't needed
-	lock_shared();
+	lock_fn(level_lock);
 	my_user.dirty = 1;
 	block_t b = args[0];
 	if (b >= BLOCKMAX) b = BLOCKMAX-1;
@@ -107,7 +109,7 @@ cmd_place(char * cmd, char * arg)
 		    level_blocks[index] = b;
 		    prelocked_update(x, y, z, b);
 		}
-	unlock_shared();
+	unlock_fn(level_lock);
     }
     return;
 }
@@ -150,6 +152,7 @@ cmd_mode(UNUSED char * cmd, char * arg)
 void
 process_player_setblock(pkt_setblock pkt)
 {
+    if (!level_block_queue || !level_blocks) return; // !!!
     if (level_prop->disallowchange) {
 	revert_client(pkt);
 	return;
