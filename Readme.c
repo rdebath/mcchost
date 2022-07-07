@@ -15,6 +15,21 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) /afk command (and auto)
+    -- Use to enhance crashed connection cleanup.
+
+ +) Add function to pthread_locs to discard a lock file.
+    Ensure that the system_lock is applied during this operation and
+    apply it if it's not.
+    -- Does this help?
+    -- Condition for level locks it that the level must not be loaded
+       or have a load in progress.
+
+ +) Split -cron into curl and cleanup.
+    -- Don't check any timeouts, run when requested.
+
+ +) Use fixname for usernames too.
+
  +) Record data rates for server bytes/s I/O
 
  +) Slow map loads, do I need to poll client chat?
@@ -30,31 +45,60 @@ See "/help todo" for notes.
     -- New Use case: save current and preserve.
     -- To preserve currently saved use a backup command.
 
- +) Key rotation, Keep previous "salt" allow this and previous keys.
-    Add timed rotation every N hours.
-    Add command to rotate key now.
+ +) Key rotation, don't share real secret with TTP host ...
+    -- use one secret but Hash(secret+postURL+time) for posted secret
+    ++ Secret format is not limited by URL characters.
 
-    Salt lines in ini file:
-    -- salt= XXXXXXXXXX
-    -- salt= XXXXXXXXXX,ExpireTime
-    -- salt= XXXXXXXXXX,ExpireTime,Namespace
-    -- newsalt = interval
-	--> Every interval create a new salt record with expire time of twice
-	    the interval and cleanup expired records.
+    -- The hash is used as a mixing function, the intermediates cannot
+    -- be externally viewed or controlled so prefix/suffix attacks are
+    -- not important. (?)
+
+    -- Suffix attacks are a known plaintext style attack.
+    -- Prefix attack is a HMAC extension attack.
+
+    --> Use secret prefix layout as known plaintext _may_ be used to
+        attack the hash algorithm.
+    -- base32(MD5(Secret+PostURL+TIMECHUNK))
+
+    -- Timechunk is time(0)\3600 (eg) for hourly changed keys,
+       check 2/3 timechunks and each url.
+    -- Check real secret too for users with access to server.ini file.
+    -- cf. user namespaces.
+
+ +) User name spaces.
+    -- Do we place an affix onto display names ?
+    -- Have #123 alias for any user, name collision workaround?
+
+    -- "unauthenticated" for no salt public internet
+       --> Do we want to merge into one user for all ?
+       --> Use IP (People dislike seeing actual IPs) as user ?
+       --> One/multiple connects per IP ?
+       --> Use hash(IP) as real user and allow nicknames?
+
+    -- "localnet" for connections from local network
+    -- "secret_001" for a particular "salt" TTP.
+
+    -- Normally "local" and "secret" would be the same namespace.
 
  +) Multiple servers in one directory; which items should (not)be per port.
     -- Need port-12345.ini file ?
-	--> Only record if different from system.ini values.
+        --> Only record if different from system.ini values.
 
-    -- "level & map & backup" need to be shared as a set.
-	--> Declared only by system.ini
+    -- "level & map & backup" need to be shared as a set due to locking.
+        --> Declared only by system.ini
 
-    -- CPE Disable?
-    -- Private?
+    -- Private flag? --> Heatbeat.
+    -- CPE Disable? OPFlag?
     -- Localnet? --> Add bind address ?
+    -- Salt? --> No, salt is not port specific.
 
-    -- Salt? --> Multiple salts on one port --> User namespaces.
-    -- Heartbeat? --> Distinct salt --> User namespaces.
+    -- Heartbeat (Enable/disable, URL, URL-List? )
+       --> Cross product between URLs and ports. (Secret is URL specific)
+       --> host/port is (mostly) the unique key used by TTP.
+       --> Heartbeat includes port number, so will need per port calls.
+       --> URL should NOT need to be duplicated.
+       --> Should sent salt include port number ? ... No.
+       --> Private Flag (per heartbeat, per hearbeat+port?)
 
  +) We use MSG_PEEK so can pass the socket to a filtering process.
     -- Websocket, SSL, Web server.
@@ -92,7 +136,6 @@ See "/help todo" for notes.
  +) /spawn command
  +) /tp command
  +) /summon command
- +) /afk command (and auto)
  +) /info command
 
  +) Colour definitions for &S,&W etc.
@@ -106,7 +149,7 @@ See "/help todo" for notes.
     -- SIGALRM: Command line routine to "unload" level file
     -- Precheck so levels can be unloaded (saved) by old version.
     -- Precheck so users processes can be restarted too?
-	-- Needs state save and reload for extn_* variables.
+        -- Needs state save and reload for extn_* variables.
 
  +) /resizelvl, /copylvl, /deletelvl, /savelvl (to mapdir)
     -- deletelvl moves current into backup (not copy)
@@ -133,7 +176,7 @@ See "/help todo" for notes.
     Copy can more easily do patchups.
 
  +) Command to save all help texts as real files.
-	no overwrite -- save to *.bak in this case?
+        no overwrite -- save to *.bak in this case?
 
  +) Run external command with stdout/err sent to client (</dev/null)
     -- Map gen? Import?

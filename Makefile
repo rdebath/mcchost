@@ -31,6 +31,7 @@ OBJ2=lib_text.o
 # We like a longer name so the command line is bigger for our argv mangling.
 INAME=mcchost-server
 INSTDIR=${HOME}/bin
+# Use rsync so the executable isn't touched when it's the same bytes.
 INSTALLER=rsync -ax
 
 ${PROG}: ${OBJ} ${OBJ2}

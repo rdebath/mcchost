@@ -336,16 +336,17 @@ login()
     if (client_trusted && (!*player.mppass || strcmp("(none)", player.mppass) == 0))
 	user_authenticated = 1;
     else if (*server->secret != 0 && *server->secret != '-') {
-	char hashbuf[NB_SLEN*2];
-	strcpy(hashbuf, IGNORE_VOLATILE_CHARP(server->secret));
-	strcat(hashbuf, user_id);
-
+	// NB: Not vulnerable to length extension attacks due to previous
+	// checks on user_id character set and length. (and NULs not allowed)
 	MD5_CTX mdContext;
-	unsigned int len = strlen (hashbuf);
 	MD5Init (&mdContext);
-	MD5Update (&mdContext, (unsigned char *)hashbuf, len);
+	unsigned char * s = (unsigned char *)server->secret;
+	MD5Update (&mdContext, s, strlen(s));
+	s = (unsigned char *)user_id;
+	MD5Update (&mdContext, s, strlen(s));
 	MD5Final (&mdContext);
 
+	char hashbuf[NB_SLEN];
 	for (int i = 0; i < 16; i++)
 	    sprintf(hashbuf+i*2, "%02x", mdContext.digest[i]);
 
