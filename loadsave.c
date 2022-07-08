@@ -95,15 +95,15 @@ cmd_goto(UNUSED char * cmd, char * arg)
 	return;
     }
 
-    if (strcmp(levelname, current_level_name) == 0) {
+    if (current_level_museum_id == 0 && strcmp(levelname, current_level_name) == 0) {
 	printf_chat("&SYou're already on &7%s", current_level_name);
 	return;
     }
 
     stop_shared();
 
-    start_level(levelname, fixedname);
-    open_level_files(levelname, fixedname, 0);
+    start_level(levelname, fixedname, 0);
+    open_level_files(levelname, 0, fixedname, 0);
     if (!level_prop) {
 	printf_chat("&WLevel load failed, returning to main");
 	cmd_main("","");
@@ -119,7 +119,7 @@ cmd_goto(UNUSED char * cmd, char * arg)
 void
 cmd_main(UNUSED char * cmd, UNUSED char * arg)
 {
-    if (strcmp(main_level(), current_level_name) == 0) {
+    if (current_level_museum_id == 0 && strcmp(main_level(), current_level_name) == 0) {
 	printf_chat("&SYou're already on &7%s", current_level_name);
 	return;
     }
@@ -129,8 +129,8 @@ cmd_main(UNUSED char * cmd, UNUSED char * arg)
 
     stop_shared();
 
-    start_level(main_level(), fixedname);
-    open_level_files(main_level(), fixedname, 0);
+    start_level(main_level(), fixedname, 0);
+    open_level_files(main_level(), 0, fixedname, 0);
     if (!level_prop)
 	fatal("Failed to load main.");
     send_map_file();
@@ -354,49 +354,55 @@ scan_and_save_levels(int unlink_only)
     for(int lvid=0; lvid<MAX_LEVEL; lvid++) {
 	if (!shdat.client->levels[lvid].loaded) continue;
 	loaded_levels++;
+	this_is_main = 0;
 
-	nbtstr_t lv = shdat.client->levels[lvid].level;
-	level_name = lv.c;
-	this_is_main = (strcmp(level_name, main_level()) == 0);
-
-	char fixedname[MAXLEVELNAMELEN*4];
-	fix_fname(fixedname, sizeof(fixedname), level_name);
-	open_level_files(level_name, fixedname, 2);
-	if (!level_prop)
+	if (shdat.client->levels[lvid].museum_id == 0)
 	{
-	    // I can't open the level ... hmmm.
-	    fprintf_logfile("Failed to open level '%s' for save", level_name);
-	    ignore_broken_level(lvid, &loaded_levels);
-	    continue;
-	}
+	    // Check for saves and backups ... museums don't have either.
 
-	if (level_prop->readonly)
-	    level_prop->dirty_save = 0;
+	    nbtstr_t lv = shdat.client->levels[lvid].level;
+	    level_name = lv.c;
+	    this_is_main = (strcmp(level_name, main_level()) == 0);
 
-	// Time to backup ?
-	time_t now = time(0);
-	int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
-	int no_unload = (level_prop->no_unload && !restart_on_unload);
-
-	if (!level_prop->readonly && !unlink_only && (!no_unload || do_bkp)) {
-	    if (level_prop->dirty_save) {
-
-		int rv = save_level(fixedname, level_name, do_bkp);
-
-		if (rv < 0)
-		    printf_chat("@&WSave of level \"%s\" failed", level_name);
+	    char fixedname[MAXLEVELNAMELEN*4];
+	    fix_fname(fixedname, sizeof(fixedname), level_name);
+	    open_level_files(level_name, 0, fixedname, 1);
+	    if (!level_prop)
+	    {
+		// I can't open the level ... hmmm.
+		fprintf_logfile("Failed to open level '%s' for save", level_name);
+		ignore_broken_level(lvid, &loaded_levels);
+		continue;
 	    }
+
+	    if (level_prop->readonly)
+		level_prop->dirty_save = 0;
+
+	    // Time to backup ?
+	    time_t now = time(0);
+	    int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
+	    int no_unload = (level_prop->no_unload && !restart_on_unload);
+
+	    if (!level_prop->readonly && !unlink_only && (!no_unload || do_bkp)) {
+		if (level_prop->dirty_save) {
+
+		    int rv = save_level(fixedname, level_name, do_bkp);
+
+		    if (rv < 0)
+			printf_chat("@&WSave of level \"%s\" failed", level_name);
+		}
+	    }
+
+	    int level_dirty = level_prop->dirty_save;
+
+	    stop_shared();
+
+	    // Don't unload a map that failed to save
+	    if (level_dirty) continue;
+
+	    // Don't unload if it's turned off
+	    if (no_unload) continue;
 	}
-
-	int level_dirty = level_prop->dirty_save;
-
-	stop_shared();
-
-	// Don't unload a map that failed to save
-	if (level_dirty) continue;
-
-	// Don't unload if it's turned off
-	if (no_unload) continue;
 
 	lock_fn(system_lock);
 
@@ -410,8 +416,21 @@ scan_and_save_levels(int unlink_only)
 	}
 
 	if (user_count == 0) {
+	    // recheck as someone may have unloaded it.
 	    if (shdat.client->levels[lvid].loaded) {
 		// unload.
+		nbtstr_t lv = shdat.client->levels[lvid].level;
+		level_name = lv.c;
+		char fixedname[MAXLEVELNAMELEN*4];
+		int museum_id = shdat.client->levels[lvid].museum_id;
+		fix_fname(fixedname, sizeof(fixedname), level_name);
+		if (shdat.client->levels[lvid].museum_id) {
+		    char fixedname2[MAXLEVELNAMELEN*4];
+		    strcpy(fixedname2, fixedname);
+		    snprintf(fixedname, sizeof(fixedname), "%.*s.%d",
+			sizeof(fixedname2)-sizeof(int)*3, fixedname2, museum_id);
+		}
+
 		unlink_level(fixedname, 0);
 
 		// We known nobody has the level lock and we have the system
@@ -421,7 +440,10 @@ scan_and_save_levels(int unlink_only)
 		(void)unlink(sharename);
 
 		shdat.client->levels[lvid].loaded = 0;
-		fprintf_logfile("Unloaded level files %s", level_name);
+		if (museum_id)
+		    fprintf_logfile("Unloaded museum %d of %s", museum_id, level_name);
+		else
+		    fprintf_logfile("Unloaded level %s", level_name);
 	    }
 	    loaded_levels--;
 	}

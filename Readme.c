@@ -18,15 +18,11 @@ See "/help todo" for notes.
  +) /afk command (and auto)
     -- Use to enhance crashed connection cleanup.
 
- +) Add function to pthread_locs to discard a lock file.
-    Ensure that the system_lock is applied during this operation and
-    apply it if it's not.
-    -- Does this help?
-    -- Condition for level locks it that the level must not be loaded
-       or have a load in progress.
-
  +) Split -cron into curl and cleanup.
     -- Don't check any timeouts, run when requested.
+
+ +) List of levels in backup directory.
+    -- With backup number ranges.
 
  +) Use fixname for usernames too.
 
@@ -145,7 +141,8 @@ See "/help todo" for notes.
  +) Team chat, less primitive chatroom.
 
  +) Command line option to restart server and unload levels.
-    -- So we know this version will run! Find pid by port no.
+    -- So we know this version will run!
+    -- Find pid by port no.
     -- SIGALRM: Command line routine to "unload" level file
     -- Precheck so levels can be unloaded (saved) by old version.
     -- Precheck so users processes can be restarted too?

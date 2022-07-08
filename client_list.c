@@ -39,6 +39,7 @@ struct client_entry_t {
 
 struct client_level_t {
     int loaded;
+    int museum_id;
     nbtstr_t level;
 };
 
@@ -206,7 +207,7 @@ start_user()
 }
 
 void
-start_level(char * levelname, char * levelfile)
+start_level(char * levelname, char * levelfile, int museum_id)
 {
     nbtstr_t level = {0};
     int level_id = -1;
@@ -214,6 +215,7 @@ start_level(char * levelname, char * levelfile)
     strcpy(level.c, levelname);
     strcpy(current_level_name, levelname);
     strcpy(current_level_fname, levelfile);
+    current_level_museum_id = museum_id;
 
     lock_fn(system_lock);
 
@@ -223,7 +225,7 @@ start_level(char * levelname, char * levelfile)
 	    continue;
 	}
 	nbtstr_t n = shdat.client->levels[i].level;
-	if (strcmp(n.c, level.c) == 0) {
+	if (strcmp(n.c, level.c) == 0 && shdat.client->levels[i].museum_id == museum_id) {
 	    level_id = i;
 	    break;
 	}
@@ -235,6 +237,7 @@ start_level(char * levelname, char * levelfile)
     if (!shdat.client->levels[level_id].loaded) {
 	shdat.client->levels[level_id].level = level;
 	shdat.client->levels[level_id].loaded = 1;
+	shdat.client->levels[level_id].museum_id = museum_id;
     }
 
     shdat.client->user[my_user_no].on_level = level_id;
