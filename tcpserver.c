@@ -47,6 +47,8 @@ static volatile int restart_sig = 0, child_sig = 0;
 static volatile int alarm_sig = 0, term_sig = 0;
 static int signal_available = 0;
 int restart_on_unload = 0;
+static time_t last_execheck = 0;
+int trigger_backup = 0, trigger_unload = 0;
 
 pid_t alarm_handler_pid = 0;
 
@@ -193,7 +195,7 @@ tcpserver()
 
 	check_new_exe();
 
-	if (restart_sig && backup_pid == 0)
+	if (restart_sig)
 	    do_restart();
 
 	cleanup_zombies();
@@ -212,7 +214,7 @@ tcpserver()
     } else
 	printlog("Terminating service");
 
-    alarm_sig = 1;
+    trigger_backup = 1;
     start_backup_process();
     printlog("Exit process pid %d", getpid());
     exit(0);
@@ -495,6 +497,7 @@ cleanup_zombies()
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		printlog("Backup and unload process %d failed", pid);
 	    backup_pid = 0;
+	    if (restart_on_unload) last_execheck = time(0) - 300;
 	} else
 	    client_process_finished++;
 
@@ -564,8 +567,8 @@ cleanup_zombies()
 	    stop_chat_queue();
 	}
 
-	if (client_process_finished) //
-	    alarm_sig = 1;
+	if (client_process_finished)
+	    trigger_unload = 1;
     }
 }
 
@@ -766,14 +769,19 @@ run_timer_tasks()
 void
 start_backup_process()
 {
+    if (backup_pid != 0) return;
+
     if (!start_backup_task) {
 	time_t now;
 	time(&now);
-	if (alarm_sig == 0 && server->last_backup != 0) {
+	if (server->last_backup == 0) server->last_backup = now;
+
+	if (alarm_sig == 0 && trigger_backup == 0) {
 	    if ((now-server->last_backup) < server->save_interval) {
-		if ((now-server->last_unload) >= 15) {
+		if ((now-server->last_unload) >= 15 || trigger_unload) {
 		    scan_and_save_levels(1);
 		    server->last_unload = now;
+		    trigger_unload = 0;
 		}
 		return;
 	    }
@@ -782,6 +790,7 @@ start_backup_process()
 	server->last_unload = now;
     }
 
+    trigger_backup = trigger_unload = 0;
     backup_pid = E(fork(),"fork() for backup");
     if (backup_pid != 0) return;
 
@@ -794,8 +803,6 @@ start_backup_process()
 void
 check_new_exe()
 {
-static time_t last_execheck = 0;
-
     if (!proc_self_exe_ok) return;
 
     // Normally check 30 seconds
@@ -829,8 +836,10 @@ static time_t last_execheck = 0;
 
     if (server->loaded_levels == 0)
 	restart_sig = 1;
-    else
+    else {
 	restart_on_unload = 1;
+	trigger_backup = 1;
+    }
 
     unlock_fn(system_lock);
     stop_client_list();

@@ -228,6 +228,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     if (save_map_to_file(tmp_fn, 1) < 0) {
 	int e = errno;
 	(void) unlink(tmp_fn);
+	unlock_fn(level_lock);
 	errno = e;
 	level_prop->last_backup = backup_sav;
 
@@ -247,6 +248,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	perror("save rename failed");
 	int e = errno;
 	(void) unlink(tmp_fn);
+	unlock_fn(level_lock);
 	errno = e;
 	return -1;
     }
@@ -378,16 +380,19 @@ scan_and_save_levels(int unlink_only)
 	    if (level_prop->readonly)
 		level_prop->dirty_save = 0;
 
-	    // Time to backup ?
-	    time_t now = time(0);
-	    int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
+	    // Block unload unless we are restarting.
 	    int no_unload = (level_prop->no_unload && !restart_on_unload);
 
-	    if (!level_prop->readonly && !unlink_only && (!no_unload || do_bkp)) {
-		if (level_prop->dirty_save) {
+	    if (level_prop->dirty_save) {
+		int do_save = !unlink_only && !no_unload;
 
+		// Time to backup ?
+		time_t now = time(0);
+		int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
+		if (do_bkp && !unlink_only) do_save = 1;
+
+		if (do_save) {
 		    int rv = save_level(fixedname, level_name, do_bkp);
-
 		    if (rv < 0)
 			printf_chat("@&WSave of level \"%s\" failed", level_name);
 		}

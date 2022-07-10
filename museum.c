@@ -31,6 +31,11 @@ cmd_museum(UNUSED char * cmd, char * arg)
 
     int backup_id = strtol(levelid, 0, 10);
 
+    if (backup_id <= 0){
+	printf_chat("&SBackup %s for level %s does not exist", levelid, lvl);
+	return;
+    }
+
     while (lvl && *lvl == ' ') lvl++;
 
     if (lvl) {
@@ -44,6 +49,7 @@ cmd_museum(UNUSED char * cmd, char * arg)
 	    fix_fname(fixedname, sizeof(fixedname), lvl);
     } else {
 	fix_fname(fixedname, sizeof(fixedname), current_level_name);
+	lvl = current_level_name;
     }
 
     snprintf(buf2, sizeof(buf2), LEVEL_BACKUP_NAME, fixedname, backup_id);
