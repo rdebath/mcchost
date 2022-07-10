@@ -26,6 +26,7 @@ struct server_t {
     int private;
     int cpe_disabled;
     char main_level[NB_SLEN];
+    time_t key_rotation;
     time_t save_interval;
     time_t backup_interval;
     int max_players;
@@ -57,7 +58,8 @@ int user_authenticated = 0;
 int user_logged_in = 0;
 int server_id_op_flag = 1;
 int inetd_mode = 0;
-int start_cron_task = 0;
+int start_heartbeat_task = 0;
+int start_backup_task = 0;
 
 char program_name[512];
 
@@ -97,7 +99,8 @@ main(int argc, char **argv)
     proc_args_mem = argv[0];
     proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0] + 1;
 
-    if (!inetd_mode && !start_tcp_server && !save_conf && !start_cron_task
+    if (!inetd_mode && !start_tcp_server && !save_conf
+	&& !start_heartbeat_task && !start_backup_task
 	&& (isatty(0) || isatty(1)))
 	show_args_help();
 
@@ -136,7 +139,7 @@ main(int argc, char **argv)
 	lock_stop(level_lock);
     }
 
-    if (start_cron_task)
+    if (start_heartbeat_task || start_backup_task)
         run_timer_tasks();
 
     delete_session_id(0, 0, 0);
@@ -337,21 +340,8 @@ login()
     if (client_trusted && (!*player.mppass || strcmp("(none)", player.mppass) == 0))
 	user_authenticated = 1;
     else if (*server->secret != 0 && *server->secret != '-') {
-	// NB: Not vulnerable to length extension attacks due to previous
-	// checks on user_id character set and length. (and NULs not allowed)
-	MD5_CTX mdContext;
-	MD5Init (&mdContext);
-	unsigned char * s = (unsigned char *)server->secret;
-	MD5Update (&mdContext, s, strlen(s));
-	s = (unsigned char *)user_id;
-	MD5Update (&mdContext, s, strlen(s));
-	MD5Final (&mdContext);
 
-	char hashbuf[NB_SLEN];
-	for (int i = 0; i < 16; i++)
-	    sprintf(hashbuf+i*2, "%02x", mdContext.digest[i]);
-
-	if (strcasecmp(hashbuf, player.mppass) != 0)
+	if (check_mppass(player.mppass) == 0)
 	    disconnect(0, "Login failed! Close the game and sign in again.");
 
 	user_authenticated = 1;

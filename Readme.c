@@ -18,9 +18,6 @@ See "/help todo" for notes.
  +) /afk command (and auto)
     -- Use to enhance crashed connection cleanup.
 
- +) Split -cron into curl and cleanup.
-    -- Don't check any timeouts, run when requested.
-
  +) List of levels in backup directory.
     -- With backup number ranges.
 
@@ -36,30 +33,6 @@ See "/help todo" for notes.
     -- Or just record if different ?
 
  +) lmdb appears with Debian jessie, do I want a fallback ?
-
- +) /set readonly t/f -- does chmod ? Force save ?
-    -- New Use case: save current and preserve.
-    -- To preserve currently saved use a backup command.
-
- +) Key rotation, don't share real secret with TTP host ...
-    -- use one secret but Hash(secret+postURL+time) for posted secret
-    ++ Secret format is not limited by URL characters.
-
-    -- The hash is used as a mixing function, the intermediates cannot
-    -- be externally viewed or controlled so prefix/suffix attacks are
-    -- not important. (?)
-
-    -- Suffix attacks are a known plaintext style attack.
-    -- Prefix attack is a HMAC extension attack.
-
-    --> Use secret prefix layout as known plaintext _may_ be used to
-        attack the hash algorithm.
-    -- base32(MD5(Secret+PostURL+TIMECHUNK))
-
-    -- Timechunk is time(0)\3600 (eg) for hourly changed keys,
-       check 2/3 timechunks and each url.
-    -- Check real secret too for users with access to server.ini file.
-    -- cf. user namespaces.
 
  +) User name spaces.
     -- Do we place an affix onto display names ?

@@ -122,7 +122,19 @@ process_args(int argc, char **argv)
 		}
 
 		if (strcmp(argv[ar], "-cron") == 0) {
-		    start_cron_task = 1;
+		    start_heartbeat_task = 1;
+		    start_backup_task = 1;
+		    break;
+		}
+
+		if (strcmp(argv[ar], "-register") == 0) {
+		    start_heartbeat_task = 1;
+		    enable_heartbeat_poll = 1;
+		    break;
+		}
+
+		if (strcmp(argv[ar], "-cleanup") == 0) {
+		    start_backup_task = 1;
 		    break;
 		}
 
@@ -189,8 +201,9 @@ process_args(int argc, char **argv)
 		    .software = "MCCHost",
 		    .name = "MCCHost Server",
 		    .main_level = "main",
-		    .save_interval = 300,
-		    .backup_interval = 86400,
+		    .save_interval = 5*60,
+		    .backup_interval = 24*3600,
+		    .key_rotation = 6*3600,
 		    .max_players = 255,
 		};
 
@@ -213,39 +226,8 @@ process_args(int argc, char **argv)
 	plen += 11;
     } while(plen < 32);
 
-    struct timeval now;
-    gettimeofday(&now, 0);
-#ifdef PCG32_INITIALIZER
-    // Somewhat better random seed, the whole time, pid and ASLR
-    pcg32_srandom(
-	now.tv_sec*(uint64_t)1000000 + now.tv_usec,
-	(((uintptr_t)&process_args) >> 12) +
-	((int64_t)(getpid()) << sizeof(uintptr_t)*4) );
-
-// NB: for x86/x64
-//              0x88000888
-// On 32bit     0x99XXX000 --> Only *8*bits of ASLR
-// On 64bit 0x91XXXXXXX000 --> 28bits of ASLR
-//      0x8888800000000888
-#else
-    // A pretty trivial semi-random code, maybe 24bits of randomness.
-    srandom(now.tv_sec ^ (now.tv_usec*4294U));
-#endif
-
-    if (enable_heartbeat_poll && server->secret[0] == 0) {
-	static char base62[] =
-	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	for(int i=0; i<16; i++) {
-#ifdef PCG32_INITIALIZER
-	    int ch = pcg32_boundedrand(62);
-#else
-	    int ch = random() % 62;
-#endif
-	    server->secret[i] = base62[ch];
-	}
-	server->secret[16] = 0;
-	fprintf(stderr, "Generated server secret %s\n", server->secret);
-    }
+    if (enable_heartbeat_poll && server->secret[0] == 0)
+	generate_secret();
 }
 
 LOCAL void

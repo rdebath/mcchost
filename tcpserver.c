@@ -240,7 +240,7 @@ logger_process()
 	// Parent process
 	logger_pid = pid2;
 
-	if (start_tcp_server || start_cron_task) {
+	if (start_tcp_server || start_heartbeat_task || start_backup_task) {
 	    E(dup2(pipefd[1], 1), "dup2(logger,1)");
 	    E(dup2(pipefd[1], 2), "dup2(logger,2)");
 	    close(pipefd[0]);
@@ -572,18 +572,21 @@ cleanup_zombies()
 LOCAL void
 send_heartbeat_poll()
 {
-    time_t now;
-    time(&now);
-    if (last_heartbeat == 0 && server->last_heartbeat_port == tcp_port_no)
-	last_heartbeat = server->last_heartbeat;
+    if (!start_heartbeat_task) {
+	time_t now;
+	time(&now);
 
-    if (alarm_sig == 0 && last_heartbeat != 0 && !term_sig) {
-	if ((now-last_heartbeat) < 45)
-	    return;
+	if (last_heartbeat == 0 && server->last_heartbeat_port == tcp_port_no)
+	    last_heartbeat = server->last_heartbeat;
+
+	if (alarm_sig == 0 && last_heartbeat != 0 && !term_sig) {
+	    if ((now-last_heartbeat) < 45)
+		return;
+	}
+	last_heartbeat = now;
+	server->last_heartbeat = last_heartbeat;
+	server->last_heartbeat_port = tcp_port_no;
     }
-    last_heartbeat = now;
-    server->last_heartbeat = last_heartbeat;
-    server->last_heartbeat_port = tcp_port_no;
 
     if (heartbeat_pid) {
 	heartbeat_pid = 0;
@@ -593,7 +596,13 @@ send_heartbeat_poll()
     char cmdbuf[4096];
     char namebuf[256];
     char softwarebuf[256];
+    char secretbuf[NB_SLEN];
     int valid_salt = (*server->secret != 0 && *server->secret != '-');
+
+    if (valid_salt)
+	convert_secret(secretbuf, heartbeat_url, 0);
+    else
+	strcpy(secretbuf, "0000000000000000");
 
     // {"errors":[["Only first 256 unicode codepoints may be used in server names."]],"response":"","status":"fail"}
     //
@@ -624,7 +633,7 @@ send_heartbeat_poll()
 	"public=",server->private||term_sig?"False":"True",
 	"version=",7,
 	"users=",unique_ip_count(),
-	"salt=",valid_salt?server->secret:"0000000000000000",
+	"salt=",secretbuf,
 	"name=",ccnet_cp437_quoteurl(server->name, namebuf, sizeof(namebuf)),
 	"software=",ccnet_cp437_quoteurl(server->software, softwarebuf, sizeof(softwarebuf)),
 	"web=","False"
@@ -715,10 +724,11 @@ void
 run_timer_tasks()
 {
     logger_process();
-    if (enable_heartbeat_poll)
+    if (enable_heartbeat_poll && start_heartbeat_task)
 	send_heartbeat_poll();
 
-    start_backup_process();
+    if (start_backup_task)
+	start_backup_process();
 
     // If we are being called from Systemd it has the nasty habit of killing
     // All our processes when we return. So we MUST wait for all our children.
@@ -756,19 +766,21 @@ run_timer_tasks()
 void
 start_backup_process()
 {
-    time_t now;
-    time(&now);
-    if (alarm_sig == 0 && server->last_backup != 0) {
-        if ((now-server->last_backup) < server->save_interval) {
-	    if ((now-server->last_unload) >= 15) {
-		scan_and_save_levels(1);
-		server->last_unload = now;
+    if (!start_backup_task) {
+	time_t now;
+	time(&now);
+	if (alarm_sig == 0 && server->last_backup != 0) {
+	    if ((now-server->last_backup) < server->save_interval) {
+		if ((now-server->last_unload) >= 15) {
+		    scan_and_save_levels(1);
+		    server->last_unload = now;
+		}
+		return;
 	    }
-            return;
 	}
+	server->last_backup = now;
+	server->last_unload = now;
     }
-    server->last_backup = now;
-    server->last_unload = now;
 
     backup_pid = E(fork(),"fork() for backup");
     if (backup_pid != 0) return;

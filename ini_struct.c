@@ -51,6 +51,9 @@ Strings are generally limited to 64 cp437 characters by protocol.
 Character set of file is UTF8
 */
 
+#define WC(_x) WC2(!st->no_unsafe, _x)
+#define WC2(_c, _x) (st->write && (_c)) ?"; " _x:_x
+
 int
 system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 {
@@ -60,9 +63,6 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     section = "server";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-#define WC(_x) WC2(!st->no_unsafe, _x)
-#define WC2(_c, _x) (st->write && (_c)) ?"; " _x:_x
-
 	INI_STRARRAYCP437("Software", server->software);
 	INI_STRARRAYCP437("Name", server->name);
 	INI_STRARRAYCP437("Motd", server->motd);
@@ -71,8 +71,9 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	if (!st->no_unsafe) {
 	    INI_STRARRAY("Salt", server->secret);	//Base62
 	} else if (st->write) {
-	    INI_STRARRAY("Salt", "XXXXXXXXXXXXXXXX");
+	    INI_STRARRAY(WC("Salt"), "XXXXXXXXXXXXXXXX");
 	}
+	INI_DURATION("KeyRotation", server->key_rotation);
 
 	INI_BOOLVAL("Private", server->private);
 	INI_BOOLVAL("NoCPE", server->cpe_disabled);
@@ -520,9 +521,10 @@ ini_write_int_duration(ini_state_t *st, char * section, char *fieldname, int val
 {
     ini_write_section(st, section);
     int unit = 0;
-    for(int i = 0; time_units[i].id; i++)
-	if (value/time_units[i].scale*time_units[i].scale == value)
-	    unit = i;
+    if (value)
+	for(int i = 0; time_units[i].id; i++)
+	    if (value/time_units[i].scale*time_units[i].scale == value)
+		unit = i;
     fprintf(st->fd, "%s = %d%c\n", fieldname,
 	value/time_units[unit].scale, time_units[unit].id);
 }
