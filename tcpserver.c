@@ -106,6 +106,9 @@ tcpserver()
 	if (detach_tcp_server)
 	    fork_and_detach();
 
+	if (!log_to_stderr)
+	    logger_process();
+
 	if (!disable_restart) {
 	    if (signal(SIGHUP, handle_signal) == SIG_ERR) {
 		perror("signal(SIGHUP,)");
@@ -122,10 +125,10 @@ tcpserver()
 	    perror("signal(SIGTERM,)");
 
 	alarm_handler_pid = getpid(); // For the children to signal us.
+    } else {
+	if (!log_to_stderr)
+	    logger_process();
     }
-
-    if (!log_to_stderr)
-	logger_process();
 
     if (server_runonce)
 	printlog("Waiting for a connection on port %d.", tcp_port_no);
@@ -133,9 +136,12 @@ tcpserver()
 	printlog("Accepting connections on port %d (pid:%d).", tcp_port_no, getpid());
 
     memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "%s port %d", server->software, tcp_port_no);
+    snprintf(proc_args_mem, proc_args_len, "%s port %d", SWNAME, tcp_port_no);
 
     convert_localnet_cidr();
+
+    restart_sig = 0;
+    last_execheck = time(0);
 
     while(!term_sig)
     {
@@ -304,15 +310,30 @@ do_restart()
     (void)signal(SIGTERM, SIG_DFL);
     signal_available = 0;
     if (listen_socket>=0) close(listen_socket);
+    listen_socket = 0;
+    restart_sig = 0;
     close_logfile();
 
-    // Doing this properly means looking in /proc/self/fd or /dev/fd
-    // for(int i=3; i<FD_SETSIZE; i++) close(i);
-    // Don't use getrlimit(RLIMIT_NOFILE, &rlim); as this might be immense.
-
-    execvp(program_args[0], program_args);
+    // Note execvp never returns as it starts the shell on error.
+    if (program_args[0][0] == '/')
+	execv(program_args[0], program_args);
+    else
+	execvp(program_args[0], program_args);
     perror(program_args[0]);
-    exit(126);
+
+    printlog("Restart failed attempting to continue ...");
+
+    listen_socket = start_listen_socket("0.0.0.0", tcp_port_no);
+    signal_available = 1;
+
+    if (signal(SIGHUP, handle_signal) == SIG_ERR)
+	perror("signal(SIGHUP,)");
+    if (signal(SIGCHLD, handle_signal) == SIG_ERR)
+	perror("signal(SIGCHLD,)");
+    if (signal(SIGALRM, handle_signal) == SIG_ERR)
+	perror("signal(SIGALRM,)");
+    if (signal(SIGTERM, handle_signal) == SIG_ERR)
+	perror("signal(SIGTERM,)");
 }
 
 /* Start listening socket listen_sock. */
@@ -813,9 +834,9 @@ check_new_exe()
     last_execheck = now;
 
     // Is /proc/self/exe still okay?
-    char buf[PATH_MAX*2];
+    char buf[PATH_MAX] = "";
     int l = readlink("/proc/self/exe", buf, sizeof(buf)-1);
-    buf[sizeof(buf)-1] = 0;
+    if (l > 0) buf[l] = 0;
 
     // /proc/self/exe gives something runnable.
     if (l > 0 && access(buf, X_OK) == 0) {

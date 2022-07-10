@@ -198,8 +198,8 @@ process_args(int argc, char **argv)
 	    if (server->magic != MAP_MAGIC || server->magic2 != MAP_MAGIC2)
 		*server = (server_t){
 		    .magic = MAP_MAGIC, .magic2 = MAP_MAGIC2,
-		    .software = "MCCHost",
-		    .name = "MCCHost Server",
+		    .software = SWNAME,
+		    .name = SWNAME " Server",
 		    .main_level = "main",
 		    .save_interval = 5*60,
 		    .backup_interval = 24*3600,
@@ -234,9 +234,9 @@ LOCAL void
 getprogram(char * argv0)
 {
     // See if /proc/self/exe looks ok.
-    char buf[PATH_MAX*2];
+    char buf[PATH_MAX] = "";
     int l = readlink("/proc/self/exe", buf, sizeof(buf)-1);
-    buf[sizeof(buf)-1] = 0;
+    if (l > 0) buf[l] = 0;
 
     // /proc/self/exe gives something runnable.
     if (l > 0 && access(buf, X_OK) == 0) {

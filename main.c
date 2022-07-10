@@ -16,6 +16,8 @@
 #if INTERFACE
 #include <time.h>
 
+#define SWNAME "MCCHost"
+
 typedef struct server_t server_t;
 struct server_t {
     int magic;
@@ -146,7 +148,7 @@ main(int argc, char **argv)
 
     if (start_tcp_server) {
 	memset(proc_args_mem, 0, proc_args_len);
-	snprintf(proc_args_mem, proc_args_len, "%s server", server->software);
+	snprintf(proc_args_mem, proc_args_len, "%s server", SWNAME);
 
 	tcpserver();
     } else {
@@ -185,7 +187,7 @@ process_connection()
     write_current_user(1);
 
     memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "%s (%s)", server->software, user_id);
+    snprintf(proc_args_mem, proc_args_len, "%s (%s)", SWNAME, user_id);
 
     user_logged_in = 1; // May not be "authenticated", but they exist.
 
