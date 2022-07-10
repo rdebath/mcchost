@@ -427,8 +427,8 @@ scan_and_save_levels(int unlink_only)
 		if (shdat.client->levels[lvid].museum_id) {
 		    char fixedname2[MAXLEVELNAMELEN*4];
 		    strcpy(fixedname2, fixedname);
-		    snprintf(fixedname, sizeof(fixedname), "%.*s.%d",
-			sizeof(fixedname2)-sizeof(int)*3, fixedname2, museum_id);
+		    snprintf(fixedname, sizeof(fixedname), "%s.%d",
+			fixedname2, museum_id);
 		}
 
 		unlink_level(fixedname, 0);

@@ -212,6 +212,8 @@ write_current_user(int when)
     strcpy(my_user.user_id, user_id);
 
     write_userrec(&my_user);
+
+    my_user.dirty = 0;
 }
 
 void

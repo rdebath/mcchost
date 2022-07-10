@@ -65,8 +65,7 @@ cmd_museum(UNUSED char * cmd, char * arg)
     char fixedname2[MAXLEVELNAMELEN*4];
     strcpy(fixedname2, fixedname);
 
-    snprintf(fixedname, sizeof(fixedname), "%.*s.%d",
-	sizeof(fixedname2)-sizeof(int)*3, fixedname2, backup_id);
+    snprintf(fixedname, sizeof(fixedname), "%s.%d", fixedname2, backup_id);
 
     stop_shared();
 
