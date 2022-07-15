@@ -13,24 +13,69 @@
 
 /*HELP setvar,set H_CMD
 &T/set section name value
-Sections are &Tlevel&S and &Tblock.&WN&S were &WN&S is the block definition number
+Sections are &Tserver&S, &Tlevel&S and &Tblock.&WN&S were
+&WN&S is the block definition number
 
+The "level" section is used if you don't specify one of
+the known sections.
+
+Any value defined as "seconds" may also be set in minutes,
+hours or days by adding "m", "h" or "d"
+
+See &T/help set level&S, &T/help set block&S and &T/help set server&S
+*/
+
+/*HELP set_level
+&T/set level &Sname value
 Options in "level" include ...
 Spawn.X Spawn.Y Spawn.Z Spawn.H Spawn.V
-Motd ClickDistance Texture EnvWeatherType SkyColour
+Motd ClickDistance Texture WeatherType SkyColour
 CloudColour FogColour AmbientColour SunlightColour
 SkyboxColour SideBlock EdgeBlock SideLevel SideOffset
 CloudHeight MaxFog CloudsSpeed WeatherSpeed WeatherFade
-ExpFog SkyboxHorSpeed SkyboxVerSpeed
-
+ExpFog SkyboxHorSpeed SkyboxVerSpeed DisallowChange
+ReadOnly NoUnload
 */
 
-/*HELP set_block H_CMD
-&W TODO
+/*HELP set_block
+&T/set block&S ID name value
+&TDefined&S Mostly used to undefine a block (set false).
+&TName&S Block name
+&TCollide&S Value 0..7
+&TTransmitsLight&S Boolean value
+&TWalkSound&S Values 0..9
+&TFullBright&S Boolean value
+&TShape&S Boolean value, true is normal sprite.
+&TDraw&S Values 0..7
+&TSpeed&S Values 0.25 to 3.95
+&TTexture.Top&S, &TTexture.Bottom&S, &TTexture.Left&S,
+&TTexture.Right&S, &TTexture.Front&S, &TTexture.Back&S
+Textures numbers for the faces of the cube.
+For "shape true" blocks use the "right" texture.
+&TMin.X&S, &TMin.Y&S, &TMin.Z&S, &TMax.X&S, &TMax.Y&S, &TMax.Z&S
+The dimensions of a cubic block (usually 0..16)
+
+&TFallback&S Block number used for downlevel clients.
+&TStackBlock&S Block number used for stacking slabs.
+&TGrassBlock&S Block number for grass version of this block
+&TDirtBlock&S Block number for dirt version of this block
+&TOrder&S Inventory position for this block
 */
 
-/*HELP set_system H_CMD
-&W TODO
+/*HELP set_server
+&T/set server&S name value
+
+&TName&S Server name
+&TMotd&S The server level motd
+&TMain&S Which level to use as main.
+&TSalt&S Secret to use for classicube.net
+&TKeyRotation&S Number of seconds between key rotations.
+&TPrivate&S Set &TTrue&S to hide registration
+&TNoCPE&S Disable negoation of CPE
+&TSaveInterval&S Time between level save checks
+&TBackupInterval&S Time between level backups
+
+Other options in server.ini can also be set, but may not take effect immediatly.
 */
 
 void

@@ -198,9 +198,9 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL(WC("Defined"), level_prop->blockdef[bn].defined);
 	INI_NBTSTR("Name", level_prop->blockdef[bn].name);
 	INI_INTVAL("Collide", level_prop->blockdef[bn].collide);
-	INI_INTVAL("TransmitsLight", level_prop->blockdef[bn].transmits_light);
+	INI_BOOLVAL("TransmitsLight", level_prop->blockdef[bn].transmits_light);
 	INI_INTVAL("WalkSound", level_prop->blockdef[bn].walksound);
-	INI_INTVAL("FullBright", level_prop->blockdef[bn].fullbright);
+	INI_BOOLVAL("FullBright", level_prop->blockdef[bn].fullbright);
 	INI_INTVAL("Shape", level_prop->blockdef[bn].shape);
 	INI_INTVAL("Draw", level_prop->blockdef[bn].draw);
 	INI_FIXEDP("Speed", level_prop->blockdef[bn].speed, 1000);
@@ -461,7 +461,10 @@ LOCAL void
 ini_write_bool(ini_state_t *st, char * section, char *fieldname, int value)
 {
     ini_write_section(st, section);
-    fprintf(st->fd, "%s = %s\n", fieldname, value?"true":"false");
+    if (value < 0 || value > 1)
+	fprintf(st->fd, "%s = %d\n", fieldname, value);
+    else
+	fprintf(st->fd, "%s = %s\n", fieldname, value?"true":"false");
 }
 
 LOCAL int
@@ -470,7 +473,9 @@ ini_read_bool(char * value)
     int rv = 0;
     if (strcasecmp(value, "true") == 0) rv = 1; else
     if (strcasecmp(value, "yes") == 0) rv = 1; else
-    if (atoi(value) != 0) rv = 1;
+    if (strcasecmp(value, "on") == 0) rv = 1; else
+    if ((*value >= '0' && *value <= '9') || *value == '-')
+	rv = atoi(value);
     return rv;
 }
 

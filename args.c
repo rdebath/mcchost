@@ -245,8 +245,8 @@ getprogram(char * argv0)
 	proc_self_exe = strdup(buf);
     }
 
-    // Is argv0 absolute or a $PATH lookup? Then use it for restart.
-    if (argv0[0] == '/' || strchr(argv0, '/') == 0) {
+    // Is argv0 absolute? Then use it for restart.
+    if (argv0[0] == '/') {
 	program_args[0] = strdup(argv0);
 	return;
     }
@@ -257,6 +257,9 @@ getprogram(char * argv0)
 	program_args[0] = strdup(buf);
 	return;
     }
+
+    // Note we don't want use use this last one because execvp() will not
+    // return if the executable is broken. (It's passed to /bin/sh instead)
 
     // Last try, assume the PATH will get fixed sometime.
     char * p = strrchr(argv0, '/');
