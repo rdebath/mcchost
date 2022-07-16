@@ -31,7 +31,7 @@ nb_short_clamp(uint8_t **ptr, int v)
 }
 
 static inline int
-nb_string_write(uint8_t *pkt, volatile char * str)
+nb_string_write(uint8_t *pkt, char * str)
 {
     int l;
     for(l=0; l<MB_STRLEN; l++) {
@@ -83,7 +83,7 @@ nb_entcoord(uint8_t **ptr, int vec)
 }
 
 void
-send_server_id_pkt(volatile char * servername, volatile char * servermotd, int user_type)
+send_server_id_pkt(char * servername, char * servermotd, int user_type)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -291,7 +291,7 @@ send_op_pkt(int opflg)
 }
 
 void
-send_extinfo_pkt(volatile char * appname, int num_extn)
+send_extinfo_pkt(char * appname, int num_extn)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -365,7 +365,7 @@ send_envsetcolour_pkt(int id, int rgb)
 }
 
 void
-send_textureurl_pkt(volatile nbtstr_t * textureurl)
+send_textureurl_pkt(nbtstr_t * textureurl)
 {
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;

@@ -8,7 +8,7 @@
 #include "send_map_file.h"
 
 #if INTERFACE
-#define block_convert(_bl) ((_bl)<client_block_limit?_bl:f_block_convert(_bl))
+#define block_convert(_bl) ((_bl)<level_block_limit?_bl:f_block_convert(_bl))
 #endif
 
 // CPE defined translations.
@@ -28,27 +28,19 @@ int client_inventory_custom = 0;
 block_t
 f_block_convert(block_t in)
 {
-    if (in < client_block_limit) {
-#if 0
-	// NB: If CustomBlock isn't enabled but Blockdef is should the CPE
-	// fallbacks be enabled? I think Blockdef should be considered an
-	// alias of CustomBlock V2, at least here.
-
-	if (!customblock_enabled && in >= Block_CP && in < Block_CPE) {
-	    if (!level_prop->blockdef[in].defined)
-		in = cpe_conversion[in-Block_CP];
-	}
-#endif
-	return in;
-    }
-    if (in >= BLOCKMAX) in = BLOCKMAX-1;
+    if (in < level_block_limit) return in;
+    if (in >= BLOCKMAX) return Block_Bedrock;
 
     if (level_prop->blockdef[in].defined
-	&& level_prop->blockdef[in].fallback < Block_CPE)
+	&& (level_prop->blockdef[in].fallback < Block_CPE || !extn_blockdefn))
 	in = level_prop->blockdef[in].fallback;
 
-    if (in >= client_block_limit && in >= Block_CP && in < Block_CPE)
-	in = cpe_conversion[in-Block_CP];
+    if (!customblock_enabled && in >= Block_CP && in < Block_CPE) {
+	if (!extn_blockdefn)
+	    in = cpe_conversion[in-Block_CP];
+	else if (!level_prop->blockdef[in].defined)
+	    in = cpe_conversion[in-Block_CP];
+    }
 
     return in >= client_block_limit ? Block_Bedrock : in;
 }
@@ -57,7 +49,6 @@ void
 send_map_file()
 {
     if (!level_prop || !level_blocks) {
-#if 1
 	char empty_zlib[] = {0xe3, 0x64, 0x00, 0x00};
 	char empty_gzip[] = {
 	    0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -77,7 +68,7 @@ send_map_file()
 	player_posn.x = player_posn.z = 16; player_posn.y = 256;
 	player_posn.v = player_posn.h = 0;
 	send_spawn_pkt(255, user_id, player_posn);
-#endif
+
 	printf_chat("&WCannot send level data, file not mapped");
 	return;
     }
@@ -197,9 +188,9 @@ send_block_array()
 		    if (b<BLOCKMAX)
 			b = conv_blk[b];
 		    else
-			b = block_convert(level_blocks[level_blocks_used]);
+			b = Block_Bedrock;
 
-		    if (b>255 && extn_extendblockno) need_himap = 1;
+		    if (b>255) need_himap = 1;
 		    if (part == 0)
 			blockbuffer[i] = b;
 		    else if (b<768)
@@ -260,6 +251,9 @@ void
 send_textureurl()
 {
     if (!extn_envmapaspect) return;
+    // We define the textures based on block definitions.
+    // If client doesn't have blockdefs they can't properly use our textures.
+    if (!extn_blockdefn) return;
 
     send_textureurl_pkt(&level_prop->texname);
 }
@@ -305,7 +299,19 @@ send_clickdistance()
 void
 send_block_definitions()
 {
-    if (!extn_blockdefn || !extn_blockdefnext) return;
+    if (!extn_blockdefn || !customblock_enabled) {
+	level_block_limit = client_block_limit;
+	if (client_block_limit > Block_CP && !customblock_enabled)
+	    level_block_limit = Block_CP;
+	for(block_t b = 0; b<level_block_limit; b++)
+	    if (level_prop->blockdef[b].defined) {
+		level_block_limit = b;
+		break;
+	    }
+
+	if (!extn_blockdefn)
+	    return;
+    }
 
     block_t newmax = 0;
     for(block_t b = 0; b<client_block_limit; b++)
@@ -359,6 +365,8 @@ send_inventory_order()
 	int inv = b;
 	if (!level_prop->blockdef[b].defined) {
 	    if (b >= Block_CPE) continue;
+	    if (!customblock_enabled && b >= Block_CP)
+		inv = 0;
 	} else
 	    inv = level_prop->blockdef[b].inventory_order;
 

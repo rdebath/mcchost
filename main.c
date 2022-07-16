@@ -66,7 +66,7 @@ int start_backup_task = 0;
 char program_name[512];
 
 filelock_t system_lock[1] = {{.name = SYS_LOCK_NAME}};
-volatile server_t *server = 0;
+server_t *server = 0;
 
 nbtstr_t client_software = {"(unknown)"};
 
@@ -85,8 +85,6 @@ int cpe_enabled = 0;	// Set if this session is using CPE
 int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
 int cpe_pending = 0;	// Currently running ExtInfo process.
 int cpe_extn_remaining = 0;
-
-block_t client_block_limit = Block_CP;
 
 char * proc_args_mem = 0;
 int    proc_args_len = 0;
@@ -518,7 +516,7 @@ char *
 main_level()
 {
     static char main_level_cpy[NB_SLEN];
-    volatile char *s = server->main_level;
+    char *s = server->main_level;
     char * d = main_level_cpy;
     while ( STFU(*d++ = *s++) );
     return main_level_cpy;

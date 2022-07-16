@@ -15,6 +15,9 @@ struct ext_list_t {
 };
 #endif
 
+static int extn_blockdefinitions = 0;
+static int extn_blockdefinitionsext = 0;
+
 #define N .name= /*STFU*/
 static struct ext_list_t extensions[] = {
 //  { N"EnvMapAppearance",    1, },				//Old
@@ -34,8 +37,8 @@ static struct ext_list_t extensions[] = {
     { N"MessageTypes",        1, &extn_messagetypes },
     { N"LongerMessages",      1, &extn_longermessages },
     { N"FullCP437",           1, &extn_fullcp437 },
-    { N"BlockDefinitions",    1, &extn_blockdefn },
-    { N"BlockDefinitionsExt", 2, &extn_blockdefnext },
+    { N"BlockDefinitions",    1, &extn_blockdefinitions },
+    { N"BlockDefinitionsExt", 2, &extn_blockdefinitionsext },
     { N"TextColors",          1, &extn_textcolours },		//ServerConf
 //  { N"BulkBlockUpdate",     1, },
     { N"EnvMapAspect",        1, &extn_envmapaspect },
@@ -64,7 +67,6 @@ static struct ext_list_t extensions[] = {
 #undef N
 
 int extn_blockdefn = 0;
-int extn_blockdefnext = 0;
 int extn_clickdistance = 0;
 int extn_customblocks = 0;
 int extn_envcolours = 0;
@@ -93,6 +95,9 @@ int extn_weathertype = 0;
 
 int customblock_pkt_sent = 0;
 int customblock_enabled = 0;
+
+block_t client_block_limit = Block_CP;	// Unsafe to send to client.
+block_t level_block_limit = 0;		// We need to remap this or higher.
 
 void
 send_ext_list()
@@ -148,11 +153,14 @@ process_extentry(pkt_extentry * pkt)
 	    printf_chat("&WClient sent unknown extension %s late -- Ignored.", pkt->extname);
     }
 
-    if (extn_blockdefn && extn_blockdefnext) {
+    if (extn_blockdefinitions && extn_blockdefinitionsext) {
+	extn_blockdefn = 1;
 	if (client_block_limit < CPELIMITLO)
 	    client_block_limit = CPELIMITLO;
 	if (extn_extendblockno && client_block_limit < CPELIMIT)
 	    client_block_limit = CPELIMIT;
+
+	level_block_limit = client_block_limit;
     }
 
     // Note: most of these lengths are not used because the send_*_pkt

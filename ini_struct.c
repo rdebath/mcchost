@@ -374,21 +374,20 @@ ini_write_section(ini_state_t *st, char * section)
 }
 
 LOCAL void
-ini_write_str(ini_state_t *st, char * section, char *fieldname, volatile char *value)
+ini_write_str(ini_state_t *st, char * section, char *fieldname, char *value)
 {
     ini_write_section(st, section);
-    char *v = IGNORE_VOLATILE_CHARP(value);
-    fprintf(st->fd, "%s =%s%s\n", fieldname, *v?" ":"", v);
+    fprintf(st->fd, "%s =%s%s\n", fieldname, *value?" ":"", value);
 }
 
 LOCAL void
-ini_read_str(volatile char * buf, int len, char *value)
+ini_read_str(char * buf, int len, char *value)
 {
-    snprintf(IGNORE_VOLATILE_CHARP(buf), len, "%s", value);
+    snprintf(buf, len, "%s", value);
 }
 
 LOCAL void
-ini_write_cp437(ini_state_t *st, char * section, char *fieldname, volatile char *value)
+ini_write_cp437(ini_state_t *st, char * section, char *fieldname, char *value)
 {
     ini_write_section(st, section);
     fprintf(st->fd, "%s =%s", fieldname, *value?" ":"\n");
@@ -399,17 +398,17 @@ ini_write_cp437(ini_state_t *st, char * section, char *fieldname, volatile char 
 }
 
 LOCAL void
-ini_read_cp437(volatile char * buf, int len, char *value)
+ini_read_cp437(char * buf, int len, char *value)
 {
     int vlen = strlen(value);
     convert_to_cp437(value, &vlen);
     if (vlen >= len) vlen = len-1;
-    memcpy(IGNORE_VOLATILE_CHARP(buf), value, vlen);
+    memcpy(buf, value, vlen);
     buf[vlen] = 0;
 }
 
 LOCAL void
-ini_write_nbtstr(ini_state_t *st, char * section, char *fieldname, volatile nbtstr_t *value)
+ini_write_nbtstr(ini_state_t *st, char * section, char *fieldname, nbtstr_t *value)
 {
     ini_write_section(st, section);
     fprintf(st->fd, "%s =%s", fieldname, value->c[0]?" ":"\n");
@@ -420,7 +419,7 @@ ini_write_nbtstr(ini_state_t *st, char * section, char *fieldname, volatile nbts
 }
 
 LOCAL void
-ini_read_nbtstr(volatile nbtstr_t * buf, char *value)
+ini_read_nbtstr(nbtstr_t * buf, char *value)
 {
     int vlen = strlen(value);
     nbtstr_t t = {0};

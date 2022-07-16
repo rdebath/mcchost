@@ -324,7 +324,7 @@ read_blockarray3(gzFile ifd, uint32_t len)
 }
 
 LOCAL void
-set_colour(volatile int *colour, int by, int value)
+set_colour(int *colour, int by, int value)
 {
     if (value < 0)
 	*colour = -1;
@@ -627,9 +627,9 @@ change_str_value(char * section, char * item, char * value)
 }
 
 LOCAL void
-cpy_nstr(volatile char *buf, char *str)
+cpy_nstr(char *buf, char *str)
 {
-    volatile char *d = buf;
+    char *d = buf;
     char * s;
     for(s=str; s && *s; s++) {
 	*d++ = *s;

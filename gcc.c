@@ -13,8 +13,6 @@
 #endif
 #endif
 
-#define IGNORE_VOLATILE_CHARP(_x_) ((char*)(_x_))
-
 #define STFU(_x_) (_x_)
 
 #ifndef __has_include

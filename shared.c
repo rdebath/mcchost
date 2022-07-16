@@ -45,11 +45,11 @@ struct shmem_t {
 
 typedef struct shared_data_t shared_data_t;
 struct shared_data_t {
-    volatile map_info_t *prop;
-    volatile block_t *blocks;
-    volatile block_queue_t* blockq;
-    volatile chat_queue_t *chat;
-    volatile client_data_t *client;
+    map_info_t *prop;
+    block_t *blocks;
+    block_queue_t* blockq;
+    chat_queue_t *chat;
+    client_data_t *client;
 
     shmem_t dat[SHMID_COUNT];
 };

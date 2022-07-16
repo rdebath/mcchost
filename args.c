@@ -35,20 +35,20 @@ process_args(int argc, char **argv)
 	    do {
 		if (ar+1 < argc) {
 		    if (strcmp(argv[ar], "-name") == 0) {
-			strncpy(IGNORE_VOLATILE_CHARP(server->name), argv[ar+1], sizeof(server->name)-1);
+			strncpy(server->name, argv[ar+1], sizeof(server->name)-1);
 			ar++; addarg++;
 			break;
 		    }
 
 		    if (strcmp(argv[ar], "-motd") == 0) {
-			strncpy(IGNORE_VOLATILE_CHARP(server->motd), argv[ar+1], sizeof(server->motd)-1);
+			strncpy(server->motd, argv[ar+1], sizeof(server->motd)-1);
 			ar++; addarg++;
 			break;
 		    }
 
 		    if (strcmp(argv[ar], "-salt") == 0 || strcmp(argv[ar], "-secret") == 0) {
 			ar++; addarg++;
-			strncpy(IGNORE_VOLATILE_CHARP(server->secret), argv[ar], sizeof(server->secret)-1);
+			strncpy(server->secret, argv[ar], sizeof(server->secret)-1);
 			// Try to hide the argument used as salt from ps(1)
 			if (pass2)
 			    for(char * p = argv[ar]; *p; p++) *p = 'X';

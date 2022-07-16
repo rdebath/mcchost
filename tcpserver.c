@@ -694,7 +694,7 @@ send_heartbeat_poll()
 }
 
 LOCAL char *
-ccnet_cp437_quoteurl(volatile char *s, char *dest, int len)
+ccnet_cp437_quoteurl(char *s, char *dest, int len)
 {
     char * d = dest;
     for(; *s && d<dest+len-1; s++) {

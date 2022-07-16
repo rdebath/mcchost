@@ -10,7 +10,7 @@ block_name(block_t block)
 #define BBUFLEN 4
     static int bid = 0;
     static char name[BBUFLEN][NB_SLEN];
-    volatile char * n = 0;
+    char * n = 0;
     if (block >= BLOCKMAX)
 	return "Invalid Block";
 
@@ -80,7 +80,7 @@ block_id(char * name)
 }
 
 LOCAL int
-block_name_match(char * s, volatile char * d)
+block_name_match(char * s, char * d)
 {
     while(*s && *d) {
 	int ch1 = *s;
