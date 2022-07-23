@@ -131,12 +131,24 @@ cmd_main(char * UNUSED(cmd), char * UNUSED(arg))
 
     start_level(main_level(), fixedname, 0);
     open_level_files(main_level(), 0, fixedname, 0);
-    if (!level_prop)
-	fatal("Failed to load main.");
-    send_map_file();
-    send_spawn_pkt(255, user_id, level_prop->spawn);
 
-    printf_chat("@&S%s went to &7%s", user_id, main_level());
+    if (!level_prop) {
+        start_level(main_level(), fixedname, -1);
+        if (level_prop) {
+            level_prop->readonly = 1;
+            level_prop->disallowchange = 0;
+        }
+    }
+
+    send_map_file();
+
+    if (level_prop) {
+	send_spawn_pkt(255, user_id, level_prop->spawn);
+	printf_chat("@&S%s went to &7%s", user_id, main_level());
+    } else {
+	printf_chat("@&S%s was sucked into the void.", user_id);
+        printf_chat("&WMain level failed to load, you are nowhere.");
+    }
 
     read_only_message();
 }
@@ -429,25 +441,27 @@ scan_and_save_levels(int unlink_only)
 		char fixedname[MAXLEVELNAMELEN*4];
 		int museum_id = shdat.client->levels[lvid].museum_id;
 		fix_fname(fixedname, sizeof(fixedname), level_name);
-		if (shdat.client->levels[lvid].museum_id) {
+		if (shdat.client->levels[lvid].museum_id>0) {
 		    char fixedname2[MAXLEVELNAMELEN*4];
 		    strcpy(fixedname2, fixedname);
 		    snprintf(fixedname, sizeof(fixedname), "%s.%d",
 			fixedname2, museum_id);
 		}
 
-		unlink_level(fixedname, 0);
+		if (museum_id>=0) {
+		    unlink_level(fixedname, 0);
 
-		// We known nobody has the level lock and we have the system
-		// lock, so it's safe to delete the pthread mutex file too.
-		char sharename[256];
-		snprintf(sharename, sizeof(sharename), LEVEL_LOCK_NAME, fixedname);
-		(void)unlink(sharename);
+		    // We known nobody may have the level lock and we have the system
+		    // lock, so it's safe to delete the pthread mutex file too.
+		    char sharename[256];
+		    snprintf(sharename, sizeof(sharename), LEVEL_LOCK_NAME, fixedname);
+		    (void)unlink(sharename);
+		}
 
 		shdat.client->levels[lvid].loaded = 0;
-		if (museum_id)
+		if (museum_id>0)
 		    fprintf_logfile("Unloaded museum %d of %s", museum_id, level_name);
-		else
+		else if (museum_id == 0)
 		    fprintf_logfile("Unloaded level %s", level_name);
 	    }
 	    loaded_levels--;

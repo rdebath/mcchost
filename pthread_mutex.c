@@ -39,7 +39,7 @@ static inline int ERR_PT(int n, char * tn, char *fn, int ln)
 void
 lock_fn(filelock_t * ln)
 {
-    if (ln->have_lock) return;
+    if (!ln->mutex || ln->have_lock) return;
 
     if (E(pthread_mutex_lock(ln->mutex)))
 	E(pthread_mutex_consistent(ln->mutex));
@@ -49,7 +49,7 @@ lock_fn(filelock_t * ln)
 void
 unlock_fn(filelock_t * ln)
 {
-    if (!ln->have_lock) return;
+    if (!ln->mutex || !ln->have_lock) return;
     E(pthread_mutex_unlock(ln->mutex));
     ln->have_lock = 0;
 }
@@ -69,15 +69,18 @@ lock_start(filelock_t * ln)
     // another process has created the file and we we discard our attempt.
 
     int ecount = 0;
+    ln->mutex = 0;
+    if (!ln->name) return;
+
     while(1)
     {
-	if (errno != 0 && ecount > 100) { perror(ln->name); exit(1); }
+	if (errno != 0 && ecount > 100) { perror(ln->name); return; }
 
 	fd = open(ln->name, O_RDWR|O_CLOEXEC);
 	if (fd>=0) break;
 
 	// ENOENT -> Need to make; other -> not good.
-	if (errno != ENOENT || ecount > 100) { perror(ln->name); exit(1); }
+	if (errno != ENOENT || ecount > 100) { perror(ln->name); return; }
 	ecount++;
 
 	// Create the mutex in local memory
@@ -99,7 +102,7 @@ lock_start(filelock_t * ln)
 	fd = open(tmpfile, O_RDWR|O_CREAT|O_CLOEXEC|O_TRUNC|O_EXCL, 0600);
 	if(fd < 0) {
 	    // Directory missing...
-	    if (errno == ENOENT) { perror(ln->name); exit(1); }
+	    if (errno == ENOENT) { perror(ln->name); return; }
 	    // Shouldn't happen, but wait and retry.
 	    usleep(20000);
 	    continue;

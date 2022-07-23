@@ -211,6 +211,7 @@ send_queued_blocks()
     }
 
     if (last_id < 0) return; // Should be "Map download in progress"
+    if (!level_block_queue) return;
 
     check_block_queue(1);
 

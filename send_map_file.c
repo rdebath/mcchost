@@ -81,11 +81,11 @@ send_map_file()
 	    for(int i = 0; i<6; i++)
 		send_envsetcolour_pkt(i, 0);
 	}
+	send_inventory_order();
 	player_posn.x = player_posn.z = 16; player_posn.y = 256;
 	player_posn.v = player_posn.h = 0;
 	send_spawn_pkt(255, user_id, player_posn);
-
-	printf_chat("&WCannot send level data, file not mapped");
+	fprintf_logfile("Level \"%s\" no mmap so void map sent.", current_level_name);
 	return;
     }
 
@@ -377,7 +377,7 @@ send_inventory_order()
 {
     if (!extn_inventory_order) return;
 
-    if (level_prop->readonly && level_prop->disallowchange) {
+    if (!level_prop || (level_prop->readonly && level_prop->disallowchange)) {
 	for(int inv = 0; inv < client_block_limit; inv++)
 	    send_inventory_order_pkt(inv, 0);
 	client_inventory_custom = 1;

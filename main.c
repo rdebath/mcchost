@@ -71,8 +71,8 @@ server_t *server = 0;
 nbtstr_t client_software = {"(unknown)"};
 
 char current_level_name[MAXLEVELNAMELEN+1];
-char current_level_museum_id = 0;
 char current_level_fname[MAXLEVELNAMELEN*4];
+int current_level_museum_id = 0;
 
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 char logfile_pattern[1024] = "";
@@ -224,7 +224,13 @@ complete_connection()
     start_level(main_level(), fixname, 0);
     open_level_files(main_level(), 0, fixname, 0);
 
-    if (!level_prop) fatal("Unable to load initial map file -- sorry");
+    if (!level_prop) {
+	start_level(main_level(), fixname, -1);
+	if (level_prop) {
+	    level_prop->readonly = 1;
+	    level_prop->disallowchange = 0;
+	}
+    }
 
     send_map_file();
 
@@ -234,6 +240,9 @@ complete_connection()
     read_only_message();
 
     cmd_help("welcome", 0);
+
+    if (!level_prop)
+	printf_chat("&WMain level failed to load, you are nowhere.");
 }
 
 void
