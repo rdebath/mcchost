@@ -48,6 +48,7 @@ typedef struct client_data_t client_data_t;
 struct client_data_t {
     int magic1;
     uint32_t generation;
+    uint32_t cleanup_generation;
     client_entry_t user[MAX_USER];
     client_level_t levels[MAX_LEVEL];
     int magic2;
@@ -244,6 +245,7 @@ start_level(char * levelname, char * levelfile, int museum_id)
     }
 
     shdat.client->user[my_user_no].on_level = level_id;
+    shdat.client->generation++;
 
     unlock_fn(system_lock);
 }

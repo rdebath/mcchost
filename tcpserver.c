@@ -269,7 +269,10 @@ logger_process()
 	return;
     }
 
-    stop_system_conf(); // No longer needed.
+    // No longer needed -- we have one job.
+    stop_system_conf();
+    stop_client_list();
+    lock_stop(system_lock);
 
     // Logger
     if (listen_socket>=0)
@@ -792,6 +795,15 @@ start_backup_process()
 {
     if (backup_pid != 0) return;
 
+    open_client_list();
+    if (alarm_sig)
+	shdat.client->generation++;
+
+    if (alarm_sig == 0 && trigger_backup == 0 && start_backup_task == 0 && restart_on_unload == 0) {
+	if (shdat.client->generation == shdat.client->cleanup_generation)
+	    return;
+    }
+
     if (!start_backup_task) {
 	time_t now;
 	time(&now);
@@ -863,5 +875,4 @@ check_new_exe()
     }
 
     unlock_fn(system_lock);
-    stop_client_list();
 }

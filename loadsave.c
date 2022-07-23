@@ -357,6 +357,9 @@ scan_and_save_levels(int unlink_only)
     char * level_name = 0;
     int this_is_main = 0;
     int loaded_levels = 0;
+    int check_again = unlink_only || restart_on_unload;
+
+    // fprintf(stderr, "Trace scan_and_save_levels(%d)\n", unlink_only);
 
     open_client_list();
     if (!shdat.client) return;
@@ -378,17 +381,17 @@ scan_and_save_levels(int unlink_only)
 	// We can only unlink unused maps.
 	if (unlink_only) {
 	    if (shdat.client->levels[lvid].no_unload) continue;
-
-	    int user_count = 0;
-	    for(int uid=0; uid<MAX_USER; uid++)
-	    {
-		if (shdat.client->user[uid].active != 1) continue;
-		// NB: Only unload main when the _total_ user count hits zero.
-		if (lvid == shdat.client->user[uid].on_level || this_is_main)
-		    user_count++;
-	    }
-	    if (user_count) continue;
 	}
+
+	int user_count = 0;
+	for(int uid=0; uid<MAX_USER; uid++)
+	{
+	    if (shdat.client->user[uid].active != 1) continue;
+	    // NB: Only unload main when the _total_ user count hits zero.
+	    if (lvid == shdat.client->user[uid].on_level || this_is_main)
+		user_count++;
+	}
+	if (user_count && unlink_only) continue;
 
 	if (shdat.client->levels[lvid].museum_id == 0)
 	{
@@ -415,10 +418,13 @@ scan_and_save_levels(int unlink_only)
 
 	    // Block unload unless we are restarting.
 	    int no_unload = (level_prop->no_unload && !restart_on_unload);
-	    shdat.client->levels[lvid].no_unload = no_unload;
+
+	    if (shdat.client->levels[lvid].no_unload != no_unload)
+		shdat.client->levels[lvid].no_unload = no_unload;
 
 	    if (level_prop->dirty_save) {
-		int do_save = !unlink_only && !no_unload;
+		int do_save = !unlink_only;
+		if (user_count && no_unload) do_save = 0; // Don't save while in use.
 
 		// Time to backup ?
 		time_t now = time(0);
@@ -437,7 +443,10 @@ scan_and_save_levels(int unlink_only)
 	    stop_shared();
 
 	    // Don't unload a map that failed to save
-	    if (level_dirty) continue;
+	    if (level_dirty) {
+		check_again = 1;
+		continue;
+	    }
 
 	    // Don't unload if it's turned off
 	    if (no_unload) continue;
@@ -445,7 +454,8 @@ scan_and_save_levels(int unlink_only)
 
 	lock_fn(system_lock);
 
-	int user_count = 0;
+	// Recount under lock.
+	user_count = 0;
 	for(int uid=0; uid<MAX_USER; uid++)
 	{
 	    if (shdat.client->user[uid].active != 1) continue;
@@ -487,13 +497,20 @@ scan_and_save_levels(int unlink_only)
 		    fprintf_logfile("Unloaded level %s", level_name);
 	    }
 	    loaded_levels--;
-	}
+	} else
+	    check_again = 1;
 
 	unlock_fn(system_lock);
     }
 
-    server->loaded_levels = loaded_levels;
-    stop_client_list();
+    if (server->loaded_levels != loaded_levels)
+	server->loaded_levels = loaded_levels;
+
+    // Wait for login etc.
+    if (!check_again)
+	shdat.client->cleanup_generation = shdat.client->generation;
+    else
+	shdat.client->cleanup_generation = shdat.client->generation-1;
 }
 
 LOCAL void

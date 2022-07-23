@@ -60,7 +60,6 @@ struct shared_data_t {
 #define level_prop shdat.prop
 #define level_blocks shdat.blocks
 #define level_block_queue shdat.blockq
-#define client_list shdat.client
 #define level_chat_queue shdat.chat
 #endif
 
@@ -422,18 +421,17 @@ check_block_queue(int need_lock)
 void
 open_client_list()
 {
+    if (shdat.client) return;
+
     char sharename[256];
-
-    if (client_list) stop_client_list();
-
     sprintf(sharename, SYS_STAT_NAME);
-    allocate_shared(sharename, sizeof(*client_list), shdat.dat+SHMID_CLIENTS);
-    client_list = shdat.dat[SHMID_CLIENTS].ptr;
-    if (!client_list) return;
+    allocate_shared(sharename, sizeof(*shdat.client), shdat.dat+SHMID_CLIENTS);
+    shdat.client = shdat.dat[SHMID_CLIENTS].ptr;
+    if (!shdat.client) return;
 
-    if (client_list->magic1 != MAGIC_USR || client_list->magic2 != MAGIC_USR) {
+    if (shdat.client->magic1 != MAGIC_USR || shdat.client->magic2 != MAGIC_USR) {
 	client_data_t d = { .magic1 = MAGIC_USR, .magic2 = MAGIC_USR };
-	*client_list = d;
+	*shdat.client = d;
     }
 }
 
@@ -441,7 +439,7 @@ void
 stop_client_list()
 {
     deallocate_shared(SHMID_CLIENTS);
-    client_list = 0;
+    shdat.client = 0;
 }
 
 void
