@@ -90,7 +90,7 @@ cmd_place(char * cmd, char * arg)
 }
 
 void
-cmd_paint(UNUSED char * cmd, UNUSED char * arg)
+cmd_paint(char * UNUSED(cmd), char * UNUSED(arg))
 {
     player_mode_paint = !player_mode_paint;
 
@@ -233,7 +233,7 @@ revert_client(pkt_setblock pkt)
 }
 
 void
-cmd_mark(UNUSED char * cmd, char * arg)
+cmd_mark(char * UNUSED(cmd), char * arg)
 {
     int args[3] = {0};
     int cnt = 0;

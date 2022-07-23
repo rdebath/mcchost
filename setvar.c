@@ -79,7 +79,7 @@ Other options in server.ini can also be set, but may not take effect immediatly.
 */
 
 void
-cmd_setvar(UNUSED char * cmd, char * arg)
+cmd_setvar(char * cmd, char * arg)
 {
     char * section = strtok(arg, " ");
     char * varname = 0;

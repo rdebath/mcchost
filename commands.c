@@ -115,7 +115,7 @@ Aliases: /cmds /cmdlist
     {N"cmds", &cmd_commands, .dup=1}, {N"cmdlist", &cmd_commands, .dup=1}
 #endif
 void
-cmd_commands(UNUSED char * cmd, UNUSED char * arg)
+cmd_commands(char * UNUSED(cmd), char * UNUSED(arg))
 {
     char buf[BUFSIZ];
     int len = 0;
@@ -150,7 +150,7 @@ cmd_commands(UNUSED char * cmd, UNUSED char * arg)
 #define CMD_RELOAD  {N"reload", &cmd_reload}
 #endif
 void
-cmd_reload(UNUSED char * cmd, char * arg)
+cmd_reload(char * UNUSED(cmd), char * arg)
 {
     if (arg == 0)
 	send_map_reload();

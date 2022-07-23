@@ -17,7 +17,7 @@ delete a level
 #endif
 
 void
-cmd_deletelvl(UNUSED char * cmd, char * arg)
+cmd_deletelvl(char * cmd, char * arg)
 {
     char * levelname = arg;
 

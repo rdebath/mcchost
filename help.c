@@ -114,7 +114,7 @@ Alias: &T/cls
 */
 
 void
-cmd_clear(UNUSED char * prefix, UNUSED char *cmdargs)
+cmd_clear(char * UNUSED(cmd), char * UNUSED(arg))
 {
     for(int i = 0; i<30; i++)
 	printf_chat(" ");;

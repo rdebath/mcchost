@@ -17,7 +17,7 @@ The name "+" is a shorthand for your personal level.
 #endif
 
 void
-cmd_newlvl(UNUSED char * cmd, char * arg)
+cmd_newlvl(char * cmd, char * arg)
 {
     char * levelname = strtok(arg, " ");
     char * sx = strtok(0, " ");

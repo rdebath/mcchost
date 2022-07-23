@@ -14,7 +14,7 @@ Sets spawn location set to your current location and orientation
 */
 
 void
-cmd_setspawn(UNUSED char * cmd, UNUSED char * arg)
+cmd_setspawn(char * UNUSED(cmd),char * UNUSED(arg))
 {
     level_prop->spawn.x = player_posn.x;
     level_prop->spawn.y = player_posn.y;	// TODO? Make this exact?

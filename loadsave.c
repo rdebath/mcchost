@@ -40,7 +40,7 @@ Return to the system main level
 #endif
 
 void
-cmd_goto(UNUSED char * cmd, char * arg)
+cmd_goto(char * cmd, char * arg)
 {
     char fixedname[MAXLEVELNAMELEN*4], buf2[256], levelname[MAXLEVELNAMELEN+1];
     if (!arg && strcmp(cmd, "gr") != 0) { cmd_help(0,"goto"); return; }
@@ -117,7 +117,7 @@ cmd_goto(UNUSED char * cmd, char * arg)
 }
 
 void
-cmd_main(UNUSED char * cmd, UNUSED char * arg)
+cmd_main(char * UNUSED(cmd), char * UNUSED(arg))
 {
     if (current_level_museum_id == 0 && strcmp(main_level(), current_level_name) == 0) {
 	printf_chat("&SYou're already on &7%s", current_level_name);
@@ -142,7 +142,7 @@ cmd_main(UNUSED char * cmd, UNUSED char * arg)
 }
 
 void
-cmd_load(UNUSED char * cmd, char * arg)
+cmd_load(char * UNUSED(cmd), char * arg)
 {
     if (!client_trusted)
 	printf_chat("&WUsage: /load [Auth] filename");
@@ -172,7 +172,7 @@ cmd_load(UNUSED char * cmd, char * arg)
 }
 
 void
-cmd_save(UNUSED char * cmd, char * arg)
+cmd_save(char * UNUSED(cmd), char * arg)
 {
     if (!client_trusted)
 	printf_chat("&WUsage: /save [Auth] filename");

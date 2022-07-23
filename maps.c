@@ -34,7 +34,7 @@ pstrcasecmp(const void *p1, const void *p2)
 }
 
 void
-cmd_maps(UNUSED char * cmd, char * arg)
+cmd_maps(char * UNUSED(cmd), char * arg)
 {
     DIR *directory = opendir("map");
     if (!directory) {

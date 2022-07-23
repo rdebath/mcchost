@@ -21,7 +21,7 @@
 #endif
 
 void
-cmd_museum(UNUSED char * cmd, char * arg)
+cmd_museum(char * UNUSED(cmd), char * arg)
 {
     char fixedname[MAXLEVELNAMELEN*4], buf2[256], levelname[MAXLEVELNAMELEN+1];
     char * levelid = strtok(arg, " ");

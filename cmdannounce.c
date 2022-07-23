@@ -13,7 +13,7 @@ Alias &T/an
 #endif
 
 void
-cmd_announce(UNUSED char * cmd, char * arg)
+cmd_announce(char * UNUSED(cmd), char * arg)
 {
     // TODO Permissions ? Attribution ?
     printf_chat("@~(100)%s", arg);
