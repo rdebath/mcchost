@@ -23,6 +23,12 @@ Alias: &T/p
 Always place &TBlockNo&S rather than your held block.
 Useful for hidden block types.
 */
+/*HELP mark H_CMD
+&T/Mark <x y z>&S - Places a marker for selections, e.g for /z
+Use ~ before a coordinate to mark relative to current position
+If no coordinates are given, marks at where you are standing
+If only x coordinate is given, it is used for y and z too
+*/
 
 #if INTERFACE
 #define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}, \
@@ -30,6 +36,7 @@ Useful for hidden block types.
                    {N"mode", &cmd_mode}, \
                    {N"abort", &cmd_mode, .dup=1}, {N"a", &cmd_mode, .dup=1}, \
 		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, .dup=1}, \
+		   {N"ma", &cmd_mark, .dup=1}, \
                    {N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, .dup=1}
 
 #endif
@@ -100,11 +107,11 @@ cmd_paint(char * UNUSED(cmd), char * UNUSED(arg))
 void
 clear_pending_marks() {
     memset(marks, 0, sizeof(marks));
-    mark_for_cmd = 0;
     if (mark_cmd_cmd) free(mark_cmd_cmd);
     mark_cmd_cmd = 0;
     if (mark_cmd_arg) free(mark_cmd_arg);
     mark_cmd_arg = 0;
+    mark_for_cmd = 0;
     *marking_for = 0;
     player_mark_mode = 0;
     show_marks_message();
@@ -115,7 +122,7 @@ void show_marks_message()
     if (!extn_messagetypes) return;
 
     printf_chat("(13)&f%s", marking_for);
-    if (!*marking_for) {
+    if (!*marking_for && !marks[0].valid) {
 	printf_chat("(12)");
 	printf_chat("(11)");
 	return;
@@ -126,10 +133,12 @@ void show_marks_message()
     else
 	printf_chat("(12)&fMark #1: &S(Waiting)");
 
-    if (marks[1].valid)
-	printf_chat("(11)&fMark #2: &S(%d,%d,%d)", marks[1].x, marks[1].y, marks[1].z);
-    else
-	printf_chat("(11)&fMark #2: &S(Waiting)");
+    if (marks[0].valid || player_mark_mode >= 2) {
+	if (marks[1].valid)
+	    printf_chat("(11)&fMark #2: &S(%d,%d,%d)", marks[1].x, marks[1].y, marks[1].z);
+	else
+	    printf_chat("(11)&fMark #2: &S(Waiting)");
+    }
 }
 
 void
@@ -233,18 +242,35 @@ revert_client(pkt_setblock pkt)
 }
 
 void
-cmd_mark(char * UNUSED(cmd), char * arg)
+cmd_mark(char * cmd, char * arg)
 {
     int args[3] = {0};
+    int has_offset[3] = {0};
     int cnt = 0;
     char * ar = arg;
+    if (strcasecmp(cmd, "ma") == 0 || strcasecmp(ar, "all") == 0) {
+	char buf[] = "0";
+	cmd_mark("m", buf);
+	ar = 0; cnt = 3;
+	args[0] = level_prop->cells_x-1;
+	args[1] = level_prop->cells_y-1;
+	args[2] = level_prop->cells_z-1;
+    }
     if (ar)
 	for(int i = 0; i<3; i++) {
 	    char * p = strtok(ar, " "); ar = 0;
 	    if (p == 0) break;
+	    if (p[0] == '~') {has_offset[i] = 1; p++;}
 	    args[i] = atoi(p);
 	    cnt = i+1;
 	}
+
+    if (cnt == 0) { cnt = 1; args[0] = 0; has_offset[0] = 1; }
+    if (cnt == 1) {
+	cnt = 3;
+	args[1] = args[2] = args[0];
+	has_offset[1] = has_offset[2] = has_offset[0];
+    }
 
     if (cnt != 3) {
 	if (cnt == 0) {
@@ -264,9 +290,13 @@ cmd_mark(char * UNUSED(cmd), char * arg)
 		return;
 	    }
 	}
-	printf_chat("&SUsage: &T/mark [x y z]&S or &T/mark&S to clear");
+	printf_chat("&SUsage: &T/mark [x y z]&S");
 	return;
     }
+
+    if (has_offset[0]) args[0] += player_posn.x/32;
+    if (has_offset[1]) args[1] += (player_posn.y-51)/32;
+    if (has_offset[2]) args[2] += player_posn.z/32;
 
     int l = sizeof(marks)/sizeof(*marks);
     int v = 0;
@@ -319,7 +349,11 @@ cmd_cuboid(char * cmd, char * arg)
 {
     if (!marks[0].valid || !marks[1].valid) {
 	if (!marks[0].valid) {
-	    if (!extn_messagetypes)
+	    if (!extn_heldblock) {
+		block_t b = arg?block_id(arg): player_held_block;
+		if (b == (block_t)-1) b = 1;
+		printf_chat("&SPlace or break two blocks to determine edges of %s cuboid.", block_name(b));
+	    } else if (!extn_messagetypes)
 		printf_chat("&SPlace or break two blocks to determine edges.");
 	}
 	player_mark_mode = 2;
@@ -331,9 +365,13 @@ cmd_cuboid(char * cmd, char * arg)
     block_t b = arg?block_id(arg): player_held_block;
     if (b == (block_t)-1) b = 1;
 
+    //TODO: Other cuboids.
+
     plain_cuboid(b,
 	marks[0].x, marks[0].y, marks[0].z,
 	marks[1].x, marks[1].y, marks[1].z);
+
+    clear_pending_marks();
 }
 
 void
