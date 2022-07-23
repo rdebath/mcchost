@@ -21,7 +21,7 @@
 
 #define MAX_USER	255
 #define MAX_LEVEL	255
-#define MAGIC_USR	0x0012FF7E
+#define MAGIC_USR	0x0021FF7E
 
 typedef struct client_entry_t client_entry_t;
 struct client_entry_t {
@@ -40,6 +40,7 @@ struct client_entry_t {
 struct client_level_t {
     int loaded;
     int museum_id;
+    int no_unload;
     nbtstr_t level;
 };
 

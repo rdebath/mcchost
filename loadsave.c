@@ -213,13 +213,14 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     //
     // If not backup omit (2) and (4) has nothing to ren.
 
-    // Return 0=> ok, 1=> ok, to discard changes, -1=> save didn't work.
+    // Return 0=> ok, -1=> save didn't work.
 
     char tmp_fn[256], map_fn[256], bak_fn[256];
+    int cw_ok = 1;
     snprintf(tmp_fn, sizeof(tmp_fn), LEVEL_TMP_NAME, level_fname);
     snprintf(map_fn, sizeof(map_fn), LEVEL_CW_NAME, level_fname);
     snprintf(bak_fn, sizeof(bak_fn), LEVEL_BAK_NAME, level_fname);
-    if (access(map_fn, F_OK) == 0 && access(map_fn, W_OK) != 0) {
+    if ((cw_ok = (access(map_fn, F_OK) == 0)) && access(map_fn, W_OK) != 0) {
 	// map _file_ is write protected; don't replace.
 	printlog("Discarding changes to %s -- write protected.", level_fname);
 	level_prop->dirty_save = 0;
@@ -228,7 +229,9 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     }
 
     fprintf_logfile("Saving \"%s\" to map directory%s",
-	level_name, save_bkp?" with backup of previous":"");
+	level_name, save_bkp && cw_ok?" with backup of previous":"");
+
+    lock_fn(level_lock);
 
     time_t backup_sav = level_prop->last_backup;
     if (save_bkp) {
@@ -236,7 +239,6 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	level_prop->last_backup = time(0);
     }
 
-    lock_fn(level_lock);
     if (save_map_to_file(tmp_fn, 1) < 0) {
 	int e = errno;
 	(void) unlink(tmp_fn);
@@ -368,11 +370,30 @@ scan_and_save_levels(int unlink_only)
     for(int lvid=0; lvid<MAX_LEVEL; lvid++) {
 	if (!shdat.client->levels[lvid].loaded) continue;
 	loaded_levels++;
-	this_is_main = 0;
+	this_is_main = (
+		(shdat.client->levels[lvid].museum_id == 0) &&
+		(strcmp(shdat.client->levels[lvid].level.c, main_level()) == 0)
+	    );
+
+	// We can only unlink unused maps.
+	if (unlink_only) {
+	    if (shdat.client->levels[lvid].no_unload) continue;
+
+	    int user_count = 0;
+	    for(int uid=0; uid<MAX_USER; uid++)
+	    {
+		if (shdat.client->user[uid].active != 1) continue;
+		// NB: Only unload main when the _total_ user count hits zero.
+		if (lvid == shdat.client->user[uid].on_level || this_is_main)
+		    user_count++;
+	    }
+	    if (user_count) continue;
+	}
 
 	if (shdat.client->levels[lvid].museum_id == 0)
 	{
 	    // Check for saves and backups ... museums don't have either.
+	    // Also check the "NoUnload" flag
 
 	    nbtstr_t lv = shdat.client->levels[lvid].level;
 	    level_name = lv.c;
@@ -394,6 +415,7 @@ scan_and_save_levels(int unlink_only)
 
 	    // Block unload unless we are restarting.
 	    int no_unload = (level_prop->no_unload && !restart_on_unload);
+	    shdat.client->levels[lvid].no_unload = no_unload;
 
 	    if (level_prop->dirty_save) {
 		int do_save = !unlink_only && !no_unload;
