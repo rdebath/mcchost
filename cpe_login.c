@@ -20,7 +20,7 @@ static int extn_blockdefinitionsext = 0;
 
 #define N .name= /*STFU*/
 static struct ext_list_t extensions[] = {
-//  { N"EnvMapAppearance",    1, },				//Old
+    { N"EnvMapAppearance",    1, &extn_envmapappearance },	//Old
     { N"ClickDistance",       1, &extn_clickdistance },
     { N"CustomBlocks",        1, &extn_customblocks },
     { N"HeldBlock",           1, &extn_heldblock },
@@ -30,7 +30,7 @@ static struct ext_list_t extensions[] = {
     { N"SelectionCuboid",     1, &extn_selectioncuboid },	//MapConf
     { N"BlockPermissions",    1, &extn_block_permission },	//UserMapConf
     { N"ChangeModel",         1, &extn_changemodel },		//UserBotConf
-//  { N"EnvMapAppearance",    2, },				//Old
+    { N"EnvMapAppearance",    2, &extn_envmapappearance2 },	//Old
     { N"EnvWeatherType",      1, &extn_weathertype },
     { N"HackControl",         1, &extn_hackcontrol },
     { N"EmoteFix",            1, }, // Included in FullCP437
@@ -75,6 +75,8 @@ int extn_block_permission = 0;
 int extn_changemodel = 0;
 int extn_extentityposn = 0;
 int extn_envmapaspect = 0;
+int extn_envmapappearance = 0;
+int extn_envmapappearance2 = 0;
 int extn_evilbastard = 0;
 int extn_extendblockno = 0;
 int extn_extendtexno = 0;
@@ -153,14 +155,33 @@ process_extentry(pkt_extentry * pkt)
 	    printf_chat("&WClient sent unknown extension %s late -- Ignored.", pkt->extname);
     }
 
-    if (extn_blockdefinitions && extn_blockdefinitionsext) {
-	extn_blockdefn = 1;
-	if (client_block_limit < CPELIMITLO)
-	    client_block_limit = CPELIMITLO;
-	if (extn_extendblockno && client_block_limit < CPELIMIT)
-	    client_block_limit = CPELIMIT;
+    /*
+       When the user defines the look of a level the block definitions
+       and the textures are closely linked. Only use these if we do it
+       properly. Otherwise fallback to classic (or CPE) which the user
+       may have actually tested. EnvMapAppearance should be sufficient
+       for this too.
 
-	level_block_limit = client_block_limit;
+       NB: Should extn_extendtexno be included somehow too ?
+    */
+
+    if (cpe_extn_remaining == 0) {
+	if (extn_extendblockno) {
+	    // NOPE!
+	    extn_envmapappearance = 0;
+	    extn_envmapappearance2 = 0;
+	}
+	extn_envmapappearance |= extn_envmapappearance2;
+	if (extn_blockdefinitions && extn_blockdefinitionsext &&
+		(extn_envmapaspect || extn_envmapappearance)) {
+	    extn_blockdefn = 1;
+	    if (client_block_limit < CPELIMITLO)
+		client_block_limit = CPELIMITLO;
+	    if (extn_extendblockno && client_block_limit < CPELIMIT)
+		client_block_limit = CPELIMIT;
+
+	    level_block_limit = client_block_limit;
+	}
     }
 
     // Note: most of these lengths are not used because the send_*_pkt

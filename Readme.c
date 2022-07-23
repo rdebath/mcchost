@@ -121,15 +121,14 @@ See "/help todo" for notes.
     -- Precheck so users processes can be restarted too?
         -- Needs state save and reload for extn_* variables.
 
- +) /resizelvl, /copylvl, /deletelvl, /savelvl (to mapdir)
-    -- deletelvl moves current into backup (not copy)
+ +) /resizelvl, /copylvl, /savelvl (to mapdir)
+ +) /deletelvl of currently loaded
  +) /backup, /restore & /museum
  +) /import -- download *.cw file from web.
     -- Rename file to strict % form, don't overwrite.
     -- Output of curl import command to user ?
 
  +) /newlvl Perms; No create, create personal, create any.
-
  +) /newlvl, generate "nice" levels.
 
  +) Block/User history records.
@@ -164,6 +163,8 @@ See "/help todo" for notes.
        the user? Map access ?
 
     -- External command that acts like a client?
+
+ +) Switch to using libcurl ?
 
 Features:
     -- CW file also contains pending physics operations.

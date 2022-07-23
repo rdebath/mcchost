@@ -30,6 +30,16 @@ nb_short_clamp(uint8_t **ptr, int v)
     *ptr = p;
 }
 
+static inline void
+nb_short_dflt(uint8_t **ptr, int v, int def)
+{
+    if (v>32767 || v<-32768) v = def;
+    uint8_t *p = *ptr;
+    *p++ = (v>>8);
+    *p++ = (v&0xFF);
+    *ptr = p;
+}
+
 static inline int
 nb_string_write(uint8_t *pkt, char * str)
 {
@@ -382,6 +392,24 @@ send_setmapproperty_pkt(int prop_id, int prop_value)
     *p++ = PKID_MAPPROP;
     *p++ = prop_id;
     nb_int(&p, prop_value);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_mapappear_pkt(nbtstr_t * textureurl, block_t side_blk, block_t edge_blk,
+    int side_level, int cells_y, int cloudheight, int maxfog)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_MAPAPPEAR;
+    p += nb_string_write(p, textureurl->c);
+    nb_block_t(&p, side_blk);
+    nb_block_t(&p, edge_blk);
+    nb_short_dflt(&p, side_level, cells_y/2);
+    if (extn_envmapappearance2) {
+	nb_short_dflt(&p, cloudheight, cells_y+2);
+	nb_short_dflt(&p, maxfog, 0);
+    }
     write_to_remote(packetbuf, p-packetbuf);
 }
 

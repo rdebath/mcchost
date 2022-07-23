@@ -10,7 +10,8 @@ endif
 
 DEFS=
 # Use -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
-WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation
+# WTH is the point of the "truncation" warnings!
+WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation
 CFLAGS=-O2 -g3 -pthread ${WARN} ${DEFS} ${HEADER}
 LDFLAGS=-lz -lm -llmdb
 HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')

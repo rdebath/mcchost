@@ -35,7 +35,11 @@ process_args(int argc, char **argv)
 	    do {
 		if (ar+1 < argc) {
 		    if (strcmp(argv[ar], "-name") == 0) {
-			strncpy(server->name, argv[ar+1], sizeof(server->name)-1);
+			char cbuf[NB_SLEN*4];
+			strncpy(cbuf, argv[ar+1], sizeof(cbuf)-1);
+			int l = strlen(cbuf)+1;
+			convert_to_cp437(cbuf, &l);
+			strncpy(server->name, cbuf, sizeof(server->name)-1);
 			ar++; addarg++;
 			break;
 		    }

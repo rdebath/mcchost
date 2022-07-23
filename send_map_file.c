@@ -24,6 +24,8 @@ int reset_hotbar_on_mapload = 0;
 int client_blockperm_state = 3;
 int client_inventory_custom = 0;
 
+static uint8_t tex16_def[BLOCKMAX];
+
 // Convert from Map block numbers to ones the client will understand.
 block_t
 f_block_convert(block_t in)
@@ -31,14 +33,28 @@ f_block_convert(block_t in)
     if (in < level_block_limit) return in;
     if (in >= BLOCKMAX) return Block_Bedrock;
 
-    if (level_prop->blockdef[in].defined
-	&& (level_prop->blockdef[in].fallback < Block_CPE || !extn_blockdefn))
-	in = level_prop->blockdef[in].fallback;
+    if (level_prop->blockdef[in].defined) {
+	int tries = 0;
+
+	do {
+	    int fallback = 0;
+	    if (in >= client_block_limit) fallback = 1;
+	    else if (!extn_blockdefn) fallback = 1;
+	    else if (!extn_extendtexno && tex16_def[in]) fallback = 2;
+	    if (!fallback) break;
+	    block_t r = level_prop->blockdef[in].fallback;
+	    if (r == in || r >= BLOCKMAX) {
+		if (in >= Block_CPE) in = Block_Bedrock;
+		break;
+	    }
+	    in = r;
+	    if (in < client_block_limit && fallback<2) break;
+	    tries++;
+	} while(tries < 4 && level_prop->blockdef[in].defined);
+    }
 
     if (!customblock_enabled && in >= Block_CP && in < Block_CPE) {
-	if (!extn_blockdefn)
-	    in = cpe_conversion[in-Block_CP];
-	else if (!level_prop->blockdef[in].defined)
+	if (!extn_blockdefn || !level_prop->blockdef[in].defined)
 	    in = cpe_conversion[in-Block_CP];
     }
 
@@ -113,6 +129,7 @@ send_metadata()
 
     metadata_generation = level_prop->metadata_generation;
     send_env_colours();
+    send_map_appearance();
     send_map_property();
     send_weather();
     send_textureurl();
@@ -188,7 +205,7 @@ send_block_array()
 		    if (b<BLOCKMAX)
 			b = conv_blk[b];
 		    else
-			b = Block_Bedrock;
+			b = block_convert(b);
 
 		    if (b>255) need_himap = 1;
 		    if (part == 0)
@@ -278,6 +295,22 @@ send_map_property()
 }
 
 void
+send_map_appearance()
+{
+    if (extn_envmapaspect) return; // Not needed then.
+    if (extn_extendblockno) return; // NOPE!!
+    if (!extn_envmapappearance) return;
+
+    send_mapappear_pkt(&level_prop->texname,
+	level_prop->side_block,
+	level_prop->edge_block,
+	level_prop->side_level,
+	level_prop->cells_y,
+	level_prop->clouds_height,
+	level_prop->max_fog);
+}
+
+void
 send_weather()
 {
     if (!extn_weathertype) return;
@@ -311,6 +344,17 @@ send_block_definitions()
 
 	if (!extn_blockdefn)
 	    return;
+    }
+    if (!extn_extendtexno) {
+	for(block_t b = 0; b<client_block_limit; b++) {
+	    tex16_def[b] = 0;
+	    if (!level_prop->blockdef[b].defined) continue;
+	    for(int t = 0; t<6; t++)
+		if (level_prop->blockdef[b].textures[t] > 255)
+		    tex16_def[b] = 1;
+	    if (tex16_def[b] && b<level_block_limit)
+		level_block_limit = b;
+	}
     }
 
     block_t newmax = 0;

@@ -47,6 +47,7 @@
 #define PKID_ADDENTv1	0x17
 #define PKID_MAPCOLOUR	0x19
 #define PKID_BLOCKPERM	0x1c
+#define PKID_MAPAPPEAR	0x1e
 #define PKID_WEATHER	0x1f
 #define PKID_ADDENT	0x21
 #define PKID_BLOCKDEF	0x23
@@ -166,6 +167,7 @@ int msglen[256] = {
     /* 0x1c */ 4,
 #define PKID_CHANGEMDL	0x1d
     /* 0x1d */ 66,
+#define PKID_MAPAPPEAR	0x1e
     /* 0x1e */ 0, // 69, 73
 #define PKID_WEATHER	0x1f
     /* 0x1f */ 2,
