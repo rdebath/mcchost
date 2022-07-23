@@ -139,9 +139,10 @@ grow_dirt_block(int x, int y, int z, block_t blk)
 void
 prelocked_update(int x, int y, int z, int b)
 {
+    check_block_queue(0);
     level_prop->dirty_save = 1;
     level_prop->last_modified = time(0);
-    int id = level_block_queue->curr_offset;
+    uint32_t id = level_block_queue->curr_offset;
     level_block_queue->updates[id].x = x;
     level_block_queue->updates[id].y = y;
     level_block_queue->updates[id].z = z;
@@ -157,9 +158,10 @@ void
 send_update(int x, int y, int z, int b)
 {
     lock_fn(level_lock);
+    check_block_queue(0);
     level_prop->dirty_save = 1;
     level_prop->last_modified = time(0);
-    int id = level_block_queue->curr_offset;
+    uint32_t id = level_block_queue->curr_offset;
     level_block_queue->updates[id].x = x;
     level_block_queue->updates[id].y = y;
     level_block_queue->updates[id].z = z;
@@ -209,6 +211,8 @@ send_queued_blocks()
     }
 
     if (last_id < 0) return; // Should be "Map download in progress"
+
+    check_block_queue(1);
 
     for(;counter < 1024; counter++)
     {

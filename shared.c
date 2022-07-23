@@ -51,6 +51,9 @@ struct shared_data_t {
     chat_queue_t *chat;
     client_data_t *client;
 
+    uint32_t block_queue_mmap_count;
+    char * level_fixed_name;
+
     shmem_t dat[SHMID_COUNT];
 };
 
@@ -108,6 +111,7 @@ open_level_files(char * level_name, int museum_id, char * fixname, int to_unload
     stop_shared();
 
     check_level_name(fixname); // Last check.
+    shdat.level_fixed_name = strdup(fixname);
 
     snprintf(sharename, sizeof(sharename), LEVEL_LOCK_NAME, fixname);
     level_lock->name = strdup(sharename);
@@ -194,6 +198,7 @@ open_level_files(char * level_name, int museum_id, char * fixname, int to_unload
 	    level_prop->last_map_download_size = 16384;
     }
 
+    wipe_last_block_queue_id();
     create_block_queue(fixname);
     if (!level_block_queue)
 	goto open_failed;
@@ -259,6 +264,11 @@ stop_shared(void)
 {
     stop_shared_mmap();
     stop_shared_lock();
+    shdat.block_queue_mmap_count = 0;
+    if (shdat.level_fixed_name) {
+	free(shdat.level_fixed_name);
+	shdat.level_fixed_name = 0;
+    }
 }
 
 void
@@ -309,9 +319,11 @@ LOCAL void check_level_name(char * levelname)
     }
 }
 
-void
+LOCAL void
 create_block_queue(char * levelname)
 {
+    stop_block_queue();
+
     if (!level_prop) return;
 
     char sharename[256];
@@ -319,17 +331,11 @@ create_block_queue(char * levelname)
 
     snprintf(sharename, sizeof(sharename), LEVEL_QUEUE_NAME, levelname);
 
-    stop_block_queue();
-    wipe_last_block_queue_id();
-
     // First minimum size.
     level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
     if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0)
 	return;
     level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
-
-    // Now try to extend it.
-    lock_fn(level_lock);
 
     // First init check
     if (level_block_queue->generation == 0 ||
@@ -357,6 +363,8 @@ create_block_queue(char * levelname)
     // If it's more, don't change it.
     if (file_queue_count > queue_count) queue_count = file_queue_count;
 
+    // fprintf(stderr, "Trace Open queue %d,%d to %d '%s'\n", file_queue_count, shdat.block_queue_mmap_count, queue_count, shdat.level_fixed_name);
+
     stop_block_queue();
 
     // Now try the size we want.
@@ -366,11 +374,11 @@ create_block_queue(char * levelname)
 	    fatal("Cannot open block queue");
 
 	// Hummph. How about the size it is.
-	level_block_queue_len = sizeof(*level_block_queue) + file_queue_count * sizeof(xyzb_t);
+	queue_count = file_queue_count;
+	level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);
 	if (allocate_shared(sharename, level_block_queue_len, shdat.dat+SHMID_BLOCKQ) < 0)
 	    fatal("Shared area allocation failure");
 
-	queue_count = file_queue_count;
 	level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
     } else {
 	level_block_queue = shdat.dat[SHMID_BLOCKQ].ptr;
@@ -378,7 +386,7 @@ create_block_queue(char * levelname)
 	    level_block_queue->queue_len = queue_count;
     }
 
-    unlock_fn(level_lock);
+    shdat.block_queue_mmap_count = queue_count;
 }
 
 void
@@ -387,8 +395,28 @@ stop_block_queue()
     if (level_block_queue) {
 	deallocate_shared(SHMID_BLOCKQ);
 	level_block_queue = 0;
-	wipe_last_block_queue_id();
     }
+}
+
+void
+check_block_queue(int need_lock)
+{
+    if (!level_block_queue) return;
+    if (shdat.block_queue_mmap_count == level_block_queue->queue_len) return;
+    if (shdat.block_queue_mmap_count > level_block_queue->queue_len) {
+	// fatal("level_block_queue->queue_len shrank!?");
+	shdat.block_queue_mmap_count = level_block_queue->queue_len;
+	return;
+    }
+    if (shdat.level_fixed_name == 0)
+	fatal("Cannot reopen queue, name lost");
+
+    if (need_lock) lock_fn(level_lock);
+    create_block_queue(shdat.level_fixed_name);
+    if (need_lock) unlock_fn(level_lock);
+
+    if (!level_block_queue)
+	fatal("Block queue check lost queue");
 }
 
 void
