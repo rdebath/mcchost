@@ -73,7 +73,7 @@ makeheaders: lib/makeheaders
 lib/makeheaders: lib/makeheaders.c
 	$(CC) -O2 -o $@ $<
 
-lib_text.o: lib_text.c
+lib_text.o: lib_text.c lib_text.h
 
 ifeq ($(findstring s,$(MFLAGS)),)
 %.o: %.c

@@ -9,17 +9,17 @@
 #define MAP_VERSION	0x00000100
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
 
+typedef uint16_t block_t;
+
 typedef struct xyz_t xyz_t;
 struct xyz_t { int x, y, z; };
 typedef struct xyzb_t xyzb_t;
-struct xyzb_t { uint16_t x, y, z, b; };
+struct xyzb_t { uint16_t x, y, z; block_t b; };
 typedef struct xyzhv_t xyzhv_t;
 struct xyzhv_t { int x, y, z; int8_t h, v, valid; };
 
 typedef struct nbtstr_t nbtstr_t; // This is CP437, NUL terminated.
 struct nbtstr_t { char c[NB_SLEN]; };
-
-typedef uint16_t block_t;
 
 #define BLK_NUM_TEX	6
 #define BLK_NUM_FOG	4

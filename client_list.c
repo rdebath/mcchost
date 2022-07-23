@@ -58,6 +58,7 @@ static client_entry_t myuser[MAX_USER];
 static struct timeval last_check;
 
 xyzhv_t player_posn = {0};
+block_t player_held_block = -1;
 
 void
 check_user()
@@ -135,6 +136,7 @@ update_player_pos(pkt_player_posn pkt)
     player_posn = pkt.pos;
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
     myuser[my_user_no].posn = pkt.pos;
+    player_held_block = pkt.held_block;
     if (!shdat.client) return;
     shdat.client->user[my_user_no].posn = pkt.pos;
 }

@@ -27,8 +27,20 @@ Useful for hidden block types.
 #if INTERFACE
 #define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}, \
                    {N"paint", &cmd_paint}, {N"p", &cmd_paint, .dup=1}, \
-                   {N"mode", &cmd_mode}
+                   {N"mode", &cmd_mode}, \
+                   {N"abort", &cmd_mode, .dup=1}, {N"a", &cmd_mode, .dup=1}, \
+		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, .dup=1}, \
+                   {N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, .dup=1}
+
 #endif
+
+xyzhv_t marks[3] = {0};
+uint8_t player_mark_mode = 0;
+char marking_for[NB_SLEN];
+cmd_func_t mark_for_cmd = 0;
+char * mark_cmd_cmd = 0;
+char * mark_cmd_arg = 0;
+
 void
 cmd_place(char * cmd, char * arg)
 {
@@ -72,44 +84,7 @@ cmd_place(char * cmd, char * arg)
 	pkt.coord.z = args[3];
 	update_block(pkt);
     } else {
-	int i, x, y, z;
-	int max[3] = { level_prop->cells_x-1, level_prop->cells_y-1, level_prop->cells_z-1};
-	for(i=0; i<3; i++) {
-	    if (args[i+1]<0 && args[i+4]<0) return; // Off the map.
-	    if (args[i+1]>max[i] && args[i+4]>max[i]) return; // Off the map.
-	}
-	for(i=0; i<6; i++) { // Crop to map.
-	    if (args[i+1]<0) args[i+1] = 0;
-	    if (args[i+1]>max[i%3]) args[i+1] = max[i%3];
-	}
-	for(i=0; i<3; i++) {
-	    if (args[i+4] < args[i+1])
-		{int t=args[i+1]; args[i+1]=args[i+4]; args[i+4]=t; }
-	}
-
-	// Cuboid does not "adjust" blocks so call
-	// send_update(), not update_block().
-	//
-	// Lock may be very slow, so update all the blocks
-	// in one run using unlocked_update().
-	//
-	// Too large and this will trigger a /reload as it'll
-	// run too fast so buzzing the lock isn't needed
-	lock_fn(level_lock);
-	my_user.dirty = 1;
-	block_t b = args[0];
-	if (b >= BLOCKMAX) b = BLOCKMAX-1;
-	for(y=args[2]; y<=args[5]; y++)
-	    for(x=args[1]; x<=args[4]; x++)
-		for(z=args[3]; z<=args[6]; z++)
-		{
-		    uintptr_t index = World_Pack(x, y, z);
-		    if (level_blocks[index] == b) continue;
-		    if (b == 0) my_user.blocks_deleted++; else my_user.blocks_placed++;
-		    level_blocks[index] = b;
-		    prelocked_update(x, y, z, b);
-		}
-	unlock_fn(level_lock);
+	plain_cuboid(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
     }
     return;
 }
@@ -123,9 +98,51 @@ cmd_paint(UNUSED char * cmd, UNUSED char * arg)
 }
 
 void
-cmd_mode(UNUSED char * cmd, char * arg)
+clear_pending_marks() {
+    memset(marks, 0, sizeof(marks));
+    mark_for_cmd = 0;
+    if (mark_cmd_cmd) free(mark_cmd_cmd);
+    mark_cmd_cmd = 0;
+    if (mark_cmd_arg) free(mark_cmd_arg);
+    mark_cmd_arg = 0;
+    *marking_for = 0;
+    player_mark_mode = 0;
+    show_marks_message();
+}
+
+void show_marks_message()
+{
+    if (!extn_messagetypes) return;
+
+    printf_chat("(13)&f%s", marking_for);
+    if (!*marking_for) {
+	printf_chat("(12)");
+	printf_chat("(11)");
+	return;
+    }
+
+    if (marks[0].valid)
+	printf_chat("(12)&fMark #1: &S(%d,%d,%d)", marks[0].x, marks[0].y, marks[0].z);
+    else
+	printf_chat("(12)&fMark #1: &S(Waiting)");
+
+    if (marks[1].valid)
+	printf_chat("(11)&fMark #2: &S(%d,%d,%d)", marks[1].x, marks[1].y, marks[1].z);
+    else
+	printf_chat("(11)&fMark #2: &S(Waiting)");
+}
+
+void
+cmd_mode(char * cmd, char * arg)
 {
     char * block = strtok(arg, " ");
+    if (cmd && (strcasecmp(cmd, "abort") == 0 || strcasecmp(cmd, "a") == 0)) {
+	printf_chat("&SToggles and pending actions cleared.");
+	player_mode_mode = -1;
+	clear_pending_marks();
+	return;
+    }
+
     if (!block) {
 	player_mode_mode = -1;
 	printf_chat("&SPlayer /mode command turned off");
@@ -158,6 +175,35 @@ process_player_setblock(pkt_setblock pkt)
 	return;
     }
 
+    if (player_mark_mode) {
+	int l = sizeof(marks)/sizeof(*marks);
+	int v = 0;
+	while(v<l && marks[v].valid) v++;
+	if (v<l) {
+	    marks[v].valid = 1;
+	    marks[v].x = pkt.coord.x;
+	    marks[v].y = pkt.coord.y;
+	    marks[v].z = pkt.coord.z;
+	    if (!extn_messagetypes)
+		printf_chat("&SMarked position (%d,%d,%d)",
+		    pkt.coord.x, pkt.coord.y, pkt.coord.z);
+	    player_mark_mode--;
+	} else
+	    player_mark_mode = 0;
+
+	revert_client(pkt);
+	show_marks_message();
+
+	if (player_mark_mode == 0) {
+	    if (mark_for_cmd) {
+		(*mark_for_cmd)(mark_cmd_cmd, mark_cmd_arg);
+		if (!player_mark_mode)
+		    clear_pending_marks();
+	    }
+	}
+	return;
+    }
+
     if (player_mode_paint) {
 	pkt.block = pkt.heldblock;
 	pkt.mode = 2;
@@ -186,3 +232,164 @@ revert_client(pkt_setblock pkt)
     send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
 }
 
+void
+cmd_mark(UNUSED char * cmd, char * arg)
+{
+    int args[3] = {0};
+    int cnt = 0;
+    char * ar = arg;
+    if (ar)
+	for(int i = 0; i<3; i++) {
+	    char * p = strtok(ar, " "); ar = 0;
+	    if (p == 0) break;
+	    args[i] = atoi(p);
+	    cnt = i+1;
+	}
+
+    if (cnt != 3) {
+	if (cnt == 0) {
+	    if (marks[0].valid) {
+		if (player_mark_mode) {
+		    int l = sizeof(marks)/sizeof(*marks);
+		    for(int i = 0; i<l; i++)
+			if (marks[i].valid)
+			    player_mark_mode++;
+		}
+		memset(marks, 0, sizeof(marks));
+		if (player_mark_mode)
+		    printf_chat("&SMarks cleared, please reenter.");
+		else
+		    printf_chat("&SMarks cleared");
+		show_marks_message();
+		return;
+	    }
+	}
+	printf_chat("&SUsage: &T/mark [x y z]&S or &T/mark&S to clear");
+	return;
+    }
+
+    int l = sizeof(marks)/sizeof(*marks);
+    int v = 0;
+    while(v<l && marks[v].valid) v++;
+    if (v>=l) { // Too many? Discard oldest
+	printf_chat("&SNote: removed mark (%d,%d,%d)", marks[0].x, marks[0].y, marks[0].z);
+	for (int i=1; i<l; i++)
+	    marks[i-1] = marks[i];
+	v--;
+    }
+    if (v<l) {
+	marks[v].valid = 1;
+	marks[v].x = args[0];
+	marks[v].y = args[1];
+	marks[v].z = args[2];
+	if (!extn_messagetypes)
+	    printf_chat("&SMarked position (%d,%d,%d)", args[0], args[1], args[2]);
+    } else
+	printf_chat("&WToo many marks");
+
+    show_marks_message();
+    if (player_mark_mode) {
+	player_mark_mode--;
+	if (player_mark_mode == 0) {
+	    if (mark_for_cmd) {
+		(*mark_for_cmd)(mark_cmd_cmd, mark_cmd_arg);
+		if (!player_mark_mode)
+		    clear_pending_marks();
+	    }
+	}
+    }
+}
+
+void
+request_pending_marks(char * why, char * cmd, char * arg)
+{
+    mark_for_cmd = cmd_cuboid;
+    if (mark_cmd_cmd) free(mark_cmd_cmd);
+    mark_cmd_cmd = 0;
+    if (mark_cmd_arg) free(mark_cmd_arg);
+    mark_cmd_arg = 0;
+    if (cmd) mark_cmd_cmd = strdup(cmd);
+    if (arg) mark_cmd_arg = strdup(arg);
+    strncpy(marking_for, why, sizeof(marking_for)-1);
+    show_marks_message();
+}
+
+void
+cmd_cuboid(char * cmd, char * arg)
+{
+    if (!marks[0].valid || !marks[1].valid) {
+	if (!marks[0].valid) {
+	    if (!extn_messagetypes)
+		printf_chat("&SPlace or break two blocks to determine edges.");
+	}
+	player_mark_mode = 2;
+	if (marks[0].valid) player_mark_mode--;
+	request_pending_marks("Selecting region for Cuboid", cmd, arg);
+	return;
+    }
+
+    block_t b = arg?block_id(arg): player_held_block;
+    if (b == (block_t)-1) b = 1;
+
+    plain_cuboid(b,
+	marks[0].x, marks[0].y, marks[0].z,
+	marks[1].x, marks[1].y, marks[1].z);
+}
+
+void
+plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
+{
+    int i;
+    int max[3] = { level_prop->cells_x-1, level_prop->cells_y-1, level_prop->cells_z-1};
+    int args[7] = {0, x0, y0, z0, x1, y1, z1};
+
+    // Swap if inverted.
+    for(i=0; i<3; i++) {
+	if (args[i+1] > args[i+4]) {
+	    int t = args[i+1];
+	    args[i+1] = args[i+4];
+	    args[i+4] = t;
+	}
+    }
+    for(i=0; i<3; i++) {
+	if (args[i+1]<0 && args[i+4]<0) return; // Off the map.
+	if (args[i+1]>max[i] && args[i+4]>max[i]) return; // Off the map.
+    }
+    for(i=0; i<6; i++) { // Crop to map.
+	if (args[i+1]<0) args[i+1] = 0;
+	if (args[i+1]>max[i%3]) args[i+1] = max[i%3];
+    }
+    for(i=0; i<3; i++) {
+	if (args[i+4] < args[i+1])
+	    {int t=args[i+1]; args[i+1]=args[i+4]; args[i+4]=t; }
+    }
+
+    // Cuboid does not "adjust" blocks so call
+    // send_update(), not update_block().
+    //
+    // Lock may be very slow, so update all the blocks
+    // in one run using unlocked_update().
+    //
+    // Too large and this will trigger a /reload as it'll
+    // run too fast so buzzing the lock isn't needed
+    lock_fn(level_lock);
+    my_user.dirty = 1;
+    int x, y, z;
+    if (b >= BLOCKMAX) b = BLOCKMAX-1;
+    for(y=args[2]; y<=args[5]; y++)
+	for(x=args[1]; x<=args[4]; x++)
+	    for(z=args[3]; z<=args[6]; z++)
+	    {
+		uintptr_t index = World_Pack(x, y, z);
+		if (level_blocks[index] == b) continue;
+		if (b == 0) my_user.blocks_deleted++; else my_user.blocks_placed++;
+		level_blocks[index] = b;
+		prelocked_update(x, y, z, b);
+	    }
+    unlock_fn(level_lock);
+
+    // NB: Slab processing is wrong for multi-layer cuboid.
+    // Grass/dirt processing might be reasonable to convert grass->dirt
+    // but dirt->grass depends on "nearby" grass so the "correct" flow
+    // is not well defined.
+}
