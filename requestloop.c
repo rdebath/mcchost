@@ -276,6 +276,8 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt.block = pkt.mode?pkt.heldblock:Block_Air;
 
 	    process_player_setblock(pkt);
+	    update_player_move_time();
+
 	    if (bytes_queued_to_send() > 65536) {
 		send_queued_blocks();
 		flush_to_remote();
@@ -342,6 +344,7 @@ process_client_message(int cmd, char * pktbuf)
 		sanitise_nbstring(pkt.message, p);
 	    // p+=64;
 	    process_chat_message(pkt.message_type, pkt.message);
+	    update_player_move_time();
 	}
 	break;
 

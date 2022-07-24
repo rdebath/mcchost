@@ -99,6 +99,16 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_DURATION("SaveInterval", server->save_interval);
 	INI_DURATION("BackupInterval", server->backup_interval);
 
+	if (st->write) fprintf(st->fd, "\n");
+
+	INI_BOOLVAL("FlagLogCommands", server->flag_log_commands);
+	INI_BOOLVAL("FlagLogChat", server->flag_log_chat);
+
+	if (st->write) fprintf(st->fd, "\n");
+
+	INI_DURATION("AFKInterval", server->afk_interval);
+	INI_DURATION("AFKKickInterval", server->afk_kick_interval);
+
     }
 
     return found;

@@ -13,7 +13,7 @@
  * User details.
  * This converts the userrec_t structure into a portable format and writes it
  * to an lmbd file. Note, this is used in a very simple manner and could
- * in theory just use lots of tiny files.
+ * in theory just use lots of tiny files or one large CSV.
  *
  */
 #if INTERFACE
@@ -25,11 +25,22 @@ struct userrec_t
     int64_t blocks_placed;
     int64_t blocks_deleted;
     int64_t blocks_drawn;
-    int64_t first_logon;	// time_t is sometimes 32bits.
-    int64_t last_logon;
+    int64_t first_logon;	// is time_t, time_t is sometimes 32bits.
+    int64_t last_logon;		// is time_t, time_t is sometimes 32bits.
     int64_t logon_count;
-    int64_t kick_count;
+    int64_t kick_count;		// Currently unused
+    int64_t death_count;	// Currently unused
+    int64_t message_count;
+    char last_ip[NB_SLEN];
 
+    // Should be saved (TODO)
+    int64_t time_online_secs;
+    int64_t coin_count;
+    char title[NB_SLEN];
+    char colour[NB_SLEN];
+    char title_colour[NB_SLEN];
+
+    // Not saved
     int dirty;
 }
 #endif
@@ -207,11 +218,13 @@ write_current_user(int when)
 	if (!my_user.first_logon) my_user.first_logon = time(0);
 	my_user.last_logon = time(0);
 	my_user.logon_count++;
+	if (*client_ipv4_str)
+	    snprintf(my_user.last_ip, sizeof(my_user.last_ip), "%s", client_ipv4_str);
     }
 
     strcpy(my_user.user_id, user_id);
 
-    write_userrec(&my_user);
+    write_userrec(&my_user); //TODO: Only write counter fields if when==0
 
     my_user.dirty = 0;
 }
@@ -242,6 +255,9 @@ write_userrec(userrec_t * userrec)
     write_fld(&p, &userrec->last_logon, FLD_I64);
     write_fld(&p, &userrec->logon_count, FLD_I64);
     write_fld(&p, &userrec->kick_count, FLD_I64);
+    write_fld(&p, &userrec->death_count, FLD_I64);
+    write_fld(&p, &userrec->message_count, FLD_I64);
+    write_fld(&p, userrec->last_ip, FLD_STR);
 
     uint8_t idbuf[4];
     {
@@ -268,23 +284,37 @@ write_userrec(userrec_t * userrec)
 int
 read_userrec(userrec_t * rec_buf, char * user_id)
 {
+    if (user_id == 0 && rec_buf->user_no == 0) return -1;
+
     if (!userdb_open) open_userdb();
 
     MDB_txn *txn;
     E(mdb_txn_begin(env, NULL, MDB_RDONLY, &txn));
 
-    uint8_t user_key[NB_SLEN*4];
-    copy_user_key(user_key, user_id);
+    int rv;
+    MDB_val key2, data;
+    uint8_t idbuf[4];
 
-    MDB_val key, key2, data;
+    if (user_id == 0) {
+	uint8_t *p2 = idbuf;
+	write_int32(&p2, rec_buf->user_no);
+	key2.mv_size = sizeof(idbuf);
+	key2.mv_data = idbuf;
 
-    key.mv_size = strlen(user_key);
-    key.mv_data = user_key;
+    } else {
+	uint8_t user_key[NB_SLEN*4];
+	copy_user_key(user_key, user_id);
 
-    int rv = E(mdb_get(txn, dbi_ind1, &key, &key2));
-    if (rv == MDB_NOTFOUND) {
-	mdb_txn_abort(txn);
-	return -1;
+	MDB_val key;
+
+	key.mv_size = strlen(user_key);
+	key.mv_data = user_key;
+
+	rv = E(mdb_get(txn, dbi_ind1, &key, &key2));
+	if (rv == MDB_NOTFOUND) {
+	    mdb_txn_abort(txn);
+	    return -1;
+	}
     }
 
     rv = E(mdb_get(txn, dbi_rec, &key2, &data));
@@ -297,6 +327,7 @@ read_userrec(userrec_t * rec_buf, char * user_id)
     uint8_t *p = data.mv_data;
     int bytes = data.mv_size;
 
+    // Old binary records.
     if (bytes >= 16 && *p == 0) {
 	memset(rec_buf, 0, sizeof(*rec_buf));
 	read_bin_userrec(rec_buf, p, bytes);
@@ -313,6 +344,9 @@ read_userrec(userrec_t * rec_buf, char * user_id)
     read_fld(&p, &bytes, &rec_buf->last_logon, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->logon_count, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->kick_count, FLD_I64, 0);
+    read_fld(&p, &bytes, &rec_buf->death_count, FLD_I64, 0);
+    read_fld(&p, &bytes, &rec_buf->message_count, FLD_I64, 0);
+    read_fld(&p, &bytes, rec_buf->last_ip, FLD_STR, sizeof(rec_buf->last_ip));
 
     E(mdb_txn_commit(txn));
 
@@ -425,6 +459,6 @@ read_bin_userrec(userrec_t * rec_buf, uint8_t *p, int bytes)
     read_bin_fld(&p, &bytes, &rec_buf->first_logon, FLD_I64);
     read_bin_fld(&p, &bytes, &rec_buf->last_logon, FLD_I64);
     read_bin_fld(&p, &bytes, &rec_buf->logon_count, FLD_I64);
-
+    // No more fields ever written to bin format.
     rec_buf->dirty = 1;
 }

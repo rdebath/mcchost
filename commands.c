@@ -16,6 +16,7 @@ struct command_t {
     cmd_func_t function;
     int min_rank;
     int dup;		// Don't show on /cmds (usually a duplicate)
+    int nodup;		// No a dup, don't use previous.
 };
 #endif
 
@@ -38,7 +39,16 @@ run_command(char * msg)
 
     for(int i = 0; command_list[i].name; i++) {
 	if (strcasecmp(cmd, command_list[i].name) == 0) {
-	    command_list[i].function(cmd, strtok(0, ""));
+	    int c = i;
+	    while(c>0 && command_list[c].dup && !command_list[c].nodup &&
+		command_list[c].function == command_list[c-1].function)
+		c--;
+
+	    cmd = command_list[c].name;
+	    char * arg = strtok(0, "");
+	    if (server->flag_log_commands)
+		printlog("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
+	    command_list[c].function(cmd, arg);
 	    return;
 	}
     }
@@ -63,16 +73,16 @@ Aliases: /hacks
 */
 /*HELP crash H_CMD
 &T/crash
-Crash the server, fake by default, but ...
-&T/crash 666&S really do it!
-&T/crash 616&S Segmentation violation
-&T/crash 606&S kill-9
-&T/crash 696&S just exit
+Crash the server, default is a fatal() error.
+&T/crash 666&S Assertion failure
+&T/crash 606&S Segmentation violation
+&T/crash 696&S kill-9
+&T/crash 616&S exit(EXIT_FAILURE)
 */
 #if INTERFACE
 #define CMD_QUITS  {N"quit", &cmd_quit}, {N"rq", &cmd_quit}, \
     {N"hax", &cmd_quit}, {N"hacks", &cmd_quit, .dup=1}, \
-    {N"crash", &cmd_quit, .dup=1}, {N"servercrash", &cmd_quit, .dup=1}
+    {N"crash", &cmd_quit, .dup=1, .nodup=1}, {N"servercrash", &cmd_quit, .dup=1}
 #endif
 
 int *crash_ptr = 0;
@@ -85,16 +95,21 @@ cmd_quit(char * cmd, char * arg)
     if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
 	logout("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
 
-    if (strcasecmp(cmd, "crash") == 0 || strcasecmp(cmd, "servercrash") == 0) {
+    if (strcasecmp(cmd, "crash") == 0) {
 	char * crash_type = arg;
-	assert(!crash_type || strcmp(crash_type, "666"));
-	if (crash_type && strcmp(crash_type, "606") == 0)
-	    kill(getpid(), SIGKILL);
+	if (!crash_type) return cmd_help(0, "crash");
+	assert(strcmp(crash_type, "666"));
 	if (crash_type && strcmp(crash_type, "696") == 0)
-	    exit(254);
-	if (crash_type && strcmp(crash_type, "616") == 0)
+	    kill(getpid(), SIGKILL);
+	if (strcmp(crash_type, "616") == 0)
+	    exit(EXIT_FAILURE);
+	if (strcmp(crash_type, "606") == 0)
 	    printf_chat("Value should fail %d", *crash_ptr);
-	fatal("Server crash! Error code 42");
+	if (crash_type) {
+	    char cbuf[1024];
+	    snprintf(cbuf, sizeof(cbuf), "Server crash! Error code %s", crash_type);
+	    fatal(cbuf);
+	}
     }
 
     if (arg) {

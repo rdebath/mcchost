@@ -15,8 +15,9 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) /afk command (and auto)
-    -- Use to enhance crashed connection cleanup.
+ +) /deletelvl of currently loaded
+
+ +) Waiting for /mark should turn off BlockPermissions extension.
 
  +) List of levels in backup directory.
     -- With backup number ranges.
@@ -25,7 +26,7 @@ See "/help todo" for notes.
 
  +) Record data rates for server bytes/s I/O
 
- +) Slow map loads, do I need to poll client chat?
+ +) Slow map loads; do I need to poll client chat?
 
  +) INI file preserve (some?) comments.
 
@@ -100,12 +101,14 @@ See "/help todo" for notes.
 
  +) /sendcmd command
  +) /about command
- +) /z and /m commands with setblock capture.
 
  +) /spawn command
  +) /tp command
  +) /summon command
  +) /info command
+ +) /afk command
+
+ +) More /cuboid variants ?
 
  +) Colour definitions for &S,&W etc.
     -- System level
@@ -122,7 +125,6 @@ See "/help todo" for notes.
         -- Needs state save and reload for extn_* variables.
 
  +) /resizelvl, /copylvl, /savelvl (to mapdir)
- +) /deletelvl of currently loaded
  +) /backup, /restore & /museum
  +) /import -- download *.cw file from web.
     -- Rename file to strict % form, don't overwrite.
@@ -248,7 +250,8 @@ mcchost-server -inetd
 
 mcchost-server -cron
     Run periodic tasks, map unloads, backups and classicube.net poll.
-    -- Need cron without cc.net poll?
+    Option --register is only the cc.net poll
+    Option --cleanup is everything else.
 
 mcchost-server -runonce
     Opens port and accepts one connection, without calling fork()

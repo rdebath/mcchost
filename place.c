@@ -36,7 +36,7 @@ If only x coordinate is given, it is used for y and z too
                    {N"mode", &cmd_mode}, \
                    {N"abort", &cmd_mode, .dup=1}, {N"a", &cmd_mode, .dup=1}, \
 		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, .dup=1}, \
-		   {N"ma", &cmd_mark, .dup=1}, \
+		   {N"ma", &cmd_mark, .dup=1, .nodup=1}, \
                    {N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, .dup=1}
 
 #endif
@@ -76,6 +76,9 @@ cmd_place(char * cmd, char * arg)
 
     if (!level_block_queue || !level_blocks) return;
 
+    // NB: Place is treated just like the client setblock, including any
+    // Grass/Dirt/Slab conversions. The Cuboid call is NOT treated in the
+    // same way.
     pkt_setblock pkt;
     pkt.heldblock = args[0];
     pkt.mode = 3;
@@ -412,7 +415,7 @@ plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
     // run too fast so buzzing the lock isn't needed
     lock_fn(level_lock);
     my_user.dirty = 1;
-    int x, y, z;
+    int x, y, z, placecount = 0;
     if (b >= BLOCKMAX) b = BLOCKMAX-1;
     for(y=args[2]; y<=args[5]; y++)
 	for(x=args[1]; x<=args[4]; x++)
@@ -420,10 +423,12 @@ plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
 	    {
 		uintptr_t index = World_Pack(x, y, z);
 		if (level_blocks[index] == b) continue;
-		if (b == 0) my_user.blocks_deleted++; else my_user.blocks_placed++;
+		placecount++;
 		level_blocks[index] = b;
 		prelocked_update(x, y, z, b);
 	    }
+    if (b) my_user.blocks_drawn += placecount;
+    else my_user.blocks_deleted += placecount;
     unlock_fn(level_lock);
 
     // NB: Slab processing is wrong for multi-layer cuboid.

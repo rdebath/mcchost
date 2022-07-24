@@ -37,6 +37,13 @@ struct server_t {
     time_t last_backup;
     time_t last_unload;
     int last_heartbeat_port;
+
+    time_t afk_interval;
+    time_t afk_kick_interval;
+
+    int flag_log_commands;
+    int flag_log_chat;
+
     int magic2;
 };
 
@@ -422,9 +429,28 @@ teapot(uint8_t * buf, int len)
 	printlog("Nothing received from remote");
 
     if (dump_it) {
-	for(int i = 0; i<len; i++)
-	    hex_logfile(buf[i]);
-	hex_logfile(EOF);
+	int is_ascii = 1;
+	for(int i = 0; is_ascii && i<len; i++)
+	    if (!(buf[i] == '\r' || buf[i] == '\n' || (buf[i] >= ' ' && buf[i] <= '~')))
+		is_ascii = 0;
+	if (is_ascii) {
+	    char message[1024];
+	    int j = 0;
+	    for(int i = 0; i<len && j<sizeof(message)-4; i++) {
+		if (buf[i] >= ' ') message[j++] = buf[i];
+		else {
+		    message[j++] = '\\';
+		    if (buf[i] == '\n') message[j++] = 'n';
+		    if (buf[i] == '\r') message[j++] = 'r';
+		}
+	    }
+	    message[j] = 0;
+	    printlog("Text received was: %s", message);
+	} else {
+	    for(int i = 0; i<len; i++)
+		hex_logfile(buf[i]);
+	    hex_logfile(EOF);
+	}
     }
 
     if (line_ofd > 0)

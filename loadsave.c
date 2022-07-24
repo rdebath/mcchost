@@ -35,7 +35,7 @@ Return to the system main level
 #define CMD_LOADSAVE \
     {N"load", &cmd_load}, {N"save", &cmd_save}, \
     {N"goto", &cmd_goto}, \
-    {N"g", &cmd_goto, .dup=1}, {N"gr", &cmd_goto, .dup=1}, \
+    {N"g", &cmd_goto, .dup=1}, {N"gr", &cmd_goto, .dup=1, .nodup=1}, \
     {N"main", &cmd_main}
 #endif
 

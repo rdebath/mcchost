@@ -46,6 +46,8 @@ process_chat_message(int message_type, char * msg)
 	msg++;
     }
 
+    my_user.message_count++; my_user.dirty=1;
+
     convert_inbound_chat(msg);
 
     if (pending_chat_size >= 65536) {
@@ -91,7 +93,7 @@ post_chat(int where, int type, char * chat, int chat_len)
     if (chat_len <= 0) chat_len = strlen(chat);
 
     if (where == 0)
-	log_chat_message(chat, chat_len);
+	log_chat_message(chat, chat_len, type, user_id);
     else if (!user_logged_in)
 	return; // Would go to everyone eventually.
 

@@ -8,7 +8,8 @@
 #include "setvar.h"
 
 #if INTERFACE
-#define CMD_SETVAR  {N"setvar", &cmd_setvar, .dup=1}, {N"set", &cmd_setvar}
+#define CMD_SETVAR {N"set", &cmd_setvar}, {N"setvar", &cmd_setvar, .dup=1}, \
+    {N"restart", &cmd_restart}
 #endif
 
 /*HELP setvar,set H_CMD
@@ -118,9 +119,10 @@ cmd_setvar(char * cmd, char * arg)
     st->curr_section = section;
 
     if (strcasecmp(section, "server") == 0 || strcasecmp(section, "system") == 0) {
+	if (!client_trusted)
+	    return printf_chat("&WPermission denied, need to be admin.");
+
 	if (!system_ini_fields(st, varname, &value)) {
-	    if (!client_trusted)
-		return printf_chat("&WPermission denied, need to be admin.");
 
 	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s] %s = %s", section, varname, value);
@@ -143,7 +145,7 @@ cmd_setvar(char * cmd, char * arg)
 	}
     } else {
 	if (!level_ini_fields(st, varname, &value)) {
-	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
+	    fprintf_logfile("%s: Setfailed %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s] %s = %s", section, varname, value);
 	    return;
 	}
@@ -153,6 +155,28 @@ cmd_setvar(char * cmd, char * arg)
 	level_prop->last_modified = time(0);
     }
 
-    fprintf_logfile("%s: Set %s %s = %s", user_id, section, varname, value);
     printf_chat("&SSet %s.%s=\"%s\" ok.", section, varname, value);
+}
+
+/*HELP restart H_CMD
+&T/restart
+Restarts the server listener process.
+*/
+
+void
+cmd_restart(char * UNUSED(cmd), char * UNUSED(arg))
+{
+    if (!client_trusted)
+	return printf_chat("&WPermission denied, need to be admin.");
+
+    if (alarm_handler_pid) {
+	if (kill(alarm_handler_pid, SIGHUP) < 0) {
+	    perror("kill(alarm_handler,SIGHUP)");
+	    printf_chat("&WCannot signal listener process");
+	} else
+	    printf_chat("&SListener process restart triggered");
+    } else if (inetd_mode)
+	printf_chat("&SNo listener process exists for this session");
+    else
+	printf_chat("&WListener process not found");
 }

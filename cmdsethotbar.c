@@ -13,6 +13,7 @@ Alias &T/shb
 #if INTERFACE
 #define CMD_SHB \
     {N"sethotbar", &cmd_sethotbar}, {N"shb", &cmd_sethotbar, .dup=1}, \
+    {N"clearhotbar", &cmd_sethotbar, .dup=1, .nodup=1}, \
     {N"chb", &cmd_sethotbar, .dup=1}
 #endif
 
@@ -27,7 +28,7 @@ cmd_sethotbar(char * cmd, char * arg)
     block_t block = Block_Air;
     reset_hotbar_on_mapload = 0;
 
-    if (strcasecmp("chb", cmd) == 0) {
+    if (strcasecmp("clearhotbar", cmd) == 0) {
 	for(int id = 0; id<9; id++)
 	    send_sethotbar_pkt(id, block);
 	return;

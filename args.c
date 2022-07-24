@@ -205,10 +205,14 @@ process_args(int argc, char **argv)
 		    .software = SWNAME,
 		    .name = SWNAME " Server",
 		    .main_level = "main",
-		    .save_interval = 5*60,
+		    .save_interval = 15*60,
 		    .backup_interval = 24*3600,
 		    .key_rotation = 6*3600,
 		    .max_players = 255,
+		    .flag_log_commands = 1,
+		    .flag_log_chat = 1,
+		    .afk_interval = 10*60,
+		    .afk_kick_interval = 45*60,
 		};
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <signal.h>
 #include <errno.h>
+#include <assert.h>
 #include <sys/time.h>
 
 #include "client_list.h"
@@ -33,7 +34,8 @@ struct client_entry_t {
     uint8_t visible;
     uint8_t ip_dup;
     uint32_t ip_address;
-    time_t afk_time;	//TODO
+    time_t last_move;
+    uint8_t is_afk;
     pid_t session_id;
 };
 
@@ -113,6 +115,21 @@ check_user()
 	    send_posn_pkt(i, &myuser[i].posn, c.posn);
 	}
     }
+
+    if (myuser[my_user_no].last_move + server->afk_kick_interval < now.tv_sec) {
+	my_user.dirty = 1;
+	my_user.kick_count++;
+	logout("Auto-kick, AFK");
+    }
+
+    if (!myuser[my_user_no].is_afk) {
+	if (myuser[my_user_no].last_move + server->afk_interval < now.tv_sec) {
+	    myuser[my_user_no].is_afk = 1;
+	    shdat.client->user[my_user_no].is_afk = 1;
+
+	    printf_chat("@&S-&7%s&S- &Sis AFK auto", user_id);
+	}
+    }
 }
 
 void
@@ -137,10 +154,35 @@ update_player_pos(pkt_player_posn pkt)
 {
     player_posn = pkt.pos;
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
-    myuser[my_user_no].posn = pkt.pos;
+
     player_held_block = pkt.held_block;
+
+    // No movement, ignore
+    xyzhv_t p1 = pkt.pos;
+    xyzhv_t p2 = myuser[my_user_no].posn;
+    if (p1.x == p2.x && p1.y == p2.y && p1.z == p2.z &&
+        p1.v == p2.v && p1.h == p2.h)
+	return;
+
+    myuser[my_user_no].posn = pkt.pos;
+    if (shdat.client)
+	shdat.client->user[my_user_no].posn = pkt.pos;
+    update_player_move_time();
+}
+
+void
+update_player_move_time()
+{
+    if (my_user_no < 0 || my_user_no >= MAX_USER) return;
+    myuser[my_user_no].last_move = time(0);
     if (!shdat.client) return;
-    shdat.client->user[my_user_no].posn = pkt.pos;
+    shdat.client->user[my_user_no].last_move = myuser[my_user_no].last_move;
+    shdat.client->user[my_user_no].is_afk = 0;
+
+    if (myuser[my_user_no].is_afk) {
+	printf_chat("@&a-&7%s&a- &Sis no longer AFK", user_id);
+	myuser[my_user_no].is_afk = 0;
+    }
 }
 
 void
@@ -206,7 +248,10 @@ start_user()
     shdat.client->user[my_user_no].client_software = client_software;
     shdat.client->user[my_user_no].on_level = -1;
     shdat.client->user[my_user_no].ip_address = client_ipv4_addr;
+    shdat.client->user[my_user_no].last_move = time(0);
+    shdat.client->user[my_user_no].is_afk = 0;
 
+    myuser[my_user_no] = shdat.client->user[my_user_no];
     unlock_fn(system_lock);
 }
 
@@ -253,6 +298,9 @@ start_level(char * levelname, char * levelfile, int museum_id)
 void
 stop_user()
 {
+    if (my_user.dirty)
+        write_current_user(0);
+
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
     if (!shdat.client) return;
 
@@ -283,6 +331,14 @@ delete_session_id(int pid, char * killed_user, int len)
 
 	if (wipe_this)
 	{
+	    // Increment kick count, no lock
+	    userrec_t user_rec;
+	    if (read_userrec(&user_rec, shdat.client->user[i].name.c) == 0) {
+		user_rec.kick_count++;
+		user_rec.dirty = 1;
+		write_userrec(&user_rec);
+	    }
+
 	    cleaned ++;
 	    if (killed_user)
 		snprintf(killed_user, len, "%s", shdat.client->user[i].name.c);

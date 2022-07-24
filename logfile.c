@@ -83,8 +83,10 @@ close_logfile()
 }
 
 void
-log_chat_message(char * str, int len)
+log_chat_message(char * str, int len, int type, char* userid)
 {
+    if (!server || !server->flag_log_chat) return;
+
     int cf = 0;
     time_t now;
     time(&now);
@@ -96,6 +98,9 @@ log_chat_message(char * str, int len)
 	fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d ",
 	    tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
 	    tm->tm_hour, tm->tm_min, tm->tm_sec);
+
+    if (type == 100)
+	fprintf(logfile, "%s announced: ", userid);
 
     for(int i=0; i<len; i++) {
 	if (cf) {

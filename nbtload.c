@@ -93,7 +93,7 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
 	    fprintf_logfile("Level \"%s\" incorrect NBT schema label \"%s\".", level_name, last_lbl);
 	    return 0;
 	}
-	fprintf_logfile("Loading %s map for \"%s\": ", last_lbl, level_name);
+	fprintf_logfile("Loading %s map for \"%s\"", last_lbl, level_name);
 	create_property_file(level_name, level_fname);
 	init_map_null();
 	if (!read_element(ifd, ch))
@@ -107,7 +107,9 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
     }
 
     if (ClassicWorld_found || (level_prop->cells_x>0 && level_prop->cells_y>0 && level_prop->cells_z>0))
-	printlog("Load done.");
+	;
+    else
+	printlog("Unknown load failure for \"%s\"", level_name);
 
     return 1;
 }
