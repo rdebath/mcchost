@@ -171,6 +171,8 @@ send_setblock_pkt(int x, int y, int z, int block)
 void
 send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 {
+    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_SPAWN;
@@ -187,6 +189,8 @@ send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 void
 send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 {
+    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     int todo = 0;
@@ -255,6 +259,8 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 void
 send_despawn_pkt(int player_id)
 {
+    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_DESPAWN;
@@ -525,5 +531,64 @@ send_blockperm_pkt(block_t block, int placeok, int delok)
     nb_block_t(&p, block); // NO Conversion!
     *p++ = placeok;
     *p++ = delok;
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_addplayername_pkt(int player_id, char * playername, char * listname, char * groupname, int sortid)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_PLAYERNAME;
+    nb_short(&p, player_id);
+    p += nb_string_write(p, playername);
+    p += nb_string_write(p, listname);
+    p += nb_string_write(p, groupname);
+    *p++ = sortid;
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_removeplayername_pkt(int player_id)
+{
+    if (player_id < 0 || player_id > 255) return;
+
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_RMPLAYER;
+    nb_short(&p, player_id);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_addentity_pkt(int player_id, char * ingamename, char * skinname, xyzhv_t posn)
+{
+    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_ADDENT;
+    *p++ = player_id;
+    p += nb_string_write(p, ingamename);
+    p += nb_string_write(p, skinname);
+    nb_entcoord(&p, posn.x);
+    nb_entcoord(&p, posn.y+51);	// TODO: Is this +51 right?
+    nb_entcoord(&p, posn.z);
+    *p++ = posn.h;
+    *p++ = posn.v;
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_addentityv1_pkt(int player_id, char * ingamename, char * skinname)
+{
+    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_ADDENT;
+    *p++ = player_id;
+    p += nb_string_write(p, ingamename);
+    p += nb_string_write(p, skinname);
     write_to_remote(packetbuf, p-packetbuf);
 }

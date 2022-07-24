@@ -43,6 +43,8 @@ struct client_level_t {
     int loaded;
     int museum_id;
     int no_unload;
+    int force_unload;
+    int delete_on_unload;
     nbtstr_t level;
 };
 
@@ -116,18 +118,33 @@ check_user()
 	}
     }
 
-    if (myuser[my_user_no].last_move + server->afk_kick_interval < now.tv_sec) {
-	my_user.dirty = 1;
-	my_user.kick_count++;
-	logout("Auto-kick, AFK");
-    }
+    if (server->afk_kick_interval > 60)
+	if (myuser[my_user_no].last_move + server->afk_kick_interval < now.tv_sec) {
+	    my_user.dirty = 1;
+	    my_user.kick_count++;
+	    logout("Auto-kick, AFK");
+	}
 
-    if (!myuser[my_user_no].is_afk) {
+    if (!myuser[my_user_no].is_afk && server->afk_interval >= 60) {
 	if (myuser[my_user_no].last_move + server->afk_interval < now.tv_sec) {
 	    myuser[my_user_no].is_afk = 1;
 	    shdat.client->user[my_user_no].is_afk = 1;
 
 	    printf_chat("@&S-&7%s&S- &Sis AFK auto", user_id);
+	}
+    }
+
+    if (my_level >= 0 && my_level < MAX_LEVEL) {
+	int go_main = 0;
+	if (!shdat.client->levels[my_level].loaded) go_main = 1;
+	else if (shdat.client->levels[my_level].force_unload) go_main = 1;
+
+	if (go_main) {
+	    printf_chat("You are being moved to main as %s was unloaded",
+		shdat.client->levels[my_level].level.c);
+	    cmd_main(0,0);
+	    if (alarm_handler_pid != 0)
+		kill(alarm_handler_pid, SIGALRM);
 	}
     }
 }
@@ -239,17 +256,16 @@ start_user()
     }
 
     my_user_no = new_one;
-    nbtstr_t t = {0};
-    strcpy(t.c, user_id);
+    client_entry_t t = {0};
+    strcpy(t.name.c, user_id);
+    t.active = 1;
+    t.session_id = getpid();
+    t.client_software = client_software;
+    t.on_level = -1;
+    t.ip_address = client_ipv4_addr;
+    t.last_move = time(0);
+    shdat.client->user[my_user_no] = t;
     shdat.client->generation++;
-    shdat.client->user[my_user_no].active = 1;
-    shdat.client->user[my_user_no].session_id = getpid();
-    shdat.client->user[my_user_no].name = t;
-    shdat.client->user[my_user_no].client_software = client_software;
-    shdat.client->user[my_user_no].on_level = -1;
-    shdat.client->user[my_user_no].ip_address = client_ipv4_addr;
-    shdat.client->user[my_user_no].last_move = time(0);
-    shdat.client->user[my_user_no].is_afk = 0;
 
     myuser[my_user_no] = shdat.client->user[my_user_no];
     unlock_fn(system_lock);
@@ -284,9 +300,11 @@ start_level(char * levelname, char * levelfile, int museum_id)
 	fatal("Too many levels loaded");
 
     if (!shdat.client->levels[level_id].loaded) {
-	shdat.client->levels[level_id].level = level;
-	shdat.client->levels[level_id].loaded = 1;
-	shdat.client->levels[level_id].museum_id = museum_id;
+	client_level_t t = {0};
+	t.level = level;
+	t.loaded = 1;
+	t.museum_id = museum_id;
+	shdat.client->levels[level_id] = t;
     }
 
     shdat.client->user[my_user_no].on_level = level_id;

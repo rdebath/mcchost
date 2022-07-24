@@ -44,7 +44,9 @@
 #define PKID_CLICKDIST	0x12
 #define PKID_CUSTBLOCK	0x13	/*ClientSend&Rcv*/
 #define PKID_HELDBLOCK	0x14
+#define PKID_PLAYERNAME	0x16
 #define PKID_ADDENTv1	0x17
+#define PKID_RMPLAYER	0x18
 #define PKID_MAPCOLOUR	0x19
 #define PKID_BLOCKPERM	0x1c
 #define PKID_MAPAPPEAR	0x1e
@@ -155,7 +157,7 @@ int msglen[256] = {
     /* 0x16 */ 196,
 #define PKID_ADDENTv1	0x17
     /* 0x17 */ 130,
-#define PKID_RMENT	0x18
+#define PKID_RMPLAYER	0x18
     /* 0x18 */ 3,
 #define PKID_MAPCOLOUR	0x19
     /* 0x19 */ 8,

@@ -295,16 +295,19 @@ unlink_level(char * levelname, int silent)
     char sharename[256];
 
     snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, levelname);
-    if (unlink(sharename) < 0 && !silent)
-	perror(sharename);
+    if (access(sharename, F_OK) == 0)
+	if (unlink(sharename) < 0 && !silent)
+	    perror(sharename);
 
     snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, levelname);
-    if (unlink(sharename) < 0 && !silent)
-	perror(sharename);
+    if (access(sharename, F_OK) == 0)
+	if (unlink(sharename) < 0 && !silent)
+	    perror(sharename);
 
     snprintf(sharename, sizeof(sharename), LEVEL_QUEUE_NAME, levelname);
-    if (unlink(sharename) < 0 && !silent)
-	perror(sharename);
+    if (access(sharename, F_OK) == 0)
+	if (unlink(sharename) < 0 && !silent)
+	    perror(sharename);
 }
 
 LOCAL void check_level_name(char * levelname)

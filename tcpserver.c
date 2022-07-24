@@ -669,11 +669,13 @@ start_backup_process()
 	if (alarm_sig == 0 && trigger_backup == 0) {
 	    if ((now-server->last_backup) < server->save_interval) {
 		if ((now-server->last_unload) >= 15 || trigger_unload) {
-		    scan_and_save_levels(1);
-		    server->last_unload = now;
 		    trigger_unload = 0;
+		    trigger_backup =
+			scan_and_save_levels(1);
+		    server->last_unload = now;
 		}
-		return;
+		if (!trigger_backup)
+		    return;
 	    }
 	}
 	server->last_backup = now;

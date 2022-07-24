@@ -228,8 +228,11 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	return 0;
     }
 
-    fprintf_logfile("Saving \"%s\" to map directory%s",
-	level_name, save_bkp && cw_ok?" with backup of previous":"");
+    if (save_bkp == 2)
+	fprintf_logfile("Saving \"%s\" as backup only to delete level.", level_name);
+    else
+	fprintf_logfile("Saving \"%s\" to map directory%s",
+	    level_name, save_bkp && cw_ok?" with backup of previous":"");
 
     lock_fn(level_lock);
 
@@ -250,7 +253,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	return -1;
     }
 
-    if (save_bkp) {
+    if (save_bkp && save_bkp != 2) {
 	if (access(map_fn, F_OK) == 0) {
 	    // Do anything else on backup failure?
 	    if (link(map_fn, bak_fn) < 0)
@@ -267,6 +270,15 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	return -1;
     }
 
+    if (save_bkp == 2) {
+	if (rename(map_fn, bak_fn) < 0) {
+	    perror("backup rename failed");
+	    int e = errno;
+	    unlock_fn(level_lock);
+	    errno = e;
+	    return -1;
+	}
+    }
     level_prop->dirty_save = 0;
     unlock_fn(level_lock);
 
@@ -351,18 +363,19 @@ next_backup_filename(char * bk_name, int bk_len, char * fixedname)
     snprintf(bk_name, bk_len, LEVEL_BACKUP_NAME, fixedname, backup_id);
 }
 
-void
+int
 scan_and_save_levels(int unlink_only)
 {
     char * level_name = 0;
     int this_is_main = 0;
     int loaded_levels = 0;
     int check_again = unlink_only || restart_on_unload;
+    int trigger_full_run = 0;
 
     // fprintf(stderr, "Trace scan_and_save_levels(%d)\n", unlink_only);
 
     open_client_list();
-    if (!shdat.client) return;
+    if (!shdat.client) return 0;
 
     stop_shared();
     stop_block_queue();
@@ -378,11 +391,6 @@ scan_and_save_levels(int unlink_only)
 		(strcmp(shdat.client->levels[lvid].level.c, main_level()) == 0)
 	    );
 
-	// We can only unlink unused maps.
-	if (unlink_only) {
-	    if (shdat.client->levels[lvid].no_unload) continue;
-	}
-
 	int user_count = 0;
 	for(int uid=0; uid<MAX_USER; uid++)
 	{
@@ -392,6 +400,12 @@ scan_and_save_levels(int unlink_only)
 		user_count++;
 	}
 	if (user_count && unlink_only) continue;
+
+	if (unlink_only && shdat.client->levels[lvid].delete_on_unload)
+	    trigger_full_run = 1;
+
+	// We can only unlink unused maps.
+	if (unlink_only && shdat.client->levels[lvid].no_unload) continue;
 
 	if (shdat.client->levels[lvid].museum_id == 0)
 	{
@@ -413,6 +427,13 @@ scan_and_save_levels(int unlink_only)
 		continue;
 	    }
 
+	    int force_backup = 0;
+	    if (shdat.client->levels[lvid].delete_on_unload) {
+		level_prop->dirty_save = 1;
+		level_prop->no_unload = 0;
+		force_backup = 1;
+	    }
+
 	    if (level_prop->readonly)
 		level_prop->dirty_save = 0;
 
@@ -429,6 +450,7 @@ scan_and_save_levels(int unlink_only)
 		// Time to backup ?
 		time_t now = time(0);
 		int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
+		if (force_backup) do_bkp = 2;
 		if (do_bkp && !unlink_only) do_save = 1;
 
 		if (do_save) {
@@ -511,6 +533,8 @@ scan_and_save_levels(int unlink_only)
 	shdat.client->cleanup_generation = shdat.client->generation;
     else
 	shdat.client->cleanup_generation = shdat.client->generation-1;
+
+    return trigger_full_run;
 }
 
 LOCAL void

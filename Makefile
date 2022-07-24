@@ -96,3 +96,19 @@ rebuild:
 
 vps: ${PROG}
 	rsync -Pax ${PROG} vps-mcc:bin/mcchost-server
+
+ZIPF1=Makefile help_scan.awk
+ZIPF2=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html
+
+zip:
+	-rm -rf tmp.tgz tmp.d
+	tar cf tmp.tgz ${ZIPF1} *.c ${ZIPF2}
+	zip tmp.zip ${ZIPF1} *.c ${ZIPF2}
+	mkdir -p tmp.d
+	cd tmp.d ; tar xf ../tmp.tgz
+	cd tmp.d ; make
+	-rm -rf tmp.d
+	mv tmp.tgz mcchost.tgz
+	mv tmp.zip mcchost.zip
+
+

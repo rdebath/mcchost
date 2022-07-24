@@ -15,14 +15,13 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) /deletelvl of currently loaded
 
  +) Waiting for /mark should turn off BlockPermissions extension.
 
  +) List of levels in backup directory.
     -- With backup number ranges.
 
- +) Use fixname for usernames too.
+ +) Use fixname for usernames too?
 
  +) Record data rates for server bytes/s I/O
 
@@ -116,14 +115,6 @@ See "/help todo" for notes.
  +) Level limited chat -- primitive chatroom.
  +) Team chat, less primitive chatroom.
 
- +) Command line option to restart server and unload levels.
-    -- So we know this version will run!
-    -- Find pid by port no.
-    -- SIGALRM: Command line routine to "unload" level file
-    -- Precheck so levels can be unloaded (saved) by old version.
-    -- Precheck so users processes can be restarted too?
-        -- Needs state save and reload for extn_* variables.
-
  +) /resizelvl, /copylvl, /savelvl (to mapdir)
  +) /backup, /restore & /museum
  +) /import -- download *.cw file from web.
@@ -142,9 +133,6 @@ See "/help todo" for notes.
     -- Routine takes care of "if has_build_perm(level)"
 
  +) NAME: (*) MCCHost
-
- +) Backup while physics running --> Copy level.* then freeze physics.
-    Copy can more easily do patchups.
 
  +) Command to save all help texts as real files.
         no overwrite -- save to *.bak in this case?
@@ -212,6 +200,9 @@ Advanced
     Fire(...) -> Fire
     Time(Fire) -> Air
 
+Backup while physics running --> Copy level.* then freeze physics.
+    Copy to museum level/.. files then save.
+    Copy can more easily do patchups.
 
 
 Implementation:

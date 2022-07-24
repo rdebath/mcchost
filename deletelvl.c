@@ -55,7 +55,9 @@ cmd_deletelvl(char * cmd, char * arg)
 	if (!shdat.client->levels[lvid].loaded) continue;
 	nbtstr_t lv = shdat.client->levels[lvid].level;
 	if (strcmp(lv.c, levelname) == 0) {
-	    printf_chat("&WLevel '%s' is currently loaded", levelname);
+	    printf_chat("&SLevel '%s' is currently loaded, unloading and deleting", levelname);
+	    shdat.client->levels[lvid].force_unload = 1;
+	    shdat.client->levels[lvid].delete_on_unload = 1;
 	    unlock_fn(system_lock);
 	    return;
 	}
