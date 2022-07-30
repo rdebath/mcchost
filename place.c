@@ -37,7 +37,8 @@ If only x coordinate is given, it is used for y and z too
                    {N"abort", &cmd_mode, .dup=1}, {N"a", &cmd_mode, .dup=1}, \
 		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, .dup=1}, \
 		   {N"ma", &cmd_mark, .dup=1, .nodup=1}, \
-                   {N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, .dup=1}
+                   {N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, .dup=1}, \
+                   {N"about", &cmd_about}, {N"b", &cmd_about, .dup=1} \
 
 #endif
 
@@ -122,6 +123,8 @@ clear_pending_marks() {
 
 void show_marks_message()
 {
+    send_block_permission();
+
     if (!extn_messagetypes) return;
 
     printf_chat("(13)&f%s", marking_for);
@@ -182,10 +185,6 @@ void
 process_player_setblock(pkt_setblock pkt)
 {
     if (!level_block_queue || !level_blocks) return; // !!!
-    if (level_prop->disallowchange) {
-	revert_client(pkt);
-	return;
-    }
 
     if (player_mark_mode) {
 	int l = sizeof(marks)/sizeof(*marks);
@@ -213,6 +212,11 @@ process_player_setblock(pkt_setblock pkt)
 		    clear_pending_marks();
 	    }
 	}
+	return;
+    }
+
+    if (level_prop->disallowchange) {
+	revert_client(pkt);
 	return;
     }
 
@@ -250,7 +254,7 @@ cmd_mark(char * cmd, char * arg)
     int args[3] = {0};
     int has_offset[3] = {0};
     int cnt = 0;
-    char * ar = arg;
+    char * ar = arg?arg:"";
     if (strcasecmp(cmd, "ma") == 0 || strcasecmp(ar, "all") == 0) {
 	char buf[] = "0";
 	cmd_mark("m", buf);
@@ -334,9 +338,9 @@ cmd_mark(char * cmd, char * arg)
 }
 
 void
-request_pending_marks(char * why, char * cmd, char * arg)
+request_pending_marks(char * why, cmd_func_t cmd_fn, char * cmd, char * arg)
 {
-    mark_for_cmd = cmd_cuboid;
+    mark_for_cmd = cmd_fn;
     if (mark_cmd_cmd) free(mark_cmd_cmd);
     mark_cmd_cmd = 0;
     if (mark_cmd_arg) free(mark_cmd_arg);
@@ -345,6 +349,36 @@ request_pending_marks(char * why, char * cmd, char * arg)
     if (arg) mark_cmd_arg = strdup(arg);
     strncpy(marking_for, why, sizeof(marking_for)-1);
     show_marks_message();
+}
+
+void
+cmd_about(char * cmd, char * arg)
+{
+    if (!marks[0].valid) {
+	if (!extn_messagetypes)
+	    printf_chat("&SPlace or break a blocks to show information");
+	player_mark_mode = 1;
+	request_pending_marks("Selecting location for block info", cmd_about, cmd, arg);
+	return;
+    }
+
+    if (marks[0].x < 0 || marks[0].x >= level_prop->cells_x ||
+        marks[0].y < 0 || marks[0].y >= level_prop->cells_y ||
+        marks[0].z < 0 || marks[0].z >= level_prop->cells_z) {
+	printf_chat("&SLocation outside of map area");
+	clear_pending_marks();
+	return;
+    }
+
+    if (!level_block_queue || !level_blocks) return;
+
+    int x = marks[0].x, y = marks[0].y, z = marks[0].z;
+    clear_pending_marks();
+
+    uintptr_t index = World_Pack(x, y, z);
+    block_t b = level_blocks[index];
+
+    printf_chat("&SBlock (%d, %d, %d): %d = %s.", x, y, z, b, block_name(b));
 }
 
 void
@@ -361,7 +395,7 @@ cmd_cuboid(char * cmd, char * arg)
 	}
 	player_mark_mode = 2;
 	if (marks[0].valid) player_mark_mode--;
-	request_pending_marks("Selecting region for Cuboid", cmd, arg);
+	request_pending_marks("Selecting region for Cuboid", cmd_cuboid, cmd, arg);
 	return;
     }
 

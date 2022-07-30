@@ -100,8 +100,12 @@ cmd_goto(char * cmd, char * arg)
 	return;
     }
 
-    stop_shared();
+    if (!check_level(levelname, fixedname)) {
+	printf_chat("&WLevel &S%s&W is not available.", levelname);
+	return;
+    }
 
+    stop_shared();
     start_level(levelname, fixedname, 0);
     open_level_files(levelname, 0, fixedname, 0);
     if (!level_prop) {

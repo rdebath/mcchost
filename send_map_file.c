@@ -486,7 +486,9 @@ send_block_permission()
     int pok = 1, dok = 1;
     block_t b;
 
-    if (level_prop->disallowchange)
+    if (player_mark_mode)
+	;
+    else if (level_prop->disallowchange)
 	pok = dok = 0;
 
     if (client_blockperm_state == (pok<<1)+dok) return;

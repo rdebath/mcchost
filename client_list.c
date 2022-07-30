@@ -149,6 +149,20 @@ check_user()
     }
 }
 
+int check_level(char * levelname, char * UNUSED(levelfile))
+{
+    for(int i=0; i<MAX_LEVEL; i++) {
+	if (!shdat.client->levels[i].loaded) continue;
+	nbtstr_t n = shdat.client->levels[i].level;
+	if (strcmp(n.c, levelname) == 0 && shdat.client->levels[i].museum_id == 0) {
+	    if (shdat.client->levels[i].force_unload)
+		return 0;
+	    return 1;
+	}
+    }
+    return 1;
+}
+
 void
 reset_player_list()
 {
