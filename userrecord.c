@@ -32,9 +32,9 @@ struct userrec_t
     int64_t death_count;	// Currently unused
     int64_t message_count;
     char last_ip[NB_SLEN];
+    int64_t time_online_secs;
 
     // Should be saved (TODO)
-    int64_t time_online_secs;
     int64_t coin_count;
     char title[NB_SLEN];
     char colour[NB_SLEN];
@@ -42,6 +42,7 @@ struct userrec_t
 
     // Not saved
     int dirty;
+    int64_t time_of_last_save;
 }
 #endif
 
@@ -203,9 +204,17 @@ copy_user_key(char *p, char * user_id)
     *p = 0;
 }
 
+/*
+    (when == 0) => Tick
+    (when == 1) => At logon
+ */
 void
 write_current_user(int when)
 {
+    time_t now = time(0);
+    if (when == 0 && now - my_user.time_of_last_save >= 120)
+	my_user.dirty = 1;
+
     if (my_user.user_no != 0 && !my_user.dirty && when == 0) return;
 
     if (my_user.user_no == 0)
@@ -216,10 +225,17 @@ write_current_user(int when)
 
     if (when == 1) {
 	if (!my_user.first_logon) my_user.first_logon = time(0);
-	my_user.last_logon = time(0);
+	my_user.last_logon = now;
+	my_user.time_of_last_save = now;
 	my_user.logon_count++;
 	if (*client_ipv4_str)
 	    snprintf(my_user.last_ip, sizeof(my_user.last_ip), "%s", client_ipv4_str);
+    }
+
+    if (now > my_user.time_of_last_save) {
+	int64_t d = now - my_user.time_of_last_save;
+	my_user.time_online_secs += d;
+	my_user.time_of_last_save += d;
     }
 
     strcpy(my_user.user_id, user_id);
@@ -258,6 +274,7 @@ write_userrec(userrec_t * userrec)
     write_fld(&p, &userrec->death_count, FLD_I64);
     write_fld(&p, &userrec->message_count, FLD_I64);
     write_fld(&p, userrec->last_ip, FLD_STR);
+    write_fld(&p, &userrec->time_online_secs, FLD_I64);
 
     uint8_t idbuf[4];
     {
@@ -347,6 +364,7 @@ read_userrec(userrec_t * rec_buf, char * user_id)
     read_fld(&p, &bytes, &rec_buf->death_count, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->message_count, FLD_I64, 0);
     read_fld(&p, &bytes, rec_buf->last_ip, FLD_STR, sizeof(rec_buf->last_ip));
+    read_fld(&p, &bytes, &rec_buf->time_online_secs, FLD_I64, 0);
 
     E(mdb_txn_commit(txn));
 

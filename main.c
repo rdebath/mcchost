@@ -271,7 +271,7 @@ send_disconnect_message()
 void
 login()
 {
-    char inbuf[256] = {0};
+    char inbuf[4096] = {0};
     int insize = 0, rqsize = msglen[0];
     pkt_player_id player = {0};
 
@@ -282,7 +282,7 @@ login()
     time_t startup = time(0);
     fcntl(line_ifd, F_SETFL, (int)O_NONBLOCK);
     int sleeps = 0;
-    while(insize < rqsize)
+    while(insize < sizeof(inbuf))
     {
 	int cc = recv(line_ifd, inbuf, sizeof(inbuf), MSG_PEEK);
 	if (cc>0) insize = cc;
@@ -306,7 +306,15 @@ login()
 	    sleeps++;
 	}
 
-	if (insize >= 20 || sleeps > 5) {
+	if (insize > 4 && memcmp(inbuf, "GET ", 4) == 0) {
+	    // HTTP GET requests, including websocket.
+	    if (insize == sizeof(inbuf))
+		teapot(inbuf, insize);
+	    else if (strstr(inbuf, "\r\n\r\n") != 0) {
+		// This looks like a complete HTTP request.
+		teapot(inbuf, insize);
+	    }
+	} else if (insize >= 20 || sleeps > 5) {
 	    // Special quick exits for bad callers.
 	    if (insize >= 1 && inbuf[0] != 0)
 		teapot(inbuf, insize);
@@ -322,6 +330,8 @@ login()
 	}
 	if (insize >= 2 && inbuf[1] < 6)
 	    rqsize = msglen[0] - 1;
+	if (insize >= rqsize && inbuf[0] == 0 && inbuf[1] <= 7)
+	    break;
     }
     fcntl(line_ifd, F_SETFL, 0);
 
@@ -434,7 +444,7 @@ teapot(uint8_t * buf, int len)
 	    if (!(buf[i] == '\r' || buf[i] == '\n' || (buf[i] >= ' ' && buf[i] <= '~')))
 		is_ascii = 0;
 	if (is_ascii) {
-	    char message[1024];
+	    char message[65536];
 	    int j = 0;
 	    for(int i = 0; i<len && j<sizeof(message)-4; i++) {
 		if (buf[i] >= ' ') message[j++] = buf[i];

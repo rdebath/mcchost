@@ -80,7 +80,7 @@ send_heartbeat_poll()
 	"salt=",secretbuf,
 	"name=",ccnet_cp437_quoteurl(server->name, namebuf, sizeof(namebuf)),
 	"software=",ccnet_cp437_quoteurl(server->software, softwarebuf, sizeof(softwarebuf)),
-	"web=","False"
+	"web=","True"
 	);
 
     if ((heartbeat_pid = fork()) == 0) {

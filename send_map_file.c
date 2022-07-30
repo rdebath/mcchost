@@ -23,6 +23,7 @@ static block_t max_defined_block = 0;
 int reset_hotbar_on_mapload = 0;
 int client_blockperm_state = 3;
 int client_inventory_custom = 0;
+int classic_limit_blocks = 0;		// Used "reload classic" to see in classic mode.
 
 static uint8_t tex16_def[BLOCKMAX];
 
@@ -38,7 +39,8 @@ f_block_convert(block_t in)
 
 	do {
 	    int fallback = 0;
-	    if (in >= client_block_limit) fallback = 1;
+	    if (classic_limit_blocks && in >= Block_CP) fallback = 1;
+	    else if (in >= client_block_limit) fallback = 1;
 	    else if (!extn_blockdefn) fallback = 1;
 	    else if (!extn_extendtexno && tex16_def[in]) fallback = 2;
 	    if (!fallback) break;
@@ -48,10 +50,13 @@ f_block_convert(block_t in)
 		break;
 	    }
 	    in = r;
-	    if (in < client_block_limit && fallback<2) break;
+	    if (in < client_block_limit && fallback<2 && !classic_limit_blocks) break;
 	    tries++;
 	} while(tries < 4 && level_prop->blockdef[in].defined);
     }
+
+    if (classic_limit_blocks && in >= Block_CP && in < Block_CPE)
+	in = cpe_conversion[in-Block_CP];
 
     if (!customblock_enabled && in >= Block_CP && in < Block_CPE) {
 	if (!extn_blockdefn || !level_prop->blockdef[in].defined)
@@ -251,17 +256,41 @@ send_block_array()
     level_prop->last_map_download_size = blocks_sent * 1028 + 8;
 }
 
+struct preset { char * name; int fog, sky, clouds, sun, shadow; }
+    presets[] = {
+        { "Normal",   0xFFFFFF, 0x99CCFF, 0xFFFFFF, 0xFFFFFF, 0x9B9B9B },
+        { "Cartoon",  0x00FFFF, 0x1E90FF, 0x00BFFF, 0xF5DEB3, 0xF4A460 },
+        { "Noir",     0x000000, 0x1F1F1F, 0x000000, 0x696969, 0x1F1F1F },
+        { "Watery",   0x5F9EA0, 0x008080, 0x008B8B, 0xE0FFFF, 0x008B8B },
+        { "Misty",    0xBBBBBB, 0x657694, 0x9494A5, 0x696984, 0x4E4E69 },
+        { "Gloomy",   0x6A80A5, 0x405875, 0x405875, 0x444466, 0x3B3B59 },
+        { "Cloudy",   0xAFAFAF, 0x8E8E8E, 0x8E8E8E, 0x9B9B9B, 0x8C8C8C },
+        { "Sunset",   0xFFA322, 0x836668, 0x9A6551, 0x7F6C60, 0x46444C },
+        { "Dusk",     0xD36538, 0x836668, 0x836668, 0x525163, 0x30304B },
+        { "Midnight", 0x131947, 0x070A23, 0x1E223A, 0x181828, 0x0F0F19 },
+        {0}
+    };
+
 void
 send_env_colours()
 {
     if (!extn_envcolours) return;
 
-    send_envsetcolour_pkt(0, level_prop->sky_colour);
-    send_envsetcolour_pkt(1, level_prop->cloud_colour);
-    send_envsetcolour_pkt(2, level_prop->fog_colour);
-    send_envsetcolour_pkt(3, level_prop->ambient_colour);
-    send_envsetcolour_pkt(4, level_prop->sunlight_colour);
-    send_envsetcolour_pkt(5, level_prop->skybox_colour);
+    if (!classic_limit_blocks) {
+	send_envsetcolour_pkt(0, level_prop->sky_colour);
+	send_envsetcolour_pkt(1, level_prop->cloud_colour);
+	send_envsetcolour_pkt(2, level_prop->fog_colour);
+	send_envsetcolour_pkt(3, level_prop->ambient_colour);
+	send_envsetcolour_pkt(4, level_prop->sunlight_colour);
+	send_envsetcolour_pkt(5, level_prop->skybox_colour);
+    } else {
+	send_envsetcolour_pkt(0, presets[0].sky);
+	send_envsetcolour_pkt(1, presets[0].clouds);
+	send_envsetcolour_pkt(2, presets[0].fog);
+	send_envsetcolour_pkt(3, presets[0].shadow);
+	send_envsetcolour_pkt(4, presets[0].sun);
+	send_envsetcolour_pkt(5, 0xFFFFFF);
+    }
 }
 
 void
@@ -280,18 +309,33 @@ send_map_property()
 {
     if (!extn_envmapaspect) return;
 
-    send_setmapproperty_pkt(0, level_prop->side_block);
-    send_setmapproperty_pkt(1, level_prop->edge_block);
-    send_setmapproperty_pkt(2, level_prop->side_level);
-    send_setmapproperty_pkt(3, level_prop->clouds_height);
-    send_setmapproperty_pkt(4, level_prop->max_fog);
-    send_setmapproperty_pkt(5, level_prop->clouds_speed);
-    send_setmapproperty_pkt(6, level_prop->weather_speed);
-    send_setmapproperty_pkt(7, level_prop->weather_fade);
-    send_setmapproperty_pkt(8, level_prop->exp_fog);
-    send_setmapproperty_pkt(9, level_prop->side_offset);
-    send_setmapproperty_pkt(10, level_prop->skybox_hor_speed);
-    send_setmapproperty_pkt(11, level_prop->skybox_ver_speed);
+    if (!classic_limit_blocks) {
+	send_setmapproperty_pkt(0, level_prop->side_block);
+	send_setmapproperty_pkt(1, level_prop->edge_block);
+	send_setmapproperty_pkt(2, level_prop->side_level);
+	send_setmapproperty_pkt(3, level_prop->clouds_height);
+	send_setmapproperty_pkt(4, level_prop->max_fog);
+	send_setmapproperty_pkt(5, level_prop->clouds_speed);
+	send_setmapproperty_pkt(6, level_prop->weather_speed);
+	send_setmapproperty_pkt(7, level_prop->weather_fade);
+	send_setmapproperty_pkt(8, level_prop->exp_fog);
+	send_setmapproperty_pkt(9, level_prop->side_offset);
+	send_setmapproperty_pkt(10, level_prop->skybox_hor_speed);
+	send_setmapproperty_pkt(11, level_prop->skybox_ver_speed);
+    } else {
+	send_setmapproperty_pkt(0, Block_Bedrock);
+	send_setmapproperty_pkt(1, Block_ActiveWater);
+	send_setmapproperty_pkt(2, level_prop->cells_y/2);
+	send_setmapproperty_pkt(3, level_prop->cells_y+2);
+	send_setmapproperty_pkt(4, 0);
+	send_setmapproperty_pkt(5, 256);
+	send_setmapproperty_pkt(6, 256);
+	send_setmapproperty_pkt(7, 128);
+	send_setmapproperty_pkt(8, 0);
+	send_setmapproperty_pkt(9, -2);
+	send_setmapproperty_pkt(10, 0);
+	send_setmapproperty_pkt(11, 0);
+    }
 }
 
 void

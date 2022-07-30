@@ -162,6 +162,11 @@ reset_player_list()
 	send_spawn_pkt(255, user_id, level_prop->spawn);
     if (myuser[my_user_no].posn.valid)
 	send_posn_pkt(255, 0, myuser[my_user_no].posn);
+    else {
+	myuser[my_user_no].posn = level_prop->spawn;
+	if (shdat.client)
+	    shdat.client->user[my_user_no].posn = level_prop->spawn;
+    }
 
     last_check.tv_sec = 1;
 }
@@ -316,8 +321,8 @@ start_level(char * levelname, char * levelfile, int museum_id)
 void
 stop_user()
 {
-    if (my_user.dirty)
-        write_current_user(0);
+    my_user.dirty = 1; // For ticks.
+    write_current_user(0);
 
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
     if (!shdat.client) return;

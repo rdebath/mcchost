@@ -15,6 +15,11 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Default directory should be ~/.mcchost or ~/.config/mcchost
+
+ +) Safe /nick -- approximatly matches real name
+    -- Match case insensitive, common substring.
+    -- How to descibe "too different" to user?
 
  +) Waiting for /mark should turn off BlockPermissions extension.
 
@@ -28,9 +33,6 @@ See "/help todo" for notes.
  +) Slow map loads; do I need to poll client chat?
 
  +) INI file preserve (some?) comments.
-
- +) Decode Json return from cc.net, place in log.
-    -- Or just record if different ?
 
  +) lmdb appears with Debian jessie, do I want a fallback ?
 
@@ -86,11 +88,6 @@ See "/help todo" for notes.
 
  +) Add backup setting in server.ini, force backup of all map files before "date"
 
- +) Fix player detail "struct user"
-    -- Time spent on server
-    -- Kick
-    -- IP address/clones
-
  +) Aliases in /set command, more help, option lists.
  +) reset_hotbar_on_mapload is a level option in the CW file ?
  +) Merge ini and nbt processing ?
@@ -100,12 +97,13 @@ See "/help todo" for notes.
 
  +) /sendcmd command
  +) /about command
-
  +) /spawn command
  +) /tp command
  +) /summon command
  +) /info command
  +) /afk command
+ +) /kick command
+ +) /clones command
 
  +) More /cuboid variants ?
 
@@ -204,6 +202,8 @@ Backup while physics running --> Copy level.* then freeze physics.
     Copy to museum level/.. files then save.
     Copy can more easily do patchups.
 
+Physics with no users.
+    Only run for a limited time; perhaps 15 minutes by default.
 
 Implementation:
 
