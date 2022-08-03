@@ -71,7 +71,7 @@ makeheaders: lib/makeheaders
 	lib/makeheaders ${SRC} lib_text.c md5.h
 
 lib/makeheaders: lib/makeheaders.c
-	$(CC) -O2 -o $@ $<
+	$(CC) -O -o $@ $<
 
 lib_text.o: lib_text.c lib_text.h
 

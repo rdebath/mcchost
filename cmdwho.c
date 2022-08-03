@@ -27,12 +27,12 @@ cmd_who(char * UNUSED(cmd), char * UNUSED(arg))
 	int level_id = c.on_level;
 	if (level_id<0)
 	    printf_chat("\\%s is between levels", c.name.c);
-	else if (shdat.client->levels[level_id].museum_id>0)
+	else if (shdat.client->levels[level_id].backup_id>0)
 	    printf_chat("\\%s is on museum %d of %s at (%d,%d,%d)",
-		shdat.client->levels[level_id].museum_id,
+		shdat.client->levels[level_id].backup_id,
 		c.name.c, shdat.client->levels[level_id].level.c,
 		c.posn.x/32, c.posn.y/32, c.posn.z/32);
-	else if (shdat.client->levels[level_id].museum_id==0)
+	else if (shdat.client->levels[level_id].backup_id==0)
 	    printf_chat("\\%s is on %s at (%d,%d,%d)",
 		c.name.c, shdat.client->levels[level_id].level.c,
 		c.posn.x/32, c.posn.y/32, c.posn.z/32);
@@ -40,12 +40,12 @@ cmd_who(char * UNUSED(cmd), char * UNUSED(arg))
 	    printf_chat("\\%s is in the void", c.name.c);
     }
 
-    if (current_level_museum_id == 0)
+    if (current_level_backup_id == 0)
 	printf_chat("You are on %s at (%d,%d,%d)",
 	    current_level_name, player_posn.x/32, player_posn.y/32, player_posn.z/32);
-    else if (current_level_museum_id>0)
+    else if (current_level_backup_id>0)
 	printf_chat("You are on museum %d of %s at (%d,%d,%d)",
-	    current_level_museum_id, current_level_name,
+	    current_level_backup_id, current_level_name,
 	    player_posn.x/32, player_posn.y/32, player_posn.z/32);
     else
 	printf_chat("You are nowhere.");
@@ -57,4 +57,5 @@ cmd_who(char * UNUSED(cmd), char * UNUSED(arg))
 void
 cmd_info(char * UNUSED(cmd), char * UNUSED(arg))
 {
+    printf_chat("&WTODO");
 }

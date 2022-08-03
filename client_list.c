@@ -41,7 +41,7 @@ struct client_entry_t {
 
 struct client_level_t {
     int loaded;
-    int museum_id;
+    int backup_id;
     int no_unload;
     int force_unload;
     int delete_on_unload;
@@ -154,7 +154,7 @@ int check_level(char * levelname, char * UNUSED(levelfile))
     for(int i=0; i<MAX_LEVEL; i++) {
 	if (!shdat.client->levels[i].loaded) continue;
 	nbtstr_t n = shdat.client->levels[i].level;
-	if (strcmp(n.c, levelname) == 0 && shdat.client->levels[i].museum_id == 0) {
+	if (strcmp(n.c, levelname) == 0 && shdat.client->levels[i].backup_id == 0) {
 	    if (shdat.client->levels[i].force_unload)
 		return 0;
 	    return 1;
@@ -291,7 +291,7 @@ start_user()
 }
 
 void
-start_level(char * levelname, char * levelfile, int museum_id)
+start_level(char * levelname, char * levelfile, int backup_id)
 {
     nbtstr_t level = {0};
     int level_id = -1;
@@ -299,7 +299,7 @@ start_level(char * levelname, char * levelfile, int museum_id)
     strcpy(level.c, levelname);
     strcpy(current_level_name, levelname);
     strcpy(current_level_fname, levelfile);
-    current_level_museum_id = museum_id;
+    current_level_backup_id = backup_id;
 
     lock_fn(system_lock);
 
@@ -309,7 +309,7 @@ start_level(char * levelname, char * levelfile, int museum_id)
 	    continue;
 	}
 	nbtstr_t n = shdat.client->levels[i].level;
-	if (strcmp(n.c, level.c) == 0 && shdat.client->levels[i].museum_id == museum_id) {
+	if (strcmp(n.c, level.c) == 0 && shdat.client->levels[i].backup_id == backup_id) {
 	    level_id = i;
 	    break;
 	}
@@ -322,7 +322,7 @@ start_level(char * levelname, char * levelfile, int museum_id)
 	client_level_t t = {0};
 	t.level = level;
 	t.loaded = 1;
-	t.museum_id = museum_id;
+	t.backup_id = backup_id;
 	shdat.client->levels[level_id] = t;
     }
 

@@ -95,7 +95,7 @@ cmd_goto(char * cmd, char * arg)
 	return;
     }
 
-    if (current_level_museum_id == 0 && strcmp(levelname, current_level_name) == 0) {
+    if (current_level_backup_id == 0 && strcmp(levelname, current_level_name) == 0) {
 	printf_chat("&SYou're already on &7%s", current_level_name);
 	return;
     }
@@ -123,7 +123,7 @@ cmd_goto(char * cmd, char * arg)
 void
 cmd_main(char * UNUSED(cmd), char * UNUSED(arg))
 {
-    if (current_level_museum_id == 0 && strcmp(main_level(), current_level_name) == 0) {
+    if (current_level_backup_id == 0 && strcmp(main_level(), current_level_name) == 0) {
 	printf_chat("&SYou're already on &7%s", current_level_name);
 	return;
     }
@@ -391,7 +391,7 @@ scan_and_save_levels(int unlink_only)
 	if (!shdat.client->levels[lvid].loaded) continue;
 	loaded_levels++;
 	this_is_main = (
-		(shdat.client->levels[lvid].museum_id == 0) &&
+		(shdat.client->levels[lvid].backup_id == 0) &&
 		(strcmp(shdat.client->levels[lvid].level.c, main_level()) == 0)
 	    );
 
@@ -411,9 +411,9 @@ scan_and_save_levels(int unlink_only)
 	// We can only unlink unused maps.
 	if (unlink_only && shdat.client->levels[lvid].no_unload) continue;
 
-	if (shdat.client->levels[lvid].museum_id == 0)
+	if (shdat.client->levels[lvid].backup_id == 0)
 	{
-	    // Check for saves and backups ... museums don't have either.
+	    // Check for saves and backups ... unpacked backups don't have either.
 	    // Also check the "NoUnload" flag
 
 	    nbtstr_t lv = shdat.client->levels[lvid].level;
@@ -497,16 +497,16 @@ scan_and_save_levels(int unlink_only)
 		nbtstr_t lv = shdat.client->levels[lvid].level;
 		level_name = lv.c;
 		char fixedname[MAXLEVELNAMELEN*4];
-		int museum_id = shdat.client->levels[lvid].museum_id;
+		int backup_id = shdat.client->levels[lvid].backup_id;
 		fix_fname(fixedname, sizeof(fixedname), level_name);
-		if (shdat.client->levels[lvid].museum_id>0) {
+		if (shdat.client->levels[lvid].backup_id>0) {
 		    char fixedname2[MAXLEVELNAMELEN*4];
 		    strcpy(fixedname2, fixedname);
 		    snprintf(fixedname, sizeof(fixedname), "%s.%d",
-			fixedname2, museum_id);
+			fixedname2, backup_id);
 		}
 
-		if (museum_id>=0) {
+		if (backup_id>=0) {
 		    unlink_level(fixedname, 0);
 
 		    // We known nobody may have the level lock and we have the system
@@ -517,9 +517,9 @@ scan_and_save_levels(int unlink_only)
 		}
 
 		shdat.client->levels[lvid].loaded = 0;
-		if (museum_id>0)
-		    fprintf_logfile("Unloaded museum %d of %s", museum_id, level_name);
-		else if (museum_id == 0)
+		if (backup_id>0)
+		    fprintf_logfile("Unloaded backup %d of %s", backup_id, level_name);
+		else if (backup_id == 0)
 		    fprintf_logfile("Unloaded level %s", level_name);
 	    }
 	    loaded_levels--;

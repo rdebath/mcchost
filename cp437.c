@@ -22,6 +22,7 @@ cp437_prt(FILE* ofd, int ch)
 {
     int uc = cp437rom[ch & 0xFF];
     int c1, c2, c3;
+    if (ch == 0) uc = 0x2400; // Only debug/display output
 
     c2 = (uc/64);
     c1 = uc - c2*64;
@@ -139,3 +140,60 @@ int cp437rom[256] = {
     0x2261, 0x00b1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00f7, 0x2248,
     0x00b0, 0x2219, 0x00b7, 0x221a, 0x207f, 0x00b2, 0x25a0, 0x00a0
 };
+
+#if 0
+{ "darksmile", 0x01 },
+{ "smile", 0x02 },
+{ "heart", 0x03 }, { "hearts", 0x03 },
+{ "diamond", 0x04 }, { "diamonds", 0x04 }, { "rhombus", 0x04 },
+{ "club", 0x05 }, { "clubs", 0x05 }, { "clover", 0x05 }, { "shamrock", 0x05 },
+{ "spade", 0x06 }, { "spades", 0x06 },
+{ "dot", 0x07 }, { "*", 0x07 }, { "bullet", 0x07 }, { "point", 0x07 },
+{ "hole", 0x08 },
+{ "o", 0x09 }, { "circle", 0x09 },
+{ "inversecircle", 0x0A },
+{ "male", 0x0B }, { "mars", 0x0B },
+{ "female", 0x0C }, { "venus", 0x0C },
+{ "note", 0x0D }, { "quaver", 0x0D }, { "8", 0x0D },
+{ "notes", 0x0E }, { "music", 0x0E },
+{ "sun", 0x0F }, { "celestia", 0x0F },
+{ "|>", 0x10 },
+{ "<|", 0x11 },
+{ "updown", 0x12 }, { "^v", 0x12 },
+{ "!!", 0x13 },
+{ "p", 0x14 }, { "para", 0x14 }, { "pilcrow", 0x14 }, { "paragraph", 0x14 },
+{ "sect", 0x15 }, { "section", 0x15 },
+{ "-", 0x16 }, { "_", 0x16 }, { "bar", 0x16 }, { "half", 0x16 },
+{ "updown2", 0x17 }, { "^v_", 0x17 },
+{ "^", 0x18 }, { "uparrow", 0x18 },
+{ "v", 0x19 }, { "downarrow", 0x19 },
+{ "->", 0x1A }, { "rightarrow", 0x1A },
+{ "<-", 0x1B }, { "leftarrow", 0x1B },
+{ "l", 0x1C }, { "angle", 0x1C }, { "corner", 0x1C },
+{ "<>", 0x1D }, { "<->", 0x1D }, { "leftright", 0x1D },
+{ "^^", 0x1E }, { "up", 0x1E },
+{ "vv", 0x1F }, { "down", 0x1F },
+{ "house", 0x7F }
+
+{ ">>", 0x5F }, { "right", 0x5F },
+{ "<<", 0x5E }, { "left", 0x5E },
+
+#endif
+
+#if TEST
+#include <string.h>
+int
+main(int argc, char ** argv)
+{
+    int fn = 0;
+    if (argc>1 && strcmp(argv[1], "-4") == 0) fn=0;
+    if (fn == 0) {
+	char buf[8192];
+	while(fgets(buf, sizeof(buf), stdin)) {
+	    int l = strlen(buf)+1;
+	    convert_to_cp437(buf, &l);
+	    printf("%s", buf);
+	}
+    }
+}
+#endif

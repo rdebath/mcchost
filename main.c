@@ -79,7 +79,7 @@ nbtstr_t client_software = {"(unknown)"};
 
 char current_level_name[MAXLEVELNAMELEN+1];
 char current_level_fname[MAXLEVELNAMELEN*4];
-int current_level_museum_id = 0;
+int current_level_backup_id = 0;
 
 char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
 char logfile_pattern[1024] = "";
@@ -92,6 +92,7 @@ int cpe_enabled = 0;	// Set if this session is using CPE
 int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
 int cpe_pending = 0;	// Currently running ExtInfo process.
 int cpe_extn_remaining = 0;
+int cpe_extn_advertised = 0;
 
 char * proc_args_mem = 0;
 int    proc_args_len = 0;
@@ -287,8 +288,11 @@ login()
 	int cc = recv(line_ifd, inbuf, sizeof(inbuf), MSG_PEEK);
 	if (cc>0) insize = cc;
 	if (cc<=0) {
-	    if (errno != EAGAIN && errno != EINTR)
+	    if (errno != EAGAIN && errno != EINTR) {
+		line_ifd = -1; line_ofd = -1; // Probably unusable.
+		// NB: no close before exit
 		teapot(inbuf, insize);
+	    }
 	}
 
 	time_t now = time(0);
@@ -347,10 +351,15 @@ login()
 	    disconnect(0, "Invalid user name");
 	}
 
+    cpe_requested = player.cpe_flag;
+
     if (client_ipv4_port)
-	printlog("Logging in user '%s' from %s", user_id, client_ipv4_str);
+	printlog("Logging in%s user '%s' from %s",
+	    cpe_requested&&!server->cpe_disabled?"":" classic", user_id,
+	    client_ipv4_str);
     else
-	printlog("Logging in user '%s'", user_id);
+	printlog("Logging in%s user '%s'",
+	    cpe_requested&&!server->cpe_disabled?"":" classic", user_id);
 
     if (*server->secret != 0 && *server->secret != '-') {
 	if (strlen(player.mppass) != 32 && !client_trusted)
@@ -360,8 +369,6 @@ login()
     if (*user_id == 0) disconnect(0, "Username must be entered");
     if (strlen(user_id) > 16)
 	disconnect(0, "Usernames must be between 1 and 16 characters");
-
-    cpe_requested = player.cpe_flag;
 
     if (client_trusted && (!*player.mppass || strcmp("(none)", player.mppass) == 0))
 	user_authenticated = 1;

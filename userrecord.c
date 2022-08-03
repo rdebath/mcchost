@@ -211,15 +211,17 @@ copy_user_key(char *p, char * user_id)
 void
 write_current_user(int when)
 {
+    if (when == 0 && !my_user.dirty) return;
+
     time_t now = time(0);
     if (when == 0 && now - my_user.time_of_last_save >= 120)
 	my_user.dirty = 1;
 
-    if (my_user.user_no != 0 && !my_user.dirty && when == 0) return;
-
-    if (my_user.user_no == 0)
+    if (my_user.user_no == 0) {
+	if (*user_id == 0) return;
 	if (read_userrec(&my_user, user_id) < 0)
 	    my_user.user_no = 0;
+    }
 
     if (!userdb_open) open_userdb();
 
@@ -301,7 +303,7 @@ write_userrec(userrec_t * userrec)
 int
 read_userrec(userrec_t * rec_buf, char * user_id)
 {
-    if (user_id == 0 && rec_buf->user_no == 0) return -1;
+    if ((user_id == 0 || *user_id == 0) && rec_buf->user_no == 0) return -1;
 
     if (!userdb_open) open_userdb();
 

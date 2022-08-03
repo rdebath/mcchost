@@ -15,18 +15,15 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) send_msg_pkt_filtered should use (sun) style emojis as replacements.
+    -- Truncate on overflow.
+
  +) Default directory should be ~/.mcchost or ~/.config/mcchost
+    -- server.ini in that dir can change location?
 
  +) Safe /nick -- approximatly matches real name
     -- Match case insensitive, common substring.
     -- How to descibe "too different" to user?
-
- +) Waiting for /mark should turn off BlockPermissions extension.
-
- +) List of levels in backup directory.
-    -- With backup number ranges.
-
- +) Use fixname for usernames too?
 
  +) Record data rates for server bytes/s I/O
 
@@ -80,7 +77,7 @@ See "/help todo" for notes.
     -- gdb is 115MB (python, openssl, readline)
     -- both are 150MB (python, openssl, readline)
 
- +) Dump/load userDB as ini file.
+ +) Dump/load userDB as file.
     -- Also single user and delete "username".
     -- Use mdb_dump and mdb_load ?
 
@@ -169,10 +166,10 @@ All files in subdirectories.
     level/${level}.*
     help/${helpname}.txt
     log/YYYY-MM-DD.log
-    backup/${level}.${id}.cw -- "museum"
+    backup/${level}.${id}.cw
 
     *.ini --> ?
-    level/${level}.${id}.* -- museum unpack
+    level/${level}.${id}.* -- backup unpack
     blockdb/levelname.bdb
 
     ${level} uses %2E for '.' in level name.
@@ -199,7 +196,7 @@ Advanced
     Time(Fire) -> Air
 
 Backup while physics running --> Copy level.* then freeze physics.
-    Copy to museum level/.. files then save.
+    Copy to backup level/.. files then save.
     Copy can more easily do patchups.
 
 Physics with no users.

@@ -102,7 +102,7 @@ filelock_t level_lock[1];
  *    !=0: just open files don't create
  */
 void
-open_level_files(char * level_name, int museum_id, char * fixname, int to_unload)
+open_level_files(char * level_name, int backup_id, char * fixname, int to_unload)
 {
     char sharename[256];
     int del_on_err = 0, try_cw_file = 0;
@@ -154,7 +154,7 @@ open_level_files(char * level_name, int museum_id, char * fixname, int to_unload
 	int ok = 0;
 	// If level missing -- extract the matching *.cw file
 	char cwfilename[256];
-	if (museum_id == 0)
+	if (backup_id == 0)
 	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, fixname);
 	else
 	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_BACKUP_DIR_NAME "/%s.cw", fixname);

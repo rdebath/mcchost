@@ -356,9 +356,10 @@ process_client_message(int cmd, char * pktbuf)
 	    // have been received ... possibly including FullCP437.
 	    sanitise_nbstring(client_software.c, p); p+=64;
 	    count = IntBE16(p); p+=2;
-	    if (cpe_pending)
+	    if (cpe_pending) {
 		cpe_extn_remaining = count;
-	    else
+		cpe_extn_advertised = cpe_extn_remaining;
+	    } else
 		cpe_extn_remaining = 0;
 	}
 	break;

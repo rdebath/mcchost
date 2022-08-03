@@ -25,7 +25,7 @@ static struct ext_list_t extensions[] = {
     { N"CustomBlocks",        1, &extn_customblocks },
     { N"HeldBlock",           1, &extn_heldblock },
     { N"TextHotKey",          1, &extn_texthotkey },		//ServerConf
-//  { N"ExtPlayerList",       2, },
+    { N"ExtPlayerList",       2, .disabled=1 },
     { N"EnvColors",           1, &extn_envcolours },
     { N"SelectionCuboid",     1, &extn_selectioncuboid },	//MapConf
     { N"BlockPermissions",    1, &extn_block_permission },	//UserMapConf
@@ -33,19 +33,19 @@ static struct ext_list_t extensions[] = {
     { N"EnvMapAppearance",    2, &extn_envmapappearance2 },	//Old
     { N"EnvWeatherType",      1, &extn_weathertype },
     { N"HackControl",         1, &extn_hackcontrol },
-    { N"EmoteFix",            1, }, // Included in FullCP437
+    { N"EmoteFix",            1, }, // Included in FullCP437 ?
     { N"MessageTypes",        1, &extn_messagetypes },
     { N"LongerMessages",      1, &extn_longermessages },
     { N"FullCP437",           1, &extn_fullcp437 },
     { N"BlockDefinitions",    1, &extn_blockdefinitions },
     { N"BlockDefinitionsExt", 2, &extn_blockdefinitionsext },
     { N"TextColors",          1, &extn_textcolours },		//ServerConf
-//  { N"BulkBlockUpdate",     1, },
+    { N"BulkBlockUpdate",     1, .disabled=1 },
     { N"EnvMapAspect",        1, &extn_envmapaspect },
     { N"PlayerClick",         1, .disabled=1 },			// Client sends
-//  { N"EntityProperty",      1, },
+    { N"EntityProperty",      1, .disabled=1 },
     { N"ExtEntityPositions",  1, &extn_extentityposn, .nolate=1 },
-//**{ N"TwoWayPing",          1, },
+    { N"TwoWayPing",          1, .disabled=1 },
     { N"InventoryOrder",      1, &extn_inventory_order },
     { N"InstantMOTD",         1, &extn_instantmotd },
 
@@ -58,13 +58,33 @@ static struct ext_list_t extensions[] = {
 
     { N"VelocityControl",     1, .disabled=1 },
     { N"CustomParticles",     1, .disabled=1 },
-    { N"CustomModels",        1, .disabled=1 },
+    { N"CustomModels",        2, .disabled=1 },
     { N"PluginMessages",      1, .disabled=1 },
 
     { N"EvilBastard" ,        1, &extn_evilbastard },
     {0}
 };
 #undef N
+
+char *classicube[] = {
+    "ClickDistance", "CustomBlocks", "HeldBlock", "EmoteFix",
+    "TextHotKey", "ExtPlayerList", "EnvColors", "SelectionCuboid",
+    "BlockPermissions", "ChangeModel", "EnvMapAppearance",
+    "EnvWeatherType", "MessageTypes", "HackControl", "PlayerClick",
+    "FullCP437", "LongerMessages", "BlockDefinitions",
+    "BlockDefinitionsExt", "BulkBlockUpdate", "TextColors",
+    "EnvMapAspect", "EntityProperty", "ExtEntityPositions",
+    "TwoWayPing", "InventoryOrder", "InstantMOTD", "FastMap", "SetHotbar",
+    "SetSpawnpoint", "VelocityControl", "CustomParticles", "CustomModels",
+    "PluginMessages",
+
+    0,
+};
+
+// Always last two for CC
+char *classicube_lasttwo[] = { "ExtendedTextures", "ExtendedBlocks", 0};
+int classicube_match_len = 0;
+int classicube_lastmatch = 0;
 
 int extn_blockdefn = 0;
 int extn_clickdistance = 0;
@@ -121,6 +141,14 @@ process_extentry(pkt_extentry * pkt)
 {
     int enabled_extension = 0;
 
+    if (classicube[classicube_match_len] &&
+	strcmp(classicube[classicube_match_len], pkt->extname) == 0)
+	classicube_match_len++;
+    else if (cpe_extn_remaining > 0 && cpe_extn_remaining <= 2) {
+	if (strcmp(classicube_lasttwo[2-cpe_extn_remaining], pkt->extname) == 0)
+	    classicube_lastmatch++;
+    }
+
     if (cpe_extn_remaining > 0)
         cpe_extn_remaining--;
 
@@ -137,11 +165,23 @@ process_extentry(pkt_extentry * pkt)
 		extensions[i].name);
 	    fatal(ebuf);
 	}
+
+	// Note CC sends ALL the extensions it supports even if we
+	// haven't advertised them.
+	if (extensions[i].disabled) {
+	    //printlog("Not enabling extension %s", extensions[i].name);
+	    return;
+	}
+	// printlog("Enable extension %s", extensions[i].name);
+
 	enabled_extension = 1;
 	extensions[i].enabled = 1;
 	if (extensions[i].enabled_flag)
 	    *extensions[i].enabled_flag = 1;
     }
+
+    if (!enabled_extension)
+	printlog("Unknown extension %s:%d", pkt->extname, pkt->version);
 
     if (!customblock_pkt_sent && extn_customblocks) {
 	send_customblocks_pkt();
@@ -155,23 +195,30 @@ process_extentry(pkt_extentry * pkt)
 	    printf_chat("&WClient sent unknown extension %s late -- Ignored.", pkt->extname);
     }
 
-    /*
-       When the user defines the look of a level the block definitions
-       and the textures are closely linked. Only use these if we do it
-       properly. Otherwise fallback to classic (or CPE) which the user
-       may have actually tested. EnvMapAppearance should be sufficient
-       for this too.
-
-       NB: Should extn_extendtexno be included somehow too ?
-    */
-
     if (cpe_extn_remaining == 0) {
 	if (extn_extendblockno) {
 	    // NOPE!
+	    // Don't even try these! They were deprecated before 10bit blocks appeared.
 	    extn_envmapappearance = 0;
 	    extn_envmapappearance2 = 0;
 	}
+	// 2 means a longer packet with more fields.
 	extn_envmapappearance |= extn_envmapappearance2;
+
+	/*
+	   When the user defines the look of a level the block definitions
+	   and the textures are closely linked. Only use these if we do it
+	   properly. Otherwise fallback to classic (or CPE) which the user
+	   may have actually tested. EnvMapAppearance should be sufficient
+	   for this too.
+
+	   We should probably turn off the texture _file_ too.
+
+	   NB: Should extn_extendtexno be included somehow too ?
+	       I already make definitions fall back if the texture no
+	       is too high, but could they even load a 512 entry texmap?
+	*/
+
 	if (extn_blockdefinitions && extn_blockdefinitionsext &&
 		(extn_envmapaspect || extn_envmapappearance)) {
 	    extn_blockdefn = 1;
@@ -258,6 +305,25 @@ process_extentry(pkt_extentry * pkt)
 	    cpe_pending |= 2;
         if (cpe_pending == 3)
             complete_connection();
+
+	char descbuf[4096];
+	strcpy(descbuf, user_id);
+	if (*client_ipv4_str)
+	    sprintf(descbuf+strlen(descbuf), " [%s]", client_ipv4_str);
+	strcat(descbuf, " connected");
+	if (*client_software.c)
+	    sprintf(descbuf+strlen(descbuf),
+		" using \"%s\"", client_software.c);
+	
+	if (classicube_match_len+classicube_lastmatch == cpe_extn_advertised)
+	    sprintf(descbuf+strlen(descbuf),
+		", all %d extensions match Classicube", cpe_extn_advertised);
+	else
+	    sprintf(descbuf+strlen(descbuf),
+		", first %d extensions of %d match Classicube",
+                classicube_match_len, cpe_extn_advertised);
+
+	printlog("%s", descbuf);
     }
 }
 
