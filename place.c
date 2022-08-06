@@ -170,7 +170,7 @@ cmd_mode(char * cmd, char * arg)
 	}
 
 	// Classic mode, don't let them place blocks they can't remove.
-	if (!server_id_op_flag && !cpe_requested) {
+	if (!ini_settings.op_flag && !cpe_requested) {
 	    if (b==Block_Bedrock) b=Block_Magma;
 	    if (b==Block_ActiveLava) b=Block_StillLava;
 	    if (b==Block_ActiveWater) b=Block_StillWater;

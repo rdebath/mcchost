@@ -19,7 +19,7 @@ See "/help todo" for notes.
     -- Truncate on overflow.
 
  +) Default directory should be ~/.mcchost or ~/.config/mcchost
-    -- server.ini in that dir can change location?
+    -- mcchost.ini in that dir can change location?
 
  +) Safe /nick -- approximatly matches real name
     -- Match case insensitive, common substring.
@@ -66,7 +66,30 @@ See "/help todo" for notes.
        --> Heartbeat includes port number, so will need per port calls.
        --> URL should NOT need to be duplicated.
        --> Should sent salt include port number ? ... No.
-       --> Private Flag (per heartbeat, per hearbeat+port?)
+       --> Private Flag (per heartbeat, per heartbeat+port?)
+
+ +) Multiple servers in one directory; which items should (not)be per port.
+    -- Only have port to determine additional file.
+	-- port-12345.ini
+	-- Changes from this file are treated as command line changes.
+	   (Before actual command line args)
+	-- Don't save this file; manual config only.
+	-- One heartbeat per port max
+    -- All fields must be in server_ini_t
+	-- TCP server = true
+	-- TCP Port
+	-- inetd_mode => Overrides port number
+	-- enable_heartbeat_poll
+	-- heartbeat_url
+	-- secret
+	-- key_rotation
+	-- cpe_disabled
+	-- op_flag
+	-- user_namespace
+
+	... Hmmm.
+	-- last_heartbeat
+	-- last_heartbeat_port
 
  +) We use MSG_PEEK so can pass the socket to a filtering process.
     -- Websocket, SSL, Web server.
@@ -83,8 +106,6 @@ See "/help todo" for notes.
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
- +) Add backup setting in server.ini, force backup of all map files before "date"
-
  +) Aliases in /set command, more help, option lists.
  +) reset_hotbar_on_mapload is a level option in the CW file ?
  +) Merge ini and nbt processing ?
@@ -93,7 +114,6 @@ See "/help todo" for notes.
     -- Symlinks work now. Enough?
 
  +) /sendcmd command
- +) /about command
  +) /spawn command
  +) /tp command
  +) /summon command
@@ -111,7 +131,7 @@ See "/help todo" for notes.
  +) Team chat, less primitive chatroom.
 
  +) /resizelvl, /copylvl, /savelvl (to mapdir)
- +) /backup, /restore & /museum
+ +) /backup & /restore
  +) /import -- download *.cw file from web.
     -- Rename file to strict % form, don't overwrite.
     -- Output of curl import command to user ?
@@ -171,8 +191,6 @@ All files in subdirectories.
     *.ini --> ?
     level/${level}.${id}.* -- backup unpack
     blockdb/levelname.bdb
-
-    ${level} uses %2E for '.' in level name.
 
 Physics:
 

@@ -49,11 +49,12 @@ struct server_t {
 
 typedef struct server_ini_t server_ini_t;
 struct server_ini_t {
+    int server_runonce;
+    int op_flag;
     int start_tcp_server;
     int tcp_port_no;
     int inetd_mode;
     int detach_tcp_server;
-    int server_runonce;
     int enable_heartbeat_poll;
     char heartbeat_url[1024];
 };
@@ -65,7 +66,6 @@ int line_ifd = -1;
 char user_id[NB_SLEN];	// This is ASCII not CP437 or UTF8
 int user_authenticated = 0;
 int user_logged_in = 0;
-int server_id_op_flag = 1;
 int inetd_mode = 0;
 int start_heartbeat_task = 0;
 int start_backup_task = 0;
@@ -86,7 +86,9 @@ char logfile_pattern[1024] = "";
 int server_runonce = 0;
 int save_conf = 0;
 
-server_ini_t ini_settings;
+// Per server settings, not shared across instance
+// Commandline overrides this but is NOT saved to server.ini
+server_ini_t ini_settings = {.op_flag = 1};
 
 int cpe_enabled = 0;	// Set if this session is using CPE
 int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
@@ -198,7 +200,7 @@ process_connection()
     user_logged_in = 1; // May not be "authenticated", but they exist.
 
     // If in classic mode, don't allow place of bedrock.
-    if (!cpe_requested) server_id_op_flag = 0;
+    if (!cpe_requested) ini_settings.op_flag = 0;
 
     if (cpe_requested && !server->cpe_disabled) {
 	send_ext_list();
@@ -217,7 +219,7 @@ complete_connection()
     if (extn_evilbastard)
 	fatal("Server is incompatible with Evil bastard extension");
 
-    send_server_id_pkt(server->name, server->motd, server_id_op_flag);
+    send_server_id_pkt(server->name, server->motd, ini_settings.op_flag);
     cpe_pending = 0;
 
     // List of users

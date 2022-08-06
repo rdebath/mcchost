@@ -90,7 +90,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	if (st->write) fprintf(st->fd, "\n");
 
-	INI_BOOLVAL("OPFlag", server_id_op_flag);
+	INI_BOOLVAL("OPFlag", ini_settings.op_flag);
 	INI_INTVAL("MaxPlayers", server->max_players);
 	INI_STRARRAY(WC2(!*localnet_cidr, "Localnet"), localnet_cidr);
 

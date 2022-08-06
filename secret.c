@@ -88,10 +88,12 @@ convert_secret(char sbuf[NB_SLEN], char * url, int tick)
     s = (unsigned char *)url;
     MD5Update (&mdContext, s, strlen(s));
 
-    // What's a reasonable minimum for this? One minute seems too short.
-    if (server->key_rotation > 59) {
+    if (server->key_rotation) {
+	// What's a reasonable minimum for this? One minute seems too short.
+	time_t r = server->key_rotation;
+	if (r<300) r = 300;
 	time_t now = time(0);
-	unsigned int period = now/server->key_rotation - tick;
+	unsigned int period = now/r - tick;
 	char nbuf[sizeof(int)*3+3];
 	sprintf(nbuf, "%u", period);
 	s = (unsigned char *)nbuf;

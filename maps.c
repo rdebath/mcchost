@@ -11,7 +11,7 @@
 List out the available levels
 use &T/maps [number]&S to start at that position
 and &T/maps all&S to show all maps.
-and &T/maps backup&S to show all maps and backups.
+and &T/maps backup&S to show all backups.
 */
 
 #if INTERFACE
