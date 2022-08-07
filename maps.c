@@ -12,6 +12,8 @@ List out the available levels
 use &T/maps [number]&S to start at that position
 and &T/maps all&S to show all maps.
 and &T/maps backup&S to show all backups.
+and &T/maps all pattern&S to show maps matching pattern.
+and &T/maps backup pattern&S to show backups matching pattern.
 */
 
 #if INTERFACE
@@ -56,14 +58,23 @@ void
 cmd_maps(char * UNUSED(cmd), char * arg)
 {
     int start = 0, backups = 0;
+    char * ar1 = strtok(arg, " ");
+    char * ar2 = strtok(0, "");
+
     if (!arg || *arg == 0) start = 1;
-    else if (strcasecmp(arg, "all") == 0) start = 0;
-    else if (strcasecmp(arg, "backup") == 0) { start = 0; backups = 1; }
     else {
-	start = atoi(arg);
-	if (start <= 0) {
-	    printf_chat("&eInput must be either \"all\", \"backup\" or an integer.");
-	    return;
+	if (strcasecmp(ar1, "all") == 0) start = 0;
+	else if (strcasecmp(ar1, "backup") == 0) {
+	    backups = 1;
+	} else {
+	    start = atoi(ar1);
+	    if (start <= 0) {
+		if (ar2 != 0) {
+		    printf_chat("&eFirst arg must be either \"all\", \"backup\" or an integer.");
+		    return;
+		} else
+		    ar2 = ar1;
+	    }
 	}
     }
 
@@ -71,14 +82,14 @@ cmd_maps(char * UNUSED(cmd), char * arg)
     if (!backups) {
 	DIR *directory = opendir("map");
 	if (directory) {
-	    read_maps(&maps, 0, directory);
+	    read_maps(&maps, 0, directory, ar2);
 	    closedir(directory);
 	}
     }
     if (backups) {
 	DIR *directory = opendir("backup");
 	if (directory) {
-	    read_maps(&maps, 1, directory);
+	    read_maps(&maps, 1, directory, ar2);
 	    closedir(directory);
 	}
     }
@@ -139,7 +150,7 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 }
 
 void
-read_maps(maplist_t * maps, int is_backup, DIR *directory)
+read_maps(maplist_t * maps, int is_backup, DIR *directory, char * matchstr)
 {
     struct dirent *entry;
 
@@ -174,6 +185,11 @@ read_maps(maplist_t * maps, int is_backup, DIR *directory)
 	if (*nbuf2 == 0) continue;
 	l = strlen(nbuf2);
 	if (l>MAXLEVELNAMELEN) continue;
+
+	if (matchstr != 0 && *matchstr) {
+	    if (my_strcasestr(nbuf2, matchstr) == 0)
+		continue;
+	}
 
 	if (maps->count >= maps->size) {
 	    if (maps->size==0) maps->size = 32;

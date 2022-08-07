@@ -15,11 +15,17 @@ process_args(int argc, char **argv)
 {
     program_args = calloc(argc+8, sizeof(*program_args));
     int bc = 1, plen = strlen(argv[0]);
+    int port_no = -1;
 
     getprogram(argv[0]);
 
     for(int pass2 = 0; pass2<2; pass2++)
     {
+	// On !pass2 dump most of the arg values into this structure.
+	//
+	// During the first pass the -dir, -port and -inetd_mode flags
+	// are significant for finding the correct config files to load.
+
 	server_t tmpserver = {0};
 	if (!pass2)
 	    server = &tmpserver;
@@ -67,7 +73,7 @@ process_args(int argc, char **argv)
 		    }
 
 		    if (strcmp(argv[ar], "-port") == 0) {
-			tcp_port_no = atoi(argv[ar+1]);
+			port_no = tcp_port_no = atoi(argv[ar+1]);
 			ar++; addarg++;
 			break;
 		    }
@@ -184,6 +190,7 @@ process_args(int argc, char **argv)
 		exit(1);
 	    } while(0);
 
+	    // Copy all the args for restart.
 	    if (!pass2 && addarg) {
 		if (addarg == 2) {
 		    program_args[bc++] = strdup(argv[ar-1]);
@@ -195,6 +202,8 @@ process_args(int argc, char **argv)
 	}
 
 	if (!pass2) {
+	    // First pass is done so now we are in the right dir we read in
+	    // the defaults and file configs.
 	    server = 0;
 	    init_dirs();
 	    open_system_conf();
@@ -217,13 +226,37 @@ process_args(int argc, char **argv)
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);
 
+	    // If set, use server.ini over program default.
+	    if (ini_settings.tcp_port_no > 0 && ini_settings.tcp_port_no <= 65535)
+		tcp_port_no = ini_settings.tcp_port_no;
+
+	    // Argument overrides even on first pass.
+	    if (port_no > 0 && port_no <= 65535)
+		tcp_port_no = port_no;
+
+	    // If in inetd_mode read the port number we are using from the socket.
+	    if (inetd_mode) {
+		int p = read_sock_port_no(0);
+		if (p>0) tcp_port_no = p;
+	    }
+
+	    if (tcp_port_no > 0 && tcp_port_no <= 65535 && !save_conf) {
+		char buf[256];
+		snprintf(buf, sizeof(buf), SERVER_CONF_PORT, tcp_port_no);
+		load_ini_file(system_ini_fields, buf, 1, 0);
+
+		// Don't let this override!
+		ini_settings.tcp_port_no = tcp_port_no;
+	    }
+
+	    // These will be overridden on second pass.
 	    start_tcp_server = ini_settings.start_tcp_server;
 	    tcp_port_no = ini_settings.tcp_port_no;
-	    inetd_mode = ini_settings.inetd_mode;
 	    detach_tcp_server = ini_settings.detach_tcp_server;
 	    enable_heartbeat_poll = ini_settings.enable_heartbeat_poll;
 	    server_runonce = ini_settings.server_runonce;
 	    strcpy(heartbeat_url, ini_settings.heartbeat_url);
+	    // inetd_mode = ini_settings.inetd_mode;
 	}
     }
 

@@ -18,6 +18,9 @@
 
 #define SWNAME "MCCHost"
 
+// These settings are shared between the servers, they cannot be
+// different for different ports. But they get set immediatly they
+// are changed by the user.
 typedef struct server_t server_t;
 struct server_t {
     int magic;
@@ -47,6 +50,8 @@ struct server_t {
     int magic2;
 };
 
+// These settings are per port or per process settings, however,
+// they can only be changed when the listener process restarts.
 typedef struct server_ini_t server_ini_t;
 struct server_ini_t {
     int server_runonce;
@@ -123,7 +128,7 @@ main(int argc, char **argv)
     if (save_conf) {
         ini_settings.start_tcp_server = start_tcp_server;
         ini_settings.tcp_port_no = tcp_port_no;
-        ini_settings.inetd_mode = inetd_mode;
+        ini_settings.inetd_mode = 0;
         ini_settings.detach_tcp_server = detach_tcp_server;
         ini_settings.enable_heartbeat_poll = enable_heartbeat_poll;
         ini_settings.server_runonce = server_runonce;

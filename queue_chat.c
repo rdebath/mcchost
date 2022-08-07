@@ -102,32 +102,9 @@ send_queued_chats(int flush)
 	}
 	unlock_fn(chat_queue_lock);
 
-	send_msg_pkt_filtered(upd.msg.message_type, upd.msg.message);
+	send_message_pkt(0, upd.msg.message_type, upd.msg.message);
     }
 
     if (flush)
 	flush_to_remote();
-}
-
-/* Sends a message packet, filtering the CP437 to ASCII if required */
-void
-send_msg_pkt_filtered(int msg_flag, char * message)
-{
-    if (extn_fullcp437)
-	send_message_pkt(0, msg_flag, message);
-    else
-    {
-	char msgbuf[NB_SLEN];
-	char *s=message, *d = msgbuf;
-	for(int i = 0; i<MB_STRLEN; i++, s++) {
-	    if (*s >= ' ' && *s <= '~')
-		*d++ = *s;
-	    else if (*s & 0x80)
-		*d++ = cp437_ascii[*s & 0x7f];
-	    else
-		*d++ = '*';
-	}
-	*d++ = 0;
-	send_message_pkt(0, msg_flag, msgbuf);
-    }
 }

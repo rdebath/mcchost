@@ -225,6 +225,11 @@ process_player_setblock(pkt_setblock pkt)
 	pkt.mode = 2;
     }
 
+    if (server->cpe_disabled && pkt.block >= Block_CP) {
+	revert_client(pkt);
+	return;
+    }
+
     if (player_mode_mode >= 0 && pkt.mode) {
 	pkt.block = player_mode_mode;
 	pkt.mode = 2;

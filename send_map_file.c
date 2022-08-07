@@ -70,26 +70,7 @@ void
 send_map_file()
 {
     if (!level_prop || !level_blocks) {
-	char empty_zlib[] = {0xe3, 0x64, 0x00, 0x00};
-	char empty_gzip[] = {
-	    0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
-	    0x00, 0x03, 0x63, 0x60, 0x60, 0x60, 0xe2, 0x64,
-	    0x00, 0x00, 0x84, 0xce, 0x84, 0x63, 0x06, 0x00,
-	    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	send_lvlinit_pkt(2);
-	if (extn_fastmap)
-	    send_lvldata_pkt(empty_zlib, 4, 0);
-	else
-	    send_lvldata_pkt(empty_gzip, 0x1a, 0);
-	send_lvldone_pkt(1, 2, 1);
-	if (extn_envcolours) {
-	    for(int i = 0; i<6; i++)
-		send_envsetcolour_pkt(i, 0);
-	}
-	send_inventory_order();
-	player_posn.x = player_posn.z = 16; player_posn.y = 256;
-	player_posn.v = player_posn.h = 0;
-	send_spawn_pkt(255, user_id, player_posn);
+	send_void_map();
 	fprintf_logfile("Level \"%s\" no mmap so void map sent.", current_level_name);
 	return;
     }
@@ -116,6 +97,31 @@ send_map_file()
 
     send_metadata();
     reset_player_list();
+}
+
+void
+send_void_map()
+{
+    char empty_zlib[] = {0xe3, 0x64, 0x00, 0x00};
+    char empty_gzip[] = {
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x03, 0x63, 0x60, 0x60, 0x60, 0xe2, 0x64,
+	0x00, 0x00, 0x84, 0xce, 0x84, 0x63, 0x06, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    send_lvlinit_pkt(2);
+    if (extn_fastmap)
+	send_lvldata_pkt(empty_zlib, 4, 0);
+    else
+	send_lvldata_pkt(empty_gzip, 0x1a, 0);
+    send_lvldone_pkt(1, 2, 1);
+    if (extn_envcolours) {
+	for(int i = 0; i<6; i++)
+	    send_envsetcolour_pkt(i, 0);
+    }
+    send_inventory_order();
+    player_posn.x = player_posn.z = 16; player_posn.y = 256;
+    player_posn.v = player_posn.h = 0;
+    send_spawn_pkt(255, user_id, player_posn);
 }
 
 void

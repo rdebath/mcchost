@@ -44,9 +44,23 @@ static inline int
 nb_string_write(uint8_t *pkt, char * str)
 {
     int l;
-    for(l=0; l<MB_STRLEN; l++) {
-	if(str[l] == 0) break;
-	pkt[l] = str[l];
+    if (!extn_fullcp437) {
+	int lns = 0;
+	for(l=0; l<MB_STRLEN; l++) {
+	    if(str[l] == 0) break;
+	    if(str[l]&0x80)
+		pkt[l] = cp437_ascii[str[l] & 0x7f];
+	    else
+		pkt[l] = str[l];
+	    if (pkt[l] != ' ') lns = l;
+	}
+	if (!extn_emotefix && pkt[lns] < ' ' && lns < MB_STRLEN-1)
+	    pkt[lns+1] = '\'';
+    } else {
+	for(l=0; l<MB_STRLEN; l++) {
+	    if(str[l] == 0) break;
+	    pkt[l] = str[l];
+	}
     }
     for(; l<MB_STRLEN; l++)
 	pkt[l] = ' ';

@@ -33,7 +33,7 @@ static struct ext_list_t extensions[] = {
     { N"EnvMapAppearance",    2, &extn_envmapappearance2 },	//Old
     { N"EnvWeatherType",      1, &extn_weathertype },
     { N"HackControl",         1, &extn_hackcontrol },
-    { N"EmoteFix",            1, }, // Included in FullCP437 ?
+    { N"EmoteFix",            1, &extn_emotefix },
     { N"MessageTypes",        1, &extn_messagetypes },
     { N"LongerMessages",      1, &extn_longermessages },
     { N"FullCP437",           1, &extn_fullcp437 },
@@ -102,6 +102,7 @@ int extn_extendblockno = 0;
 int extn_extendtexno = 0;
 int extn_fastmap = 0; // CC Crashes with 10bit gzip maps. pre 1.3.3
 int extn_fullcp437 = 0;
+int extn_emotefix = 0;
 int extn_hackcontrol = 0;
 int extn_heldblock = 0;
 int extn_instantmotd = 0;

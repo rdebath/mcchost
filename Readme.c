@@ -15,23 +15,17 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) send_msg_pkt_filtered should use (sun) style emojis as replacements.
-    -- Truncate on overflow.
+ +) Check delete of unmodified level doesn't resave it.
+ +) Move more global variables into ini_settings structure.
 
  +) Default directory should be ~/.mcchost or ~/.config/mcchost
-    -- mcchost.ini in that dir can change location?
-
- +) Safe /nick -- approximatly matches real name
-    -- Match case insensitive, common substring.
-    -- How to descibe "too different" to user?
+    -- server.ini in that dir can change location?
 
  +) Record data rates for server bytes/s I/O
 
  +) Slow map loads; do I need to poll client chat?
 
  +) INI file preserve (some?) comments.
-
- +) lmdb appears with Debian jessie, do I want a fallback ?
 
  +) User name spaces.
     -- Do we place an affix onto display names ?
@@ -48,48 +42,11 @@ See "/help todo" for notes.
 
     -- Normally "local" and "secret" would be the same namespace.
 
- +) Multiple servers in one directory; which items should (not)be per port.
-    -- Need port-12345.ini file ?
-        --> Only record if different from system.ini values.
-
-    -- "level & map & backup" need to be shared as a set due to locking.
-        --> Declared only by system.ini
-
-    -- Private flag? --> Heatbeat.
-    -- CPE Disable? OPFlag?
-    -- Localnet? --> Add bind address ?
-    -- Salt? --> No, salt is not port specific.
-
-    -- Heartbeat (Enable/disable, URL, URL-List? )
-       --> Cross product between URLs and ports. (Secret is URL specific)
-       --> host/port is (mostly) the unique key used by TTP.
-       --> Heartbeat includes port number, so will need per port calls.
-       --> URL should NOT need to be duplicated.
-       --> Should sent salt include port number ? ... No.
-       --> Private Flag (per heartbeat, per heartbeat+port?)
-
- +) Multiple servers in one directory; which items should (not)be per port.
-    -- Only have port to determine additional file.
-	-- port-12345.ini
-	-- Changes from this file are treated as command line changes.
-	   (Before actual command line args)
-	-- Don't save this file; manual config only.
-	-- One heartbeat per port max
-    -- All fields must be in server_ini_t
-	-- TCP server = true
-	-- TCP Port
-	-- inetd_mode => Overrides port number
-	-- enable_heartbeat_poll
-	-- heartbeat_url
-	-- secret
-	-- key_rotation
-	-- cpe_disabled
-	-- op_flag
-	-- user_namespace
-
-	... Hmmm.
-	-- last_heartbeat
-	-- last_heartbeat_port
+ +) Multiple servers in one directory ...
+    -- Only have port to determine distinct config file.
+    -- Distinct file is not saved, manual config only.
+    -- One heartbeat server per config
+    -- Config options suitable for distinct file are not loaded into system.dat
 
  +) We use MSG_PEEK so can pass the socket to a filtering process.
     -- Websocket, SSL, Web server.
@@ -156,9 +113,6 @@ See "/help todo" for notes.
     -- Map gen? Import?
     -- Sent to level chat ? -- Physics?
 
- +) Log user commands ?
-    -- Logging options; system level.
-
  +) Scripting language interface
     -- Lua ?
     -- Python ?
@@ -169,7 +123,12 @@ See "/help todo" for notes.
 
     -- External command that acts like a client?
 
+ +) lmdb appears with Debian jessie, do I want a fallback ?
  +) Switch to using libcurl ?
+
+ +) Safe /nick -- approximatly matches real name
+    -- Match case insensitive, common substring.
+    -- How to descibe "too different" to user?
 
 Features:
     -- CW file also contains pending physics operations.

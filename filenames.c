@@ -9,6 +9,7 @@
 #if INTERFACE
 #define SERVER_CONF_NAME "server.ini"
 #define SERVER_CONF_TMP "server.%d.tmp"
+#define SERVER_CONF_PORT "server.%d.ini"
 #define LEVEL_PROPS_NAME "level/%s.props"
 #define LEVEL_BLOCKS_NAME "level/%s.blocks"
 #define LEVEL_QUEUE_NAME "level/%s.queue"
@@ -56,10 +57,8 @@ init_dirs()
     }
 }
 
-static char hex[] = "0123456789ABCDEF";
-
 /*
- * Given a CP437 levelname create the ASCII version.
+ * Given a CP437 levelname create the UTF-8 version.
  */
 void
 fix_fname(char *buf, int len, char *s)
@@ -68,49 +67,75 @@ fix_fname(char *buf, int len, char *s)
     if (len<=0) return;
     for(char *p=s;*p;p++) {
 	if (d>=buf+len-1) break;
-	if (*p > ' ' && *p < '~' && *p != '/' && *p != '\\'
-		&& *p != '%' && *p != '.') {
+	if (*p >= ' ' && *p <= '~' && *p != '/' && *p != '\\' && *p != '.') {
 	    *d++ = *p;
 	} else {
-	    *d++ = '%';
-	    *d++ = hex[(*p>>4)&0xF];
-	    *d++ = hex[*p&0xF];
+	    int uc = cp437rom[(*p) & 0xFF];
+	    int c1, c2, c3;
+
+	    if (uc == '/')  uc = 0x2215; // DIVISION SLASH;
+	    if (uc == '\\') uc = 0x2216; // SET MINUS
+	    if (uc == '.')  uc = 0x1390; // ETHIOPIC TONAL MARK YIZET
+	    if (uc < 0x80)  uc = 0xF000 + (uc&0xFF); // Linux direct to font.
+
+	    c2 = (uc/64);
+	    c1 = uc - c2*64;
+	    c3 = (c2/64);
+	    c2 = c2 - c3 * 64;
+	    if (uc < 128 && uc >= 0) {
+		*d++ = uc;
+	    } else if (uc < 2048) {
+		*d++ = c2+192; *d++ = c1+128;
+	    } else if (uc < 65536) {
+		*d++ = c3+224; *d++ = c2+128; *d++ = c1+128;
+	    } else {
+		*d++ = 0xef; *d++ = 0xbf; *d++ = 0xbd;
+	    }
 	}
     }
     *d = 0;
 }
 
 /*
- * Given a valid ASCII levelname create the CP437 version.
+ * Given a valid level filename create the CP437 version.
  * Case sensitive!
  */
 void
 unfix_fname(char *buf, int len, char *s)
 {
     char *d = buf;
+    int utfstate[1] = {0};
     *buf = 0;
     if (len<2 || *s == 0 || *s == '.') return;
 
     for(char *p=s;*p;p++) {
 	if (d>=buf+len-1) { *buf=0; return; }
-	if (*p <= ' ' || *p >= '~' || *p == '/' || *p == '\\' || *p == '.') {
-	    *buf = 0; return;
+	int ch = -1;
+	if (*utfstate>=0) ch= (*p & 0xFF); else { p--; ch = -1; }
+
+	if (ch <= 0x7F && *utfstate == 0) {
+	    if (*p < ' ' || *p > '~' || *p == '/' || *p == '\\' || *p == '.')
+		{ *buf = 0; return; }
+	} else {
+	    ch = decodeutf8(ch, utfstate);
+	    if (ch == UTFNIL)
+		continue;
+	    if (ch >= 0x80) {
+		int utf = ch;
+		ch = -1;
+		if (utf == 0x2215) ch = '/';
+		else if (utf == 0x2216) ch = '\\';
+		else if (utf == 0x1390) ch = '.';
+		else
+		for(int n=0; n<256; n++) {
+		    if (cp437rom[(n+128)&0xFF] == utf)
+			{ ch=((n+128)&0xFF) | 0x100; break; }
+		}
+	    }
 	}
-	if (*p == '%') {
-	    char *d1, *d2;
-	    if (p[1] == 0 || (d1 = strchr(hex, p[1])) == 0 ||
-	        p[2] == 0 || (d2 = strchr(hex, p[2])) == 0) {
-		*buf = 0; return;
-	    }
-	    p+=2;
-	    int ch = (d1-hex)*16 + (d2-hex);
-	    if (ch == 0 || (ch > ' ' && ch < '~' && ch != '/' && ch != '\\'
-		&& ch != '_' && ch != '%' && ch != '.')) {
-		*buf = 0; return;
-	    }
-	    *d++ = ch;
-	} else
-	    *d++ = *p;
+
+	if (ch <= 0) { *buf = 0; return; }
+	*d++ = ch;
     }
     *d = 0;
 }
