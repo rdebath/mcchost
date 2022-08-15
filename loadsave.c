@@ -198,7 +198,7 @@ cmd_save(char * UNUSED(cmd), char * arg)
 	char fixedname[200], buf2[256];
 	fix_fname(fixedname, sizeof(fixedname), arg);
 
-	snprintf(buf2, sizeof(buf2), "_%s.ini", fixedname);
+	snprintf(buf2, sizeof(buf2), "ini/%s.ini", fixedname);
 	save_ini_file(level_ini_fields, buf2);
 
 	printf_chat("&SConfig saved to %s", buf2);

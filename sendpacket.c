@@ -606,3 +606,26 @@ send_addentityv1_pkt(int player_id, char * ingamename, char * skinname)
     p += nb_string_write(p, skinname);
     write_to_remote(packetbuf, p-packetbuf);
 }
+
+void
+send_settextcolour_pkt(uint8_t code, int colour, uint8_t alpha)
+{
+    if (colour < 0 || colour > 0xFFFFFF) {
+	alpha = 0xFF;
+	colour = 0xFFFFFF;
+    }
+
+    int red = ((colour>>16)&0xFF);
+    int green = ((colour>>8)&0xFF);
+    int blue = ((colour)&0xFF);
+
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_TEXTCOLOUR;
+    *p++ = red;
+    *p++ = green;
+    *p++ = blue;
+    *p++ = alpha;
+    *p++ = code;
+    write_to_remote(packetbuf, p-packetbuf);
+}

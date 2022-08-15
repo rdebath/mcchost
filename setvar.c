@@ -88,7 +88,8 @@ cmd_setvar(char * cmd, char * arg)
     char vbuf[256];
 
     if (section) {
-	if (strcasecmp(section, "server") == 0 || strcasecmp(section, "level") == 0) {
+	if (strcasecmp(section, "server") == 0 || strcasecmp(section, "level") == 0 ||
+		strncmp(section, "textcolour", 10) == 0) {
 	    varname = strtok(0, " ");
 	    value = strtok(0, "");
 	} else if (strcasecmp(section, "block") == 0) {
@@ -118,7 +119,8 @@ cmd_setvar(char * cmd, char * arg)
     ini_state_t stv = {.no_unsafe=1}, *st = &stv;
     st->curr_section = section;
 
-    if (strcasecmp(section, "server") == 0 || strcasecmp(section, "system") == 0) {
+    if (strcasecmp(section, "server") == 0 || strcasecmp(section, "system") == 0 ||
+	    strncmp(section, "textcolour", 10) == 0) {
 	if (!client_trusted)
 	    return printf_chat("&WPermission denied, need to be admin.");
 

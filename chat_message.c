@@ -65,7 +65,7 @@ convert_inbound_chat(char * msg)
     char * buf = malloc(strlen(msg) + 256);
     char * p = buf + sprintf(buf, "&e%s:&f ", user_id);
     for(char *s = msg; *s; s++) {
-	if (*s == '%' || *s == '&') {
+	if (!extn_textcolours && (*s == '%' || *s == '&')) {
 	    char c = *s++;
 	    if ((*s >= '0' && *s <= '9') || (*s >= 'a' && *s <= 'f'))
 	    {
@@ -75,6 +75,7 @@ convert_inbound_chat(char * msg)
 	    if (c == '%') *p++ = c;
 	    if ((c != '%' || *s != '%') && *s != '&') *p++ = *s;
 	} else {
+	    if (*s == '%') { *p++ = '&'; s++; } // Classicube mangles &
 	    *p++ = *s;
 	}
     }
@@ -108,15 +109,13 @@ post_chat(int where, int type, char * chat, int chat_len)
 	if (c == '&') {
 	    uint8_t col = chat[s+1];
 
-	    // MCGalaxy aliases --  // global chat colour &6
-	    if (col >= 'A' && col <= 'F') col = col - 'A' + 'a';
-	    if (col == 'H') col = 'e'; // HelpDescriptionColor
-	    if (col == 'I') col = '5'; // IRCColor
-	    if (col == 'S') col = 'e'; // DefaultColor
-	    if (col == 'T') col = 'a'; // HelpSyntaxColor
-	    if (col == 'W') col = 'c'; // WarningErrorColor
+	    if (textcolour[col].defined) {
+		if (!extn_textcolours || textcolour[col].colour < 0)
+		    col = textcolour[col].fallback;
+	    }
 
-	    if ((col >= '0' && col <= '9') || (col >= 'a' && col <= 'f')) {
+	    if ((extn_textcolours && textcolour[col].defined) ||
+		    (col >= '0' && col <= '9') || (col >= 'a' && col <= 'f')) {
 		ncolour = col;
 		s++;
 		continue;

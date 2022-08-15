@@ -17,6 +17,8 @@
  *
  */
 #if INTERFACE
+enum csv_type {FLD_I32, FLD_I64, FLD_STR=16};
+
 typedef struct userrec_t userrec_t;
 struct userrec_t
 {
@@ -73,10 +75,8 @@ write_int32(uint8_t **pp, int32_t val)
     *pp = p;
 }
 
-enum {FLD_I32, FLD_I64, FLD_STR=16};
-
 LOCAL void
-write_fld(uint8_t **pp, void * data, int type)
+write_fld(uint8_t **pp, void * data, enum csv_type type)
 {
     int64_t v = 0;
     char nbuf[sizeof(v)*3+3];
@@ -91,6 +91,7 @@ write_fld(uint8_t **pp, void * data, int type)
 	case FLD_I64:
 	    v = *(int64_t*)data;
 	    break;
+	default:break; //STFU idiot
 	}
 	int l = sprintf(nbuf, "%jd,", (intmax_t)v);
 	strcpy(*pp, nbuf);
@@ -126,7 +127,7 @@ write_fld(uint8_t **pp, void * data, int type)
 }
 
 LOCAL void
-read_fld(uint8_t **pp, int * bytes, void * data, int type, int len)
+read_fld(uint8_t **pp, int * bytes, void * data, enum csv_type type, int len)
 {
     uint8_t *p = *pp;
     int l = *bytes, e = 0, ec = ',';
@@ -160,6 +161,7 @@ read_fld(uint8_t **pp, int * bytes, void * data, int type, int len)
 	    case FLD_I64:
 		*(int64_t*)data = v;
 		break;
+	    default:break; //STFU idiot
 	    }
 	    *pp += e+1;
 	}

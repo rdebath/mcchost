@@ -69,10 +69,15 @@ cmd_help(char * prefix, char *cmdargs)
     snprintf(helpbuf, sizeof(helpbuf), "help/%s.txt", helptopic);
     FILE * hfd = fopen(helpbuf, "r");
     if (hfd) {
+	int ln = 0;
 	while(fgets(helpbuf, sizeof(helpbuf), hfd)) {
 	    int l = strlen(helpbuf);
 	    char * p = helpbuf+l;
 	    if (l != 0 && p[-1] == '\n') { p[-1] = 0; l--; }
+	    if (ln++ == 0) {
+		if (strcasecmp(helpbuf, "!clear") == 0)
+		    return cmd_clear("", 0);
+	    }
 
 	    convert_to_cp437(helpbuf, &l);
 	    post_chat(1, 0, helpbuf, l);

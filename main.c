@@ -109,6 +109,8 @@ main(int argc, char **argv)
 {
     snprintf(program_name, sizeof(program_name), "%s", argv[0]);
 
+    init_textcolours();
+
     process_args(argc, argv);
 
     proc_args_mem = argv[0];
@@ -249,6 +251,8 @@ complete_connection()
 
     send_map_file();
 
+    send_textcolours();
+
     printf_chat("&SWelcome &7%s", user_id);
     printf_chat("@&a+ &7%s &Sconnected", user_id);
 
@@ -317,7 +321,7 @@ login()
 	    sleeps++;
 	}
 
-	if (insize > 4 && memcmp(inbuf, "GET ", 4) == 0) {
+	if (insize > 5 && (memcmp(inbuf, "GET ", 4) == 0 || memcmp(inbuf, "HEAD ", 5) == 0)) {
 	    // HTTP GET requests, including websocket.
 	    if (insize == sizeof(inbuf))
 		teapot(inbuf, insize);
@@ -420,11 +424,18 @@ teapot(uint8_t * buf, int len)
     int rv = 4;
     int send_new_logout = 0;
     int send_tls_fail = 0;
+    int send_http_error = 0;
+
+    int is_ascii = 1;
+    for(int i = 0; is_ascii && i<len; i++)
+	if (!(buf[i] == '\r' || buf[i] == '\n' || (buf[i] >= ' ' && buf[i] <= '~')))
+	    is_ascii = 0;
 
     if (client_ipv4_port) {
 	int fm = 1;
 	if (len == 0)
 	    rv = dump_it = 0;
+
 	else if (len > 0 && len < 5) {
 	    char hbuf[32] = "";
 	    for(int i=0; i<len; i++)
@@ -432,11 +443,29 @@ teapot(uint8_t * buf, int len)
 	    printlog("Received byte%s %s from %s",
 		len>1?"s":"", hbuf+2, client_ipv4_str);
 	    fm = rv = dump_it = 0;
+
 	} else if (buf[0] == 0x16 && buf[1] == 0x03 && buf[1] >= 1 && buf[1] <= 3) { 
 	    printlog("Received a TLS Client hello packet from %s",
 		client_ipv4_str);
 	    fm = rv = dump_it = 0;
 	    send_tls_fail = 1;
+
+	} else if (len > 32 && buf[0] == 3 && !buf[1] && !buf[2] && buf[3] == len &&
+		buf[4] == len-5 && memcmp(buf+11, "Cookie: mstshash=", 17) == 0) {
+	    uint8_t * p = buf+28;
+	    char nbuf[256] = "";
+	    int i = 0;
+	    while(p<buf+len && *p > ' ' && *p < '~') {
+		nbuf[i++] = *p++; nbuf[i] = 0;
+	    }
+	    printlog("Failed connect from %s, RDP for \"%s\"", client_ipv4_str, nbuf);
+	    fm = rv = dump_it = 0;
+
+	} else if (len >= 19 && buf[0] == 3 && !buf[1] && !buf[2] && buf[3] == 19 &&
+		buf[4] == 14 && buf[5] == 0xe0 && !buf[6] && !buf[7]) {
+	    printlog("Failed connect from %s, RDP client hello", client_ipv4_str);
+	    fm = rv = dump_it = 0;
+
 	} else if (len > 12 && buf[1] == 0 && buf[0] >= 12 && buf[0] < len && buf[0] < 32 &&
 	    buf[buf[0]-2] == ((tcp_port_no>>8)&0xFF) && buf[buf[0]-1] == (tcp_port_no&0xFF)) {
 	    // This looks like a current protocol packet.
@@ -444,6 +473,12 @@ teapot(uint8_t * buf, int len)
 		"Using newer Minecraft protocol.");
 	    fm = rv = dump_it = 0;
 	    send_new_logout = 1;
+
+	} else if (len > 12 && is_ascii &&
+		(memcmp(buf, "GET ", 4) == 0 || memcmp(buf, "HEAD ", 5) == 0)) {
+	    send_http_error = 1;
+	    fm = rv = 0;
+
 	}
 	if (fm)
 	    printlog("Failed connect from %s, %s", client_ipv4_str,
@@ -453,10 +488,6 @@ teapot(uint8_t * buf, int len)
 	printlog("Nothing received from remote");
 
     if (dump_it) {
-	int is_ascii = 1;
-	for(int i = 0; is_ascii && i<len; i++)
-	    if (!(buf[i] == '\r' || buf[i] == '\n' || (buf[i] >= ' ' && buf[i] <= '~')))
-		is_ascii = 0;
 	if (is_ascii) {
 	    char message[65536];
 	    int j = 0;
@@ -494,8 +525,12 @@ teapot(uint8_t * buf, int len)
 	} else if (send_tls_fail) {
 	    char msg[] = { 0x15, 0x03, 0x01, 0x00, 0x02, 0x02, 80 };
 	    write_to_remote(msg, sizeof(msg));
+	} else if (send_http_error) {
+	    char msg[] = "HTTP/1.1 418 HTTP not available.\r\n\r\n";
+	    write_to_remote(msg, sizeof(msg)-1);
+
 	} else {
-	    char msg[] = "418 I'm a teapot\n";
+	    char msg[] = "418 This is a classic (0.30) minecraft server with CPE\r\n";
 	    write_to_remote(msg, sizeof(msg)-1);
 	}
 

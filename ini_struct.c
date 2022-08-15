@@ -111,6 +111,42 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
     }
 
+    int tn = 0;
+    char sectionbuf[128];
+    do
+    {
+	if (st->all) {
+	    if (!textcolour[tn].defined) { tn++; continue; }
+	    sprintf(sectionbuf, "textcolour.%d", tn);
+	    section = sectionbuf;
+	} else {
+	    strncpy(sectionbuf, st->curr_section, 11);
+	    sectionbuf[11] = 0;
+	    if (strcasecmp(sectionbuf, "textcolour.") == 0) {
+		tn = atoi(st->curr_section+11);
+		if (!tn && st->curr_section[11] == '0') break;
+		if (tn < 0 || tn >= 256) break;
+		sprintf(sectionbuf, "textcolour.%d", tn);
+		section = sectionbuf;
+		textcolour[tn].defined = 1;
+	    } else
+		break;
+	}
+
+	if (!st->write || textcolour[tn].name.c[0]) {
+	    INI_NBTSTR("Name", textcolour[tn].name);
+	}
+	if (!st->write || textcolour[tn].colour >= 0) {
+	    INI_INTHEX("Colour", textcolour[tn].colour);
+	    INI_INTVAL("Alpha", textcolour[tn].a);
+	}
+	if (!st->write || textcolour[tn].fallback) {
+	    INI_INTVAL("Fallback", textcolour[tn].fallback);
+	}
+
+	tn++;
+    } while(st->all && tn < 256);
+
     return found;
 }
 

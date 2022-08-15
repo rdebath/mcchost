@@ -43,6 +43,7 @@ static char * dirlist[] = {
     USERDB_DIR,
     "help",
     "log",
+    "ini",
     0
 };
 
