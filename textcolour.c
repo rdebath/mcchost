@@ -24,6 +24,13 @@ struct textcolour_t {
 
 textcolour_t textcolour[256];
 
+/*HELP ccols,customcolours,customcolors H_CMD
+&T/CustomColors add [code] [name] [fallback] #[hex]
+  code is a single character.
+  fallback is the color code shown to non-supporting clients.
+&T/CustomColors remove [code] &S- Removes that custom color.
+*/
+
 void
 cmd_textcolour(char * cmd, char *arg)
 {

@@ -15,7 +15,8 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) Check delete of unmodified level doesn't resave it.
+ +) Don't update backup time on delete of loaded map?
+
  +) Move more global variables into ini_settings structure.
 
  +) Default directory should be ~/.mcchost or ~/.config/mcchost
@@ -71,18 +72,12 @@ See "/help todo" for notes.
     -- Symlinks work now. Enough?
 
  +) /sendcmd command
- +) /spawn command
- +) /tp command
  +) /summon command
  +) /info command
- +) /afk command
  +) /kick command
  +) /clones command
 
  +) More /cuboid variants ?
-
- +) Colour definitions for &S,&W etc.
-    -- System level
 
  +) Level limited chat -- primitive chatroom.
  +) Team chat, less primitive chatroom.
@@ -93,7 +88,6 @@ See "/help todo" for notes.
     -- Rename file to strict % form, don't overwrite.
     -- Output of curl import command to user ?
 
- +) /newlvl Perms; No create, create personal, create any.
  +) /newlvl, generate "nice" levels.
 
  +) Block/User history records.
@@ -103,6 +97,7 @@ See "/help todo" for notes.
     -- Bitmap of allow/deny.
     -- Routine to construct bitmap from "nice" permissions.
     -- Routine takes care of "if has_build_perm(level)"
+    -- /newlvl; No create, create personal, create any.
 
  +) NAME: (*) MCCHost
 
@@ -193,8 +188,7 @@ Make sure text anti-spam is in place.
 
 On Block queue, if user count < 2 && no-physics don't use queue ?
     --> *256 blocks packet need queue?
-
-// vim:set syntax=none: */
+*/
 
 /*HELP usecases
 mcchost-server -tcp [-detach]
@@ -231,3 +225,5 @@ mcchost-server -pipe
     eg: socat TCP-LISTEN:25565,reuseaddr EXEC:'mcchost-server -pipe',pipes
 
 */
+
+// vim:set syntax=none: */

@@ -454,7 +454,7 @@ scan_and_save_levels(int unlink_only)
 		// Time to backup ?
 		time_t now = time(0);
 		int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
-		if (force_backup) do_bkp = 2;
+		if (force_backup) do_bkp = 2; // NB: Saves delete time too.
 		if (do_bkp && !unlink_only) do_save = 1;
 
 		if (do_save) {

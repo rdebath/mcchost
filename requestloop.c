@@ -284,6 +284,7 @@ process_client_message(int cmd, char * pktbuf)
 	    }
 	}
 	break;
+
     case PKID_POSN:
 	{
 	    char * p = pktbuf+1;
@@ -317,6 +318,7 @@ process_client_message(int cmd, char * pktbuf)
 	    update_player_pos(pkt);
 	}
 	break;
+
     case PKID_MESSAGE:
 	{
 	    char * p = pktbuf+1;
@@ -363,6 +365,7 @@ process_client_message(int cmd, char * pktbuf)
 		cpe_extn_remaining = 0;
 	}
 	break;
+
     case PKID_EXTENTRY:
 	{
 	    char * p = pktbuf+1;
@@ -372,6 +375,7 @@ process_client_message(int cmd, char * pktbuf)
 	    process_extentry(&pkt);
 	}
 	break;
+
     case PKID_CUSTBLOCK:
 	{
 	    char * p = pktbuf+1;
@@ -385,6 +389,30 @@ process_client_message(int cmd, char * pktbuf)
 	    cpe_pending |= 2;
 	    if (cpe_pending == 3)
 		complete_connection();
+	}
+	break;
+
+    case PKID_PLAYERCLK:
+	{
+	    char * p = pktbuf+1;
+	    pkt_playerclick pkt;
+
+	    pkt.button = *p++;
+	    pkt.action = *p++;
+	    pkt.h = IntBE16(p); p+=2;
+	    pkt.v = IntBE16(p); p+=2;
+	    pkt.entity = *p++;
+	    pkt.block_x = IntBE16(p); p+=2;	// Only within click range.
+	    pkt.block_y = IntBE16(p); p+=2;
+	    pkt.block_z = IntBE16(p); p+=2;
+	    pkt.face = *p++;			// 255=> missed.
+
+	    fprintf(stderr, "%slick of button %d, at (%d,%d), Hit ent (%d), block (%d,%d,%d)[%d]\n",
+		pkt.action?"Unc":"C",
+		pkt.button,
+		pkt.h, pkt.v,
+		pkt.entity,
+		pkt.block_x, pkt.block_y, pkt.block_z, pkt.face);
 	}
 	break;
 

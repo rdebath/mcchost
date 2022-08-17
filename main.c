@@ -249,9 +249,8 @@ complete_connection()
 	}
     }
 
-    send_map_file();
-
     send_textcolours();
+    send_map_file();
 
     printf_chat("&SWelcome &7%s", user_id);
     printf_chat("@&a+ &7%s &Sconnected", user_id);
@@ -526,7 +525,10 @@ teapot(uint8_t * buf, int len)
 	    char msg[] = { 0x15, 0x03, 0x01, 0x00, 0x02, 0x02, 80 };
 	    write_to_remote(msg, sizeof(msg));
 	} else if (send_http_error) {
-	    char msg[] = "HTTP/1.1 418 HTTP not available.\r\n\r\n";
+	    char msg[] =
+		"HTTP/1.1 426 Upgrade Required\r\n"
+		"Upgrade: MC-CPE, mc/0.30" /* ", websocket/13" */ "\r\n"
+		"\r\n";
 	    write_to_remote(msg, sizeof(msg)-1);
 
 	} else {

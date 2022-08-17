@@ -47,8 +47,8 @@ struct map_info_t {
     int dirty_save;
     uint32_t metadata_generation;
     time_t time_created;	// Map initial creation time
-    time_t last_modified;	// Time of last save
-    time_t last_backup;		// Time of previous backup
+    time_t last_modified;	// Time of last save to cw file
+    time_t last_backup;
 
     uint8_t uuid[16];
     uint8_t hacks_flags;

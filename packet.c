@@ -52,6 +52,7 @@
 #define PKID_MAPAPPEAR	0x1e
 #define PKID_WEATHER	0x1f
 #define PKID_ADDENT	0x21
+#define PKID_PLAYERCLK	0x22	/*ClientSend*/
 #define PKID_BLOCKDEF	0x23
 #define PKID_BLOCKUNDEF	0x24
 #define PKID_BLOCKDEF2	0x25
@@ -100,6 +101,19 @@ struct pkt_extentry {
     char extname[NB_SLEN];
     int version;
 };
+
+typedef pkt_playerclick pkt_playerclick;
+struct pkt_playerclick {
+    uint8_t button;
+    uint8_t action;
+    int16_t h;
+    int16_t v;
+    int entity;
+    int block_x;
+    int block_y;
+    int block_z;
+    uint8_t face;
+}
 #endif
 
 

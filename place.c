@@ -34,7 +34,7 @@ If only x coordinate is given, it is used for y and z too
 #define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}, \
                    {N"paint", &cmd_paint}, {N"p", &cmd_paint, .dup=1}, \
                    {N"mode", &cmd_mode}, \
-                   {N"abort", &cmd_mode, .dup=1}, {N"a", &cmd_mode, .dup=1}, \
+                   {N"abort", &cmd_mode, .dup=1, .nodup=1}, {N"a", &cmd_mode, .dup=1}, \
 		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, .dup=1}, \
 		   {N"ma", &cmd_mark, .dup=1, .nodup=1}, \
                    {N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, .dup=1}, \
@@ -76,6 +76,7 @@ cmd_place(char * cmd, char * arg)
     }
 
     if (!level_block_queue || !level_blocks) return;
+    if (level_prop->disallowchange) { printf_chat("&WLevel cannot be changed"); return; }
 
     // NB: Place is treated just like the client setblock, including any
     // Grass/Dirt/Slab conversions. The Cuboid call is NOT treated in the
@@ -406,6 +407,8 @@ cmd_cuboid(char * cmd, char * arg)
 
     block_t b = arg?block_id(arg): player_held_block;
     if (b == (block_t)-1) b = 1;
+
+    if (level_prop->disallowchange) { printf_chat("&WLevel cannot be changed"); return; }
 
     //TODO: Other cuboids.
 
