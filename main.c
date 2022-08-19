@@ -280,16 +280,117 @@ send_disconnect_message()
 }
 
 void
+fatal(char * emsg)
+{
+    static int in_fatal = 0;
+    assert(!in_fatal);
+    in_fatal = 1;
+
+    fprintf(stderr, "FATAL(%d): %s\n", getpid(), emsg);
+
+    if (level_chat_queue)
+	printf_chat("@&W- &7%s &WCrashed: &S%s", user_id, emsg);
+
+    if (line_ofd > 0)
+	disconnect(1, emsg);
+
+    exit(42);
+}
+
+void
+logout(char * emsg)
+{
+    printf_chat("@&W- &7%s &S%s", user_id, emsg);
+    disconnect(0, emsg);
+}
+
+LOCAL void
+disconnect(int rv, char * emsg)
+{
+    if (line_ofd < 0) return;
+
+    if (client_ipv4_port > 0 && *user_id)
+	printlog("Disconnect %s, user '%s', %s", client_ipv4_str, user_id, emsg);
+    else if (client_ipv4_port > 0)
+	printlog("Disconnect %s, %s", client_ipv4_str, emsg);
+    else if (*user_id)
+	printlog("Disconnect user '%s', %s", user_id, emsg);
+    else
+	printlog("Disconnect %s", emsg);
+
+    stop_user();
+    send_discon_msg_pkt(emsg);
+    flush_to_remote();
+    shutdown(line_ofd, SHUT_RDWR);
+    if (line_ofd != line_ifd)
+	shutdown(line_ifd, SHUT_RDWR);
+
+    if (inetd_mode && user_authenticated) {
+	close(line_ofd);
+	if (line_ofd != line_ifd)
+	    close(line_ifd);
+	// Cleanup
+	scan_and_save_levels(0);
+    }
+    exit(rv);
+}
+
+void
+show_args_help()
+{
+    FILE * f = stderr;
+    fprintf(f, "Usage: %s [-inetd|-tcp|-net] ...\n", program_name);
+    fprintf(f, "  -dir X     Change to directory before opening data files.\n\n");
+
+    fprintf(f, "  -tcp       Open a tcp socket for listening, no default secret.\n");
+    fprintf(f, "  -net       Open a socket, register the secret at:\n%16s%s\n", "", heartbeat_url);
+    fprintf(f, "  -port X    Set port number listened to.\n\n");
+    fprintf(f, "  -inetd     Assume socket is stdin/out from inetd or similar\n");
+    fprintf(f, "  -detach    Background self, eg if starting from command line.\n");
+    fprintf(f, "  -no-detach Do not background; starting from init, systemd, docker.\n");
+
+    fprintf(f, "  -private -public\n");
+    fprintf(f, "             When registering set privacy state.\n");
+
+    fprintf(f, "  -name X    Set server name\n");
+    fprintf(f, "  -motd X    Set server motd\n");
+    fprintf(f, "  -secret X\n");
+    fprintf(f, "  -salt X    Set server salt/secret\n");
+    fprintf(f, "  -heartbeat http://host.xz/path\n");
+    fprintf(f, "             Change hearbeat url\n");
+    fprintf(f, "  -nocpe     Don't accept a CPE request.\n");
+
+    fprintf(f, "  -cron      Run periodic tasks, heartbeat and backups\n");
+    fprintf(f, "  -runonce   Accept one connection without forking, for debugging.\n");
+    fprintf(f, "  -logstderr Logs to stderr, not log files.\n");
+    fprintf(f, "  -saveconf  Save current system conf and exit\n");
+
+    exit(1);
+}
+
+char *
+main_level()
+{
+    static char main_level_cpy[NB_SLEN];
+    char *s = server->main_level;
+    char * d = main_level_cpy;
+    while ( STFU(*d++ = *s++) );
+    return main_level_cpy;
+}
+
+void
 login()
 {
     char inbuf[4096] = {0};
     int insize = 0, rqsize = msglen[0];
     pkt_player_id player = {0};
+    websocket = 0;
 
     // First logon packet is read using this, not the normal loop.
     // This prevents any processing of other packets and allows
     // us to give special responses and short timeouts.
-    // Also; the normal processing loop can't do a login (again).
+    //
+    // Also; the normal processing loop doesn't have the code for a re-login.
     time_t startup = time(0);
     fcntl(line_ifd, F_SETFL, (int)O_NONBLOCK);
     int sleeps = 0;
@@ -303,6 +404,11 @@ login()
 		// NB: no close before exit
 		teapot(inbuf, insize);
 	    }
+	}
+
+	if (websocket) {
+	    websocket = 1; // We are restarting translation.
+	    websocket_translate(inbuf, &insize);
 	}
 
 	time_t now = time(0);
@@ -320,13 +426,23 @@ login()
 	    sleeps++;
 	}
 
-	if (insize > 5 && (memcmp(inbuf, "GET ", 4) == 0 || memcmp(inbuf, "HEAD ", 5) == 0)) {
+	if (insize > 5 && !websocket && (memcmp(inbuf, "GET ", 4) == 0 || memcmp(inbuf, "HEAD ", 5) == 0)) {
 	    // HTTP GET requests, including websocket.
+	    char * eoh;
 	    if (insize == sizeof(inbuf))
 		teapot(inbuf, insize);
-	    else if (strstr(inbuf, "\r\n\r\n") != 0) {
+	    else if ((eoh = strstr(inbuf, "\r\n\r\n")) != 0) {
 		// This looks like a complete HTTP request.
-		teapot(inbuf, insize);
+		*eoh = 0;
+		if (websocket_startup(inbuf, insize)) {
+		    websocket = 1;
+		    if (read(line_ifd, inbuf, eoh-inbuf+4) != eoh-inbuf+4) // NOM! Header.
+			fatal("Buffered socket read() failed");
+		    insize = 0; // Clean
+		} else {
+		    *eoh = '\r';
+		    teapot(inbuf, insize);
+		}
 	    }
 	} else if (insize >= 20 || sleeps > 5) {
 	    // Special quick exits for bad callers.
@@ -348,6 +464,8 @@ login()
 	    break;
     }
     fcntl(line_ifd, F_SETFL, 0);
+
+    if (websocket) websocket = 1; // Reset for requestloop.
 
     convert_logon_packet(inbuf, &player);
     strcpy(user_id, player.user_id);
@@ -389,31 +507,6 @@ login()
 
 	user_authenticated = 1;
     }
-}
-
-void
-fatal(char * emsg)
-{
-    static int in_fatal = 0;
-    assert(!in_fatal);
-    in_fatal = 1;
-
-    fprintf(stderr, "FATAL(%d): %s\n", getpid(), emsg);
-
-    if (level_chat_queue)
-	printf_chat("@&W- &7%s &WCrashed: &S%s", user_id, emsg);
-
-    if (line_ofd > 0)
-	disconnect(1, emsg);
-
-    exit(42);
-}
-
-void
-logout(char * emsg)
-{
-    printf_chat("@&W- &7%s &S%s", user_id, emsg);
-    disconnect(0, emsg);
 }
 
 LOCAL void
@@ -527,7 +620,7 @@ teapot(uint8_t * buf, int len)
 	} else if (send_http_error) {
 	    char msg[] =
 		"HTTP/1.1 426 Upgrade Required\r\n"
-		"Upgrade: MC-CPE, mc/0.30" /* ", websocket/13" */ "\r\n"
+		"Upgrade: mc/0.30+CPE, websocket, mc/0.30\r\n"
 		"\r\n";
 	    write_to_remote(msg, sizeof(msg)-1);
 
@@ -542,78 +635,4 @@ teapot(uint8_t * buf, int len)
 	    shutdown(line_ifd, SHUT_RDWR);
     }
     exit(rv);
-}
-
-LOCAL void
-disconnect(int rv, char * emsg)
-{
-    if (line_ofd < 0) return;
-
-    if (client_ipv4_port > 0 && *user_id)
-	printlog("Disconnect %s, user '%s', %s", client_ipv4_str, user_id, emsg);
-    else if (client_ipv4_port > 0)
-	printlog("Disconnect %s, %s", client_ipv4_str, emsg);
-    else if (*user_id)
-	printlog("Disconnect user '%s', %s", user_id, emsg);
-    else
-	printlog("Disconnect %s", emsg);
-
-    stop_user();
-    send_discon_msg_pkt(emsg);
-    flush_to_remote();
-    shutdown(line_ofd, SHUT_RDWR);
-    if (line_ofd != line_ifd)
-	shutdown(line_ifd, SHUT_RDWR);
-
-    if (inetd_mode && user_authenticated) {
-	close(line_ofd);
-	if (line_ofd != line_ifd)
-	    close(line_ifd);
-	// Cleanup
-	scan_and_save_levels(0);
-    }
-    exit(rv);
-}
-
-void
-show_args_help()
-{
-    FILE * f = stderr;
-    fprintf(f, "Usage: %s [-inetd|-tcp|-net] ...\n", program_name);
-    fprintf(f, "  -dir X     Change to directory before opening data files.\n\n");
-
-    fprintf(f, "  -tcp       Open a tcp socket for listening, no default secret.\n");
-    fprintf(f, "  -net       Open a socket, register the secret at:\n%16s%s\n", "", heartbeat_url);
-    fprintf(f, "  -port X    Set port number listened to.\n\n");
-    fprintf(f, "  -inetd     Assume socket is stdin/out from inetd or similar\n");
-    fprintf(f, "  -detach    Background self, eg if starting from command line.\n");
-    fprintf(f, "  -no-detach Do not background; starting from init, systemd, docker.\n");
-
-    fprintf(f, "  -private -public\n");
-    fprintf(f, "             When registering set privacy state.\n");
-
-    fprintf(f, "  -name X    Set server name\n");
-    fprintf(f, "  -motd X    Set server motd\n");
-    fprintf(f, "  -secret X\n");
-    fprintf(f, "  -salt X    Set server salt/secret\n");
-    fprintf(f, "  -heartbeat http://host.xz/path\n");
-    fprintf(f, "             Change hearbeat url\n");
-    fprintf(f, "  -nocpe     Don't accept a CPE request.\n");
-
-    fprintf(f, "  -cron      Run periodic tasks, heartbeat and backups\n");
-    fprintf(f, "  -runonce   Accept one connection without forking, for debugging.\n");
-    fprintf(f, "  -logstderr Logs to stderr, not log files.\n");
-    fprintf(f, "  -saveconf  Save current system conf and exit\n");
-
-    exit(1);
-}
-
-char *
-main_level()
-{
-    static char main_level_cpy[NB_SLEN];
-    char *s = server->main_level;
-    char * d = main_level_cpy;
-    while ( STFU(*d++ = *s++) );
-    return main_level_cpy;
 }

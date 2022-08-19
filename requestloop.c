@@ -39,20 +39,30 @@ bytes_queued_to_send()
 
 void write_to_remote(char * str, int len)
 {
-    time(&last_ping);
+    char wbuf[16];
 
+    time(&last_ping);
     bytes_sent += len;
 
-    for(int i = 0; i < len; i++) {
-	if( ttl_end >= ttl_size ) {
-	    int nsz = ttl_size ? ttl_size*2 : 2048;
-	    char * nb = realloc(ttl_buf, nsz);
-	    if (nb == 0) fatal("Out of memory");
-	    ttl_size = nsz;
-	    ttl_buf = nb;
-	}
-	ttl_buf[ttl_end++] = str[i];
+    while (ttl_end+len+sizeof(wbuf) >= ttl_size) { // Padding needed for websocket
+	int nsz = ttl_size ? ttl_size*2 : 2048;
+	char * nb = realloc(ttl_buf, nsz);
+	if (nb == 0) fatal("Out of memory");
+	ttl_size = nsz;
+	ttl_buf = nb;
     }
+
+    if (websocket) {
+	// Adding a websocket packet for every one of ours to make it
+	// easy for the remote to unwrap.
+	int wbuflen = 0;
+	websocket_header(wbuf, &wbuflen, len);
+	for(int i = 0; i < wbuflen; i++)
+	    ttl_buf[ttl_end++] = wbuf[i];
+    }
+
+    for(int i = 0; i < len; i++)
+	ttl_buf[ttl_end++] = str[i];
 }
 
 void
@@ -144,9 +154,15 @@ do_select()
     if( FD_ISSET(line_ifd, &rfds) )
     {
 	rv = read(line_ifd, line_inp_buf, sizeof(line_inp_buf));
-	if( rv > 0 )
+	if( rv > 0 ) {
+	    if (websocket) {
+		// I really don't care about websocket packets,
+		// an exabyte packet is perfectly fine.
+		if (websocket_translate(line_inp_buf, &rv) < 0)
+		    return -1;
+	    }
 	    remote_received(line_inp_buf, rv);
-	else if (rv < 0) {
+	} else if (rv < 0) {
 	    perror("Error reading line_fd");
 	    return -1;
 	} else if (rv == 0)
@@ -227,7 +243,7 @@ remote_received(char *str, int len)
 // negotiated using CPE. Control characters (AKA Emoji) are more of
 // an issue as the classic client could use those, with "quirks".
 static inline void
-sanitise_nbstring(char *buf, char *str)
+sanitise_nbstring(char *buf, char *str, int printable)
 {
     int l = 0;
     memcpy(buf, str, MB_STRLEN);
@@ -240,6 +256,8 @@ sanitise_nbstring(char *buf, char *str)
 	for(int i = 0; i<l; i++)
 	    if (buf[i] == 0)
 		buf[i] = ' ';
+	    else if (printable && ((buf[i] > 0 && buf[i] < ' ') || buf[i] == '\177'))
+		buf[i] = '*';
 	    else if (buf[i] & 0x80)
 		buf[i] = cp437_ascii[buf[i] & 0x7F];
     }
@@ -343,7 +361,7 @@ process_client_message(int cmd, char * pktbuf)
 		    if (b[i] == 0) b[i] = extn_fullcp437?0xFF:' ';
 		b[MB_STRLEN] = 0;
 	    } else
-		sanitise_nbstring(pkt.message, p);
+		sanitise_nbstring(pkt.message, p, 0);
 	    // p+=64;
 	    process_chat_message(pkt.message_type, pkt.message);
 	    update_player_move_time();
@@ -356,7 +374,7 @@ process_client_message(int cmd, char * pktbuf)
 	    int count;
 	    // Perhaps we want to sanitise this string after all the entries
 	    // have been received ... possibly including FullCP437.
-	    sanitise_nbstring(client_software.c, p); p+=64;
+	    sanitise_nbstring(client_software.c, p, 1); p+=64;
 	    count = IntBE16(p); p+=2;
 	    if (cpe_pending) {
 		cpe_extn_remaining = count;
@@ -370,7 +388,7 @@ process_client_message(int cmd, char * pktbuf)
 	{
 	    char * p = pktbuf+1;
 	    pkt_extentry pkt;
-	    sanitise_nbstring(pkt.extname, p); p+=64;
+	    sanitise_nbstring(pkt.extname, p, 1); p+=64;
 	    pkt.version = IntBE32(p); p+=4;
 	    process_extentry(&pkt);
 	}
@@ -425,8 +443,8 @@ convert_logon_packet(char * pktbuf, pkt_player_id * pkt)
     char * p = pktbuf+1;
     pkt->protocol = *p++;
     // These will always be sanitised to ASCII
-    sanitise_nbstring(pkt->user_id, p); p+=64;
-    sanitise_nbstring(pkt->mppass, p); p+=64;
+    sanitise_nbstring(pkt->user_id, p, 1); p+=64;
+    sanitise_nbstring(pkt->mppass, p, 1); p+=64;
     int flg = (pkt->protocol == 6 || pkt->protocol == 7) ? *p++ : 0;
     pkt->cpe_flag = pkt->protocol == 7 && flg == 0x42;
 }

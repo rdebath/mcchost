@@ -52,11 +52,19 @@ See "/help todo" for notes.
  +) We use MSG_PEEK so can pass the socket to a filtering process.
     -- Websocket, SSL, Web server.
     -- https://github.com/vi/websocat ?
-    -- https login and web client download.
+    -- http(s) login and web client download.
 
-    -- websockify is 53MB (python, openssl)
-    -- gdb is 115MB (python, openssl, readline)
-    -- both are 150MB (python, openssl, readline)
+    -- websockify does not work with mixed mode services.
+
+    -- websocket_startup()
+       -- Fork a process between us and the socket?
+       -- Reconnect stdin/out to the sub-process via two pipes?
+
+ +) inetd-tcp-wait mode; passes listening socket to process when there
+    is a connection. The process must do an "accept()" on the socket
+    to get the actual inetd style socket file descriptor. The process
+    must also continue to do more accept() calls on the socket to allow
+    later connections.
 
  +) Dump/load userDB as file.
     -- Also single user and delete "username".
@@ -124,6 +132,12 @@ See "/help todo" for notes.
  +) Safe /nick -- approximatly matches real name
     -- Match case insensitive, common substring.
     -- How to descibe "too different" to user?
+
+ +) HTTP/2.0 hello packet.
+    0000: 50 52 49 20 2a 20 48 54  54 50 2f 32 2e 30 0d 0a  PRI.*.HTTP/2.0..
+    0010: 0d 0a 53 4d 0d 0a 0d 0a  00 00 18 04 00 00 00 00  ..SM............
+    0020: 00 00 02 00 00 00 00 00  04 00 00 42 68 00 06 00  ...........Bh...
+    0030: 04 00 00 00 03 00 00 00  0a                       .........
 
 Features:
     -- CW file also contains pending physics operations.
