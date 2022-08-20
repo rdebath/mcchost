@@ -138,7 +138,7 @@ All files in subdirectories.
     log/YYYY-MM-DD.log
     backup/${level}.${id}.cw
 
-    *.ini --> ?
+    ini/*.ini -- save level config
     level/${level}.${id}.* -- backup unpack
     blockdb/levelname.bdb
 
