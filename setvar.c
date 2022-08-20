@@ -127,7 +127,7 @@ cmd_setvar(char * cmd, char * arg)
 	if (!system_ini_fields(st, varname, &value)) {
 
 	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
-	    printf_chat("&WOption not available &S[%s] %s = %s", section, varname, value);
+	    printf_chat("&WOption not available &S[%s&S] %s&S = %s", section, varname, value);
 	    return;
 	}
 
@@ -148,7 +148,7 @@ cmd_setvar(char * cmd, char * arg)
     } else {
 	if (!level_ini_fields(st, varname, &value)) {
 	    fprintf_logfile("%s: Setfailed %s %s = %s", user_id, section, varname, value);
-	    printf_chat("&WOption not available &S[%s] %s = %s", section, varname, value);
+	    printf_chat("&WOption not available &S[%s&S] %s&S = %s&S", section, varname, value);
 	    return;
 	}
 
@@ -157,7 +157,7 @@ cmd_setvar(char * cmd, char * arg)
 	level_prop->last_modified = time(0);
     }
 
-    printf_chat("&SSet %s.%s=\"%s\" ok.", section, varname, value);
+    printf_chat("&SSet %s&S.%s&S=\"%s&S\" ok.", section, varname, value);
 }
 
 /*HELP restart H_CMD

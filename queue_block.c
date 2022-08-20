@@ -201,7 +201,6 @@ send_map_reload()
 void
 send_queued_blocks()
 {
-    int counter = 0;
     if (reload_pending && !bytes_queued_to_send()) {
 	if (reload_pending == 1)
 	    msleep(500);  // Half a second leeway to allow network to clear.
@@ -215,7 +214,7 @@ send_queued_blocks()
 
     check_block_queue(1);
 
-    for(;counter < 1024; counter++)
+    for(int counter = 0;counter < 1024; counter++)
     {
 	xyzb_t upd;
 	lock_fn(level_lock);
@@ -246,6 +245,6 @@ send_queued_blocks()
 	}
 	unlock_fn(level_lock);
 
-	send_setblock_pkt(upd.x, upd.y, upd.z, block_convert(upd.b));
+	send_setblock_pkt(upd.x, upd.y, upd.z, upd.b);
     }
 }

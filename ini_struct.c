@@ -178,7 +178,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_INTVAL("Size.Z", level_prop->cells_z);
 	}
 
-	INI_NBTSTR("Motd", level_prop->motd);
+	INI_STRARRAYCP437("Motd", level_prop->motd);
 	INI_FIXEDP("Spawn.X", level_prop->spawn.x, 32);
 	INI_FIXEDP("Spawn.Y", level_prop->spawn.y, 32);
 	INI_FIXEDP("Spawn.Z", level_prop->spawn.z, 32);

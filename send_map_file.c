@@ -77,10 +77,8 @@ send_map_file()
 
     uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
 
-    // if(extn_instantmotd) ...
-
-    // Send_system_ident()
-    // Send_hack_control()
+    send_system_ident();
+    send_hack_control();
 
     send_lvlinit_pkt(level_len);
 
@@ -91,9 +89,6 @@ send_map_file()
     send_block_array();
 
     send_lvldone_pkt(level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
-
-    // Send_system_ident() // Level motd
-    // Send_hack_control()
 
     send_metadata();
     reset_player_list();
@@ -130,6 +125,9 @@ check_metadata_update()
     if (!level_prop || !level_blocks) return;
     if (metadata_generation == level_prop->metadata_generation) return;
 
+    if(extn_instantmotd)
+	send_system_ident();
+
     send_metadata();
 }
 
@@ -139,6 +137,7 @@ send_metadata()
     if (!level_prop || !level_blocks) return;
 
     metadata_generation = level_prop->metadata_generation;
+    send_hack_control();
     send_env_colours();
     send_map_appearance();
     send_map_property();
@@ -297,6 +296,19 @@ send_env_colours()
 	send_envsetcolour_pkt(4, presets[0].sun);
 	send_envsetcolour_pkt(5, 0xFFFFFF);
     }
+}
+
+void
+send_system_ident()
+{
+    if (level_prop && level_prop->motd[0]) {
+	// Nasty hack for longer MOTD string.
+	if (strlen(level_prop->motd) > MB_STRLEN)
+	    send_server_id_pkt(level_prop->motd, level_prop->motd+MB_STRLEN, ini_settings.op_flag);
+	else
+	    send_server_id_pkt(server->name, level_prop->motd, ini_settings.op_flag);
+    } else
+	send_server_id_pkt(server->name, server->motd, ini_settings.op_flag);
 }
 
 void
@@ -505,4 +517,11 @@ send_block_permission()
 	send_blockperm_pkt(b, pok, dok);
 
     client_blockperm_state = (pok<<1)+dok;
+}
+
+void
+send_hack_control()
+{
+    if (!extn_hackcontrol) return;
+    send_hackcontrol_pkt(level_prop->hacks_flags, level_prop->hacks_jump);
 }

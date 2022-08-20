@@ -86,7 +86,7 @@ struct map_info_t {
     int click_distance; // Per level, Per user or both.
 
     nbtstr_t texname;
-    nbtstr_t motd;
+    char motd[MB_STRLEN*2+1];
 
     struct blockdef_t blockdef[BLOCKMAX];
     uint8_t block_perms[BLOCKMAX];

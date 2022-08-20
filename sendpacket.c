@@ -444,6 +444,24 @@ send_weather_pkt(int weather_id)
 }
 
 void
+send_hackcontrol_pkt(int flags, int jump)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_HACKCTL;
+    *p++ = !(flags&1); // Flying
+    *p++ = !(flags&2); // NoClip
+    *p++ = !(flags&4); // Speed
+    *p++ = !(flags&8); // Spawn
+    *p++ = !(flags&16); // TPV
+    if (!(flags&0x20))  // Jump height
+	nb_short(&p, -1);
+    else
+	nb_short(&p, jump);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
 send_removeblockdef_pkt(block_t blkno)
 {
     uint8_t packetbuf[1024];

@@ -22,6 +22,7 @@ model.ini
 server.ini
 backup/
 help/
+ini/
 level/
 log/
 map/

@@ -590,13 +590,17 @@ change_str_value(char * section, char * item, char * value)
 {
     if (strcmp(section, "EnvMapAppearance") == 0) {
 	if (strcmp(item, "TextureURL") == 0) {
-	    cpy_nstr(level_prop->texname.c, value);
+	    cpy_nstr(level_prop->texname.c, MB_STRLEN, value);
 	}
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "Name") == 0) {
 	    if (current_block >= 0 && current_block < BLOCKMAX) {
-		cpy_nstr(level_prop->blockdef[current_block].name.c, value);
+		cpy_nstr(level_prop->blockdef[current_block].name.c, MB_STRLEN, value);
 	    }
+	}
+    } else if (strcasecmp(section, "Ident") == 0) {
+	if (strcasecmp(item, "Motd") == 0) {
+	    cpy_nstr(level_prop->motd, MB_STRLEN*2, value);
 	}
 
 #if 0 // Bots?
@@ -629,13 +633,13 @@ change_str_value(char * section, char * item, char * value)
 }
 
 LOCAL void
-cpy_nstr(char *buf, char *str)
+cpy_nstr(char *buf, int buflen, char *str)
 {
     char *d = buf;
     char * s;
     for(s=str; s && *s; s++) {
 	*d++ = *s;
-	if (d == buf+NB_SLEN-1) break;
+	if (d == buf+buflen) break;
     }
     *d = 0;
 }

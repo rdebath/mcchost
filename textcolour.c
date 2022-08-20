@@ -61,6 +61,7 @@ cmd_textcolour(char * cmd, char *arg)
 	if (!txcode || !txname || !txfallback || !txcolour) return cmd_help("", cmd);
 	uint8_t c = *txcode;
 	if (txcode[1] != 0) c = 0;
+	if (c == '%' || c == '&' || c == ' ') c = 0;
 	if (c==0) {
 	    printf_chat("&SText code %s can not be defined", txcode);
 	    return;
@@ -125,7 +126,8 @@ send_textcolours()
 {
     if (!extn_textcolours) return;
 
-    for(int i = 0; i<255; i++) {
+    for(int i = 1; i<255; i++) {
+	if (i == '%' || i == '&' || i == ' ') continue;
 	if (textcolour[i].defined && textcolour[i].colour != -1)
 	    send_settextcolour_pkt(i, textcolour[i].colour, textcolour[i].a);
     }

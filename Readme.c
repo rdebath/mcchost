@@ -14,7 +14,27 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+
+ +) BulkBlockUpdate -- Hmmm.
+    -- 8bit:  2048 --> 1282     8,  Min 161, pk 187
+    -- 10bit: 2304 --> 1346     9,  Min 150, pk 166
+    -- 8bit:  2560 --> 1286 web 10, Min 129, pk 150
+    -- 10bit: 2816 --> 1350 web 11, Min 123, pk 136
+
+    -- pk= sets in a 1500 byte packet
+    -- Min= sets for bulk to be smaller
+
  +) ExtPlayerList
+ +) TextHotKey
+ +) SelectionCuboid -- Zone highlights
+
+ +) EntityProperty -- model rotations
+ +) TwoWayPing -- Standard ping is sufficient
+ +) SetSpawnpoint
+
+ +) VelocityControl -- Change movement now; /slap ?
+ +) CustomParticles -- Make sparkles
+ +) CustomModels -- Weird bots etc.
 
  +) Don't update backup time on delete of loaded map?
 
@@ -47,9 +67,6 @@ See "/help todo" for notes.
     -- Distinct file is not saved, manual config only.
     -- One heartbeat server per config
     -- Config options suitable for distinct file are not loaded into system.dat
-
- +) SSL for websocket
-    -- Classicube seems to have some support.
 
  +) Web server for texture files.
     -- Internal server or generic external inetd server?

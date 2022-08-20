@@ -499,6 +499,11 @@ open_system_conf()
     sprintf(sharename, SYS_CONF_NAME);
     allocate_shared(sharename, sizeof(*server), shdat.dat+SHMID_SYSCONF);
     server = shdat.dat[SHMID_SYSCONF].ptr;
+
+    if (!server) {
+	perror("Opening server.dat file");
+	exit(1);
+    }
 }
 
 void

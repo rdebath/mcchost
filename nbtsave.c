@@ -196,6 +196,12 @@ save_map_to_file(char * fn, int background)
     if (bdopen)
 	bc_end(savefile);
 
+    if (level_prop->motd[0]) {
+	bc_compound(savefile, "Ident");
+	bc_ent_string(savefile, "Motd", level_prop->motd);
+	bc_end(savefile);
+    }
+
     bc_compound(savefile, "MCCHost");
     bc_ent_int(savefile, "DisallowChange", level_prop->disallowchange);
     bc_ent_int(savefile, "ReadOnly", level_prop->readonly);

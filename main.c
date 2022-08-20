@@ -26,7 +26,7 @@ struct server_t {
     int magic;
     char software[NB_SLEN];
     char name[NB_SLEN];
-    char motd[NB_SLEN];
+    char motd[MB_STRLEN*2+1];
     char secret[NB_SLEN];
     int private;
     int cpe_disabled;

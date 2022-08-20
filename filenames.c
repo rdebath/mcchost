@@ -88,6 +88,11 @@ init_dirs(int use_cwd)
 	    struct group * gid = getgrnam("games");
 	    if (gid) grun_as = gid->gr_gid;
 	    vargames = 1;
+
+	    if (!uid || !gid) {
+		fprintf(stderr, "Unable to switch to user and group \"games\"\n");
+		exit(9);
+	    }
 	}
 
 	char dirpath[PATH_MAX];
@@ -121,10 +126,27 @@ init_dirs(int use_cwd)
 	E(chdir(dirpath));
     }
 
+    if (getuid() == 0) {
+	// Don't run as root
+	struct group * gid = getgrnam("games");
+	struct passwd *uid = getpwnam("games");
+	if (!uid || !gid) {
+	    fprintf(stderr, "Unable to switch to user and group \"games\"\n");
+	    exit(9);
+	}
+	E(setgid(gid->gr_gid));
+	E(setuid(uid->pw_uid));
+    }
+
     for(int i = 0; dirlist[i]; i++) {
 	if (mkdir(dirlist[i], 0777) < 0 && errno != EEXIST) {
-	    perror(dirlist[i]);
-	    // Just complain, later processes will error.
+	    char buf[256];
+	    snprintf(buf, sizeof(buf),
+		"Failure creating directory: \"%s\"", dirlist[i]);
+	    perror(buf);
+	    // System is rather essential, but ...
+	    if (!i) exit(127);
+	    // Just complain as later processes will error.
 	}
     }
 }

@@ -8,6 +8,7 @@ static char * pending_chat = 0;
 static int pending_chat_size = 0;
 static int pending_chat_len = 0;
 
+/* The arg msg is one 64byte chunk of a message in CP437 */
 void
 process_chat_message(int message_type, char * msg)
 {
@@ -38,8 +39,12 @@ process_chat_message(int message_type, char * msg)
 	msg = pending_chat;
     }
 
+    // Msg is now a concatenated multi packet message in CP437
+    // Note that Classicube will have converted '&' to '%'.
+
     if (msg[0] == '/') {
 	if (msg[1] != '/') {
+	    revert_amp_to_perc(msg);
 	    run_command(msg);
 	    return;
 	}
@@ -83,6 +88,34 @@ convert_inbound_chat(char * msg)
 
     post_chat(0, 0, buf, p-buf);
     free(buf);
+}
+
+void
+revert_amp_to_perc(char * msg)
+{
+    if (!extn_textcolours) {
+	for(char * p = msg; *p; p++) {
+	    if (*p == '%' || *p == '&') {
+		uint8_t c = p[1];
+		if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+		    *p++ = '&';
+		} else
+		    *p = '%';
+	    }
+	}
+    } else {
+	for(char * p = msg; *p; p++) {
+	    if (*p == '%' || *p == '&') {
+		uint8_t c = p[1];
+		if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+		    *p++ = '&';
+		} else if (c && textcolour[c].defined) {
+		    *p++ = '&';
+		} else
+		    *p = '%';
+	    }
+	}
+    }
 }
 
 /* Post a long cp437 chat message to everyone (0) or just me (1) */

@@ -51,6 +51,7 @@
 #define PKID_BLOCKPERM	0x1c
 #define PKID_MAPAPPEAR	0x1e
 #define PKID_WEATHER	0x1f
+#define PKID_HACKCTL	0x20
 #define PKID_ADDENT	0x21
 #define PKID_PLAYERCLK	0x22	/*ClientSend*/
 #define PKID_BLOCKDEF	0x23
