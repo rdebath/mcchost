@@ -141,8 +141,6 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    init_dirs();
-
     lock_start(system_lock);
 
     {
@@ -340,7 +338,9 @@ show_args_help()
 {
     FILE * f = stderr;
     fprintf(f, "Usage: %s [-inetd|-tcp|-net] ...\n", program_name);
-    fprintf(f, "  -dir X     Change to directory before opening data files.\n\n");
+    fprintf(f, "  -dir X     Change to directory before opening data files.\n");
+    fprintf(f, "  -cwd       Use the current directory for data.\n");
+    fprintf(f, "             (The default is ~/.mcchost.)\n\n");
 
     fprintf(f, "  -tcp       Open a tcp socket for listening, no default secret.\n");
     fprintf(f, "  -net       Open a socket, register the secret at:\n%16s%s\n", "", heartbeat_url);
@@ -358,12 +358,14 @@ show_args_help()
     fprintf(f, "  -salt X    Set server salt/secret\n");
     fprintf(f, "  -heartbeat http://host.xz/path\n");
     fprintf(f, "             Change hearbeat url\n");
-    fprintf(f, "  -nocpe     Don't accept a CPE request.\n");
+    fprintf(f, "  -nocpe     Don't accept a CPE request.\n\n");
 
-    fprintf(f, "  -cron      Run periodic tasks, heartbeat and backups\n");
+    fprintf(f, "  -cron      Run periodic tasks, heartbeat and backups then exit.\n");
+    fprintf(f, "  -register  Register at heartbeat and exit. Run every 30 seconds.\n");
+    fprintf(f, "  -cleanup   Do saves and backups. Run every 12 minutes or hours.\n");
     fprintf(f, "  -runonce   Accept one connection without forking, for debugging.\n");
     fprintf(f, "  -logstderr Logs to stderr, not log files.\n");
-    fprintf(f, "  -saveconf  Save current system conf and exit\n");
+    fprintf(f, "  -saveconf  Save current system conf then exit\n");
 
     exit(1);
 }
@@ -426,7 +428,10 @@ login()
 	    sleeps++;
 	}
 
-	if (insize > 5 && !websocket && (memcmp(inbuf, "GET ", 4) == 0 || memcmp(inbuf, "HEAD ", 5) == 0)) {
+	if (insize > 14 && !websocket &&
+		(memcmp(inbuf, "GET ", 4) == 0 ||
+		 memcmp(inbuf, "HEAD ", 5) == 0 ||
+		 memcmp(inbuf, "PRI * HTTP/2.0", 14) == 0)) {
 	    // HTTP GET requests, including websocket.
 	    char * eoh;
 	    if (insize == sizeof(inbuf))
@@ -566,8 +571,9 @@ teapot(uint8_t * buf, int len)
 	    fm = rv = dump_it = 0;
 	    send_new_logout = 1;
 
-	} else if (len > 12 && is_ascii &&
-		(memcmp(buf, "GET ", 4) == 0 || memcmp(buf, "HEAD ", 5) == 0)) {
+	} else if (len > 14 &&
+		(memcmp(buf, "GET ", 4) == 0 || memcmp(buf, "HEAD ", 5) == 0 ||
+		 memcmp(buf, "PRI * HTTP/2.0", 14) == 0)) {
 	    send_http_error = 1;
 	    fm = rv = 0;
 

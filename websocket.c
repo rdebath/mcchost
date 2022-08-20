@@ -200,14 +200,22 @@ websocket_translate(char * inbuf, int * insize)
 		// reply before closing the TCP connection. ClassiCube isn't
 		// going to do anything with this reply so we just close the
 		// socket instead.
-		printlog("Websocket disconnect received.");
 		if (packet_len > 0) {
-		    for(int i = 0; i<packet_len && i<*insize; i++) {
-			hex_logfile((inbuf[i] ^ mask_value[mask_id]));
-			mask_id = ((mask_id+1)&3);
+		    int ws_code = 0x1005;
+		    if (packet_len >= 2) {
+			ws_code = (((uint8_t)inbuf[0] << 8) +
+				    (uint8_t)inbuf[1]);
 		    }
-		    hex_logfile(EOF);
-		}
+		    printlog("Websocket disconnect received. (%d)", ws_code);
+		    if (packet_len != 2) {
+			for(int i = 0; i<packet_len && i<*insize; i++) {
+			    hex_logfile((inbuf[i] ^ mask_value[mask_id]));
+			    mask_id = ((mask_id+1)&3);
+			}
+			hex_logfile(EOF);
+		    }
+		} else
+		    printlog("Websocket disconnect received.");
 		return -1;
 	    }
 

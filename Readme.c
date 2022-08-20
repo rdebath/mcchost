@@ -2,7 +2,6 @@
 
 /*HELP readme
 This is a Minecraft classic server with CPE (Classic Protocol Extensions)
-Many of the CPE extensions are not implemented yet.
 See "/help todo" for notes.
 */
 
@@ -15,16 +14,16 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) ExtPlayerList
+
  +) Don't update backup time on delete of loaded map?
 
  +) Move more global variables into ini_settings structure.
 
- +) Default directory should be ~/.mcchost or ~/.config/mcchost
-    -- server.ini in that dir can change location?
-
  +) Record data rates for server bytes/s I/O
 
  +) Slow map loads; do I need to poll client chat?
+    -- Background _load_ of maps as well as saves?
 
  +) INI file preserve (some?) comments.
 
@@ -49,22 +48,11 @@ See "/help todo" for notes.
     -- One heartbeat server per config
     -- Config options suitable for distinct file are not loaded into system.dat
 
- +) We use MSG_PEEK so can pass the socket to a filtering process.
-    -- Websocket, SSL, Web server.
-    -- https://github.com/vi/websocat ?
-    -- http(s) login and web client download.
+ +) SSL for websocket
+    -- Classicube seems to have some support.
 
-    -- websockify does not work with mixed mode services.
-
-    -- websocket_startup()
-       -- Fork a process between us and the socket?
-       -- Reconnect stdin/out to the sub-process via two pipes?
-
- +) inetd-tcp-wait mode; passes listening socket to process when there
-    is a connection. The process must do an "accept()" on the socket
-    to get the actual inetd style socket file descriptor. The process
-    must also continue to do more accept() calls on the socket to allow
-    later connections.
+ +) Web server for texture files.
+    -- Internal server or generic external inetd server?
 
  +) Dump/load userDB as file.
     -- Also single user and delete "username".
@@ -72,7 +60,7 @@ See "/help todo" for notes.
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
- +) Aliases in /set command, more help, option lists.
+ +) Improve the /set command, more help, option lists.
  +) reset_hotbar_on_mapload is a level option in the CW file ?
  +) Merge ini and nbt processing ?
 
@@ -132,12 +120,6 @@ See "/help todo" for notes.
  +) Safe /nick -- approximatly matches real name
     -- Match case insensitive, common substring.
     -- How to descibe "too different" to user?
-
- +) HTTP/2.0 hello packet.
-    0000: 50 52 49 20 2a 20 48 54  54 50 2f 32 2e 30 0d 0a  PRI.*.HTTP/2.0..
-    0010: 0d 0a 53 4d 0d 0a 0d 0a  00 00 18 04 00 00 00 00  ..SM............
-    0020: 00 00 02 00 00 00 00 00  04 00 00 42 68 00 06 00  ...........Bh...
-    0030: 04 00 00 00 03 00 00 00  0a                       .........
 
 Features:
     -- CW file also contains pending physics operations.
@@ -202,6 +184,20 @@ Make sure text anti-spam is in place.
 
 On Block queue, if user count < 2 && no-physics don't use queue ?
     --> *256 blocks packet need queue?
+*/
+
+/*
+ Rejects ...
+
+ +) inetd-tcp-wait mode; passes listening socket to process when there
+    is a connection. The process must do an "accept()" on the socket
+    to get the actual inetd style socket file descriptor. The process
+    must also continue to do more accept() calls on the socket to allow
+    later connections.
+    -- Options --inetd and --tcp at same time?
+    -- No advantage over --net --> Runs register every 30 seconds.
+    -- No advantage over normal inetd mode --> connections are rare.
+
 */
 
 /*HELP usecases

@@ -16,16 +16,15 @@ process_args(int argc, char **argv)
     program_args = calloc(argc+8, sizeof(*program_args));
     int bc = 1, plen = strlen(argv[0]);
     int port_no = -1;
+    int found_dir_arg = 0;
 
     getprogram(argv[0]);
 
     for(int pass2 = 0; pass2<2; pass2++)
     {
-	// On !pass2 dump most of the arg values into this structure.
-	//
-	// During the first pass the -dir, -port and -inetd_mode flags
+	// During the first pass the -dir, -port and -inetd mode flags
 	// are significant for finding the correct config files to load.
-
+	// For that pass dump arg values into this structure.
 	server_t tmpserver = {0};
 	if (!pass2)
 	    server = &tmpserver;
@@ -92,6 +91,7 @@ process_args(int argc, char **argv)
 			    }
 			ar++;
 			addarg = 0;
+			found_dir_arg = 1;
 			break;
 		    }
 		}
@@ -186,6 +186,11 @@ process_args(int argc, char **argv)
 		    break;
 		}
 
+		if (strcmp(argv[ar], "-cwd") == 0) {
+		    found_dir_arg = 1; // Disable move to ~/.mcchost
+		    break;
+		}
+
 		fprintf(stderr, "Invalid argument '%s'\n", argv[ar]);
 		exit(1);
 	    } while(0);
@@ -205,7 +210,7 @@ process_args(int argc, char **argv)
 	    // First pass is done so now we are in the right dir we read in
 	    // the defaults and file configs.
 	    server = 0;
-	    init_dirs();
+	    init_dirs(found_dir_arg);
 	    open_system_conf();
 
 	    if (server->magic != MAP_MAGIC || server->magic2 != MAP_MAGIC2)
@@ -255,10 +260,15 @@ process_args(int argc, char **argv)
 	    detach_tcp_server = ini_settings.detach_tcp_server;
 	    enable_heartbeat_poll = ini_settings.enable_heartbeat_poll;
 	    server_runonce = ini_settings.server_runonce;
-	    strcpy(heartbeat_url, ini_settings.heartbeat_url);
+	    if (*ini_settings.heartbeat_url)
+		strcpy(heartbeat_url, ini_settings.heartbeat_url);
 	    // inetd_mode = ini_settings.inetd_mode;
 	}
     }
+
+    // The -dir arg isn't added, make sure we don't go anywhere.
+    program_args[bc++] = strdup("-cwd");
+    plen += 5;
 
     // Pad the program args so we get some space after a restart.
     // Also we must turn off -detach to keep the same pid.
