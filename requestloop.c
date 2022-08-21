@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
+#include <sys/time.h>
 #if _POSIX_VERSION >= 200112L
 #include <sys/select.h>
 #endif
@@ -22,6 +23,13 @@ int in_rcvd = 0;
 static int ticks_with_pending_bytes = 0;
 
 time_t last_ping = 0;
+uint16_t last_ping_id = 0;
+struct timeval last_ping_tv;
+int last_ping_rcvd = 0;
+int last_ping_ms = -1;
+int max_ping_ms = -1;
+int min_ping_ms = -1;
+int avg_ping_ms = -1;
 
 void
 run_request_loop()
@@ -41,7 +49,8 @@ void write_to_remote(char * str, int len)
 {
     char wbuf[16];
 
-    time(&last_ping);
+    if (!extn_pingpong)
+	time(&last_ping);
     bytes_sent += len;
 
     while (ttl_end+len+sizeof(wbuf) >= ttl_size) { // Padding needed for websocket
@@ -190,7 +199,15 @@ on_select_timeout()
 	    fatal("CPE Protocol negotiation failure");
 
 	// Send keepalive.
-	send_ping_pkt();
+	if (!extn_pingpong)
+	    send_ping_pkt();
+	else {
+	    if (last_ping_rcvd == 0) last_ping_ms = -1;
+	    last_ping_rcvd = 0;
+	    send_pingpong_pkt(1, ++last_ping_id);
+	    gettimeofday(&last_ping_tv, 0);
+	    flush_to_remote();
+	}
 	time(&last_ping);
     }
     if (cpe_pending) return;
@@ -207,7 +224,8 @@ void
 remote_received(char *str, int len)
 {
     int i, cmd, clen;
-    time(&last_ping);
+    if (!extn_pingpong)
+	time(&last_ping);
 
     if (!in_rcvd) {
 	cmd = (*str & 0xFF);
@@ -431,6 +449,37 @@ process_client_message(int cmd, char * pktbuf)
 		pkt.h, pkt.v,
 		pkt.entity,
 		pkt.block_x, pkt.block_y, pkt.block_z, pkt.face);
+	}
+	break;
+
+    case PKID_PINGPONG:
+	if (extn_pingpong)
+	{
+	    char * p = pktbuf+1;
+	    uint8_t dir;
+	    int data;
+	    dir = *p++;
+	    data = UIntBE16(p); p+=2;
+	    if (dir == 0) {
+		send_pingpong_pkt(dir, data);
+		flush_to_remote();
+	    } else if (data == last_ping_id) {
+		// Update stats ...
+		last_ping_rcvd = 1;
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		last_ping_ms =
+		    (tv.tv_sec-last_ping_tv.tv_sec)*1000 +
+		    (tv.tv_usec-last_ping_tv.tv_usec)/1000;
+
+		if (min_ping_ms == -1 || min_ping_ms > last_ping_ms)
+		    min_ping_ms = last_ping_ms;
+		if (max_ping_ms == -1 || max_ping_ms < last_ping_ms)
+		    max_ping_ms = last_ping_ms;
+
+		if (avg_ping_ms == -1) avg_ping_ms = last_ping_ms;
+		else avg_ping_ms = (avg_ping_ms + last_ping_ms)/2;
+	    }
 	}
 	break;
 

@@ -29,7 +29,6 @@ See "/help todo" for notes.
  +) SelectionCuboid -- Zone highlights
 
  +) EntityProperty -- model rotations
- +) TwoWayPing -- Standard ping is sufficient
  +) SetSpawnpoint
 
  +) VelocityControl -- Change movement now; /slap ?

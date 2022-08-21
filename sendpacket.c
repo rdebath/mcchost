@@ -647,3 +647,14 @@ send_settextcolour_pkt(uint8_t code, int colour, uint8_t alpha)
     *p++ = code;
     write_to_remote(packetbuf, p-packetbuf);
 }
+
+void
+send_pingpong_pkt(int dir, int data)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_PINGPONG;
+    *p++ = dir;
+    nb_short(&p, data);
+    write_to_remote(packetbuf, p-packetbuf);
+}

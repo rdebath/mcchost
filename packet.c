@@ -60,6 +60,7 @@
 #define PKID_TEXTCOLOUR 0x27
 #define PKID_TEXURL	0x28
 #define PKID_MAPPROP	0x29
+#define PKID_PINGPONG	0x2b	/*ClientSend&Rcv*/
 #define PKID_INVORDER	0x2c
 #define PKID_HOTBAR     0x2d
 #define PKID_SETSPAWN	0x2e

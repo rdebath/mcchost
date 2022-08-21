@@ -45,7 +45,7 @@ static struct ext_list_t extensions[] = {
     { N"PlayerClick",         1, .disabled=1 },			// Client sends
     { N"EntityProperty",      1, .disabled=1 },
     { N"ExtEntityPositions",  1, &extn_extentityposn, .nolate=1 },
-    { N"TwoWayPing",          1, .disabled=1 },
+    { N"TwoWayPing",          1, &extn_pingpong },
     { N"InventoryOrder",      1, &extn_inventory_order },
     { N"InstantMOTD",         1, &extn_instantmotd },
 
@@ -109,6 +109,7 @@ int extn_instantmotd = 0;
 int extn_inventory_order = 0;
 int extn_longermessages = 0;
 int extn_messagetypes = 0;
+int extn_pingpong = 0;
 int extn_selectioncuboid = 0;
 int extn_sethotbar = 0;
 int extn_setspawnpoint = 0;
