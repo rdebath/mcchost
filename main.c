@@ -572,10 +572,15 @@ teapot(uint8_t * buf, int len)
 	    send_new_logout = 1;
 
 	} else if (len > 14 &&
-		(memcmp(buf, "GET ", 4) == 0 || memcmp(buf, "HEAD ", 5) == 0 ||
-		 memcmp(buf, "PRI * HTTP/2.0", 14) == 0)) {
+		(memcmp(buf, "GET ", 4) == 0 || memcmp(buf, "HEAD ", 5) == 0)) {
 	    send_http_error = 1;
 	    fm = rv = 0;
+
+	} else if (len > 14 && memcmp(buf, "PRI * HTTP/2.0", 14) == 0) {
+	    send_http_error = 1;
+	    printlog("Failed connect from %s, %s", client_ipv4_str,
+		"HTTP/2.0 client hello.");
+	    fm = rv = dump_it = 0;
 
 	}
 	if (fm)
