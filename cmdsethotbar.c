@@ -42,7 +42,7 @@ cmd_sethotbar(char * cmd, char * arg)
     }
     int slot = atoi(arg1);
     if (arg2)
-	block = atoi(arg2);
+	block = block_id(arg2);
 
     send_sethotbar_pkt(slot, block);
 }

@@ -165,14 +165,9 @@ cmd_load(char * UNUSED(cmd), char * arg)
     else if (!arg || !*arg)
 	printf_chat("&WUsage: /load filename");
     else {
-	char buf[200+8], *s, *d;
-	d = buf; *d++ = '_';
-	for(s=arg; *s && d<buf+sizeof(buf)-8; s++) {
-	    if ((*s>='A' && *s<='Z') || (*s>='a' && *s<='z') ||
-		(*s>='0' && *s<='9') || *s=='_')
-		*d++ = *s;
-	}
-	strcpy(d, ".ini");
+	char fixedname[200], buf[256];
+	fix_fname(fixedname, sizeof(fixedname), arg);
+	snprintf(buf, sizeof(buf), "ini/%s.ini", fixedname);
 
 	lock_fn(level_lock);
 	int rv = load_ini_file(level_ini_fields, buf, 0, 1);
@@ -197,8 +192,8 @@ cmd_save(char * UNUSED(cmd), char * arg)
     else {
 	char fixedname[200], buf2[256];
 	fix_fname(fixedname, sizeof(fixedname), arg);
-
 	snprintf(buf2, sizeof(buf2), "ini/%s.ini", fixedname);
+
 	save_ini_file(level_ini_fields, buf2);
 
 	printf_chat("&SConfig saved to %s", buf2);

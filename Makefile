@@ -38,7 +38,7 @@ OBJGEN=${ODIR}/lib_text.o
 INAME=mcchost-server
 INSTDIR=${HOME}/bin
 # Use rsync so the executable isn't touched when it's the same bytes.
-INSTALLER=rsync -ax
+INSTALLER=rsync -Pax
 
 ${PROG}: ${OBJ} ${OBJGEN}
 	$(CC) -o ${PROG} $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) ${OBJ} ${OBJGEN} $(LDFLAGS)

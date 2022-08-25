@@ -658,3 +658,17 @@ send_pingpong_pkt(int dir, int data)
     nb_short(&p, data);
     write_to_remote(packetbuf, p-packetbuf);
 }
+
+void
+send_setspawn_pkt(xyzhv_t posn)
+{
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_SETSPAWN;
+    nb_entcoord(&p, posn.x);
+    nb_entcoord(&p, posn.y+51);
+    nb_entcoord(&p, posn.z);
+    *p++ = posn.h;
+    *p++ = posn.v;
+    write_to_remote(packetbuf, p-packetbuf);
+}

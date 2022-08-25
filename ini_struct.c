@@ -76,21 +76,22 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_DURATION("KeyRotation", server->key_rotation);
 
 	INI_BOOLVAL("Private", server->private);
+	INI_BOOLVAL("OPFlag", server->op_flag);
 	INI_BOOLVAL("NoCPE", server->cpe_disabled);
 
 	if (st->write) fprintf(st->fd, "\n");
 
 	INI_BOOLVAL("tcp", ini_settings.start_tcp_server);
 	INI_INTVAL("Port", ini_settings.tcp_port_no);
+	INI_BOOLVAL("Runonce", ini_settings.server_runonce);
 	INI_BOOLVAL("Inetd", ini_settings.inetd_mode);
 	INI_BOOLVAL("Detach", ini_settings.detach_tcp_server);
+
 	INI_STRARRAY("Heartbeat", ini_settings.heartbeat_url);
 	INI_BOOLVAL("PollHeartbeat", ini_settings.enable_heartbeat_poll);
-	INI_BOOLVAL("Runonce", ini_settings.server_runonce);
 
 	if (st->write) fprintf(st->fd, "\n");
 
-	INI_BOOLVAL("OPFlag", ini_settings.op_flag);
 	INI_INTVAL("MaxPlayers", server->max_players);
 	INI_STRARRAY(WC2(!*localnet_cidr, "Localnet"), localnet_cidr);
 
@@ -176,6 +177,11 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_INTVAL("Size.X", level_prop->cells_x);
 	    INI_INTVAL("Size.Y", level_prop->cells_y);
 	    INI_INTVAL("Size.Z", level_prop->cells_z);
+	} else {
+	    int x = 0, y = 0, z = 0;	// Ignore these fields without comment.
+	    INI_INTVAL("Size.X", x);
+	    INI_INTVAL("Size.Y", y);
+	    INI_INTVAL("Size.Z", z);
 	}
 
 	INI_STRARRAYCP437("Motd", level_prop->motd);
@@ -224,7 +230,8 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     do
     {
 	if (st->all) {
-	    if (!level_prop->blockdef[bn].defined) { bn++; continue; }
+	    if (!level_prop->blockdef[bn].defined &&
+		level_prop->blockdef[bn].block_perm == 0) { bn++; continue; }
 	    sprintf(sectionbuf, "block.%d", bn);
 	    section = sectionbuf;
 	} else {
@@ -241,37 +248,44 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 		break;
 	}
 
-	INI_BOOLVAL(WC("Defined"), level_prop->blockdef[bn].defined);
-	INI_NBTSTR("Name", level_prop->blockdef[bn].name);
-	INI_INTVAL("Collide", level_prop->blockdef[bn].collide);
-	INI_BOOLVAL("TransmitsLight", level_prop->blockdef[bn].transmits_light);
-	INI_INTVAL("WalkSound", level_prop->blockdef[bn].walksound);
-	INI_BOOLVAL("FullBright", level_prop->blockdef[bn].fullbright);
-	INI_INTVAL("Shape", level_prop->blockdef[bn].shape);
-	INI_INTVAL("Draw", level_prop->blockdef[bn].draw);
-	INI_FIXEDP("Speed", level_prop->blockdef[bn].speed, 1000);
-	INI_BLKVAL("Fallback", level_prop->blockdef[bn].fallback);
-	INI_INTVAL("Texture.Top", level_prop->blockdef[bn].textures[0]);
-	INI_INTVAL("Texture.Left", level_prop->blockdef[bn].textures[1]);
-	INI_INTVAL("Texture.Right", level_prop->blockdef[bn].textures[2]);
-	INI_INTVAL("Texture.Front", level_prop->blockdef[bn].textures[3]);
-	INI_INTVAL("Texture.Back", level_prop->blockdef[bn].textures[4]);
-	INI_INTVAL("Texture.Bottom", level_prop->blockdef[bn].textures[5]);
-	INI_INTVAL("Fog.Den", level_prop->blockdef[bn].fog[0]);
-	INI_INTVAL("Fog.R", level_prop->blockdef[bn].fog[1]);
-	INI_INTVAL("Fog.G", level_prop->blockdef[bn].fog[2]);
-	INI_INTVAL("Fog.B", level_prop->blockdef[bn].fog[3]);
-	INI_INTVAL("Min.X", level_prop->blockdef[bn].coords[0]);
-	INI_INTVAL("Min.Y", level_prop->blockdef[bn].coords[1]);
-	INI_INTVAL("Min.Z", level_prop->blockdef[bn].coords[2]);
-	INI_INTVAL("Max.X", level_prop->blockdef[bn].coords[3]);
-	INI_INTVAL("Max.Y", level_prop->blockdef[bn].coords[4]);
-	INI_INTVAL("Max.Z", level_prop->blockdef[bn].coords[5]);
+	if (!level_prop->blockdef[bn].defined && st->write) {
+	    INI_BOOLVAL("Defined", level_prop->blockdef[bn].defined);
+	} else {
+	    INI_BOOLVAL(WC("Defined"), level_prop->blockdef[bn].defined);
+	    INI_NBTSTR("Name", level_prop->blockdef[bn].name);
+	    INI_INTVAL("Collide", level_prop->blockdef[bn].collide);
+	    INI_BOOLVAL("TransmitsLight", level_prop->blockdef[bn].transmits_light);
+	    INI_INTVAL("WalkSound", level_prop->blockdef[bn].walksound);
+	    INI_BOOLVAL("FullBright", level_prop->blockdef[bn].fullbright);
+	    INI_INTVAL("Shape", level_prop->blockdef[bn].shape);
+	    INI_INTVAL("Draw", level_prop->blockdef[bn].draw);
+	    INI_FIXEDP("Speed", level_prop->blockdef[bn].speed, 1000);
+	    INI_BLKVAL("Fallback", level_prop->blockdef[bn].fallback);
+	    INI_INTVAL("Texture.Top", level_prop->blockdef[bn].textures[0]);
+	    INI_INTVAL("Texture.Left", level_prop->blockdef[bn].textures[1]);
+	    INI_INTVAL("Texture.Right", level_prop->blockdef[bn].textures[2]);
+	    INI_INTVAL("Texture.Front", level_prop->blockdef[bn].textures[3]);
+	    INI_INTVAL("Texture.Back", level_prop->blockdef[bn].textures[4]);
+	    INI_INTVAL("Texture.Bottom", level_prop->blockdef[bn].textures[5]);
+	    INI_INTVAL("Fog.Den", level_prop->blockdef[bn].fog[0]);
+	    INI_INTVAL("Fog.R", level_prop->blockdef[bn].fog[1]);
+	    INI_INTVAL("Fog.G", level_prop->blockdef[bn].fog[2]);
+	    INI_INTVAL("Fog.B", level_prop->blockdef[bn].fog[3]);
+	    INI_INTVAL("Min.X", level_prop->blockdef[bn].coords[0]);
+	    INI_INTVAL("Min.Y", level_prop->blockdef[bn].coords[1]);
+	    INI_INTVAL("Min.Z", level_prop->blockdef[bn].coords[2]);
+	    INI_INTVAL("Max.X", level_prop->blockdef[bn].coords[3]);
+	    INI_INTVAL("Max.Y", level_prop->blockdef[bn].coords[4]);
+	    INI_INTVAL("Max.Z", level_prop->blockdef[bn].coords[5]);
 
-	INI_BLKVAL("StackBlock", level_prop->blockdef[bn].stack_block);
-	INI_BLKVAL("GrassBlock", level_prop->blockdef[bn].grass_block);
-	INI_BLKVAL("DirtBlock", level_prop->blockdef[bn].dirt_block);
-	INI_BLKVAL("Order", level_prop->blockdef[bn].inventory_order);
+	    INI_BLKVAL("StackBlock", level_prop->blockdef[bn].stack_block);
+	    INI_BLKVAL("GrassBlock", level_prop->blockdef[bn].grass_block);
+	    INI_BLKVAL("DirtBlock", level_prop->blockdef[bn].dirt_block);
+	    INI_BLKVAL("Order", level_prop->blockdef[bn].inventory_order);
+	}
+	if (level_prop->blockdef[bn].block_perm || !st->write) {
+	    INI_BLKVAL("Permission", level_prop->blockdef[bn].block_perm);
+	}
 
 	bn++;
     } while(st->all && bn < BLOCKMAX);

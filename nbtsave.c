@@ -196,6 +196,32 @@ save_map_to_file(char * fn, int background)
     if (bdopen)
 	bc_end(savefile);
 
+    // Not written by CC
+    bdopen = 0;
+    for(int i=1; i<BLOCKMAX; i++)
+	if (level_prop->blockdef[i].defined)
+	{
+	    int perm = level_prop->blockdef[i].block_perm;
+	    if (perm) {
+		if (!bdopen) {
+		    bc_compound(savefile, "SetBlockPermission");
+		    bdopen = 1;
+		}
+
+		char uniquename[64]; // Limitation of MCGalaxy loader.
+		sprintf(uniquename, "SetBlockPermission%04x", i);
+
+		bc_compound(savefile, uniquename);
+		bc_ent_int(savefile, "BlockType", i);
+		bc_ent_int(savefile, "AllowPlacement", !(perm&1));
+		bc_ent_int(savefile, "AllowDeletion", !(perm&2));
+		bc_end(savefile);
+	    }
+	}
+
+    if (bdopen)
+	bc_end(savefile);
+
     if (level_prop->motd[0]) {
 	bc_compound(savefile, "Ident");
 	bc_ent_string(savefile, "Motd", level_prop->motd);

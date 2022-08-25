@@ -26,5 +26,8 @@ cmd_setspawn(char * UNUSED(cmd),char * UNUSED(arg))
     level_prop->metadata_generation++;
     level_prop->last_modified = time(0);
 
+    if (extn_setspawnpoint)
+	send_setspawn_pkt(level_prop->spawn);
+
     printf_chat("&SSpawn location set to your current location and orientation");
 }

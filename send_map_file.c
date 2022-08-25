@@ -21,7 +21,6 @@ static uint32_t metadata_generation = 0;
 static block_t max_defined_block = 0;
 
 int reset_hotbar_on_mapload = 0;
-int client_blockperm_state = 3;
 int client_inventory_custom = 0;
 int classic_limit_blocks = 0;		// Used "reload classic" to see in classic mode.
 
@@ -304,11 +303,11 @@ send_system_ident()
     if (level_prop && level_prop->motd[0]) {
 	// Nasty hack for longer MOTD string.
 	if (strlen(level_prop->motd) > MB_STRLEN)
-	    send_server_id_pkt(level_prop->motd, level_prop->motd+MB_STRLEN, ini_settings.op_flag);
+	    send_server_id_pkt(level_prop->motd, level_prop->motd+MB_STRLEN, op_enabled);
 	else
-	    send_server_id_pkt(server->name, level_prop->motd, ini_settings.op_flag);
+	    send_server_id_pkt(server->name, level_prop->motd, op_enabled);
     } else
-	send_server_id_pkt(server->name, server->motd, ini_settings.op_flag);
+	send_server_id_pkt(server->name, server->motd, op_enabled);
 }
 
 void
@@ -509,14 +508,19 @@ send_block_permission()
     else if (level_prop->disallowchange)
 	pok = dok = 0;
 
-    if (client_blockperm_state == (pok<<1)+dok) return;
-
     // send_blockperm_pkt(0, 1, 1); // Block 0 action is undefined.
 
-    for(b=1; b< client_block_limit; b++)
-	send_blockperm_pkt(b, pok, dok);
+    for(b=1; b< client_block_limit; b++) {
+	int pl_ok = pok;
+	if (!player_mark_mode)
+	    pl_ok &= !(level_prop->blockdef[b].block_perm&1);
 
-    client_blockperm_state = (pok<<1)+dok;
+	int dl_ok = dok;
+	if (!player_mark_mode)
+	    dl_ok &= !(level_prop->blockdef[b].block_perm&2);
+
+	send_blockperm_pkt(b, pl_ok, dl_ok);
+    }
 }
 
 void

@@ -38,8 +38,10 @@ block_id(char * name)
 {
     char bnb[256];
     char *s, *d;
-    block_t b = BLOCKMAX;
+    block_t b = -1;
     int non_digit = 0;
+
+    if (!name || !*name) return player_held_block;
 
     for(s=name, d=bnb; d<bnb+sizeof(bnb)-1 && *s; s++) {
 	int ch = *s & 0xFF;
@@ -76,7 +78,7 @@ block_id(char * name)
 	if (block_name_match(bnb, default_blocks[i].name.c))
 	    return i;
 
-    return BLOCKMAX;
+    return -1;
 }
 
 LOCAL int

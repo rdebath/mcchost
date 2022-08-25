@@ -85,8 +85,10 @@ convert_inbound_chat(char * msg)
 	}
     }
     *p = 0;
+    int l = p-buf+1;
+    convert_from_paren(buf, &l);
 
-    post_chat(0, 0, buf, p-buf);
+    post_chat(0, 0, buf, l-1);
     free(buf);
 }
 

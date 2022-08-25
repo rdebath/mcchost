@@ -240,7 +240,10 @@ websocket_translate(char * inbuf, int * insize)
 	    bytes_to_do = packet_len;
 
 	if (mask_id == -1) {
-	    for(int i = 0; i<bytes_to_do; i++) outbuf[outsize++] = inbuf[i];
+	    if (outbuf+outsize != inbuf)
+		for(int i = 0; i<bytes_to_do; i++) outbuf[outsize++] = inbuf[i];
+	    else
+		outsize += bytes_to_do;
 	} else {
 	    for(int i = 0; i<bytes_to_do; i++) {
 		outbuf[outsize++] = (inbuf[i] ^ mask_value[mask_id]);

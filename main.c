@@ -27,15 +27,21 @@ struct server_t {
     char software[NB_SLEN];
     char name[NB_SLEN];
     char motd[MB_STRLEN*2+1];
-    char secret[NB_SLEN];
-    int private;
-    int cpe_disabled;
     char main_level[NB_SLEN];
+
+    char secret[NB_SLEN];
     time_t key_rotation;
+
     time_t save_interval;
     time_t backup_interval;
+
+    int op_flag;
+    int cpe_disabled;
+    int private;
+
     int max_players;
     int loaded_levels;
+
     time_t last_heartbeat;
     time_t last_backup;
     time_t last_unload;
@@ -54,12 +60,13 @@ struct server_t {
 // they can only be changed when the listener process restarts.
 typedef struct server_ini_t server_ini_t;
 struct server_ini_t {
-    int server_runonce;
-    int op_flag;
-    int start_tcp_server;
+
     int tcp_port_no;
+    int server_runonce;
+    int start_tcp_server;
     int inetd_mode;
     int detach_tcp_server;
+
     int enable_heartbeat_poll;
     char heartbeat_url[1024];
 };
@@ -93,8 +100,9 @@ int save_conf = 0;
 
 // Per server settings, not shared across instance
 // Commandline overrides this but is NOT saved to server.ini
-server_ini_t ini_settings = {.op_flag = 1};
+server_ini_t ini_settings = {0};
 
+int op_enabled = 1;	// Op flag was set for this session
 int cpe_enabled = 0;	// Set if this session is using CPE
 int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
 int cpe_pending = 0;	// Currently running ExtInfo process.
@@ -205,7 +213,7 @@ process_connection()
     user_logged_in = 1; // May not be "authenticated", but they exist.
 
     // If in classic mode, don't allow place of bedrock.
-    if (!cpe_requested) ini_settings.op_flag = 0;
+    op_enabled = (server->op_flag && cpe_requested);
 
     if (cpe_requested && !server->cpe_disabled) {
 	send_ext_list();
@@ -224,7 +232,7 @@ complete_connection()
     if (extn_evilbastard)
 	fatal("Server is incompatible with Evil bastard extension");
 
-    send_server_id_pkt(server->name, server->motd, ini_settings.op_flag);
+    send_server_id_pkt(server->name, server->motd, op_enabled);
     cpe_pending = 0;
 
     // List of users

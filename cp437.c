@@ -1,9 +1,17 @@
+#include <string.h>
 
 #include "cp437.h"
 
 #if INTERFACE
 #include <stdio.h>
+typedef struct emconv_t emconv_t;
+struct emconv_t {
+    char * name;
+    int code;
+};
 #endif
+
+emconv_t emconv[];
 
 /*HELP chars,cp437
 ___0123456789ABCDEF0123456789ABCDEF_
@@ -97,6 +105,33 @@ convert_to_utf8(char *buf, int len, char *s)
     *d = 0;
 }
 
+void
+convert_from_paren(char *buf, int *l)
+{
+    char * d = buf;
+    int len = *l;
+
+    for(int i=0; i<len; i++) {
+	if (buf[i] == '(') {
+	    for(int em = 0; emconv[em].name; em++) {
+		int nl = strlen(emconv[em].name);
+		if (i+nl+1 > len) continue;
+		if (strncmp(buf+i+1, emconv[em].name, nl) == 0 && buf[i+nl+1] == ')') {
+		    *d++ = emconv[em].code;
+		    i += nl+1;
+		    goto break_continue;
+		}
+	    }
+	} else if (buf[i] == '\\' && (buf[i+1] == '\\' || buf[i+1] == '(')) {
+	    if (i!=len) i++;
+	}
+	*d++ = buf[i];
+
+	break_continue:;
+    }
+    *l = d-buf;
+}
+
 char cp437_ascii[] =
 	"CueaaaaceeeiiiAAE**ooouuyOUc$YPs"
 	"aiounNao?++**!<>###||||++||+++++"
@@ -141,7 +176,7 @@ int cp437rom[256] = {
     0x00b0, 0x2219, 0x00b7, 0x221a, 0x207f, 0x00b2, 0x25a0, 0x00a0
 };
 
-#if 0
+emconv_t emconv[] = {
 { "darksmile", 0x01 },
 { "smile", 0x02 },
 { "heart", 0x03 }, { "hearts", 0x03 },
@@ -157,8 +192,8 @@ int cp437rom[256] = {
 { "note", 0x0D }, { "quaver", 0x0D }, { "8", 0x0D },
 { "notes", 0x0E }, { "music", 0x0E },
 { "sun", 0x0F }, { "celestia", 0x0F },
-{ "|>", 0x10 },
-{ "<|", 0x11 },
+{ ">>", 0x10 }, { "right", 0x10 }, { "|>", 0x10 },
+{ "<<", 0x11 }, { "left", 0x11 }, { "<|", 0x11 },
 { "updown", 0x12 }, { "^v", 0x12 },
 { "!!", 0x13 },
 { "p", 0x14 }, { "para", 0x14 }, { "pilcrow", 0x14 }, { "paragraph", 0x14 },
@@ -173,12 +208,13 @@ int cp437rom[256] = {
 { "<>", 0x1D }, { "<->", 0x1D }, { "leftright", 0x1D },
 { "^^", 0x1E }, { "up", 0x1E },
 { "vv", 0x1F }, { "down", 0x1F },
-{ "house", 0x7F }
+{ "house", 0x7F },
 
-{ ">>", 0x5F }, { "right", 0x5F },
-{ "<<", 0x5E }, { "left", 0x5E },
+{ "perc", '%' }, { "amp", '&' },
 
-#endif
+{0,0}
+};
+
 
 #if TEST
 #include <string.h>

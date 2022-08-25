@@ -109,13 +109,6 @@ cmd_setvar(char * cmd, char * arg)
     if (section == 0 || varname == 0)
 	return cmd_help(0, cmd);
 
-    if (!client_trusted) {
-	char buf[128];
-	sprintf(buf, "%s+", user_id);
-	if (strcmp(current_level_name, buf) != 0)
-	    return printf_chat("&WPermission denied, only available on level %s", buf);
-    }
-
     ini_state_t stv = {.no_unsafe=1}, *st = &stv;
     st->curr_section = section;
 
@@ -146,6 +139,13 @@ cmd_setvar(char * cmd, char * arg)
 		kill(alarm_handler_pid, SIGALRM);
 	}
     } else {
+	if (!client_trusted) {
+	    char buf[128];
+	    sprintf(buf, "%s+", user_id);
+	    if (strcmp(current_level_name, buf) != 0)
+		return printf_chat("&WPermission denied, only available on level %s", buf);
+	}
+
 	if (!level_ini_fields(st, varname, &value)) {
 	    fprintf_logfile("%s: Setfailed %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s&S] %s&S = %s&S", section, varname, value);

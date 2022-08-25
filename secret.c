@@ -57,7 +57,7 @@ check_mppass(char * mppass)
 	if (tick < 0)
 	    s = (unsigned char *)server->secret;
 	else {
-	    convert_secret(sbuf, heartbeat_url, tick);
+	    convert_secret(sbuf, tick);
 	    s = sbuf;
 	}
 	MD5Update (&mdContext, s, strlen(s));
@@ -77,7 +77,7 @@ check_mppass(char * mppass)
 }
 
 void
-convert_secret(char sbuf[NB_SLEN], char * url, int tick)
+convert_secret(char sbuf[NB_SLEN], int tick)
 {
     // Use secret prefix layout to avoid maybe attack on the hash algorithm.
     // This is used as a mixing function so HMAC extension is not available.
@@ -85,8 +85,13 @@ convert_secret(char sbuf[NB_SLEN], char * url, int tick)
     MD5Init (&mdContext);
     unsigned char * s = (unsigned char *)server->secret;
     MD5Update (&mdContext, s, strlen(s));
-    s = (unsigned char *)url;
-    MD5Update (&mdContext, s, strlen(s));
+
+    {
+	char buf[sizeof(int)*3+10];
+	sprintf(buf, "/%d/", tcp_port_no);
+	s = (unsigned char *)buf;
+	MD5Update (&mdContext, s, strlen(s));
+    }
 
     if (server->key_rotation) {
 	// What's a reasonable minimum for this? One minute seems too short.
@@ -99,8 +104,10 @@ convert_secret(char sbuf[NB_SLEN], char * url, int tick)
 	s = (unsigned char *)nbuf;
 	MD5Update (&mdContext, s, strlen(s));
     }
+
     MD5Final (&mdContext);
 
+    // 128bits in hex
     for (int i = 0; i < 16; i++)
 	sprintf(sbuf+i*2, "%02x", mdContext.digest[i]);
 }

@@ -14,6 +14,9 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Check player reach.
+ +) Antispam (Block, text, commands ?)
+    -- If text is identical to previous do a special?
 
  +) BulkBlockUpdate -- Hmmm.
     -- 8bit:  2048 --> 1282     8,  Min 161, pk 187
@@ -29,7 +32,6 @@ See "/help todo" for notes.
  +) SelectionCuboid -- Zone highlights
 
  +) EntityProperty -- model rotations
- +) SetSpawnpoint
 
  +) VelocityControl -- Change movement now; /slap ?
  +) CustomParticles -- Make sparkles
@@ -85,7 +87,7 @@ See "/help todo" for notes.
 
  +) /sendcmd command
  +) /summon command
- +) /info command
+ +) /info /sinfo /minfo commands
  +) /kick command
  +) /clones command
 
@@ -95,6 +97,8 @@ See "/help todo" for notes.
  +) Team chat, less primitive chatroom.
 
  +) /resizelvl, /copylvl, /savelvl (to mapdir)
+    -- Should resizelvl backup on shrink?
+
  +) /backup & /restore
  +) /import -- download *.cw file from web.
     -- Rename file to strict % form, don't overwrite.

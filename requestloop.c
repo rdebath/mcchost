@@ -166,7 +166,7 @@ do_select()
 	if( rv > 0 ) {
 	    if (websocket) {
 		// I really don't care about websocket packets,
-		// an exabyte packet is perfectly fine.
+		// an unmasked exabyte packet is perfectly fine.
 		if (websocket_translate(line_inp_buf, &rv) < 0)
 		    return -1;
 	    }
@@ -292,7 +292,7 @@ process_client_message(int cmd, char * pktbuf)
 	    return;
     }
     if (!cpe_enabled && cmd > PKID_OPER)
-	logout("Unexpected packet type received"); //return;
+	logout("Unexpected packet type received");
 
     switch(cmd)
     {

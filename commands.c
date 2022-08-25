@@ -47,7 +47,7 @@ run_command(char * msg)
 	    cmd = command_list[c].name;
 	    char * arg = strtok(0, "");
 	    if (server->flag_log_commands)
-		printlog("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
+		fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
 	    command_list[c].function(cmd, arg);
 	    return;
 	}

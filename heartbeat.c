@@ -43,7 +43,7 @@ send_heartbeat_poll()
     int valid_salt = (*server->secret != 0 && *server->secret != '-');
 
     if (valid_salt)
-	convert_secret(secretbuf, heartbeat_url, 0);
+	convert_secret(secretbuf, 0);
     else
 	strcpy(secretbuf, "0000000000000000");
 

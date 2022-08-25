@@ -4,6 +4,7 @@
 #include <time.h>
 
 #define BLOCKMAX 1024
+#define BLOCKNIL ((block_t)-1)
 #define MAP_MAGIC	0x1A7FFF00
 #define MAP_MAGIC2	0x557FFF00
 #define MAP_VERSION	0x00000100
@@ -130,6 +131,9 @@ struct blockdef_t {
 
     // Inventory order packets
     block_t inventory_order;
+
+    // Block permissions (1=NoPlace, 2=NoDelete, 3=Neither)
+    uint8_t block_perm;
 
     uint8_t defined;
 

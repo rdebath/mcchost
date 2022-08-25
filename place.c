@@ -8,7 +8,7 @@ int player_mode_mode = -1;
 
 /*HELP place,pl H_CMD
 &T/place b [x y z] [X Y Z]
-Places the Block numbered &Tb&S at your feet or at &T[x y z]&S
+Places the Block &Tb&S at your feet or at &T[x y z]&S
 With both &T[x y z]&S and &T[X Y Z]&S it places a
 cuboid between those points.
 Alias: &T/pl
@@ -28,6 +28,11 @@ Useful for hidden block types.
 Use ~ before a coordinate to mark relative to current position
 If no coordinates are given, marks at where you are standing
 If only x coordinate is given, it is used for y and z too
+*/
+/*HELP cuboid,z H_CMD
+&T/cuboid [block]
+Draws a cuboid between two points
+Alias: &T/z
 */
 
 #if INTERFACE
@@ -61,7 +66,7 @@ cmd_place(char * cmd, char * arg)
 	    if (p == 0) break;
 	    if (i == 0) {
 		args[i] = block_id(p);
-		if (args[i] == BLOCKMAX) {
+		if (args[i] == BLOCKNIL) {
 		    printf_chat("&WUnknown block '%s'", p);
 		    return;
 		}
@@ -165,13 +170,13 @@ cmd_mode(char * cmd, char * arg)
     } else {
 	player_mode_mode = -1;
 	block_t b = block_id(block);
-	if (b >= BLOCKMAX) {
+	if (b == BLOCKNIL) {
 	    printf_chat("&WUnknown block '%s'", block);
 	    return;
 	}
 
 	// Classic mode, don't let them place blocks they can't remove.
-	if (!ini_settings.op_flag && !cpe_requested) {
+	if (!op_enabled && !cpe_requested) {
 	    if (b==Block_Bedrock) b=Block_Magma;
 	    if (b==Block_ActiveLava) b=Block_StillLava;
 	    if (b==Block_ActiveWater) b=Block_StillWater;
@@ -390,12 +395,13 @@ cmd_about(char * cmd, char * arg)
 void
 cmd_cuboid(char * cmd, char * arg)
 {
+    if (level_prop->disallowchange) { printf_chat("&WLevel cannot be changed"); return; }
+
     if (!marks[0].valid || !marks[1].valid) {
 	if (!marks[0].valid) {
 	    if (!extn_heldblock) {
-		block_t b = arg?block_id(arg): player_held_block;
-		if (b == (block_t)-1) b = 1;
-		printf_chat("&SPlace or break two blocks to determine edges of %s cuboid.", block_name(b));
+		printf_chat("&SPlace or break two blocks to determine edges of %s cuboid.",
+		    block_name(block_id(arg)));
 	    } else if (!extn_messagetypes)
 		printf_chat("&SPlace or break two blocks to determine edges.");
 	}
@@ -405,10 +411,11 @@ cmd_cuboid(char * cmd, char * arg)
 	return;
     }
 
-    block_t b = arg?block_id(arg): player_held_block;
-    if (b == (block_t)-1) b = 1;
-
-    if (level_prop->disallowchange) { printf_chat("&WLevel cannot be changed"); return; }
+    block_t b = block_id(arg);
+    if (b == BLOCKNIL) {
+	printf_chat("&WUnknown block '%s'", arg);
+	return;
+    }
 
     //TODO: Other cuboids.
 

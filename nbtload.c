@@ -31,6 +31,7 @@ static char last_sect[256];
 static int indent = 0;
 static int current_block = -1;
 static int inventory_block = -1;
+static int permission_block = -1;
 
 int
 load_map_from_file(char * filename, char * level_fname, char * level_name)
@@ -445,6 +446,20 @@ change_int_value(char * section, char * item, int64_t value)
 	    inventory_order = -1;
 	    inventory_block = -1;
 	}
+    } else if (strncasecmp(section, "SetBlockPermission", 18) == 0) {
+        if (strcasecmp(item, "BlockType") == 0) permission_block = value;
+        if (strcasecmp(item, "AllowPlacement") == 0) {
+            if (permission_block > 0 && permission_block < BLOCKMAX) {
+                level_prop->blockdef[permission_block].block_perm = !value +
+                    (level_prop->blockdef[permission_block].block_perm & 2);
+            }
+        }
+        if (strcasecmp(item, "AllowDeletion") == 0) {
+            if (permission_block > 0 && permission_block < BLOCKMAX) {
+                level_prop->blockdef[permission_block].block_perm = 2*!value +
+                    (level_prop->blockdef[permission_block].block_perm & 1);
+            }
+        }
 
     } else if (strcmp(section, "HackControl") == 0) {
 
