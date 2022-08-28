@@ -117,16 +117,24 @@ rebuild:
 vps: ${PROG}
 	rsync -Pax ${PROG} vps-mcc:bin/${INAME}
 
-ZIPF1=Makefile help_scan.awk
+ZIPF1=LICENSE Makefile help_scan.awk
 ZIPF2=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html
+ZIPF=${ZIPF1} *.c ${ZIPF2}
 
 zip:
 	-rm -rf tmp.tgz tmp.d
-	tar cf tmp.tgz ${ZIPF1} *.c ${ZIPF2}
-	zip tmp.zip ${ZIPF1} *.c ${ZIPF2}
+	@:
+	tar cf tmp.tgz -I 'gzip -9' ${ZIPF}
 	mkdir -p tmp.d
 	cd tmp.d ; tar xf ../tmp.tgz
-	cd tmp.d ; make -j$(nproc)
+	cd tmp.d ; make -j$$(nproc) -s TARGET_ARCH=-m64 ODIR=obj64 PROG=obj64/server
 	-rm -rf tmp.d
+	@:
+	zip -9q tmp.zip ${ZIPF}
+	mkdir -p tmp.d
+	cd tmp.d ; unzip -q ../tmp.zip
+	cd tmp.d ; make -j$$(nproc) -s TARGET_ARCH=-m32 ODIR=obj32 PROG=obj32/server
+	-rm -rf tmp.d
+	@:
 	mv tmp.tgz mcchost.tgz
 	mv tmp.zip mcchost.zip

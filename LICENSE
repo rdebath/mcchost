@@ -1,11 +1,7 @@
+Library components:
+
 lib_md5.c uses the RSA Data Security license
 teeny_sha1.c uses the MIT License
 makeheaders.c uses the FreeBSD License
 
-The rest is currently not licensed for general distribution.
-
-After 31st December 2029.
-
-    This version will be released to public domain or the
-    Creative Commons CC0 license at the user's preference
-
+Source code: See LICENSE.mcchost

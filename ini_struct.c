@@ -194,6 +194,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_FIXEDP("ClickDistance", level_prop->click_distance, 32);
 
 	INI_INTHEX("HacksFlags", level_prop->hacks_flags);
+	INI_INTVAL("HacksJump", level_prop->hacks_jump);
 
 	INI_NBTSTR("Texture", level_prop->texname);
 	INI_INTVAL("WeatherType", level_prop->weather);

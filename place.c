@@ -221,24 +221,33 @@ process_player_setblock(pkt_setblock pkt)
 	return;
     }
 
-    if (level_prop->disallowchange) {
-	revert_client(pkt);
-	return;
-    }
-
     if (player_mode_paint) {
 	pkt.block = pkt.heldblock;
 	pkt.mode = 2;
     }
 
-    if (server->cpe_disabled && pkt.block >= Block_CP) {
+    if (player_mode_mode >= 0 && pkt.mode) {
+	pkt.block = player_mode_mode;
+	pkt.mode = 2;
+    }
+
+    if (level_prop->disallowchange || pkt.block >= BLOCKMAX ||
+	(server->cpe_disabled && pkt.block >= Block_CP) ||
+	((level_prop->blockdef[pkt.block].block_perm&1) != 0) ) {
 	revert_client(pkt);
 	return;
     }
 
-    if (player_mode_mode >= 0 && pkt.mode) {
-	pkt.block = player_mode_mode;
-	pkt.mode = 2;
+    if (!level_block_queue || !level_blocks) return; // !!!
+    if (pkt.coord.x < 0 || pkt.coord.x >= level_prop->cells_x) return;
+    if (pkt.coord.y < 0 || pkt.coord.y >= level_prop->cells_y) return;
+    if (pkt.coord.z < 0 || pkt.coord.z >= level_prop->cells_z) return;
+
+    uintptr_t index = World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z);
+    block_t b = level_blocks[index];
+    if (b < BLOCKMAX && (level_prop->blockdef[b].block_perm&2) != 0) {
+	revert_client(pkt);
+	return;
     }
 
     update_block(pkt);

@@ -124,16 +124,9 @@ cmd_setvar(char * cmd, char * arg)
 	    return;
 	}
 
-	{
-	    char buf[256];
-	    snprintf(buf, sizeof(buf), SERVER_CONF_TMP, getpid());
-	    if (save_ini_file(system_ini_fields, buf) >= 0) {
-		if (rename(buf, SERVER_CONF_NAME) < 0)
-		    perror("rename server.ini");
-	    }
-	    unlink(buf);
-	}
+	save_server_ini_file();
 
+	// Send heartbeat immediatly.
 	if (!strcasecmp("private", varname)) {
 	    if (alarm_handler_pid)
 		kill(alarm_handler_pid, SIGALRM);
@@ -145,11 +138,17 @@ cmd_setvar(char * cmd, char * arg)
 	    if (strcmp(current_level_name, buf) != 0)
 		return printf_chat("&WPermission denied, only available on level %s", buf);
 	}
+	int ro = level_prop->readonly;
 
 	if (!level_ini_fields(st, varname, &value)) {
 	    fprintf_logfile("%s: Setfailed %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s&S] %s&S = %s&S", section, varname, value);
 	    return;
+	}
+
+	if (level_prop->readonly && !ro && current_level_backup_id == 0) {
+	    printf_chat("&SNote: Will override 'readonly' flag to save flag change");
+	    level_prop->force_save = 1;
 	}
 
 	level_prop->dirty_save = 1;
@@ -181,4 +180,16 @@ cmd_restart(char * UNUSED(cmd), char * UNUSED(arg))
 	printf_chat("&SNo listener process exists for this session");
     else
 	printf_chat("&WListener process not found");
+}
+
+void
+save_server_ini_file()
+{
+    char buf[256];
+    snprintf(buf, sizeof(buf), SERVER_CONF_TMP, getpid());
+    if (save_ini_file(system_ini_fields, buf) >= 0) {
+	if (rename(buf, SERVER_CONF_NAME) < 0)
+	    perror("rename server.ini");
+    }
+    unlink(buf);
 }

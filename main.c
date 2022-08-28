@@ -102,7 +102,7 @@ int save_conf = 0;
 // Commandline overrides this but is NOT saved to server.ini
 server_ini_t ini_settings = {0};
 
-int op_enabled = 1;	// Op flag was set for this session
+int op_enabled = 0;	// Op flag was set for this session
 int cpe_enabled = 0;	// Set if this session is using CPE
 int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
 int cpe_pending = 0;	// Currently running ExtInfo process.

@@ -124,6 +124,11 @@ See "/help todo" for notes.
     -- Map gen? Import?
     -- Sent to level chat ? -- Physics?
 
+ +) Tinybox mode (proxy?)
+    Create a map on a small VPS and send logs, backups etc to external storage.
+    -- One map mode?
+    -- Use symlinks and sshfs ?
+
  +) Scripting language interface
     -- Lua ?
     -- Python ?

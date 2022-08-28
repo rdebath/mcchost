@@ -165,6 +165,7 @@ cmd_load(char * UNUSED(cmd), char * arg)
     else if (!arg || !*arg)
 	printf_chat("&WUsage: /load filename");
     else {
+	int ro = level_prop->readonly;
 	char fixedname[200], buf[256];
 	fix_fname(fixedname, sizeof(fixedname), arg);
 	snprintf(buf, sizeof(buf), "ini/%s.ini", fixedname);
@@ -174,7 +175,12 @@ cmd_load(char * UNUSED(cmd), char * arg)
 	unlock_fn(level_lock);
 
 	if (rv == 0) {
-	    printf_chat("&SFile loaded");
+	    level_prop->readonly = ro;	// Use /set command
+
+	    printf_chat("&SFile loaded%s%s",
+		level_prop->readonly?" to readonly level":"",
+		level_prop->force_save&&level_prop->readonly?", but will save anyway":"");
+
 	    level_prop->dirty_save = 1;
 	    level_prop->metadata_generation++;
 	    level_prop->last_modified = time(0);
@@ -433,7 +439,7 @@ scan_and_save_levels(int unlink_only)
 		force_backup = 1;
 	    }
 
-	    if (level_prop->readonly)
+	    if (level_prop->readonly && !level_prop->force_save)
 		level_prop->dirty_save = 0;
 
 	    // Block unload unless we are restarting.
@@ -665,7 +671,7 @@ choose_random_level(char * fixedname, int name_len)
     DIR *directory = opendir(LEVEL_MAP_DIR_NAME);
 
     if (!directory) {
-        printf_chat("#No maps found... WTF where is %s‼", main_level());
+        printf_chat("#No maps found, not even %s is saved yet‼", main_level());
         return;
     }
 

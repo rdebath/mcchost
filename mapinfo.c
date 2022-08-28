@@ -44,6 +44,7 @@ struct map_info_t {
     int readonly;
     int disallowchange;	// even if readonly, you can change the working map.
     int no_unload;
+    int force_save;
 
     int dirty_save;
     uint32_t metadata_generation;

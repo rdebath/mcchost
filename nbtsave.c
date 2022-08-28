@@ -199,7 +199,7 @@ save_map_to_file(char * fn, int background)
     // Not written by CC
     bdopen = 0;
     for(int i=1; i<BLOCKMAX; i++)
-	if (level_prop->blockdef[i].defined)
+	if (level_prop->blockdef[i].block_perm)
 	{
 	    int perm = level_prop->blockdef[i].block_perm;
 	    if (perm) {

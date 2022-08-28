@@ -49,7 +49,7 @@ websocket_startup(uint8_t * buf, int buflen)
 	if (strncasecmp(p+1, "Upgrade", 7) == 0) {
 	    uint8_t *p2 = p+8;
 	    while (*p2 == ' ' || *p2 == ':') p2++;
-	    if (strncasecmp(p2, "websocket", 9) == 0 && p2[9] <= ' ')
+	    if (strncasecmp(p2, "websocket", 9) == 0 && (p2[9] <= ' ' || p2[9] == ','))
 		has_stuff |= has_upgrade;
 	}
 	if (strncasecmp(p+1, "Connection", 10) == 0) {

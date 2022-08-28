@@ -320,6 +320,9 @@ process_extentry(pkt_extentry * pkt)
 	if (classicube_match_len+classicube_lastmatch == cpe_extn_advertised)
 	    sprintf(descbuf+strlen(descbuf),
 		", all %d extensions match Classicube", cpe_extn_advertised);
+	else if (classicube_match_len <= 1)
+	    sprintf(descbuf+strlen(descbuf),
+		", client has %d extensions", cpe_extn_advertised);
 	else
 	    sprintf(descbuf+strlen(descbuf),
 		", first %d extensions of %d match Classicube",
