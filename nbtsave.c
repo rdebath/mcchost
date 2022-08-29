@@ -60,6 +60,15 @@ save_map_to_file(char * fn, int background)
     bc_ent_int16(savefile, "Y", level_prop->cells_y);
     bc_ent_int16(savefile, "Z", level_prop->cells_z);
 
+    // Not written by CC
+    if (level_prop->software[0]) {
+	bc_compound(savefile, "MapGenerator");
+	bc_ent_string(savefile, "Software", level_prop->software);
+	bc_ent_string(savefile, "MapGeneratorName", level_prop->theme);
+	bc_end(savefile);
+    }
+
+    // Not written by CC
     if (level_prop->time_created)
 	bc_ent_int64(savefile, "TimeCreated", level_prop->time_created);
     if (level_prop->last_modified)
@@ -67,6 +76,7 @@ save_map_to_file(char * fn, int background)
     if (level_prop->last_backup)
 	bc_ent_int64(savefile, "LastBackup", level_prop->last_backup);
 
+    // Written by CC
     bc_compound(savefile, "Spawn");
     bc_ent_int16(savefile, "X", level_prop->spawn.x/32);
     bc_ent_int16(savefile, "Y", level_prop->spawn.y/32);
@@ -232,6 +242,10 @@ save_map_to_file(char * fn, int background)
     bc_ent_int(savefile, "DisallowChange", level_prop->disallowchange);
     bc_ent_int(savefile, "ReadOnly", level_prop->readonly);
     bc_ent_int(savefile, "NoUnload", level_prop->no_unload);
+    if (level_prop->theme[0] && (!level_prop->software[0] || level_prop->seed[0]))
+	bc_ent_string(savefile, "Theme", level_prop->theme);
+    if (level_prop->seed[0])
+	bc_ent_string(savefile, "Seed", level_prop->seed);
     bc_end(savefile);
 
     /* TODO -- server level ?

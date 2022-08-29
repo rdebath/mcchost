@@ -185,6 +185,11 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	}
 
 	INI_STRARRAYCP437("Motd", level_prop->motd);
+	INI_STRARRAYCP437("Name", level_prop->name);
+	INI_STRARRAYCP437("Software", level_prop->software);
+	INI_STRARRAYCP437("Theme", level_prop->theme);
+	INI_STRARRAYCP437("Seed", level_prop->seed);
+
 	INI_FIXEDP("Spawn.X", level_prop->spawn.x, 32);
 	INI_FIXEDP("Spawn.Y", level_prop->spawn.y, 32);
 	INI_FIXEDP("Spawn.Z", level_prop->spawn.z, 32);

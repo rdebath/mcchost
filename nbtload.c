@@ -603,7 +603,11 @@ change_bin_value(char * section, char * item, uint8_t * value, int len)
 LOCAL void
 change_str_value(char * section, char * item, char * value)
 {
-    if (strcmp(section, "EnvMapAppearance") == 0) {
+    if (*section == 0 || strcmp(section, "ClassicWorld") == 0) {
+	if (strcmp(item, "Name") == 0) {
+	    cpy_nstr(level_prop->name, MB_STRLEN*2, value);
+	}
+    } else if (strcmp(section, "EnvMapAppearance") == 0) {
 	if (strcmp(item, "TextureURL") == 0) {
 	    cpy_nstr(level_prop->texname.c, MB_STRLEN, value);
 	}
@@ -616,6 +620,20 @@ change_str_value(char * section, char * item, char * value)
     } else if (strcasecmp(section, "Ident") == 0) {
 	if (strcasecmp(item, "Motd") == 0) {
 	    cpy_nstr(level_prop->motd, MB_STRLEN*2, value);
+	}
+    } else if (strcasecmp(section, "MCCHost") == 0) {
+	if (strcasecmp(item, "Theme") == 0) {
+	    cpy_nstr(level_prop->theme, MB_STRLEN*2, value);
+	}
+	if (strcasecmp(item, "Seed") == 0) {
+	    cpy_nstr(level_prop->seed, MB_STRLEN*2, value);
+	}
+    } else if (strcasecmp(section, "MapGenerator") == 0) {
+	if (strcasecmp(item, "Software") == 0) {
+	    cpy_nstr(level_prop->software, MB_STRLEN*2, value);
+	}
+	if (strcasecmp(item, "MapGeneratorName") == 0) {
+	    cpy_nstr(level_prop->theme, MB_STRLEN*2, value);
 	}
 
 #if 0 // Bots?

@@ -23,6 +23,8 @@ cmd_newlvl(char * cmd, char * arg)
     char * sx = strtok(0, " ");
     char * sy = strtok(0, " ");
     char * sz = strtok(0, " ");
+    char * th = strtok(0, " ");
+    char * se = strtok(0, "");
 
     if (!levelname || (sx && !sz)) return cmd_help(0, cmd);
 
@@ -53,7 +55,7 @@ cmd_newlvl(char * cmd, char * arg)
     int x=0,y=0,z=0;
     char *e;
 
-    if (sx) {
+    if (sz) {
 	x = strtol(sx, &e, 10);
 	if (*e || x<1 || x>16384) {
 	    printf_chat("&WValue %s is not a valid dimension", sx);
@@ -98,7 +100,21 @@ cmd_newlvl(char * cmd, char * arg)
 	fprintf(ofd, "Size.Z = %d\n", z);
     }
 
-    // ... Spawn? EdgeLevel? Cloudheight? Other?
+    if (th) {
+	int l = strlen(th)*4+4;
+	char * buf = malloc(l);
+	convert_to_utf8(buf, l, th);
+	fprintf(ofd, "Theme = %s\n", buf);
+	free(buf);
+    }
+
+    if (se) {
+	int l = strlen(se)*4+4;
+	char * buf = malloc(l);
+	convert_to_utf8(buf, l, se);
+	fprintf(ofd, "Seed = %s\n", buf);
+	free(buf);
+    }
 
     fclose(ofd);
 

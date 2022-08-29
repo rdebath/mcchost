@@ -7,27 +7,13 @@
 
 #include "secret.h"
 
+static int rand_init_done = 0;
+
 void
 generate_secret()
 {
-    struct timeval now;
-    gettimeofday(&now, 0);
-#ifdef PCG32_INITIALIZER
-    // Somewhat better random seed, the whole time, pid and ASLR
-    pcg32_srandom(
-	now.tv_sec*(uint64_t)1000000 + now.tv_usec,
-	(((uintptr_t)&process_args) >> 12) +
-	((int64_t)(getpid()) << sizeof(uintptr_t)*4) );
-
-// NB: for x86/x64
-//              0x88000888
-// On 32bit     0x99XXX000 --> Only *8*bits of ASLR
-// On 64bit 0x91XXXXXXX000 --> 28bits of ASLR
-//      0x8888800000000888
-#else
-    // A pretty trivial semi-random code, maybe 24bits of randomness.
-    srandom(now.tv_sec ^ (now.tv_usec*4294U));
-#endif
+    if (!rand_init_done)
+	init_rand_gen();
 
     static char base62[] =
 	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -111,3 +97,54 @@ convert_secret(char sbuf[NB_SLEN], int tick)
     for (int i = 0; i < 16; i++)
 	sprintf(sbuf+i*2, "%02x", mdContext.digest[i]);
 }
+
+void
+init_rand_gen()
+{
+    if (rand_init_done) return;
+    rand_init_done = 1;
+
+    struct timeval now;
+    gettimeofday(&now, 0);
+#ifdef PCG32_INITIALIZER
+    // Somewhat better random seed, the whole time, pid and ASLR
+    pcg32_srandom(
+	now.tv_sec*(uint64_t)1000000 + now.tv_usec,
+	(((uintptr_t)&process_args) >> 12) +
+	((int64_t)(getpid()) << sizeof(uintptr_t)*4) );
+
+// NB: for x86/x64
+//              0x88000888
+// On 32bit     0x99XXX000 --> Only *8*bits of ASLR
+// On 64bit 0x91XXXXXXX000 --> 28bits of ASLR
+//      0x8888800000000888
+#else
+    // A pretty trivial semi-random code, maybe 24bits of randomness.
+    srandom(now.tv_sec ^ (now.tv_usec*4294U));
+#endif
+}
+
+#ifdef PCG32_INITIALIZER
+void
+pcg32_init_rng(pcg32_random_t *rng, char * theme, char * seed)
+{
+    char sbuf[MB_STRLEN*2+1] = "";
+    if (!seed) seed = sbuf;
+    if (!*seed) {
+	init_rand_gen();
+	snprintf(seed, sizeof(sbuf), "0x%jx,0x%jx",
+	    ((uintmax_t)1<<32)*pcg32_random() + pcg32_random(),
+	    ((uintmax_t)1<<32)*pcg32_random() + pcg32_random());
+    }
+
+    uint64_t v1, v2;
+    char * com = 0;
+    v1 = strtoumax(seed, &com, 0);
+    if (com && *com == ',' && com[1] != 0)
+	v2 = strtoumax(com+1, 0, 0);
+    else v2 = v1;
+
+    printlog("Theme = %s, Seed = 0x%jx,0x%jx", theme, v1, v2);
+    pcg32_srandom_r(rng, v1, v2);
+}
+#endif

@@ -8,7 +8,7 @@ List out the connected users
 
 #if INTERFACE
 #define CMD_WHO \
-    {N"who", &cmd_who}, {N"info", &cmd_info, .dup=1, .nodup=1}
+    {N"who", &cmd_who}
 #endif
 
 void
@@ -52,10 +52,4 @@ cmd_who(char * UNUSED(cmd), char * UNUSED(arg))
 
     if (users == 0)
 	printf_chat("There are currently no other users");
-}
-
-void
-cmd_info(char * UNUSED(cmd), char * UNUSED(arg))
-{
-    printf_chat("&WTODO");
 }

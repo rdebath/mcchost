@@ -343,11 +343,18 @@ create_block_queue(char * levelname)
     if (level_block_queue->generation == 0 ||
 	level_block_queue->queue_len < MIN_QUEUE ||
 	level_block_queue->curr_offset >= level_block_queue->queue_len ||
-	level_block_queue->queue_len > level_prop->total_blocks)
+	(level_block_queue->queue_len > STD_QUEUE && level_block_queue->queue_len > level_prop->total_blocks))
     {
+	if (level_block_queue->queue_len != 0)
+	    printlog("(Re-)Init queue g=%d, q=%d, tb=%d",
+		level_block_queue->generation,
+		level_block_queue->queue_len,
+		(int)level_prop->total_blocks);
+
 	level_block_queue->generation += 2;
 	level_block_queue->curr_offset = 0;
 	level_block_queue->queue_len = queue_count;
+	level_block_queue->last_queue_len = queue_count;
     }
 
     // The file is this big.
@@ -358,7 +365,7 @@ create_block_queue(char * levelname)
 	queue_count = level_prop->last_map_download_size / msglen[PKID_SRVBLOCK];
 	queue_count += 8;
 	queue_count = (queue_count + 1024) / 1024 * 1024;
-	if (queue_count < 2048) queue_count = 2048;
+	if (queue_count < 2048) queue_count = STD_QUEUE;
 	queue_count -= 8;
     }
 
@@ -388,6 +395,9 @@ create_block_queue(char * levelname)
 	    level_block_queue->queue_len = queue_count;
     }
 
+    if (level_block_queue->last_queue_len == 0)
+	level_block_queue->last_queue_len = queue_count;
+
     shdat.block_queue_mmap_count = queue_count;
 }
 
@@ -400,15 +410,15 @@ stop_block_queue()
     }
 }
 
-void
+int
 check_block_queue(int need_lock)
 {
-    if (!level_block_queue) return;
-    if (shdat.block_queue_mmap_count == level_block_queue->queue_len) return;
+    if (!level_block_queue) return 0;
+    if (shdat.block_queue_mmap_count == level_block_queue->queue_len) return 0;
     if (shdat.block_queue_mmap_count > level_block_queue->queue_len) {
 	// fatal("level_block_queue->queue_len shrank!?");
 	shdat.block_queue_mmap_count = level_block_queue->queue_len;
-	return;
+	return 0;
     }
     if (shdat.level_fixed_name == 0)
 	fatal("Cannot reopen queue, name lost");
@@ -419,6 +429,8 @@ check_block_queue(int need_lock)
 
     if (!level_block_queue)
 	fatal("Block queue check lost queue");
+
+    return 1;
 }
 
 void

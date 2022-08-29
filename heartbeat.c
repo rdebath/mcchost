@@ -8,6 +8,7 @@
 #include "heartbeat.h"
 
 #define CURLLEN 128
+#define ASCII_ONLY
 
 static char curlbuf[CURLLEN];
 
@@ -154,6 +155,26 @@ ccnet_cp437_quoteurl(char *s, char *dest, int len)
 {
     char * d = dest;
     for(; *s && d<dest+len-1; s++) {
+#ifdef ASCII_ONLY
+	int ch = *s;
+	if (ch & 0x80)
+	    ch = cp437_ascii[ch & 0x7F];
+	if ( (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+	     (ch >= '0' && ch <= '9') ||
+	     (ch == '-') || (ch == '_') || (ch == '.') || (ch == '~'))
+	    *d++ = ch;
+	else
+	{
+	    if (ch < ' ' || ch > '~')
+		ch = '*';
+	    char lb[4];
+	    if (d>dest+len-4) break;
+	    *d++ = '%';
+	    sprintf(lb, "%02x", ch & 0xFF);
+	    *d++ = lb[0];
+	    *d++ = lb[1];
+	}
+#else
 	if ( (*s >= 'a' && *s <= 'z') || (*s >= 'A' && *s <= 'Z') ||
 	     (*s >= '0' && *s <= '9') ||
 	     (*s == '-') || (*s == '_') || (*s == '.') || (*s == '~'))
@@ -194,6 +215,7 @@ ccnet_cp437_quoteurl(char *s, char *dest, int len)
 	    for(char *p=lb; *p; p++)
 		*d++ = *p;
 	}
+#endif
     }
     *d = 0;
     return dest;

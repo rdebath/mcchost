@@ -174,9 +174,10 @@ reset_player_list()
 
     if (level_prop)
 	send_spawn_pkt(255, user_id, level_prop->spawn);
-    if (myuser[my_user_no].posn.valid)
-	send_posn_pkt(255, 0, myuser[my_user_no].posn);
+    if (player_posn.valid)
+	send_posn_pkt(255, 0, player_posn);
     else {
+	player_posn = level_prop->spawn;
 	myuser[my_user_no].posn = level_prop->spawn;
 	if (shdat.client)
 	    shdat.client->user[my_user_no].posn = level_prop->spawn;
@@ -300,6 +301,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
     strcpy(current_level_name, levelname);
     strcpy(current_level_fname, levelfile);
     current_level_backup_id = backup_id;
+    player_posn.valid = 0;
 
     lock_fn(system_lock);
 

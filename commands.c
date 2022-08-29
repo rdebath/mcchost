@@ -173,6 +173,7 @@ cmd_reload(char * UNUSED(cmd), char * arg)
 	    level_block_limit = client_block_limit;
 	    classic_limit_blocks = 0;
 	}
+	check_block_queue(1);
 	send_map_reload();
     } else if (strcasecmp(arg, "classic") == 0 && extn_blockdefn && customblock_enabled) {
 	level_block_limit = Block_CP;

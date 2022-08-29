@@ -14,7 +14,6 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) Check player reach.
  +) Antispam (Block, text, commands ?)
     -- If text is identical to previous do a special?
 

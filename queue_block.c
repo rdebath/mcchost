@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #define MIN_QUEUE 250
+#define STD_QUEUE 2048
 typedef block_queue_t block_queue_t;
 struct block_queue_t {
     uint32_t generation;	// uint so GCC doesn't fuck it up.
@@ -180,6 +181,7 @@ set_last_block_queue_id()
     if (!level_block_queue) return;
 
     lock_fn(level_lock);
+    check_block_queue(0);
     last_id = level_block_queue->curr_offset;
     last_generation = level_block_queue->generation;
     unlock_fn(level_lock);
@@ -195,21 +197,30 @@ wipe_last_block_queue_id()
 void
 send_map_reload()
 {
-    reload_pending = 2;
+    reload_pending = 1;
 }
 
 void
 send_queued_blocks()
 {
-    if (reload_pending && !bytes_queued_to_send()) {
-	if (reload_pending == 1)
-	    msleep(500);  // Half a second leeway to allow network to clear.
+    if (reload_pending) {
+	if (bytes_queued_to_send()) return;
+
+	// reload_pending contains centiseconds till reload.
+	if (reload_pending > 1) { reload_pending--; return; }
+
 	reload_pending = 0;
+	if (client_trusted) {
+	    if (check_block_queue(1))
+		printf_chat("Reset block queue and reload");
+	    else
+		printf_chat("Reloading");
+	}
 	send_map_file();
 	return;
     }
 
-    if (last_id < 0) return; // Should be "Map download in progress"
+    if (last_id < 0) return;
     if (!level_block_queue) return;
 
     check_block_queue(1);
@@ -227,8 +238,16 @@ send_queued_blocks()
 		    isok = 1;
 	    }
 	    if (!isok) {
+#if 0
+		printlog("Queue overflow triggered reload "
+			 "Gen=%d->%d, id=%d->%d, qlen=%d->%d",
+			last_generation, level_block_queue->generation,
+			last_id, level_block_queue->curr_offset,
+			level_block_queue->last_queue_len,
+			level_block_queue->queue_len);
+#endif
 		wipe_last_block_queue_id();
-		reload_pending = 1;
+		reload_pending = 100;
 		unlock_fn(level_lock);
 		return;
 	    }

@@ -113,6 +113,7 @@ cmd_goto(char * cmd, char * arg)
 	cmd_main("","");
 	return;
     }
+    player_posn = level_prop->spawn;
     send_map_file();
     send_spawn_pkt(255, user_id, level_prop->spawn);
 
@@ -144,6 +145,7 @@ cmd_main(char * UNUSED(cmd), char * UNUSED(arg))
         }
     }
 
+    if (level_prop) player_posn = level_prop->spawn;
     send_map_file();
 
     if (level_prop) {

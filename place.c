@@ -231,12 +231,31 @@ process_player_setblock(pkt_setblock pkt)
 	pkt.mode = 2;
     }
 
-    if (level_prop->disallowchange || pkt.block >= BLOCKMAX ||
-	(server->cpe_disabled && pkt.block >= Block_CP) ||
-	((level_prop->blockdef[pkt.block].block_perm&1) != 0) ) {
-	revert_client(pkt);
-	return;
+    int do_revert = 0;
+    if (level_prop->disallowchange || pkt.block >= BLOCKMAX) do_revert = 1;
+    if (!do_revert && server->cpe_disabled && pkt.block >= Block_CP)
+	do_revert = 1;
+    if (!do_revert && ((level_prop->blockdef[pkt.block].block_perm&1) != 0) )
+	do_revert = 1;
+
+    if (!do_revert) {
+	uint64_t range = 0, r, ok_reach;
+	r = (pkt.coord.x*32 - player_posn.x); range += r*r;
+	r = (pkt.coord.y*32 - player_posn.y); range += r*r;
+	r = (pkt.coord.z*32 - player_posn.z); range += r*r;
+	ok_reach = level_prop->click_distance;
+	if (ok_reach == 0) do_revert = 1;
+	else if (ok_reach > 0) {
+	    if (ok_reach > 5*32) ok_reach += 4*32; else ok_reach += 2*32;
+	    ok_reach *= ok_reach;
+	    if (range >= ok_reach) {
+		printf_chat("You can't build that far away.");
+		do_revert = 1;
+	    }
+	}
     }
+
+    if (do_revert) { revert_client(pkt); return; }
 
     if (!level_block_queue || !level_blocks) return; // !!!
     if (pkt.coord.x < 0 || pkt.coord.x >= level_prop->cells_x) return;
@@ -485,8 +504,7 @@ plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
 		level_blocks[index] = b;
 		prelocked_update(x, y, z, b);
 	    }
-    if (b) my_user.blocks_drawn += placecount;
-    else my_user.blocks_deleted += placecount;
+    my_user.blocks_drawn += placecount;
     unlock_fn(level_lock);
 
     // NB: Slab processing is wrong for multi-layer cuboid.

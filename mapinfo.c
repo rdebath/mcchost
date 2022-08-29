@@ -90,6 +90,11 @@ struct map_info_t {
     nbtstr_t texname;
     char motd[MB_STRLEN*2+1];
 
+    char name[MB_STRLEN*2+1];
+    char software[MB_STRLEN*2+1];
+    char theme[MB_STRLEN*2+1];
+    char seed[MB_STRLEN*2+1];
+
     struct blockdef_t blockdef[BLOCKMAX];
     uint8_t block_perms[BLOCKMAX];
 
