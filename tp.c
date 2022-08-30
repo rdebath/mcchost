@@ -17,9 +17,10 @@
 &T/TP [x y z] <yaw> <pitch>
 Teleports yourself to the given block coordinates.
 Use ~ before a coordinate to move relative to current position
-Use a decimal value for sub block positioning.
+Use a decimal value for sub block positioning
 &T/TP [player]
-Teleports yourself to that player.
+Teleport yourself to the level and position of the player
+The player name may be any unique substring
 Shortcuts: &T/Move, /Teleport
 */
 
@@ -67,9 +68,21 @@ cmd_tp(char * cmd, char *arg)
 		    player_posn = c.posn;
 		    return;
 		}
+		client_level_t lvl = {0};
+		if (c.on_level >= 0 && c.on_level < MAX_LEVEL)
+		    lvl = shdat.client->levels[c.on_level];
 
-		// direct_teleport(
-		printf_chat("&WCannot teleport to user %s", str1);
+		if (!lvl.loaded || lvl.backup_id < 0) {
+		    printf_chat("&WUser %s is lost in the void", c.name.c);
+		    return;
+		}
+
+		if (!direct_teleport(lvl.level.c, lvl.backup_id, &c.posn)) {
+		    if (lvl.backup_id == 0)
+			printf_chat("&WCannot teleport to user %s on %s", c.name.c, lvl.level.c);
+		    else
+			printf_chat("&WCannot teleport to user %s on museum of %s", c.name.c, lvl.level.c);
+		}
 		return;
 	    }
 	    if (mode == 1 && ucount == 0) break;

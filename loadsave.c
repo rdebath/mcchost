@@ -161,6 +161,86 @@ cmd_main(char * UNUSED(cmd), char * UNUSED(arg))
     read_only_message();
 }
 
+int
+direct_teleport(char *level, int backup_id, xyzhv_t *npos)
+{
+    char fixedname[MAXLEVELNAMELEN*4], buf2[256], levelname[MAXLEVELNAMELEN+1];
+
+    fix_fname(fixedname, sizeof(fixedname), level);
+
+    if (backup_id == 0) {
+	if (!check_level(level, fixedname)) {
+	    printf_chat("&WLevel &S%s&W is not available.", levelname);
+	    return 0;
+	}
+
+        snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+        if (access(buf2, F_OK) != 0) {
+            printf_chat("&SLevel \"%s\" does not exist", level);
+            return 0;
+        }
+
+    } else if (backup_id > 0) {
+
+	snprintf(buf2, sizeof(buf2), LEVEL_BACKUP_NAME, fixedname, backup_id);
+	if (access(buf2, F_OK) != 0){
+	    fprintf_logfile("Backup file \"%s\" does not exist.", buf2);
+	    printf_chat("&SBackup %d for level %s does not exist", backup_id, level);
+	    return 0;
+	}
+    } else
+	return 0;
+
+    unfix_fname(levelname, sizeof(levelname), fixedname);
+    if (*levelname == 0) {
+	fprintf_logfile("Error on map name in direct_teleport \"%s\" file:\"%s\"", level, fixedname);
+	if (*level && !*fixedname)
+	    printf_chat("&SNo levels match \"%s\"", level);
+	else
+	    printf_chat("&SCould not load level file \"%s\"", fixedname);
+	return 0;
+    }
+
+
+    if (backup_id) {
+	char fixedname2[MAXLEVELNAMELEN*4];
+	strcpy(fixedname2, fixedname);
+	snprintf(fixedname, sizeof(fixedname), "%s.%d", fixedname2, backup_id);
+    }
+
+    stop_shared();
+
+    start_level(levelname, fixedname, backup_id);
+    open_level_files(levelname, backup_id, fixedname, 0);
+    if (!level_prop) {
+        printf_chat("&WLevel load failed, returning to main");
+        cmd_main(0,0);
+        return 0;
+    }
+
+    if (backup_id) {
+	level_prop->readonly = 1;
+	level_prop->disallowchange = 0;
+    }
+
+    send_map_file();
+    send_spawn_pkt(255, user_id, level_prop->spawn);
+
+    if (backup_id)
+	printf_chat("@&S%s went to museum %d of &7%s", user_id, backup_id, levelname);
+    else {
+	printf_chat("@&S%s went to &7%s", user_id, levelname);
+	read_only_message();
+    }
+
+    if (npos) {
+	send_posn_pkt(255, &player_posn, *npos);
+	player_posn = *npos;
+    }
+
+    return 1;
+}
+
 void
 cmd_load(char * UNUSED(cmd), char * arg)
 {

@@ -14,6 +14,7 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Use direct_teleport for all map loads.
  +) Allow /load for user's level
  +) Allow non-overwriting /save for anyone.
     -- Or username prefix ?
