@@ -201,11 +201,15 @@ post_chat(int where, int type, char * chat, int chat_len)
 	}
 
 	// Full buffer gets sent IF it's a normal message
-	if (d >= MB_STRLEN && type == 0) {
-	    if (where == 1)
-		send_message_pkt(0, pkt.message_type, pkt.message);
-	    else
-		update_chat(&pkt);
+	if (d >= MB_STRLEN) {
+	    if (type == 0) {
+		if (where == 1)
+		    send_message_pkt(0, pkt.message_type, pkt.message);
+		else
+		    update_chat(&pkt);
+	    } else
+		break;
+
 	    el = d = 0;
 	    add_gt = 1;
 	    colour = -1;

@@ -5,4 +5,11 @@ teeny_sha1.c uses the MIT License
 makeheaders.c uses the FreeBSD License
 pcg_basic.c uses the Apache License, Version 2.0
 
-Source code: See LICENSE.mcchost
+Other source code:
+    See LICENSE.mcchost for AFGPL
+
+    The above list of files may not be complete; check individual files.
+
+    The AFGPL requires publishing of source of modified versions of the
+    code to all users of that code; the URL for this is shown in the
+    help.c file under the command "/help license"

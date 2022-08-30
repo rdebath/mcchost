@@ -24,11 +24,13 @@ Go to a random level.
 Return to the system main level
 */
 
-/*TODO: HELP load
+/*HELP load H_CMD
 &T/load [name]
+Load an ini file into the current level.
 */
-/*TODO: HELP save
+/*HELP save H_CMD
 &T/save [name]
+Save the properties of the current level into into ini/${name}.ini
 */
 
 #if INTERFACE
@@ -110,7 +112,7 @@ cmd_goto(char * cmd, char * arg)
     open_level_files(levelname, 0, fixedname, 0);
     if (!level_prop) {
 	printf_chat("&WLevel load failed, returning to main");
-	cmd_main("","");
+	cmd_main(0,0);
 	return;
     }
     player_posn = level_prop->spawn;

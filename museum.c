@@ -93,7 +93,7 @@ cmd_museum(char * UNUSED(cmd), char * arg)
     open_level_files(levelname, backup_id, fixedname, 0);
     if (!level_prop) {
 	printf_chat("&WLevel load failed, returning to main");
-	cmd_main("","");
+	cmd_main(0,0);
 	return;
     }
 

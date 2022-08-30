@@ -14,6 +14,17 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Allow /load for user's level
+ +) Allow non-overwriting /save for anyone.
+    -- Or username prefix ?
+
+ +) Add VERSION computation to "/help license".
+
+ +) Inter level /tp [user]
+
+ +) Too many 'Saving "main" to map directory' calls.
+    -- Due to sig ALRM ?
+
  +) Antispam (Block, text, commands ?)
     -- If text is identical to previous do a special?
 

@@ -8,6 +8,8 @@
 #if INTERFACE
 #define CMD_TP \
     {N"tp", &cmd_tp}, \
+    {N"move", &cmd_tp, .dup=1}, \
+    {N"teleport", &cmd_tp, .dup=1}, \
     {N"spawn", &cmd_spawn}
 #endif
 
@@ -18,7 +20,7 @@ Use ~ before a coordinate to move relative to current position
 Use a decimal value for sub block positioning.
 &T/TP [player]
 Teleports yourself to that player.
-Shortcuts: &T/Move, /Teleport, /TPP for /TP -precise
+Shortcuts: &T/Move, /Teleport
 */
 
 /*HELP spawn H_CMD
@@ -37,20 +39,44 @@ cmd_tp(char * cmd, char *arg)
 
     if (str1 != 0 && str2 == 0) {
 	int my_level = shdat.client->user[my_user_no].on_level;
-	for(int i = 0; i < MAX_USER; i++)
-	{
-	    if (i == my_user_no) continue; // Me
-	    client_entry_t c = shdat.client->user[i];
 
-	    c.visible = (c.active && c.on_level == my_level);
-	    if (!c.visible) continue; // Wrong level, etc.
+	int ucount = 0;
+	for(int mode = 0; mode < 3; mode++) {
+	    for(int i = 0; i < MAX_USER; i++)
+	    {
+		if (i == my_user_no) continue; // Me
+		client_entry_t c = shdat.client->user[i];
 
-	    // TODO --> partial match.
-	    if (strcmp(str1, c.name.c) != 0) continue; // Not them.
+		c.visible = (c.active && c.on_level == my_level);
+		if (!c.active) continue;
 
-	    send_posn_pkt(255, &player_posn, c.posn);
-	    player_posn = c.posn;
-	    return;
+		if (mode == 0) {
+		    // Exact match
+		    if (strcmp(str1, c.name.c) != 0) continue; // Not them.
+		} else if (mode == 1) {
+		    // How many partial matches
+		    if (my_strcasestr(c.name.c, str1) != 0)
+			ucount++;
+		    continue;
+		} else // Partial match
+		    if (my_strcasestr(c.name.c, str1) == 0)
+			continue;
+
+		if (c.on_level == my_level) {
+		    send_posn_pkt(255, &player_posn, c.posn);
+		    player_posn = c.posn;
+		    return;
+		}
+
+		// direct_teleport(
+		printf_chat("&WCannot teleport to user %s", str1);
+		return;
+	    }
+	    if (mode == 1 && ucount == 0) break;
+	    if (mode == 1 && ucount > 1) {
+		printf_chat("&WCan't tp to \"%s\" it matches %d users", str1, ucount);
+		return;
+	    }
 	}
 	printf_chat("&WCannot find user %s", str1);
 	return;

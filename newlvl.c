@@ -7,14 +7,35 @@
 #include "newlvl.h"
 
 /*HELP newlvl H_CMD
-&T/newlvl name [width height length]
+&T/newlvl name [width height length] [theme] [seed]
 Create a new level, if size is not set it uses the default.
 The name "+" is a shorthand for your personal level.
+
+Themes are flat, plain, pixel, empty, space, rainbow
+Seed is:
+    for flat: level of grass
+    for plain, space, rainbow: Random seed.
 */
 
 #if INTERFACE
 #define CMD_NEWLVL {N"newlvl", &cmd_newlvl}
+
+typedef struct lvltheme_t lvltheme_t;
+struct lvltheme_t {
+    char *name;
+    int setrandom;
+};
 #endif
+
+lvltheme_t themelist[] = {
+    {"plain", 1},
+    {"flat", 0},	// seed defaults to Y/2
+    {"pixel", 0},
+    {"empty", 0},
+    {"space", 1},
+    {"rainbow", 1},
+    {0}
+};
 
 void
 cmd_newlvl(char * cmd, char * arg)
@@ -80,6 +101,22 @@ cmd_newlvl(char * cmd, char * arg)
 	}
     }
 
+    int themeid = -1;
+    if (th) {
+	for(int i=0; themelist[i].name; i++) {
+	    if (strcasecmp(th, themelist[i].name) == 0) {
+		themeid = i;
+		break;
+	    }
+	}
+
+	if (themeid < 0) {
+	    printf_chat("&STheme '%s' was not found", th);
+	    return;
+	}
+    }
+    if (themeid < 0) themeid = 0;
+
     FILE *ifd, *ofd;
     ofd = fopen(buf2, "w");
 
@@ -100,13 +137,7 @@ cmd_newlvl(char * cmd, char * arg)
 	fprintf(ofd, "Size.Z = %d\n", z);
     }
 
-    if (th) {
-	int l = strlen(th)*4+4;
-	char * buf = malloc(l);
-	convert_to_utf8(buf, l, th);
-	fprintf(ofd, "Theme = %s\n", buf);
-	free(buf);
-    }
+    fprintf(ofd, "Theme = %s\n", themelist[themeid].name);
 
     if (se) {
 	int l = strlen(se)*4+4;
@@ -114,6 +145,11 @@ cmd_newlvl(char * cmd, char * arg)
 	convert_to_utf8(buf, l, se);
 	fprintf(ofd, "Seed = %s\n", buf);
 	free(buf);
+    } else if (themelist[themeid].setrandom) {
+	char sbuf[MB_STRLEN*2+1] = "";
+	pcg32_random_t rng[1];
+	pcg32_init_rng(rng, themelist[themeid].name, sbuf);
+	fprintf(ofd, "Seed = %s\n", sbuf);
     }
 
     fclose(ofd);

@@ -14,15 +14,21 @@ struct help_text_t {
 
 /*HELP Welcome 0 */
 
+/*HELP license H_CMD
+This software is licensed under the AFGPL and other licenses.
+Details and original source available at
+    &Thttps://github.com/rdebath/mcchost
+*/
+
 /*HELP help H_CMD
 Commands can be listed with &T/commands
 To see help for a command type &T/help CommandName
 Examples include &T/goto&S, &T/maps&S.
-Also see /faq and /news.
+Also see /faq, /news and /help license.
 */
 
 /*HELP other
-Other help files: chars, inifile, edlin, ...
+Other help files: license, chars, inifile, edlin, ...
 */
 /* Other generic help texts at the end of this file */
 
@@ -134,7 +140,7 @@ cmd_clear(char * cmd, char * UNUSED(arg))
 &fExample: What does this server run on?
     This server runs on MCCHost
 &fWhere is the source?
-    &eSource is at https://github.com/rdebath/mcchost
+    &eSource is at &Thttps://github.com/rdebath/mcchost
 */
 
 /*HELP news H_CMD

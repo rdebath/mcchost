@@ -170,6 +170,7 @@ init_flat_level()
 		    level_blocks[World_Pack(x,y,z)] = px;
 		}
     } else if (strcasecmp(level_prop->theme, "space") == 0) {
+	int has_seed = !!level_prop->seed[0];
 	pcg32_init_rng(rng, level_prop->theme, level_prop->seed);
 	level_prop->side_level = 1;
 	level_prop->edge_block = Block_Obsidian;
@@ -194,8 +195,9 @@ init_flat_level()
 			    px = Block_Iron;
 		    level_blocks[World_Pack(x,y,z)] = px;
 		}
-	level_prop->dirty_save = 1;
+	level_prop->dirty_save = !has_seed;
     } else if (strcasecmp(level_prop->theme, "rainbow") == 0) {
+	int has_seed = !!level_prop->seed[0];
 	pcg32_init_rng(rng, level_prop->theme, level_prop->seed);
 	level_prop->side_level = 1;
 	for(y=0; y<level_prop->cells_y; y++)
@@ -211,14 +213,12 @@ init_flat_level()
 			px = pcg32_boundedrand_r(rng, Block_White-Block_Red)+Block_Red;
 		    level_blocks[World_Pack(x,y,z)] = px;
 		}
-	level_prop->dirty_save = 1;
-    } else if (strcasecmp(level_prop->theme, "plain") == 0 || level_prop->theme[0] == 0) {
-	if (level_prop->theme[0] == 0)
-	    strcpy(level_prop->theme, "plain");
-
+	level_prop->dirty_save = !has_seed;
+    } else if (strcasecmp(level_prop->theme, "plain") == 0) {
+	int has_seed = !!level_prop->seed[0];
 	pcg32_init_rng(rng, level_prop->theme, level_prop->seed);
 	gen_plain_map(rng);
-	level_prop->dirty_save = 1;
+	level_prop->dirty_save = !has_seed;
 
     } else {
 	if (strcasecmp(level_prop->theme, "flat") == 0) {
