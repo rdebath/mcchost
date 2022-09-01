@@ -516,7 +516,7 @@ login()
     else if (*server->secret != 0 && *server->secret != '-') {
 
 	if (check_mppass(player.mppass) == 0)
-	    disconnect(0, "Login failed! Close the game and sign in again.");
+	    disconnect(0, "Login failed! Close the game and refresh the server list.");
 
 	user_authenticated = 1;
     }

@@ -32,6 +32,7 @@ lvltheme_t themelist[] = {
     {"flat", 0},	// seed defaults to Y/2
     {"pixel", 0},
     {"empty", 0},
+    {"air", 0},
     {"space", 1},
     {"rainbow", 1},
     {0}
@@ -147,8 +148,8 @@ cmd_newlvl(char * cmd, char * arg)
 	free(buf);
     } else if (themelist[themeid].setrandom) {
 	char sbuf[MB_STRLEN*2+1] = "";
-	pcg32_random_t rng[1];
-	pcg32_init_rng(rng, themelist[themeid].name, sbuf);
+	map_random_t rng[1];
+	map_init_rng(rng, themelist[themeid].name, sbuf);
 	fprintf(ofd, "Seed = %s\n", sbuf);
     }
 

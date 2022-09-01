@@ -15,13 +15,16 @@ See "/help todo" for notes.
 
 /*HELP todo
  +) Use direct_teleport for all map loads.
+ +) Add "backup now" command.
+    -- Save and *copy* to backup.
+    -- Save with no last backup date? Or just a "manual backup" flag.
  +) Allow /load for user's level
  +) Allow non-overwriting /save for anyone.
     -- Or username prefix ?
 
- +) Add VERSION computation to "/help license".
+ +) Permission for level modifiable by anyone (with /set etc).
 
- +) Inter level /tp [user]
+ +) Add VERSION computation to "/help license".
 
  +) Too many 'Saving "main" to map directory' calls.
     -- Due to sig ALRM ?

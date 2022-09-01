@@ -222,7 +222,7 @@ process_args(int argc, char **argv)
 		    .save_interval = 15*60,
 		    .backup_interval = 24*3600,
 		    .key_rotation = 6*3600,
-		    .max_players = 255,
+		    .max_players = 128,
 		    .flag_log_commands = 1,
 		    .flag_log_chat = 1,
 		    .afk_interval = 10*60,

@@ -108,10 +108,15 @@ init_rand_gen()
     gettimeofday(&now, 0);
 #ifdef PCG32_INITIALIZER
     // Somewhat better random seed, the whole time, pid and ASLR
+    // The "stream" needs to be different from the main seed so
+    // don't include the time in that part.
     pcg32_srandom(
-	now.tv_sec*(uint64_t)1000000 + now.tv_usec,
+	(now.tv_sec*(uint64_t)1000000 + now.tv_usec) ^
+	((uintptr_t)&process_args) ^
+	((int64_t)(getpid()) << (sizeof(uintptr_t)*4+8)),
 	(((uintptr_t)&process_args) >> 12) +
-	((int64_t)(getpid()) << sizeof(uintptr_t)*4) );
+	((int64_t)(getpid()) << (sizeof(uintptr_t)*4))
+	);
 
 // NB: for x86/x64
 //              0x88000888
@@ -123,28 +128,3 @@ init_rand_gen()
     srandom(now.tv_sec ^ (now.tv_usec*4294U));
 #endif
 }
-
-#ifdef PCG32_INITIALIZER
-void
-pcg32_init_rng(pcg32_random_t *rng, char * theme, char * seed)
-{
-    char sbuf[MB_STRLEN*2+1] = "";
-    if (!seed) seed = sbuf;
-    if (!*seed) {
-	init_rand_gen();
-	snprintf(seed, sizeof(sbuf), "0x%jx,0x%jx",
-	    ((uintmax_t)1<<32)*pcg32_random() + pcg32_random(),
-	    ((uintmax_t)1<<32)*pcg32_random() + pcg32_random());
-    }
-
-    uint64_t v1, v2;
-    char * com = 0;
-    v1 = strtoumax(seed, &com, 0);
-    if (com && *com == ',' && com[1] != 0)
-	v2 = strtoumax(com+1, 0, 0);
-    else v2 = v1;
-
-    printlog("Theme = %s, Seed = 0x%jx,0x%jx", theme, v1, v2);
-    pcg32_srandom_r(rng, v1, v2);
-}
-#endif

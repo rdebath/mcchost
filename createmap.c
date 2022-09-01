@@ -7,6 +7,12 @@
 
 #include "createmap.h"
 
+#if INTERFACE
+#ifdef PCG32_INITIALIZER
+typedef pcg32_random_t map_random_t;
+#endif
+#endif
+
 /*
  * This populates a default map file properties.
 
@@ -140,7 +146,7 @@ patch_map_nulls(xyzhv_t oldsize)
 void
 init_flat_level()
 {
-    pcg32_random_t rng[1] = {PCG32_INITIALIZER};
+    map_random_t rng[1];
     map_len_t test_map;
     int x, y, z, y1;
 
@@ -169,9 +175,15 @@ init_flat_level()
 		    if (y==0) px = Block_Bedrock;
 		    level_blocks[World_Pack(x,y,z)] = px;
 		}
+    } else if (strcasecmp(level_prop->theme, "air") == 0) {
+	level_prop->seed[0] = 0;
+	for(y=0; y<level_prop->cells_y; y++)
+	    for(z=0; z<level_prop->cells_z; z++)
+		for(x=0; x<level_prop->cells_x; x++)
+		    level_blocks[World_Pack(x,y,z)] = Block_Air;
     } else if (strcasecmp(level_prop->theme, "space") == 0) {
 	int has_seed = !!level_prop->seed[0];
-	pcg32_init_rng(rng, level_prop->theme, level_prop->seed);
+	map_init_rng(rng, level_prop->theme, level_prop->seed);
 	level_prop->side_level = 1;
 	level_prop->edge_block = Block_Obsidian;
 	level_prop->sky_colour = 0x000000;
@@ -198,7 +210,7 @@ init_flat_level()
 	level_prop->dirty_save = !has_seed;
     } else if (strcasecmp(level_prop->theme, "rainbow") == 0) {
 	int has_seed = !!level_prop->seed[0];
-	pcg32_init_rng(rng, level_prop->theme, level_prop->seed);
+	map_init_rng(rng, level_prop->theme, level_prop->seed);
 	level_prop->side_level = 1;
 	for(y=0; y<level_prop->cells_y; y++)
 	    for(z=0; z<level_prop->cells_z; z++)
@@ -216,7 +228,7 @@ init_flat_level()
 	level_prop->dirty_save = !has_seed;
     } else if (strcasecmp(level_prop->theme, "plain") == 0) {
 	int has_seed = !!level_prop->seed[0];
-	pcg32_init_rng(rng, level_prop->theme, level_prop->seed);
+	map_init_rng(rng, level_prop->theme, level_prop->seed);
 	gen_plain_map(rng);
 	level_prop->dirty_save = !has_seed;
 
@@ -258,10 +270,11 @@ init_flat_level()
 // Water is placed above the sand.
 // Trees and flowers are planted on the land.
 void
-gen_plain_map(pcg32_random_t *rng)
+gen_plain_map(map_random_t *rng)
 {
     int x, y, z;
     uint16_t *heightmap = calloc(level_prop->cells_x*level_prop->cells_z, sizeof(*heightmap));
+
     gen_plain_heightmap(rng, heightmap);
     int sl = level_prop->cells_y;
 
@@ -293,7 +306,7 @@ gen_plain_map(pcg32_random_t *rng)
 		}
 	    }
 
-    // None too close to spawn.
+    // No trees too close to spawn.
     x = level_prop->spawn.x/32; z = level_prop->spawn.z/32;
     for(int dx = -5; dx<6; dx++)
 	for(int dz = -5; dz<6; dz++)
@@ -361,7 +374,7 @@ gen_plain_map(pcg32_random_t *rng)
 }
 
 void
-gen_plain_heightmap(pcg32_random_t *rng, uint16_t * heightmap)
+gen_plain_heightmap(map_random_t *rng, uint16_t * heightmap)
 {
 
     int cx = level_prop->cells_x/2;
@@ -384,7 +397,7 @@ gen_plain_heightmap(pcg32_random_t *rng, uint16_t * heightmap)
 }
 
 LOCAL void
-gen_plain(pcg32_random_t *rng, uint16_t * heightmap, int tx, int tz, int s)
+gen_plain(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s)
 {
     if (tx < 0 || tx >= level_prop->cells_x) return;
     if (tz < 0 || tz >= level_prop->cells_z) return;
@@ -426,3 +439,59 @@ gen_plain(pcg32_random_t *rng, uint16_t * heightmap, int tx, int tz, int s)
 	heightmap[tx+tz*level_prop->cells_x] = avg;
     }
 }
+
+#ifdef PCG32_INITIALIZER
+void
+map_init_rng(map_random_t *rng, char * theme, char * seed)
+{
+    char sbuf[MB_STRLEN*2+1] = "";
+    if (!seed) seed = sbuf;
+    if (!*seed) {
+	init_rand_gen();
+	uint32_t n1 = pcg32_random(), n2 = pcg32_random();
+	snprintf(seed, sizeof(sbuf), "%08x-%04x-%04x-%04x-%04x%08x",
+	    pcg32_random(),
+	    n1 & 0xFFFF,
+	    0x4000 + ((n1>>16) & 0xFFF),
+	    0x8000 + ((n2>>16) & 0x3FFF),
+	    n2 & 0xFFFF,
+	    pcg32_random());
+    }
+
+    // if it appears to be a guid, shuffle.
+    char xbuf[MB_STRLEN*2+1], *sseed = seed;
+    if (strlen(seed) == 36 && seed[8] == '-' && seed[13] == '-' &&
+	    seed[18] == '-' && seed[23] == '-') {
+
+	// XXXXXXXX-XXXX-4XXX-8XXX-XXXXXXXXXXXX
+	// 0123456789012345678901234567890123456
+
+	// Valid guid does not overlap with simple integer.
+	// Invalid guid can represent all possible seeds.
+	char * p = xbuf;
+	memcpy(p, "0x", 2); p += 2;
+	memcpy(p, seed+19, 4); p += 4;	// Variant
+	memcpy(p, seed+24, 12); p += 12;
+	memcpy(p, ",0x", 3); p += 3;
+	memcpy(p, seed+14, 4); p += 4;	// Version
+	memcpy(p, seed+9, 4); p += 4;
+	memcpy(p, seed, 8); p += 8;
+	xbuf[37] = 0;
+	sseed = xbuf;
+    }
+
+    uint64_t v1, v2;
+    char * com = 0;
+    v1 = strtoumax(sseed, &com, 0);
+    if (com && *com == ',' && com[1] != 0)
+	v2 = strtoumax(com+1, 0, 0);
+    else {
+	uint64_t seed = v1;
+	v2 = next_splitmix64(&seed);
+    }
+
+    printlog("Theme = %s, Seed = %s", theme, seed);
+    // printlog("Theme = %s, Seed = %s, Rng = 0x%jx,0x%jx", theme, seed, v1, v2);
+    pcg32_srandom_r(rng, v1, v2);
+}
+#endif

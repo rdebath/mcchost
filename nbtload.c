@@ -697,7 +697,6 @@ try_asciimode(gzFile ifd, char * levelfile)
 
     xyzhv_t oldsize = {0};
     patch_map_nulls(oldsize);
-    level_prop->dirty_save = 1;
 
     if (open_blocks(levelfile) < 0)
 	return 0;
