@@ -14,6 +14,8 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) /help all ?
+
  +) Use direct_teleport for all map loads.
  +) Add "backup now" command.
     -- Save and *copy* to backup.

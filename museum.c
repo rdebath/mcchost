@@ -101,7 +101,7 @@ cmd_museum(char * UNUSED(cmd), char * arg)
     level_prop->disallowchange = 0;
 
     send_map_file();
-    send_spawn_pkt(255, user_id, level_prop->spawn);
+    send_addentity_pkt(255, user_id, user_id, level_prop->spawn);
 
     printf_chat("@&S%s went to museum %d of &7%s", user_id, backup_id, levelname);
 

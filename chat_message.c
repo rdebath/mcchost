@@ -184,14 +184,16 @@ post_chat(int where, int type, char * chat, int chat_len)
 	    int eatsp = 0;
 	    if (add_gt) {
 		add_gt = 0;
-		pkt.message[d++] = '&';
-		pkt.message[d++] = 'f';
+		if (colour != 'f') {
+		    pkt.message[d++] = '&';
+		    pkt.message[d++] = 'f';
+		    colour = 'f';
+		}
 		pkt.message[d++] = '>';
 		pkt.message[d++] = ' ';
-		colour = 'f';
 		eatsp = 1;
 	    }
-	    if (needs>1) {
+	    if (needs>1 && colour != ncolour) {
 		pkt.message[d++] = '&';
 		pkt.message[d++] = ncolour;
 		colour = ncolour;
@@ -201,6 +203,7 @@ post_chat(int where, int type, char * chat, int chat_len)
 	}
 
 	// Full buffer gets sent IF it's a normal message
+	// Otherwise, truncate.
 	if (d >= MB_STRLEN) {
 	    if (type == 0) {
 		if (where == 1)
@@ -212,7 +215,8 @@ post_chat(int where, int type, char * chat, int chat_len)
 
 	    el = d = 0;
 	    add_gt = 1;
-	    colour = -1;
+	    colour = 'f';
+	    if (chat[s]!=0 && (chat[s] < ' ' || chat[s] > '~')) colour = -1;
 	    ws = wd = -1;
 	}
     }

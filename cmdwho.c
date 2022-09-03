@@ -1,3 +1,4 @@
+#include <stdio.h>
 
 #include "cmdwho.h"
 
@@ -23,21 +24,23 @@ cmd_who(char * UNUSED(cmd), char * UNUSED(arg))
 	client_entry_t c = shdat.client->user[i];
 	if (!c.active) continue;
 	users++;
+	char nbuf[256];
+	snprintf(nbuf, sizeof(nbuf), "%s%s", c.name.c, c.is_afk?" (AFK)":"");
 
 	int level_id = c.on_level;
 	if (level_id<0)
-	    printf_chat("\\%s is between levels", c.name.c);
+	    printf_chat("\\%s is between levels", nbuf);
 	else if (shdat.client->levels[level_id].backup_id>0)
 	    printf_chat("\\%s is on museum %d of %s at (%d,%d,%d)",
 		shdat.client->levels[level_id].backup_id,
-		c.name.c, shdat.client->levels[level_id].level.c,
+		nbuf, shdat.client->levels[level_id].level.c,
 		c.posn.x/32, c.posn.y/32, c.posn.z/32);
 	else if (shdat.client->levels[level_id].backup_id==0)
 	    printf_chat("\\%s is on %s at (%d,%d,%d)",
-		c.name.c, shdat.client->levels[level_id].level.c,
+		nbuf, shdat.client->levels[level_id].level.c,
 		c.posn.x/32, c.posn.y/32, c.posn.z/32);
 	else
-	    printf_chat("\\%s is in the void", c.name.c);
+	    printf_chat("\\%s is in the void", nbuf);
     }
 
     if (current_level_backup_id == 0)

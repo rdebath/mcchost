@@ -65,6 +65,7 @@ static struct timeval last_check;
 
 xyzhv_t player_posn = {0};
 block_t player_held_block = -1;
+time_t player_last_move;
 
 void
 check_user()
@@ -103,9 +104,31 @@ check_user()
 	// Is this user visible.
 	c.visible = (c.active && c.on_level == my_level);
 
+	if (extn_extplayerlist) {
+	    if (c.active && (!myuser[i].active ||
+		    myuser[i].on_level != c.on_level ||
+		    myuser[i].is_afk != c.is_afk) ) {
+		char buf[256] = "";
+		char buf2[256] = "";
+		if (c.on_level >= 0 && c.on_level < MAX_LEVEL) {
+		    int l = c.on_level;
+		    nbtstr_t n = shdat.client->levels[l].level;
+		    if (shdat.client->levels[l].loaded)
+			snprintf(buf, sizeof(buf), "On %s", n.c);
+		}
+		snprintf(buf2, sizeof(buf2), "&e%s%s", c.name.c, c.is_afk?" &7(AFK)":"");
+		send_addplayername_pkt(i, c.name.c, buf2, buf, 0);
+
+		if (c.visible == myuser[i].visible)
+		    myuser[i] = c;
+	    } else if (!c.active && myuser[i].active) {
+		send_removeplayername_pkt(i);
+		myuser[i].active = 0;
+	    }
+	}
 	if (c.visible && !myuser[i].visible) {
 	    // New user.
-	    send_spawn_pkt(i, c.name.c, c.posn);
+	    send_addentity_pkt(i, c.name.c, c.name.c, c.posn);
 	    myuser[i] = c;
 	} else
 	if (!c.visible && myuser[i].visible) {
@@ -119,14 +142,14 @@ check_user()
     }
 
     if (server->afk_kick_interval > 60)
-	if (myuser[my_user_no].last_move + server->afk_kick_interval < now.tv_sec) {
+	if (player_last_move + server->afk_kick_interval < now.tv_sec) {
 	    my_user.dirty = 1;
 	    my_user.kick_count++;
 	    logout("Auto-kick, AFK");
 	}
 
     if (!myuser[my_user_no].is_afk && server->afk_interval >= 60) {
-	if (myuser[my_user_no].last_move + server->afk_interval < now.tv_sec) {
+	if (player_last_move + server->afk_interval < now.tv_sec) {
 	    myuser[my_user_no].is_afk = 1;
 	    shdat.client->user[my_user_no].is_afk = 1;
 
@@ -172,8 +195,9 @@ reset_player_list()
 	myuser[i].visible = myuser[i].active = 0;
     }
 
-    if (level_prop)
-	send_spawn_pkt(255, user_id, level_prop->spawn);
+    if (level_prop) {
+	send_addentity_pkt(255, user_id, user_id, level_prop->spawn);
+    }
     if (player_posn.valid)
 	send_posn_pkt(255, 0, player_posn);
     else {
@@ -211,9 +235,9 @@ void
 update_player_move_time()
 {
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
-    myuser[my_user_no].last_move = time(0);
+    player_last_move = time(0);
     if (!shdat.client) return;
-    shdat.client->user[my_user_no].last_move = myuser[my_user_no].last_move;
+    shdat.client->user[my_user_no].last_move = player_last_move;
     shdat.client->user[my_user_no].is_afk = 0;
 
     if (myuser[my_user_no].is_afk) {
@@ -283,11 +307,11 @@ start_user()
     t.client_software = client_software;
     t.on_level = -1;
     t.ip_address = client_ipv4_addr;
-    t.last_move = time(0);
     shdat.client->user[my_user_no] = t;
     shdat.client->generation++;
 
     myuser[my_user_no] = shdat.client->user[my_user_no];
+    player_last_move = time(0);
     unlock_fn(system_lock);
 }
 
@@ -332,6 +356,12 @@ start_level(char * levelname, char * levelfile, int backup_id)
     shdat.client->generation++;
 
     unlock_fn(system_lock);
+
+    if (extn_extplayerlist) {
+	char buf[256] = "";
+	snprintf(buf, sizeof(buf), "On %s", shdat.client->levels[level_id].level.c);
+	send_addplayername_pkt(255, user_id, user_id, buf, 0);
+    }
 }
 
 void

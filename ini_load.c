@@ -6,27 +6,30 @@
 
 #include "ini_load.h"
 
-/*HELP load H_CMD
-&T/load [name]
+/*HELP cload,confload H_CMD
+&T/cload [name]
 Load an ini file into the current level.
+Aliases: &T/confload
 */
-/*HELP save H_CMD
-&T/save [name]
+/*HELP csave,confsave H_CMD
+&T/csave [name]
 Save the properties of the current level into into ini/${name}.ini
+Aliases: &T/confsave
 */
 
 #if INTERFACE
 #define CMD_INILOAD \
-    {N"load", &cmd_load}, {N"save", &cmd_save}
+    {N"confload", &cmd_cload}, {N"cload", &cmd_cload, .dup=1}, \
+    {N"confsave", &cmd_csave}, {N"csave", &cmd_csave, .dup=1}
 #endif
 
 void
-cmd_load(char * UNUSED(cmd), char * arg)
+cmd_cload(char * cmd, char * arg)
 {
     if (!client_trusted)
-	printf_chat("&WUsage: /load [Auth] filename");
+	printf_chat("&WUsage: /%s [Auth] filename", cmd);
     else if (!arg || !*arg)
-	printf_chat("&WUsage: /load filename");
+	printf_chat("&WUsage: /%s filename", cmd);
     else {
 	int ro = level_prop->readonly;
 	char fixedname[200], buf[256];
@@ -52,16 +55,19 @@ cmd_load(char * UNUSED(cmd), char * arg)
 }
 
 void
-cmd_save(char * UNUSED(cmd), char * arg)
+cmd_csave(char * cmd, char * arg)
 {
-    if (!client_trusted)
-	printf_chat("&WUsage: /save [Auth] filename");
-    else if (!arg || !*arg)
-	printf_chat("&WUsage: /save filename");
+    if (!arg || !*arg)
+	printf_chat("&WUsage: /%s filename", cmd);
     else {
 	char fixedname[200], buf2[256];
 	fix_fname(fixedname, sizeof(fixedname), arg);
 	snprintf(buf2, sizeof(buf2), "ini/%s.ini", fixedname);
+
+	if (access(buf2, F_OK) == 0) {
+	    printf_chat("&WConfig file %s not overwritten", buf2);
+	    return;
+	}
 
 	save_ini_file(level_ini_fields, buf2);
 

@@ -25,7 +25,7 @@ static struct ext_list_t extensions[] = {
     { N"CustomBlocks",        1, &extn_customblocks },
     { N"HeldBlock",           1, &extn_heldblock },
     { N"TextHotKey",          1, &extn_texthotkey },		//ServerConf
-    { N"ExtPlayerList",       2, .disabled=1 },
+    { N"ExtPlayerList",       2, &extn_extplayerlist },		//V1 is Broken
     { N"EnvColors",           1, &extn_envcolours },
     { N"SelectionCuboid",     1, &extn_selectioncuboid },	//MapConf
     { N"BlockPermissions",    1, &extn_block_permission },	//UserMapConf
@@ -93,16 +93,17 @@ int extn_envcolours = 0;
 
 int extn_block_permission = 0;
 int extn_changemodel = 0;
-int extn_extentityposn = 0;
-int extn_envmapaspect = 0;
+int extn_emotefix = 0;
 int extn_envmapappearance = 0;
 int extn_envmapappearance2 = 0;
+int extn_envmapaspect = 0;
 int extn_evilbastard = 0;
 int extn_extendblockno = 0;
 int extn_extendtexno = 0;
+int extn_extentityposn = 0;
+int extn_extplayerlist = 0;
 int extn_fastmap = 0; // CC Crashes with 10bit gzip maps. pre 1.3.3
 int extn_fullcp437 = 0;
-int extn_emotefix = 0;
 int extn_hackcontrol = 0;
 int extn_heldblock = 0;
 int extn_instantmotd = 0;
@@ -316,17 +317,18 @@ process_extentry(pkt_extentry * pkt)
 	if (*client_software.c)
 	    sprintf(descbuf+strlen(descbuf),
 		" using \"%s\"", client_software.c);
+	else
+	    sprintf(descbuf+strlen(descbuf), " using <unnamed>");
 	
 	if (classicube_match_len+classicube_lastmatch == cpe_extn_advertised)
 	    sprintf(descbuf+strlen(descbuf),
-		", all %d extensions match Classicube", cpe_extn_advertised);
+		", %d exts, Classicube%s", cpe_extn_advertised, websocket?" web":"");
 	else if (classicube_match_len <= 1)
-	    sprintf(descbuf+strlen(descbuf),
-		", client has %d extensions", cpe_extn_advertised);
+	    sprintf(descbuf+strlen(descbuf), ", %sclient has %d extension%s",
+		websocket?"web-":"", cpe_extn_advertised, cpe_extn_advertised==1?"":"s");
 	else
-	    sprintf(descbuf+strlen(descbuf),
-		", first %d extensions of %d match Classicube",
-                classicube_match_len, cpe_extn_advertised);
+	    sprintf(descbuf+strlen(descbuf), ", CPE %sclient (CC %d of %d)",
+		websocket?"web-":"", classicube_match_len, cpe_extn_advertised);
 
 	printlog("%s", descbuf);
     }

@@ -595,6 +595,9 @@ send_removeplayername_pkt(int player_id)
 void
 send_addentity_pkt(int player_id, char * ingamename, char * skinname, xyzhv_t posn)
 {
+    if (!extn_extplayerlist)
+	return send_spawn_pkt(player_id, ingamename, posn);
+
     if ((player_id < 0 || player_id > 127) && player_id != 255) return;
 
     uint8_t packetbuf[1024];
@@ -603,25 +606,13 @@ send_addentity_pkt(int player_id, char * ingamename, char * skinname, xyzhv_t po
     *p++ = player_id;
     p += nb_string_write(p, ingamename);
     p += nb_string_write(p, skinname);
+    // if(!extn_extplayerlistv1) {
     nb_entcoord(&p, posn.x);
     nb_entcoord(&p, posn.y+51);	// TODO: Is this +51 right?
     nb_entcoord(&p, posn.z);
     *p++ = posn.h;
     *p++ = posn.v;
-    write_to_remote(packetbuf, p-packetbuf);
-}
-
-void
-send_addentityv1_pkt(int player_id, char * ingamename, char * skinname)
-{
-    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
-
-    uint8_t packetbuf[1024];
-    uint8_t *p = packetbuf;
-    *p++ = PKID_ADDENT;
-    *p++ = player_id;
-    p += nb_string_write(p, ingamename);
-    p += nb_string_write(p, skinname);
+    // }
     write_to_remote(packetbuf, p-packetbuf);
 }
 

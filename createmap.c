@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <limits.h>
 #include <time.h>
@@ -9,7 +11,15 @@
 
 #if INTERFACE
 #ifdef PCG32_INITIALIZER
-typedef pcg32_random_t map_random_t;
+#define map_random_t pcg32_random_t
+#define bounded_random_r pcg32_boundedrand_r
+#else
+#define map_random_t unx_random_t
+typedef struct unx_random_t unx_random_t;
+struct unx_random_t {
+    struct random_data rand_data;
+    char statebuf[128];	// Default size
+};
 #endif
 #endif
 
@@ -146,7 +156,6 @@ patch_map_nulls(xyzhv_t oldsize)
 void
 init_flat_level()
 {
-    map_random_t rng[1];
     map_len_t test_map;
     int x, y, z, y1;
 
@@ -164,6 +173,7 @@ init_flat_level()
 		    else if (z == level_prop->cells_z-1) px = Block_White;
 		    level_blocks[World_Pack(x,y,z)] = px;
 		}
+
     } else if (strcasecmp(level_prop->theme, "empty") == 0) {
 	level_prop->side_level = 1;
 	level_prop->seed[0] = 0;
@@ -175,14 +185,17 @@ init_flat_level()
 		    if (y==0) px = Block_Bedrock;
 		    level_blocks[World_Pack(x,y,z)] = px;
 		}
+
     } else if (strcasecmp(level_prop->theme, "air") == 0) {
 	level_prop->seed[0] = 0;
 	for(y=0; y<level_prop->cells_y; y++)
 	    for(z=0; z<level_prop->cells_z; z++)
 		for(x=0; x<level_prop->cells_x; x++)
 		    level_blocks[World_Pack(x,y,z)] = Block_Air;
+
     } else if (strcasecmp(level_prop->theme, "space") == 0) {
 	int has_seed = !!level_prop->seed[0];
+	map_random_t rng[1];
 	map_init_rng(rng, level_prop->theme, level_prop->seed);
 	level_prop->side_level = 1;
 	level_prop->edge_block = Block_Obsidian;
@@ -203,13 +216,15 @@ init_flat_level()
 		    else if (y == level_prop->cells_y-1) px = Block_Obsidian;
 		    else if (z == level_prop->cells_z-1) px = Block_Obsidian;
 		    if (px == Block_Obsidian)
-			if (pcg32_boundedrand_r(rng, 100) == 1)
+			if (bounded_random_r(rng, 100) == 1)
 			    px = Block_Iron;
 		    level_blocks[World_Pack(x,y,z)] = px;
 		}
 	level_prop->dirty_save = !has_seed;
+
     } else if (strcasecmp(level_prop->theme, "rainbow") == 0) {
 	int has_seed = !!level_prop->seed[0];
+	map_random_t rng[1];
 	map_init_rng(rng, level_prop->theme, level_prop->seed);
 	level_prop->side_level = 1;
 	for(y=0; y<level_prop->cells_y; y++)
@@ -222,12 +237,14 @@ init_flat_level()
 		    else if (x == level_prop->cells_x-1) px = Block_White;
 		    else if (z == level_prop->cells_z-1) px = Block_White;
 		    if (px == Block_White)
-			px = pcg32_boundedrand_r(rng, Block_White-Block_Red)+Block_Red;
+			px = bounded_random_r(rng, Block_White-Block_Red)+Block_Red;
 		    level_blocks[World_Pack(x,y,z)] = px;
 		}
 	level_prop->dirty_save = !has_seed;
+
     } else if (strcasecmp(level_prop->theme, "plain") == 0) {
 	int has_seed = !!level_prop->seed[0];
+	map_random_t rng[1];
 	map_init_rng(rng, level_prop->theme, level_prop->seed);
 	gen_plain_map(rng);
 	level_prop->dirty_save = !has_seed;
@@ -317,25 +334,25 @@ gen_plain_map(map_random_t *rng)
 	    heightmap[x2+z2*level_prop->cells_x] |= 0x8000;
 	}
 
-    int flowerrate = 25 + 5 * pcg32_boundedrand_r(rng, 15);
-    int treerate = 10 + 10 * pcg32_boundedrand_r(rng, 40);
+    int flowerrate = 25 + 5 * bounded_random_r(rng, 15);
+    int treerate = 10 + 10 * bounded_random_r(rng, 40);
     for(z=3; z<level_prop->cells_z-3; z++)
 	for(x=3; x<level_prop->cells_x-3; x++)
 	{
 	    int y1 = heightmap[x+z*level_prop->cells_x];
 	    if (y1 <= level_prop->cells_y/2-1) continue;
 	    if (y1+7 > level_prop->cells_y ||
-		    pcg32_boundedrand_r(rng, treerate) != 1) {
+		    bounded_random_r(rng, treerate) != 1) {
 		y1 &= 0x7FFF;
 		if (y1 >= level_prop->cells_y-1) continue;
-		if (pcg32_boundedrand_r(rng, flowerrate) == 1)
+		if (bounded_random_r(rng, flowerrate) == 1)
 		    level_blocks[World_Pack(x,y1+1,z)] = Block_Dandelion;
-		else if (pcg32_boundedrand_r(rng, flowerrate) == 1)
+		else if (bounded_random_r(rng, flowerrate) == 1)
 		    level_blocks[World_Pack(x,y1+1,z)] = Block_Rose;
 		continue;
 	    }
 
-	    int height = 3 + pcg32_boundedrand_r(rng, 4);
+	    int height = 3 + bounded_random_r(rng, 4);
 	    int y = y1+1;
 
 	    level_blocks[World_Pack(x,y1,z)] = Block_Dirt;
@@ -353,7 +370,7 @@ gen_plain_map(map_random_t *rng)
 
 			if (abs(dx) == extent && abs(dz) == extent) {
 			    if (dy > height) continue;
-			    if (pcg32_boundedrand_r(rng, 2) == 0)
+			    if (bounded_random_r(rng, 2) == 0)
 				level_blocks[World_Pack(xx,yy,zz)] = Block_Leaves;
 			} else {
 			    level_blocks[World_Pack(xx,yy,zz)] = Block_Leaves;
@@ -433,17 +450,17 @@ gen_plain(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s)
 	    if (max_y > min_y+1) max_y = min_y+1;
 #endif
 
-	heightmap[tx+tz*level_prop->cells_x] = min_y + pcg32_boundedrand_r(rng, max_y-min_y+1);
+	heightmap[tx+tz*level_prop->cells_x] = min_y + bounded_random_r(rng, max_y-min_y+1);
     } else {
 	avg += avcnt/2; avg /= avcnt;
 	heightmap[tx+tz*level_prop->cells_x] = avg;
     }
 }
 
-#ifdef PCG32_INITIALIZER
 void
 map_init_rng(map_random_t *rng, char * theme, char * seed)
 {
+#ifdef PCG32_INITIALIZER
     char sbuf[MB_STRLEN*2+1] = "";
     if (!seed) seed = sbuf;
     if (!*seed) {
@@ -463,11 +480,11 @@ map_init_rng(map_random_t *rng, char * theme, char * seed)
     if (strlen(seed) == 36 && seed[8] == '-' && seed[13] == '-' &&
 	    seed[18] == '-' && seed[23] == '-') {
 
-	// XXXXXXXX-XXXX-4XXX-8XXX-XXXXXXXXXXXX
+	// XXXXXXXX-XXXX-4XXX-YXXX-XXXXXXXXXXXX␀
 	// 0123456789012345678901234567890123456
+	// Y=[89ab] X=[0-9a-f]
 
-	// Valid guid does not overlap with simple integer.
-	// Invalid guid can represent all possible seeds.
+	// You need an invalid guid to represent all possible seeds.
 	char * p = xbuf;
 	memcpy(p, "0x", 2); p += 2;
 	memcpy(p, seed+19, 4); p += 4;	// Variant
@@ -486,12 +503,43 @@ map_init_rng(map_random_t *rng, char * theme, char * seed)
     if (com && *com == ',' && com[1] != 0)
 	v2 = strtoumax(com+1, 0, 0);
     else {
+	// PCG32 likes distinct streams to have a large hamming distance.
 	uint64_t seed = v1;
+	jump_splitmix64(&seed, 0x75b4fb5cadd2212e); // Random jump for this app.
+	v1 = next_splitmix64(&seed);
 	v2 = next_splitmix64(&seed);
     }
-
+    pcg32_srandom_r(rng, v1, v2);
     printlog("Theme = %s, Seed = %s", theme, seed);
     // printlog("Theme = %s, Seed = %s, Rng = 0x%jx,0x%jx", theme, seed, v1, v2);
-    pcg32_srandom_r(rng, v1, v2);
+#else
+    char sbuf[MB_STRLEN*2+1] = "";
+    if (!seed) seed = sbuf;
+    if (!*seed) {
+	init_rand_gen();
+	uint64_t v0 = random();
+	v0 = (v0<<31) + random();
+	snprintf(seed, sizeof(sbuf), "0x%jx", (uintmax_t)v0);
+    }
+    uint64_t v1;
+    if (strlen(seed) == 36 && seed[8] == '-')
+	v1 = strtoumax(seed, 0, 16);
+    else
+	v1 = strtoumax(seed, 0, 0);
+    map_random_t t = {0};
+    *rng = t;
+    initstate_r((unsigned int)(v1^(v1>>32)), rng->statebuf, sizeof(rng->statebuf), &rng->rand_data);
+    printlog("Theme = %s, Seed = %s", theme, seed);
+    // printlog("Theme = %s, Seed = %s, Rng = 0x%x", theme, seed, (unsigned int)v1);
+#endif
+}
+
+#ifndef PCG32_INITIALIZER
+uint32_t
+bounded_random_r(map_random_t *rng, int mod_r)
+{
+    uint32_t res;
+    random_r(&rng->rand_data, &res);
+    return res % mod_r; // Yes, it's biased
 }
 #endif

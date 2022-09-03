@@ -1,9 +1,10 @@
 Library components:
 
 lib_md5.c uses the RSA Data Security license
-teeny_sha1.c uses the MIT License
 makeheaders.c uses the FreeBSD License
 pcg_basic.c uses the Apache License, Version 2.0
+splitmix64.c Public domain or CC0
+teeny_sha1.c uses the MIT License
 
 Other source code:
     See LICENSE.mcchost for AFGPL

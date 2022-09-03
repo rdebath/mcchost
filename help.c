@@ -36,8 +36,7 @@ Other help files: license, chars, inifile, edlin, ...
 
 #define CMD_HELP \
     {N"help", &cmd_help}, {N"faq", &cmd_help}, {N"news", &cmd_help}, \
-    {N"clear", &cmd_clear}, {N"cls", &cmd_clear, .dup=1}, \
-    {N"womid", &cmd_clear, .dup=1, .nodup=1}
+    {N"clear", &cmd_clear}, {N"cls", &cmd_clear, .dup=1}
 #endif
 
 void
@@ -126,10 +125,8 @@ Alias: &T/cls
 */
 
 void
-cmd_clear(char * cmd, char * UNUSED(arg))
+cmd_clear(char * UNUSED(cmd), char * UNUSED(arg))
 {
-    if (strcasecmp(cmd, "womid") == 0) return;
-
     for(int i = 0; i<30; i++)
 	printf_chat(" ");;
     printf_chat("&WCleared");;

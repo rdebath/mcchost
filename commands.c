@@ -36,6 +36,7 @@ run_command(char * msg)
 
     char * cmd = strtok(msg+1, " ");
     if (cmd == 0) return;
+    if (strcasecmp(cmd, "womid") == 0) { player_last_move = time(0); return; }
 
     for(int i = 0; command_list[i].name; i++) {
 	if (strcasecmp(cmd, command_list[i].name) == 0) {

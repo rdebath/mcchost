@@ -115,7 +115,7 @@ send_void_map()
     send_inventory_order();
     player_posn.x = player_posn.z = 16; player_posn.y = 256;
     player_posn.v = player_posn.h = 0;
-    send_spawn_pkt(255, user_id, player_posn);
+    send_addentity_pkt(255, user_id, user_id, player_posn);
 }
 
 void
