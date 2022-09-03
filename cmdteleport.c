@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "tp.h"
+#include "cmdteleport.h"
 
 #if INTERFACE
 #define CMD_TP \

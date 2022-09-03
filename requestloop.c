@@ -441,14 +441,18 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt.block_x = IntBE16(p); p+=2;	// Only within click range.
 	    pkt.block_y = IntBE16(p); p+=2;
 	    pkt.block_z = IntBE16(p); p+=2;
-	    pkt.face = *p++;			// 255=> missed.
+	    pkt.face = *p++;			// CC: 255 => missed.
 
+	    // TODO: Something?
+	    (void)pkt;
+#if 0
 	    fprintf(stderr, "%slick of button %d, at (%d,%d), Hit ent (%d), block (%d,%d,%d)[%d]\n",
 		pkt.action?"Unc":"C",
 		pkt.button,
 		pkt.h, pkt.v,
 		pkt.entity,
 		pkt.block_x, pkt.block_y, pkt.block_z, pkt.face);
+#endif
 	}
 	break;
 

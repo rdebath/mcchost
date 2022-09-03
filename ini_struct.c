@@ -364,7 +364,7 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
 	    printlog("Unknown item \"%s\" in file \"%s\" section \"%s\" -- label \"%s\" value \"%s\"",
 		ibuf, st->filename, st->curr_section?:"-", label, p);
 	} else
-	    printf_chat("&WUnknown item&S \"%s\" section \"%s\"", ibuf, st->curr_section?:"-");
+	    printf_chat("#&WUnknown item&S \"%s\" section \"%s\"", ibuf, st->curr_section?:"-");
 	return 0;
     }
     return 1;

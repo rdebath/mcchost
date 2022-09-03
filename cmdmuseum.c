@@ -9,7 +9,7 @@
 #include <dirent.h>
 #include <errno.h>
 
-#include "museum.h"
+#include "cmdmuseum.h"
 
 /*HELP museum H_CMD
 &T/museum [levelname] [number] &Sor &T/museum [number]
@@ -26,7 +26,7 @@ cmd_museum(char * UNUSED(cmd), char * arg)
 {
     if (arg == 0 || *arg == 0) { cmd_help(0,"museum"); return; }
 
-    char fixedname[MAXLEVELNAMELEN*4], buf2[256], levelname[MAXLEVELNAMELEN+1];
+    char fixedname[MAXLEVELNAMELEN*4], buf2[256];
 
     char * lvl = 0, *levelid = 0;
     char * p = arg+strlen(arg);
@@ -72,39 +72,5 @@ cmd_museum(char * UNUSED(cmd), char * arg)
 	return;
     }
 
-    unfix_fname(levelname, sizeof(levelname), fixedname);
-    if (*levelname == 0) {
-	fprintf_logfile("Error on map name for \"/museum %s\" file:\"%s\"", lvl, fixedname);
-	if (*lvl && !*fixedname)
-	    printf_chat("&SNo levels match \"%s\"", lvl);
-	else
-	    printf_chat("&SCould not load level file \"%s\"", fixedname);
-	return;
-    }
-
-    char fixedname2[MAXLEVELNAMELEN*4];
-    strcpy(fixedname2, fixedname);
-
-    snprintf(fixedname, sizeof(fixedname), "%s.%d", fixedname2, backup_id);
-
-    stop_shared();
-
-    start_level(levelname, fixedname, backup_id);
-    open_level_files(levelname, backup_id, fixedname, 0);
-    if (!level_prop) {
-	printf_chat("&WLevel load failed, returning to main");
-	cmd_main(0,0);
-	return;
-    }
-
-    level_prop->readonly = 1;
-    level_prop->disallowchange = 0;
-
-    send_map_file();
-    send_addentity_pkt(255, user_id, user_id, level_prop->spawn);
-
-    printf_chat("@&S%s went to museum %d of &7%s", user_id, backup_id, levelname);
-
-    // read_only_message();
+    direct_teleport(lvl, backup_id, 0);
 }
-

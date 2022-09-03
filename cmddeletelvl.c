@@ -5,7 +5,7 @@
 #include <string.h>
 #include <limits.h>
 
-#include "deletelvl.h"
+#include "cmddeletelvl.h"
 
 /*HELP deletelvl H_CMD
 &T/deletelvl name

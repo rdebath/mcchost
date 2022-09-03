@@ -42,7 +42,7 @@ static struct ext_list_t extensions[] = {
     { N"TextColors",          1, &extn_textcolours },		//ServerConf
     { N"BulkBlockUpdate",     1, .disabled=1 },
     { N"EnvMapAspect",        1, &extn_envmapaspect },
-    { N"PlayerClick",         1, .disabled=1 },			// Client sends
+    { N"PlayerClick",         1, },
     { N"EntityProperty",      1, .disabled=1 },
     { N"ExtEntityPositions",  1, &extn_extentityposn, .nolate=1 },
     { N"TwoWayPing",          1, &extn_pingpong },

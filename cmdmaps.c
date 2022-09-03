@@ -4,7 +4,7 @@
 #include <strings.h>
 #include <dirent.h>
 
-#include "maps.h"
+#include "cmdmaps.h"
 
 /*HELP maps,levels,worlds H_CMD
 &T/maps

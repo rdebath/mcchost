@@ -92,25 +92,7 @@ cmd_goto(char * cmd, char * arg)
 	return;
     }
 
-    if (!check_level(levelname, fixedname)) {
-	printf_chat("&WLevel &S%s&W is not available.", levelname);
-	return;
-    }
-
-    stop_shared();
-    start_level(levelname, fixedname, 0);
-    open_level_files(levelname, 0, fixedname, 0);
-    if (!level_prop) {
-	printf_chat("&WLevel load failed, returning to main");
-	cmd_main(0,0);
-	return;
-    }
-    player_posn = level_prop->spawn;
-    send_map_file();
-    send_addentity_pkt(255, user_id, user_id, level_prop->spawn);
-
-    printf_chat("@&S%s went to &7%s", user_id, levelname);
-    read_only_message();
+    direct_teleport(levelname, 0, 0);
 }
 
 void
