@@ -149,7 +149,7 @@ cmd_newlvl(char * cmd, char * arg)
     } else if (themelist[themeid].setrandom) {
 	char sbuf[MB_STRLEN*2+1] = "";
 	map_random_t rng[1];
-	map_init_rng(rng, themelist[themeid].name, sbuf);
+	map_init_rng(rng, sbuf);
 	fprintf(ofd, "Seed = %s\n", sbuf);
     }
 

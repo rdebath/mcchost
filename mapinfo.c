@@ -181,7 +181,11 @@ struct blockdef_t {
 #define Block_Glass 20
 #define Block_Red 21
 #define Block_Orange 22
+#define Block_Yellow 23
+#define Block_Lime 24
 #define Block_Green 25
+#define Block_Teal 26
+#define Block_Aqua 27
 #define Block_Cyan 28
 #define Block_Blue 29
 #define Block_Pink 33

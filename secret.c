@@ -4,6 +4,9 @@
 #include <string.h>
 #include <sys/time.h>
 #include <limits.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "secret.h"
 
@@ -15,17 +18,43 @@ generate_secret()
     if (!rand_init_done)
 	init_rand_gen();
 
-    static char base62[] =
-	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    for(int i=0; i<16; i++) {
+    char sbuf[20] = {0};
+    int keylen = 10;
+
+    for(int i=0; i<sizeof(sbuf); i++) {
 #ifdef PCG32_INITIALIZER
 	int ch = pcg32_boundedrand(62);
 #else
 	int ch = random() % 62;
 #endif
-	server->secret[i] = base62[ch];
+	sbuf[i] = ch;
     }
-    server->secret[16] = 0;
+
+    int fd = open("/dev/urandom", O_RDONLY);
+    if (fd > 0) {
+	uint64_t randval[2] = {0};
+	int cc = read(fd, randval, sizeof(randval));
+	if (cc == sizeof(randval)) {
+	    char * p = sbuf;
+	    for(int v=0; v<2; v++) {
+		for(int i=0; i<10; i++, p++) {
+		    int ch = randval[v] % 62;
+		    randval[v] /= 62;
+		    *p = (*p + ch) % 62;
+		}
+	    }
+	    keylen = 20;
+	} else
+	    printlog("Unable to read /dev/urandom for secret, using poorman's");
+	close(fd);
+    } else
+	printlog("Unable to open /dev/urandom for secret, using poorman's");
+
+    static char base62[] =
+	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    for(int i=0; i<keylen; i++)
+	server->secret[i] = base62[sbuf[i]%62];
+    server->secret[keylen] = 0;
     fprintf(stderr, "Generated server secret %s\n", server->secret);
 }
 
@@ -103,9 +132,12 @@ init_rand_gen()
 {
     if (rand_init_done) return;
     rand_init_done = 1;
-
     struct timeval now;
     gettimeofday(&now, 0);
+
+    // A pretty trivial semi-random code, maybe 24bits of randomness.
+    srandom(now.tv_sec ^ (now.tv_usec*4294U));
+
 #ifdef PCG32_INITIALIZER
     // Somewhat better random seed, the whole time, pid and ASLR
     // The "stream" needs to be different from the main seed so
@@ -123,8 +155,5 @@ init_rand_gen()
 // On 32bit     0x99XXX000 --> Only *8*bits of ASLR
 // On 64bit 0x91XXXXXXX000 --> 28bits of ASLR
 //      0x8888800000000888
-#else
-    // A pretty trivial semi-random code, maybe 24bits of randomness.
-    srandom(now.tv_sec ^ (now.tv_usec*4294U));
 #endif
 }
