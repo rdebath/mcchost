@@ -390,6 +390,37 @@ request_pending_marks(char * why, cmd_func_t cmd_fn, char * cmd, char * arg)
     show_marks_message();
 }
 
+int
+clamp_cuboid(int * args)
+{
+    int i;
+    int max[3] = { level_prop->cells_x-1, level_prop->cells_y-1, level_prop->cells_z-1};
+
+    // Swap if inverted.
+    for(i=0; i<3; i++) {
+	if (args[i+1] > args[i+4]) {
+	    int t = args[i+1];
+	    args[i+1] = args[i+4];
+	    args[i+4] = t;
+	}
+    }
+    // Off the map ?
+    for(i=0; i<3; i++) {
+	if (args[i+1]<0 && args[i+4]<0) return 0;
+	if (args[i+1]>max[i] && args[i+4]>max[i]) return 0;
+    }
+    // Crop to map.
+    for(i=0; i<6; i++) {
+	if (args[i+1]<0) args[i+1] = 0;
+	if (args[i+1]>max[i%3]) args[i+1] = max[i%3];
+    }
+    for(i=0; i<3; i++) {
+	if (args[i+4] < args[i+1])
+	    {int t=args[i+1]; args[i+1]=args[i+4]; args[i+4]=t; }
+    }
+    return 1;
+}
+
 void
 cmd_about(char * cmd, char * arg)
 {
@@ -457,30 +488,9 @@ cmd_cuboid(char * cmd, char * arg)
 void
 plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
 {
-    int i;
-    int max[3] = { level_prop->cells_x-1, level_prop->cells_y-1, level_prop->cells_z-1};
     int args[7] = {0, x0, y0, z0, x1, y1, z1};
 
-    // Swap if inverted.
-    for(i=0; i<3; i++) {
-	if (args[i+1] > args[i+4]) {
-	    int t = args[i+1];
-	    args[i+1] = args[i+4];
-	    args[i+4] = t;
-	}
-    }
-    for(i=0; i<3; i++) {
-	if (args[i+1]<0 && args[i+4]<0) return; // Off the map.
-	if (args[i+1]>max[i] && args[i+4]>max[i]) return; // Off the map.
-    }
-    for(i=0; i<6; i++) { // Crop to map.
-	if (args[i+1]<0) args[i+1] = 0;
-	if (args[i+1]>max[i%3]) args[i+1] = max[i%3];
-    }
-    for(i=0; i<3; i++) {
-	if (args[i+4] < args[i+1])
-	    {int t=args[i+1]; args[i+1]=args[i+4]; args[i+4]=t; }
-    }
+    if (clamp_cuboid(args) == 0) return;
 
     // Cuboid does not "adjust" blocks so call
     // send_update(), not update_block().
@@ -490,6 +500,12 @@ plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
     //
     // Too large and this will trigger a /reload as it'll
     // run too fast so buzzing the lock isn't needed
+    //
+    // NB: Slab processing is wrong for multi-layer cuboid.
+    // Grass/dirt processing might be reasonable to convert grass->dirt
+    // but dirt->grass depends on "nearby" grass so the "correct" flow
+    // is not well defined.
+
     lock_fn(level_lock);
     my_user.dirty = 1;
     int x, y, z, placecount = 0;
@@ -506,9 +522,4 @@ plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
 	    }
     my_user.blocks_drawn += placecount;
     unlock_fn(level_lock);
-
-    // NB: Slab processing is wrong for multi-layer cuboid.
-    // Grass/dirt processing might be reasonable to convert grass->dirt
-    // but dirt->grass depends on "nearby" grass so the "correct" flow
-    // is not well defined.
 }

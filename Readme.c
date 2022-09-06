@@ -5,24 +5,12 @@ This is a Minecraft classic server with CPE (Classic Protocol Extensions)
 See "/help todo" for notes.
 */
 
-/*HELP welcome
-&3Hi, this server is a very alpha application written in C.
-&3It's likely to crash (especially if you &3use &T/crash&3)
-&3and so far has rather limited features.
- 
-     &4♥ ♥ ♥ &dPlease try to crash it!&4 ♥ ♥ ♥
-*/
-
 /*HELP todo
- +) /help all ?
+ +) /backup & /restore
 
- +) Use direct_teleport for all map loads.
  +) Add "backup now" command.
     -- Save and *copy* to backup.
     -- Save with no last backup date? Or just a "manual backup" flag.
- +) Allow /load for user's level
- +) Allow non-overwriting /save for anyone.
-    -- Or username prefix ?
 
  +) Permission for level modifiable by anyone (with /set etc).
 
@@ -43,24 +31,16 @@ See "/help todo" for notes.
     -- pk= sets in a 1500 byte packet
     -- Min= sets for bulk to be smaller
 
- +) ExtPlayerList
  +) TextHotKey
  +) SelectionCuboid -- Zone highlights
-
  +) EntityProperty -- model rotations
-
  +) VelocityControl -- Change movement now; /slap ?
  +) CustomParticles -- Make sparkles
  +) CustomModels -- Weird bots etc.
 
- +) Don't update backup time on delete of loaded map?
-
  +) Move more global variables into ini_settings structure.
 
  +) Record data rates for server bytes/s I/O
-
- +) Slow map loads; do I need to poll client chat?
-    -- Background _load_ of maps as well as saves?
 
  +) INI file preserve (some?) comments.
 
@@ -78,12 +58,6 @@ See "/help todo" for notes.
     -- "secret_001" for a particular "salt" TTP.
 
     -- Normally "local" and "secret" would be the same namespace.
-
- +) Multiple servers in one directory ...
-    -- Only have port to determine distinct config file.
-    -- Distinct file is not saved, manual config only.
-    -- One heartbeat server per config
-    -- Config options suitable for distinct file are not loaded into system.dat
 
  +) Web server for texture files.
     -- Internal server or generic external inetd server?
@@ -115,12 +89,13 @@ See "/help todo" for notes.
  +) /resizelvl, /copylvl, /savelvl (to mapdir)
     -- Should resizelvl backup on shrink?
 
- +) /backup & /restore
  +) /import -- download *.cw file from web.
     -- Rename file to strict % form, don't overwrite.
     -- Output of curl import command to user ?
 
- +) /newlvl, generate "nice" levels.
+ +) /newlvl, more "nice" levels?
+    -- Perlin based nature, with caves.
+    -- Sub-themes, fcraft?
 
  +) Block/User history records.
 
@@ -239,6 +214,10 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
     -- No advantage over --net --> Runs register every 30 seconds.
     -- No advantage over normal inetd mode --> connections are rare.
 
+ +) Don't update backup time on delete of loaded map?
+
+ +) Slow map loads; do I need to poll client chat?
+    -- Background _load_ of maps as well as saves?
 */
 
 /*HELP usecases

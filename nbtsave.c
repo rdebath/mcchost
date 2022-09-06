@@ -60,11 +60,13 @@ save_map_to_file(char * fn, int background)
     bc_ent_int16(savefile, "Y", level_prop->cells_y);
     bc_ent_int16(savefile, "Z", level_prop->cells_z);
 
-    // Not written by CC
+    // Part written by CC
     if (level_prop->software[0]) {
 	bc_compound(savefile, "MapGenerator");
 	bc_ent_string(savefile, "Software", level_prop->software);
 	bc_ent_string(savefile, "MapGeneratorName", level_prop->theme);
+	if (level_prop->seed[0])
+	    bc_ent_string(savefile, "Seed", level_prop->seed);
 	bc_end(savefile);
     }
 
@@ -247,15 +249,6 @@ save_map_to_file(char * fn, int background)
     if (level_prop->seed[0])
 	bc_ent_string(savefile, "Seed", level_prop->seed);
     bc_end(savefile);
-
-    /* TODO -- server level ?
-        bc_compound(ofd, "SetTextHotKey", seqid);
-        bc_ent_string(ofd, "label", pkt+1, 64);
-        bc_ent_string(ofd, "action", pkt+65, 64);
-        bc_ent_int(ofd, "keycode", IntBE32(pkt+129));
-        bc_ent_int(ofd, "keymods", (pkt[133] & 0xFF));
-        bc_end(ofd);
-    */
 
     /* TODO
 	Zones ...

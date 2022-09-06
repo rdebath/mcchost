@@ -30,7 +30,7 @@ gen_plain_map(map_random_t *rng)
     for(y=0; y<level_prop->cells_y; y++)
 	for(z=0; z<level_prop->cells_z; z++)
 	    for(x=0; x<level_prop->cells_x; x++)
-	    if (y == 0)
+	    if (y == 0 && level_prop->side_level > y+3)
 		level_blocks[World_Pack(x,y,z)] = Block_Stone;
 	    else
 	    {
@@ -91,9 +91,12 @@ gen_plain_map(map_random_t *rng)
 	}
 
     int treerate = 5 + 25 * bounded_random_r(rng, 30);
-    for(z=3; z<level_prop->cells_z-3; z++)
-	for(x=3; x<level_prop->cells_x-3; x++)
+    for(z=3; z+3<level_prop->cells_z; z++)
+    {
+	for(x=3; x+3<level_prop->cells_x; x++)
 	{
+	    if (x>=level_prop->cells_x || z>=level_prop->cells_z) continue;
+
 	    int y1 = heightmap[x+z*level_prop->cells_x];
 	    if (y1 <= level_prop->side_level) continue;
 	    if (y1+7 > level_prop->cells_y ||
@@ -137,6 +140,7 @@ gen_plain_map(map_random_t *rng)
 		    heightmap[x2+z2*level_prop->cells_x] |= 0x8000;
 		}
 	}
+    }
 }
 
 void
@@ -147,11 +151,13 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only)
     int rm = level_prop->cells_x>level_prop->cells_z?level_prop->cells_x:level_prop->cells_z;
     rm = rm/2 + 2;
 
-    int min_y = land_only?level_prop->side_level-4:1;
+    int min_y = land_only?level_prop->side_level-6:1;
     int h = level_prop->side_level-1;
-    if (!land_only) h += 1+bounded_random_r(srng, 8);
+    if (!land_only && level_prop->cells_y>15)
+	h += 1+bounded_random_r(srng, 8);
     if (h >= level_prop->cells_y) h = level_prop->side_level;
     if (h >= level_prop->cells_y) h = level_prop->cells_y/2;
+    if (min_y < 1) min_y = 1;
 
     heightmap[cx+cz*level_prop->cells_x] = h;
     level_prop->spawn.y = (h+3) *32+16;
@@ -160,6 +166,7 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only)
 	map_random_t rng[1];
 	seed_rng(srng, rng);
 	int s = (1<<(e-1));
+	if (s>level_prop->cells_y) continue;
 	for(int r=s; r<rm; r+=s) {
 	    for(int x=cx-r; x<cx+r; x+=s) gen_plain(rng, heightmap, x, cz-r, s, min_y);
 	    for(int z=cz-r; z<cz+r; z+=s) gen_plain(rng, heightmap, cx+r, z, s, min_y);
@@ -198,6 +205,8 @@ gen_plain(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s, int mm
 	    avg += h; avcnt++;
 	}
 
+    // This adds "spikes" that will drag up/down the local area before
+    // being removed by the finer passes.
     if (s >= 32) {
 	max_y = max_y + (max_y-min_y);
 	min_y = min_y - (max_y-min_y);
@@ -210,10 +219,11 @@ gen_plain(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s, int mm
 	heightmap[tx+tz*mx] = avg;
 	return;
     }
-    if (min_y > max_y) return;
+    if (min_y > max_y) return; // Leave a hole rather than div by zero.
+
     if (min_y >= max_y) {
 	heightmap[tx+tz*mx] = min_y;
-    } else if (s>1) {
+    } else if (s>1 || avcnt == 0) {
 	heightmap[tx+tz*mx] = min_y + bounded_random_r(rng, max_y-min_y+1);
     } else {
 	avg += avcnt/2; avg /= avcnt;

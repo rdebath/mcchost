@@ -76,6 +76,7 @@ init_map_null()
 	    .clouds_height = INT_MIN,
 	    .clouds_speed = 256, 256, 128,
 	    .click_distance = 160,
+	    .hacks_jump = -1,
 	};
 
     for(int i = 0; i<sizeof(level_prop->uuid); i++)

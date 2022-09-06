@@ -75,13 +75,13 @@ cmd_isave(char * cmd, char * arg)
     snprintf(buf2, sizeof(buf2), "ini/%s.ini", fixedname);
 
     if (access(buf2, F_OK) == 0) {
-	printf_chat("&WConfig file %s not overwritten", buf2);
+	printf_chat("#&WConfig file %s not overwritten", buf2);
 	return;
     }
 
     save_ini_file(level_ini_fields, buf2);
 
-    printf_chat("&SConfig saved to %s", buf2);
+    printf_chat("#&SConfig saved to %s", buf2);
 }
 
 void
@@ -95,7 +95,7 @@ cmd_ishow(char * cmd, char * arg)
     snprintf(buf2, sizeof(buf2), "ini/%s.ini", fixedname);
 
     if (access(buf2, F_OK) != 0) {
-        printf_chat("&WConfig file %s does not exist", buf2);
+        printf_chat("#&WConfig file %s does not exist", buf2);
         return;
     }
 
