@@ -357,11 +357,7 @@ choose_random_level(char * fixedname, int name_len)
 
     *fixedname = 0;
     if (maplist_cnt>0) {
-#ifdef PCG32_INITIALIZER
-        int which = pcg32_boundedrand(maplist_cnt);
-#else
-	int which = random() % maplist_cnt;
-#endif
+        int which = bounded_random(maplist_cnt);
 	snprintf(fixedname, name_len, "%s", maplist[which]);
     }
 

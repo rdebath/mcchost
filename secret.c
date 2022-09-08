@@ -10,26 +10,20 @@
 
 #include "secret.h"
 
-static int rand_init_done = 0;
-
 void
 generate_secret()
 {
-    if (!rand_init_done)
-	init_rand_gen();
+    init_rand_gen();
 
     char sbuf[20] = {0};
     int keylen = 10;
 
     for(int i=0; i<sizeof(sbuf); i++) {
-#ifdef PCG32_INITIALIZER
-	int ch = pcg32_boundedrand(62);
-#else
-	int ch = random() % 62;
-#endif
+	int ch = bounded_random(62);
 	sbuf[i] = ch;
     }
 
+    // Try to use the kernel PRNG. This should have lots of physical randomness.
     int fd = open("/dev/urandom", O_RDONLY);
     if (fd > 0) {
 	uint64_t randval[2] = {0};
@@ -125,35 +119,4 @@ convert_secret(char sbuf[NB_SLEN], int tick)
     // 128bits in hex
     for (int i = 0; i < 16; i++)
 	sprintf(sbuf+i*2, "%02x", mdContext.digest[i]);
-}
-
-void
-init_rand_gen()
-{
-    if (rand_init_done) return;
-    rand_init_done = 1;
-    struct timeval now;
-    gettimeofday(&now, 0);
-
-    // A pretty trivial semi-random code, maybe 24bits of randomness.
-    srandom(now.tv_sec ^ (now.tv_usec*4294U));
-
-#ifdef PCG32_INITIALIZER
-    // Somewhat better random seed, the whole time, pid and ASLR
-    // The "stream" needs to be different from the main seed so
-    // don't include the time in that part.
-    pcg32_srandom(
-	(now.tv_sec*(uint64_t)1000000 + now.tv_usec) ^
-	((uintptr_t)&process_args) ^
-	((int64_t)(getpid()) << (sizeof(uintptr_t)*4+8)),
-	(((uintptr_t)&process_args) >> 12) +
-	((int64_t)(getpid()) << (sizeof(uintptr_t)*4))
-	);
-
-// NB: for x86/x64
-//              0x88000888
-// On 32bit     0x99XXX000 --> Only *8*bits of ASLR
-// On 64bit 0x91XXXXXXX000 --> 28bits of ASLR
-//      0x8888800000000888
-#endif
 }

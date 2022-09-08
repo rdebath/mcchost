@@ -115,7 +115,8 @@ send_server_id_pkt(char * servername, char * servermotd, int user_type)
     *p++ = 7; // Protocol version
     p += nb_string_write(p, servername);
     p += nb_string_write(p, servermotd);
-    *p++ = user_type?100:0; // Is operator?
+    if (protocol_base_version >= 6)
+	*p++ = user_type?100:0; // Is operator?
     write_to_remote(packetbuf, p-packetbuf);
 }
 
@@ -313,6 +314,7 @@ send_discon_msg_pkt(char * message)
 void
 send_op_pkt(int opflg)
 {
+    if (protocol_base_version < 7) return;
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_OPER;
@@ -493,7 +495,7 @@ send_defineblock_pkt(block_t blkno, blockdef_t *def)
     {
 	// Ugh: speed = 2 ** ((byteval-128)/64)
 	uint8_t conv_speed = 128;
-	double val = def->speed/1000.0;
+	double val = def->speed/1024.0;
 	if (val < 0.2) val = 0.2;	// Min is 0.25
 	if (val > 4) val = 4;		// Max is 3.95
 	val = round(64 * log(val) / log(2) + 128);

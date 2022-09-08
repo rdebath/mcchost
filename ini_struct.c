@@ -265,7 +265,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_BOOLVAL("FullBright", level_prop->blockdef[bn].fullbright);
 	    INI_INTVAL("Shape", level_prop->blockdef[bn].shape);
 	    INI_INTVAL("Draw", level_prop->blockdef[bn].draw);
-	    INI_FIXEDP("Speed", level_prop->blockdef[bn].speed, 1000);
+	    INI_FIXEDP("Speed", level_prop->blockdef[bn].speed, 1024);
 	    INI_BLKVAL("Fallback", level_prop->blockdef[bn].fallback);
 	    INI_INTVAL("Texture.Top", level_prop->blockdef[bn].textures[0]);
 	    INI_INTVAL("Texture.Left", level_prop->blockdef[bn].textures[1]);

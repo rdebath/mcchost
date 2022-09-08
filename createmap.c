@@ -81,11 +81,7 @@ init_map_null()
 
     for(int i = 0; i<sizeof(level_prop->uuid); i++)
     {
-#ifdef PCG32_INITIALIZER
-        int by = pcg32_boundedrand(256);
-#else
-        int by = random() % 256;
-#endif
+        int by = bounded_random(256);
 	level_prop->uuid[i] = by;
     }
     // Not documented, but make it the bytes for a real UUID (big endian).
@@ -236,7 +232,14 @@ init_flat_level()
 	int has_seed = !!level_prop->seed[0];
 	map_random_t rng[1];
 	map_init_rng(rng, level_prop->seed);
-	gen_plain_map(rng);
+	gen_plain_map(rng, 1);
+	level_prop->dirty_save = !has_seed;
+
+    } else if (strcasecmp(level_prop->theme, "general") == 0) {
+	int has_seed = !!level_prop->seed[0];
+	map_random_t rng[1];
+	map_init_rng(rng, level_prop->seed);
+	gen_plain_map(rng, 0);
 	level_prop->dirty_save = !has_seed;
 
     } else {

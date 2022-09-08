@@ -76,7 +76,8 @@ send_map_file()
 
     uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
 
-    send_system_ident();
+    if (extn_instantmotd)
+	send_system_ident();
     send_hack_control();
 
     send_lvlinit_pkt(level_len);

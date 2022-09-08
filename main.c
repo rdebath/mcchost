@@ -108,6 +108,7 @@ int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
 int cpe_pending = 0;	// Currently running ExtInfo process.
 int cpe_extn_remaining = 0;
 int cpe_extn_advertised = 0;
+int protocol_base_version = 7;
 
 char * proc_args_mem = 0;
 int    proc_args_len = 0;
@@ -457,18 +458,18 @@ login()
 		    teapot(inbuf, insize);
 		}
 	    }
-	} else if (insize >= 20 || sleeps > 5) {
+	} else if (insize >= 16 || sleeps > 5) {
 	    // Special quick exits for bad callers.
 	    if (insize >= 1 && inbuf[0] != 0)
 		teapot(inbuf, insize);
 	    if (insize >= 2 && inbuf[1] < 3)
 		teapot(inbuf, insize);
-	    if (insize >= 2 && inbuf[1] != 7) {
+	    if (insize >= 2 && (inbuf[1] > 7 || inbuf[1] < 5)) {
 		if (insize >= 66) {
 		    convert_logon_packet(inbuf, &player);
 		    strcpy(user_id, player.user_id);
 		}
-		disconnect(0, "Only protocol version seven is supported");
+		disconnect(0, "Unsupported protocol version");
 	    }
 	}
 	if (insize >= 2 && inbuf[1] < 6)
@@ -482,9 +483,22 @@ login()
 
     convert_logon_packet(inbuf, &player);
     strcpy(user_id, player.user_id);
+    protocol_base_version = player.protocol;
 
-    if (player.protocol != 7)
-	disconnect(0, "Only protocol version 7 is supported");
+    if (player.protocol > 7 || player.protocol < 5)
+	disconnect(0, "Unsupported protocol version");
+
+    // The older protocols are mostly the same but with fewer valid blocks.
+    // 7 -- classic 0.30	-- CPE only for this version.
+    // 6 -- classic 0.0.20+	-- No setuser type packet.
+    // 5 -- classic 0.0.19	-- No usertype field.
+    // 3/4 -- classic 0.0.16+	-- Problems with teleport and spawn positions.
+    if (player.protocol < 7)
+	switch (player.protocol) {
+	case 6: client_block_limit = Block_Gold+1; break;
+	case 5: client_block_limit = Block_Glass+1; msglen[0]--; break;
+	default: client_block_limit = Block_Leaves+1; msglen[0]--; break;
+	}
 
     for(int i = 0; user_id[i]; i++)
 	if (!isascii(user_id[i]) ||
@@ -511,12 +525,17 @@ login()
     if (strlen(user_id) > 16)
 	disconnect(0, "Usernames must be between 1 and 16 characters");
 
-    if (client_trusted && (!*player.mppass || strcmp("(none)", player.mppass) == 0))
+    if (client_trusted && (!*player.mppass
+			|| strcmp("(none)", player.mppass) == 0
+			|| strcmp("0", player.mppass) == 0))
+	// Trusted net and they haven't tried to enter an mppass.
 	user_authenticated = 1;
     else if (*server->secret != 0 && *server->secret != '-') {
-
-	if (check_mppass(player.mppass) == 0)
+	// There's an attempted mppass or we require one.
+	if (check_mppass(player.mppass) == 0) {
+	    // printlog("User %s failed with mppass %s", user_id, player.mppass);
 	    disconnect(0, "Login failed! Close the game and refresh the server list.");
+	}
 
 	user_authenticated = 1;
     }

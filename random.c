@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
@@ -13,6 +14,7 @@
 #ifdef PCG32_INITIALIZER
 #define map_random_t pcg32_random_t
 #define bounded_random_r pcg32_boundedrand_r
+#define bounded_random pcg32_boundedrand
 #else
 #define map_random_t unx_random_t
 typedef struct unx_random_t unx_random_t;
@@ -38,6 +40,39 @@ struct unx_random_t {
 	// map just once. As such there should be four repeats across
 	// the floor of a 512x512 map. It looks okay none the less.
 #endif
+
+static int rand_init_done = 0;
+
+void
+init_rand_gen()
+{
+    if (rand_init_done) return;
+    rand_init_done = 1;
+    struct timeval now;
+    gettimeofday(&now, 0);
+
+    // A pretty trivial semi-random code, maybe 24bits of randomness.
+    srandom(now.tv_sec ^ (now.tv_usec*4294U));
+
+#ifdef PCG32_INITIALIZER
+    // Somewhat better random seed, the whole time, pid and ASLR
+    // The "stream" needs to be different from the main seed so
+    // don't include the time in that part.
+    pcg32_srandom(
+	(now.tv_sec*(uint64_t)1000000 + now.tv_usec) ^
+	((uintptr_t)&process_args) ^
+	((int64_t)(getpid()) << (sizeof(uintptr_t)*4+8)),
+	(((uintptr_t)&process_args) >> 12) +
+	((int64_t)(getpid()) << (sizeof(uintptr_t)*4))
+	);
+
+// NB: for x86/x64
+//              0x88000888
+// On 32bit     0x99XXX000 --> Only *8*bits of ASLR
+// On 64bit 0x91XXXXXXX000 --> 28bits of ASLR
+//      0x8888800000000888
+#endif
+}
 
 void
 map_init_rng(map_random_t *rng, char * seed)
@@ -121,6 +156,12 @@ bounded_random_r(map_random_t *rng, int mod_r)
     uint32_t res;
     random_r(&rng->rand_data, &res);
     return res % mod_r; // Yes, it's biased
+}
+
+uint32_t
+bounded_random(int mod_r)
+{
+    return random() % mod_r; // Yes, it's biased
 }
 #endif
 

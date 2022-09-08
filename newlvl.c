@@ -11,10 +11,10 @@
 Create a new level, if size is not set it uses the default.
 The name "+" is a shorthand for your personal level.
 
-Themes are flat, plain, pixel, empty, space, rainbow
+Themes are flat, general, plain, pixel, empty, space, rainbow
 Seed is:
     for flat: level of grass
-    for plain, space, rainbow: Random seed.
+    for general, plain, space, rainbow: Random seed.
 */
 
 #if INTERFACE
@@ -28,6 +28,7 @@ struct lvltheme_t {
 #endif
 
 lvltheme_t themelist[] = {
+    {"general", 1},
     {"plain", 1},
     {"flat", 0},	// seed defaults to Y/2
     {"pixel", 0},

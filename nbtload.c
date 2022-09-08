@@ -250,11 +250,11 @@ read_element(gzFile ifd, int etype)
 	} else if (etype == NBT_F32) {
 	    union { int32_t i32; float f32; } bad;
 	    bad.i32 = V;
-	    V = bad.f32 * 1000;
+	    V = bad.f32 * 1024;
 	} else if (etype == NBT_F64) {
 	    union { int64_t i64; double f64; } bad;
 	    bad.i64 = V;
-	    V = bad.f64 * 1000000;
+	    V = bad.f64 * 1048576;
 	} else {
 	    ;
 	}
@@ -415,8 +415,17 @@ change_int_value(char * section, char * item, int64_t value)
 	if (strcmp(item, "SideOffset") == 0) level_prop->side_offset = value;
 	// String: if (strcmp(item, "TextureURL") == 0)
     } else if (strcmp(section, "EnvMapAspect") == 0) {
+	if (strcmp(item, "EdgeBlock") == 0) level_prop->edge_block = value;
+	if (strcmp(item, "SideBlock") == 0) level_prop->side_block = value;
+	if (strcmp(item, "EdgeHeight") == 0) level_prop->side_level = value;
 	if (strcmp(item, "SideOffset") == 0) level_prop->side_offset = value;
 	if (strcmp(item, "CloudsHeight") == 0) level_prop->clouds_height = value;
+	if (strcmp(item, "CloudsSpeed") == 0) level_prop->clouds_speed = value/4;
+	if (strcmp(item, "WeatherSpeed") == 0) level_prop->weather_speed = value/4;
+	if (strcmp(item, "WeatherFade") == 0) level_prop->weather_fade = value/8;
+	if (strcmp(item, "ExpFog") == 0) level_prop->exp_fog = value;
+	if (strcmp(item, "SkyboxHor") == 0) level_prop->skybox_hor_speed = value;
+	if (strcmp(item, "SkyboxVer") == 0) level_prop->skybox_ver_speed = value;
 
 	if (strcmp(item, "MapProperty0") == 0) level_prop->side_block = value;
 	if (strcmp(item, "MapProperty1") == 0) level_prop->edge_block = value;

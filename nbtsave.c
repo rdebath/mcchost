@@ -65,18 +65,16 @@ save_map_to_file(char * fn, int background)
 	bc_compound(savefile, "MapGenerator");
 	bc_ent_string(savefile, "Software", level_prop->software);
 	bc_ent_string(savefile, "MapGeneratorName", level_prop->theme);
-	if (level_prop->seed[0])
-	    bc_ent_string(savefile, "Seed", level_prop->seed);
 	bc_end(savefile);
     }
 
     // Not written by CC
     if (level_prop->time_created)
-	bc_ent_int64(savefile, "TimeCreated", level_prop->time_created);
+	bc_ent_long(savefile, "TimeCreated", level_prop->time_created);
     if (level_prop->last_modified)
-	bc_ent_int64(savefile, "LastModified", level_prop->last_modified);
+	bc_ent_long(savefile, "LastModified", level_prop->last_modified);
     if (level_prop->last_backup)
-	bc_ent_int64(savefile, "LastBackup", level_prop->last_backup);
+	bc_ent_long(savefile, "LastBackup", level_prop->last_backup);
 
     // Written by CC
     bc_compound(savefile, "Spawn");
@@ -132,11 +130,22 @@ save_map_to_file(char * fn, int background)
     bc_ent_int(savefile, "P", level_prop->spawn.v);
     bc_end(savefile);
 
-    // Not written by CC
+    // Written by CC
     bc_compound(savefile, "EnvMapAspect");
-    bc_ent_int16(savefile, "SideOffset", level_prop->side_offset);
-    bc_ent_int16(savefile, "CloudsHeight", level_prop->clouds_height);
+    bc_ent_int16(savefile, "EdgeBlock", level_prop->edge_block);
+    bc_ent_int16(savefile, "SideBlock", level_prop->side_block);
+    bc_ent_int32(savefile, "EdgeHeight", level_prop->side_level);
+    bc_ent_int32(savefile, "SidesOffset", level_prop->side_offset);
+    bc_ent_int32(savefile, "CloudsHeight", level_prop->clouds_height);
 
+    bc_ent_float(savefile, "CloudsSpeed", level_prop->clouds_speed/256.0);
+    bc_ent_float(savefile, "WeatherSpeed", level_prop->weather_speed/256.0);
+    bc_ent_float(savefile, "WeatherFade", level_prop->weather_fade/128.0);
+    bc_ent_int8(savefile, "ExpFog", level_prop->exp_fog);
+    bc_ent_float(savefile, "SkyboxHor", level_prop->skybox_hor_speed/1024.0);
+    bc_ent_float(savefile, "SkyboxVer", level_prop->skybox_ver_speed/1024.0);
+
+    // Not written by CC
     bc_ent_int(savefile, "MapProperty0", level_prop->side_block);
     bc_ent_int(savefile, "MapProperty1", level_prop->edge_block);
     bc_ent_int(savefile, "MapProperty2", level_prop->side_level);
@@ -394,6 +403,37 @@ bc_ent_int(gzFile ofd, char * name, int val)
 }
 
 LOCAL void
+bc_ent_long(gzFile ofd, char * name, int64_t val)
+{
+    if (val >= -128 && val <= 127) {
+	gzputc(ofd, NBT_I8);
+	bc_ent_label(ofd, name);
+	gzputc(ofd, val & 0xFF);
+	return;
+    }
+
+    if (val >= -32768 && val <= 32767) {
+	gzputc(ofd, NBT_I16);
+	bc_ent_label(ofd, name);
+	gzputc(ofd, (val>>8));
+	gzputc(ofd, val&0xFF);
+	return;
+    }
+
+    if (val >= -2147483648 && val <= 2147483647) {
+	gzputc(ofd, NBT_I32);
+	bc_ent_label(ofd, name);
+	gzputc(ofd, (val>>24) & 0xFF);
+	gzputc(ofd, (val>>16) & 0xFF);
+	gzputc(ofd, (val>>8)  & 0xFF);
+	gzputc(ofd,  val      & 0xFF);
+	return;
+    }
+
+    bc_ent_int64(ofd, name, val);
+}
+
+LOCAL void
 bc_ent_float(gzFile ofd, char * name, double fval)
 {
     union { int32_t i32; float f32; } bad;
@@ -423,7 +463,18 @@ bc_ent_int64(gzFile ofd, char * name, int64_t val)
 }
 
 LOCAL void
-bc_ent_int16(gzFile ofd, char * name, int val)
+bc_ent_int32(gzFile ofd, char * name, int64_t val)
+{
+    gzputc(ofd, NBT_I32);
+    bc_ent_label(ofd, name);
+    gzputc(ofd, (val>>24));
+    gzputc(ofd, (val>>16));
+    gzputc(ofd, (val>>8));
+    gzputc(ofd, val&0xFF);
+}
+
+LOCAL void
+bc_ent_int16(gzFile ofd, char * name, int32_t val)
 {
     gzputc(ofd, NBT_I16);
     bc_ent_label(ofd, name);
@@ -490,7 +541,7 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
 //	double log2 = 0.693147180559945f;
 //	double spl2 = (UB(pkt[p++]) - 128) / 64.0;
 //	double spd = exp(log2 * spl2);
-	bc_ent_float(ofd, "Speed", blkdef->speed/1000.0);
+	bc_ent_float(ofd, "Speed", blkdef->speed/1024.0);
     }
 
     {
