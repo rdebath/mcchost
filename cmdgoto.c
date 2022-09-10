@@ -28,7 +28,7 @@ Return to the system main level
 #define CMD_GOTOMAIN \
     {N"goto", &cmd_goto}, \
     {N"g", &cmd_goto, .dup=1}, {N"gr", &cmd_goto, .dup=1, .nodup=1}, \
-    {N"main", &cmd_main}
+    {N"main", &cmd_main}, {N"void", &cmd_void, .dup=1}
 #endif
 
 void
@@ -131,6 +131,27 @@ cmd_main(char * UNUSED(cmd), char * UNUSED(arg))
     }
 
     read_only_message();
+}
+
+void
+cmd_void(char * UNUSED(cmd), char * UNUSED(arg))
+{
+    char * voidname = "<void>";
+
+    char fixedname[NB_SLEN];
+    fix_fname(fixedname, sizeof(fixedname), voidname);
+    stop_shared();
+    start_level(voidname, fixedname, -1);
+    // open_level_files(voidname, 0, fixedname, 0);
+    if (level_prop) {
+	level_prop->readonly = 1;
+	level_prop->disallowchange = 0;
+    }
+    if (level_prop) player_posn = level_prop->spawn;
+    send_map_file();
+
+    printf_chat("@&S%s was sucked into the void.", user_id);
+    printf_chat("&SYou jumped into the void");
 }
 
 int

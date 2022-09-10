@@ -29,6 +29,8 @@
 #define LEVEL_BACKUP_NAME LEVEL_BACKUP_DIR_NAME "/%s.%d.cw"
 
 #define USERDB_DIR "userdb"
+#define USER_DIR "user"
+#define USER_INI_NAME "user/%s.ini"
 
 #define MODEL_CW_NAME "model.cw"
 #define MODEL_INI_NAME "model.ini"
@@ -46,6 +48,7 @@ static char * dirlist[] = {
     "level",
     LEVEL_MAP_DIR_NAME,
     LEVEL_BACKUP_DIR_NAME,
+    USER_DIR,
     USERDB_DIR,
     "help",
     "log",

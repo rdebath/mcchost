@@ -98,7 +98,8 @@ cmd_newlvl(char * cmd, char * arg)
 	}
 
 	if ((int64_t)x*y*z > INT_MAX) {
-	    printf_chat("&WMap dimensions are too large to use", sz);
+	    printf_chat("&WMap dimensions are too large to use, %jd cells",
+		(intmax_t)x*y*z);
 	    return;
 	}
     }

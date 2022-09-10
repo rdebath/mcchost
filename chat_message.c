@@ -53,6 +53,8 @@ process_chat_message(int message_type, char * msg)
 
     my_user.message_count++; my_user.dirty=1;
 
+    update_player_move_time();
+
     convert_inbound_chat(msg);
 
     if (pending_chat_size >= 65536) {
@@ -240,7 +242,12 @@ post_chat(int where, int type, char * chat, int chat_len)
  * Prefix format with '(11)' to choose message type
  * Prefix format with '~' for '%' -> '&' conversion.
  */
-void
+
+#if INTERFACE
+#define printf_chat_w __attribute__ ((format (printf, 1, 2)))
+#endif
+
+void printf_chat_w
 printf_chat(char * fmt, ...)
 {
     char pbuf[16<<10];

@@ -227,7 +227,6 @@ process_args(int argc, char **argv)
 		    .flag_log_chat = 1,
 		    .afk_interval = 10*60,
 		    .afk_kick_interval = 45*60,
-		    .op_flag = 1,
 		};
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);

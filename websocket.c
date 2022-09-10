@@ -221,7 +221,7 @@ websocket_translate(char * inbuf, int * insize)
 
 	    // Ignore unexpected zero length packets; hopefully that's the right thing to do.
 	    if (op != OPCODE_BINARY && op != OPCODE_TEXT && packet_len != 0) {
-		printlog("Websocket error opcode %d, len = %d", op, packet_len);
+		printlog("Websocket error opcode %d, len = %jd", op, (intmax_t)packet_len);
 		for(int i = 0; i<header_size; i++)
 		    hex_logfile(websocket_buffer[i]);
 		for(int i = 0; i<*insize; i++) {

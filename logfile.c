@@ -123,7 +123,11 @@ log_chat_message(char * str, int len, int type, char* userid)
     fprintf(logfile, "\n");
 }
 
-void
+#if INTERFACE
+#define printlog_w __attribute__ ((format (printf, 1, 2)))
+#endif
+
+void printlog_w
 printlog(char * fmt, ...)
 {
     va_list ap;
@@ -146,7 +150,11 @@ printlog(char * fmt, ...)
     fprintf(logfile, "\n");
 }
 
-void
+#if INTERFACE
+#define fprintf_logfile_w __attribute__ ((format (printf, 1, 2)))
+#endif
+
+void fprintf_logfile_w
 fprintf_logfile(char * fmt, ...)
 {
     char bufcp437[4096], bufutf8[8192];

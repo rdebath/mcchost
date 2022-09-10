@@ -49,6 +49,7 @@ run_command(char * msg)
 	    char * arg = strtok(0, "");
 	    if (server->flag_log_commands)
 		fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
+	    update_player_move_time();
 	    command_list[c].function(cmd, arg);
 	    return;
 	}

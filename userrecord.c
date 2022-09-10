@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <arpa/inet.h>
 #include <ctype.h>
+#include <limits.h>
 
 #include <lmdb.h>
 #include "userrecord.h"
@@ -36,7 +37,7 @@ struct userrec_t
     char last_ip[NB_SLEN];
     int64_t time_online_secs;
 
-    // Should be saved (TODO)
+    // Saved to ini file
     int64_t coin_count;
     char title[NB_SLEN];
     char colour[NB_SLEN];
@@ -44,6 +45,8 @@ struct userrec_t
 
     // Not saved
     int dirty;
+    int ini_valid;
+    int user_logged_in;
     int64_t time_of_last_save;
 }
 #endif
@@ -209,11 +212,13 @@ copy_user_key(char *p, char * user_id)
 /*
     (when == 0) => Tick
     (when == 1) => At logon
+    (when == 2) => At logoff or config change
  */
 void
 write_current_user(int when)
 {
     if (when == 0 && !my_user.dirty) return;
+    if (when == 2 && !my_user.user_logged_in) return;
 
     time_t now = time(0);
     if (when == 0 && now - my_user.time_of_last_save >= 120)
@@ -221,7 +226,7 @@ write_current_user(int when)
 
     if (my_user.user_no == 0) {
 	if (*user_id == 0) return;
-	if (read_userrec(&my_user, user_id) < 0)
+	if (read_userrec(&my_user, user_id, 1) < 0)
 	    my_user.user_no = 0;
     }
 
@@ -232,11 +237,18 @@ write_current_user(int when)
 	my_user.last_logon = now;
 	my_user.time_of_last_save = now;
 	my_user.logon_count++;
+	my_user.user_logged_in = 1;
+
+	// Datafix.
+	if (now < 1700000000)
+	    if (my_user.time_online_secs > 1500000000) my_user.time_online_secs = 0;
+
 	if (*client_ipv4_str)
 	    snprintf(my_user.last_ip, sizeof(my_user.last_ip), "%s", client_ipv4_str);
     }
 
-    if (now > my_user.time_of_last_save) {
+    if (now > my_user.time_of_last_save && my_user.user_logged_in) {
+	if (my_user.time_of_last_save == 0) my_user.time_of_last_save = now;
 	int64_t d = now - my_user.time_of_last_save;
 	my_user.time_online_secs += d;
 	my_user.time_of_last_save += d;
@@ -244,18 +256,26 @@ write_current_user(int when)
 
     strcpy(my_user.user_id, user_id);
 
-    write_userrec(&my_user); //TODO: Only write counter fields if when==0
+    write_userrec(&my_user, (when==2));
 
     my_user.dirty = 0;
 }
 
 void
-write_userrec(userrec_t * userrec)
+write_userrec(userrec_t * userrec, int ini_too)
 {
-    if (!userdb_open) open_userdb();
-
     uint8_t user_key[NB_SLEN*4];
     copy_user_key(user_key, userrec->user_id);
+
+    if (ini_too && userrec->ini_valid) {
+	char userini[PATH_MAX];
+	user_ini_tgt = userrec;
+	snprintf(userini, sizeof(userini), USER_INI_NAME, user_key);
+	save_ini_file(user_ini_fields, userini);
+	user_ini_tgt = 0;
+    }
+
+    if (!userdb_open) open_userdb();
 
     MDB_txn *txn;
     E(mdb_txn_begin(env, NULL, 0, &txn));
@@ -302,10 +322,29 @@ write_userrec(userrec_t * userrec)
     E(mdb_txn_commit(txn));
 }
 
+// If user_id arg is zero we use the user_no field so we can load the
+// DB data (specifically the full name) for translation of id to name.
 int
-read_userrec(userrec_t * rec_buf, char * user_id)
+read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
 {
-    if ((user_id == 0 || *user_id == 0) && rec_buf->user_no == 0) return -1;
+    if (user_id && *user_id == 0) return -1;
+    if (user_id == 0 && rec_buf->user_no == 0) return -1;
+
+    rec_buf->ini_valid = load_ini;
+
+    uint8_t user_key[NB_SLEN*4];
+    if (user_id) {
+	copy_user_key(user_key, user_id);
+
+	// INI file loaded first, overridden by DB
+	if (load_ini) {
+	    char userini[PATH_MAX];
+	    user_ini_tgt = rec_buf;
+	    snprintf(userini, sizeof(userini), USER_INI_NAME, user_key);
+	    load_ini_file(user_ini_fields, userini, 1, 0);
+	    user_ini_tgt = 0;
+	}
+    }
 
     if (!userdb_open) open_userdb();
 
@@ -323,9 +362,6 @@ read_userrec(userrec_t * rec_buf, char * user_id)
 	key2.mv_data = idbuf;
 
     } else {
-	uint8_t user_key[NB_SLEN*4];
-	copy_user_key(user_key, user_id);
-
 	MDB_val key;
 
 	key.mv_size = strlen(user_key);

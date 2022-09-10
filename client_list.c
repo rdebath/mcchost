@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
@@ -29,6 +30,7 @@ struct client_entry_t {
     nbtstr_t name;
     nbtstr_t client_software;
     int on_level;
+    int level_bkp_id;
     xyzhv_t posn;
     uint8_t active;
     uint8_t visible;
@@ -36,6 +38,8 @@ struct client_entry_t {
     uint32_t ip_address;
     time_t last_move;
     uint8_t is_afk;
+    uint8_t client_proto_ver;
+    uint8_t client_cpe;
     pid_t session_id;
 };
 
@@ -102,7 +106,7 @@ check_user()
 	client_entry_t c = shdat.client->user[i];
 
 	// Is this user visible.
-	c.visible = (c.active && c.on_level == my_level);
+	c.visible = (c.active && c.on_level == my_level && c.level_bkp_id >= 0);
 
 	if (extn_extplayerlist) {
 	    if (c.active && (!myuser[i].active ||
@@ -113,8 +117,14 @@ check_user()
 		if (c.on_level >= 0 && c.on_level < MAX_LEVEL) {
 		    int l = c.on_level;
 		    nbtstr_t n = shdat.client->levels[l].level;
-		    if (shdat.client->levels[l].loaded)
-			snprintf(buf, sizeof(buf), "On %s", n.c);
+		    if (shdat.client->levels[l].loaded) {
+			if (shdat.client->levels[l].backup_id == 0)
+			    snprintf(buf, sizeof(buf), "On %s", n.c);
+			else if (shdat.client->levels[l].backup_id > 0)
+			    snprintf(buf, sizeof(buf), "Museum %d %s", shdat.client->levels[l].backup_id, n.c);
+			else
+			    snprintf(buf, sizeof(buf), "Nowhere");
+		    }
 		}
 		snprintf(buf2, sizeof(buf2), "&e%s%s", c.name.c, c.is_afk?" &7(AFK)":"");
 		send_addplayername_pkt(i, c.name.c, buf2, buf, 0);
@@ -228,7 +238,13 @@ update_player_pos(pkt_player_posn pkt)
     myuser[my_user_no].posn = pkt.pos;
     if (shdat.client)
 	shdat.client->user[my_user_no].posn = pkt.pos;
-    update_player_move_time();
+
+    // Allow for pushing
+    if ( abs(p1.x-p2.x)>2 || abs(p1.y-p2.y)>32 || abs(p1.z-p2.z)>2 ||
+	abs(p1.v-p2.v)>1 || abs(p1.h-p2.h)>1) {
+
+	update_player_move_time();
+    }
 }
 
 void
@@ -305,7 +321,10 @@ start_user()
     t.active = 1;
     t.session_id = getpid();
     t.client_software = client_software;
+    t.client_proto_ver = protocol_base_version;
+    t.client_cpe = cpe_enabled;
     t.on_level = -1;
+    t.level_bkp_id = -1;
     t.ip_address = client_ipv4_addr;
     shdat.client->user[my_user_no] = t;
     shdat.client->generation++;
@@ -353,13 +372,19 @@ start_level(char * levelname, char * levelfile, int backup_id)
     }
 
     shdat.client->user[my_user_no].on_level = level_id;
+    shdat.client->user[my_user_no].level_bkp_id = backup_id;
     shdat.client->generation++;
 
     unlock_fn(system_lock);
 
     if (extn_extplayerlist) {
 	char buf[256] = "";
-	snprintf(buf, sizeof(buf), "On %s", shdat.client->levels[level_id].level.c);
+	if (current_level_backup_id == 0)
+	    snprintf(buf, sizeof(buf), "On %s", current_level_name);
+	else if (current_level_backup_id > 0)
+	    snprintf(buf, sizeof(buf), "Museum %d %s", current_level_backup_id, current_level_name);
+	else
+	    strcpy(buf, "Nowhere");
 	send_addplayername_pkt(255, user_id, user_id, buf, 0);
     }
 }
@@ -367,8 +392,9 @@ start_level(char * levelname, char * levelfile, int backup_id)
 void
 stop_user()
 {
-    my_user.dirty = 1; // For ticks.
-    write_current_user(0);
+    if (my_user.user_logged_in)
+	write_current_user(2);
+    my_user.user_logged_in = 0;
 
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
     if (!shdat.client) return;
@@ -402,10 +428,10 @@ delete_session_id(int pid, char * killed_user, int len)
 	{
 	    // Increment kick count, no lock
 	    userrec_t user_rec;
-	    if (read_userrec(&user_rec, shdat.client->user[i].name.c) == 0) {
+	    if (read_userrec(&user_rec, shdat.client->user[i].name.c, 0) == 0) {
 		user_rec.kick_count++;
 		user_rec.dirty = 1;
-		write_userrec(&user_rec);
+		write_userrec(&user_rec, 0);
 	    }
 
 	    cleaned ++;

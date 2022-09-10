@@ -52,7 +52,7 @@ cmd_replace(char * cmd, char * arg)
     for(char * ar = strtok(arg, " ");ar;ar=strtok(0," ")) {
 	block_t b = block_id(ar);
 	if (b == BLOCKNIL) {
-	    printf_chat("&WUnknown block '%s'", ar);
+	    printf_chat("&WUnknown block '%s'", ar?ar:"");
 	    return;
 	}
 	bllist[blcount++] = b;
@@ -83,7 +83,7 @@ cmd_replaceall(char * UNUSED(cmd), char * arg)
     for(char * ar = strtok(arg, " ");ar;ar=strtok(0," ")) {
 	block_t b = block_id(ar);
 	if (b == BLOCKNIL) {
-	    printf_chat("&WUnknown block '%s'", ar);
+	    printf_chat("&WUnknown block '%s'", ar?ar:"");
 	    return;
 	}
 	bllist[blcount++] = b;

@@ -62,7 +62,10 @@ f_block_convert(block_t in)
 	    in = cpe_conversion[in-Block_CP];
     }
 
-    return in >= client_block_limit ? Block_Bedrock : in;
+    if (in < client_block_limit) return in;
+    if (in >= Block_Dandelion && in <= Block_RedMushroom) in = Block_Sapling;
+    if (in < client_block_limit) return in;
+    return Block_Bedrock;
 }
 
 void
@@ -500,7 +503,15 @@ send_inventory_order()
 void
 send_block_permission()
 {
-    if (!extn_block_permission) return;
+    if (!extn_block_permission) {
+	send_op_pkt(
+	    level_prop->disallowchange == 0 &&
+	    level_prop->blockdef[Block_Bedrock].block_perm == 0 &&
+	    level_prop->blockdef[Block_ActiveWater].block_perm == 0 &&
+	    level_prop->blockdef[Block_ActiveLava].block_perm == 0);
+	return;
+    }
+
     int pok = 1, dok = 1;
     block_t b;
 

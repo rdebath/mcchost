@@ -53,12 +53,12 @@ generate_secret()
 }
 
 int
-check_mppass(char * mppass)
+check_mppass(char * userid, char * mppass)
 {
     for(int tick = -1; tick<2; tick++)
     {
 	// NB: Not vulnerable to length extension attacks due to previous
-	// checks on user_id character set and length. (ie NULs not allowed)
+	// checks on userid character set and length. (ie NULs not allowed)
 	char sbuf[NB_SLEN];
 	unsigned char * s;
 	MD5_CTX mdContext;
@@ -70,7 +70,7 @@ check_mppass(char * mppass)
 	    s = sbuf;
 	}
 	MD5Update (&mdContext, s, strlen(s));
-	s = (unsigned char *)user_id;
+	s = (unsigned char *)userid;
 	MD5Update (&mdContext, s, strlen(s));
 	MD5Final (&mdContext);
 

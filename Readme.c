@@ -6,6 +6,9 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) curl https://ipapi.co/40.89.244.232/utc_offset
+    -- user.utc_offset & user.utc_user_offset
+
  +) /backup & /restore
 
  +) Add "backup now" command.

@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <strings.h>
 #include <math.h>
@@ -7,10 +9,11 @@
 #include "ini_struct.h"
 /*
  * TODO: Should unknown sections give warnings?
- * TODO: Comment preserving ini file save.
- *
- * Server.WhiteList
- * Server.Antispam
+ * TODO: Comment preserving ini file load/save.
+ *       -- Load as array of lines
+ *       -- on write search for matching line and replace
+ *       -- if not found add to end of existing section
+ *       -- Order N^2 because of linear search
  */
 
 #if INTERFACE
@@ -54,6 +57,8 @@ Character set of file is UTF8
 #define WC(_x) WC2(!st->no_unsafe, _x)
 #define WC2(_c, _x) (st->write && (_c)) ?"; " _x:_x
 
+userrec_t * user_ini_tgt = 0;
+
 int
 system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 {
@@ -89,6 +94,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_STRARRAY("Heartbeat", ini_settings.heartbeat_url);
 	INI_BOOLVAL("PollHeartbeat", ini_settings.enable_heartbeat_poll);
+	INI_STRARRAY("UserSuffix", ini_settings.user_id_suffix);
 
 	if (st->write) fprintf(st->fd, "\n");
 
@@ -150,7 +156,6 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
     return found;
 }
-
 
 int
 level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
@@ -254,9 +259,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 		break;
 	}
 
-	if (!level_prop->blockdef[bn].defined && st->write) {
-	    INI_BOOLVAL("Defined", level_prop->blockdef[bn].defined);
-	} else {
+	if (level_prop->blockdef[bn].defined || !st->write) {
 	    INI_BOOLVAL(WC("Defined"), level_prop->blockdef[bn].defined);
 	    INI_NBTSTR("Name", level_prop->blockdef[bn].name);
 	    INI_INTVAL("Collide", level_prop->blockdef[bn].collide);
@@ -291,11 +294,46 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	}
 	if (level_prop->blockdef[bn].block_perm || !st->write) {
 	    INI_BLKVAL("Permission", level_prop->blockdef[bn].block_perm);
+	    if (!level_prop->blockdef[bn].defined && st->write) {
+		INI_BOOLVAL("Defined", level_prop->blockdef[bn].defined);
+	    }
 	}
 
 	bn++;
     } while(st->all && bn < BLOCKMAX);
 
+    return found;
+}
+
+int
+user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
+{
+    char *section = "", *fld;
+    int found = 0;
+
+    if (!user_ini_tgt) return found;
+
+    section = "user";
+    if (st->all || strcmp(section, st->curr_section) == 0)
+    {
+	INI_INTMAXVAL("UserNo", user_ini_tgt->user_no);
+	INI_STRARRAYCP437("UserId", user_ini_tgt->user_id);
+	INI_STRARRAYCP437("Title", user_ini_tgt->title);
+	INI_STRARRAYCP437("Colour", user_ini_tgt->colour);
+	INI_STRARRAYCP437("TitleColour", user_ini_tgt->title_colour);
+	INI_INTMAXVAL("BlocksPlaced", user_ini_tgt->blocks_placed);
+	INI_INTMAXVAL("BlocksDeleted", user_ini_tgt->blocks_deleted);
+	INI_INTMAXVAL("BlocksDrawn", user_ini_tgt->blocks_drawn);
+	INI_INTMAXVAL("FirstLogon", user_ini_tgt->first_logon);
+	INI_INTMAXVAL("LastLogon", user_ini_tgt->last_logon);
+	INI_INTMAXVAL("LogonCount", user_ini_tgt->logon_count);
+	INI_INTMAXVAL("KickCount", user_ini_tgt->kick_count);
+	INI_INTMAXVAL("DeathCount", user_ini_tgt->death_count);
+	INI_INTMAXVAL("MessageCount", user_ini_tgt->message_count);
+	INI_INTMAXVAL("CoinCount", user_ini_tgt->coin_count);
+	INI_DURATION("TimeOnline", user_ini_tgt->time_online_secs);
+	INI_STRARRAY("LastIP", user_ini_tgt->last_ip);
+    }
     return found;
 }
 
@@ -497,6 +535,13 @@ ini_read_nbtstr(nbtstr_t * buf, char *value)
 }
 
 LOCAL void
+ini_write_intmax(ini_state_t *st, char * section, char *fieldname, intmax_t value)
+{
+    ini_write_section(st, section);
+    fprintf(st->fd, "%s = %jd\n", fieldname, value);
+}
+
+LOCAL void
 ini_write_int(ini_state_t *st, char * section, char *fieldname, int value)
 {
     ini_write_section(st, section);
@@ -679,6 +724,16 @@ ini_write_int_duration(ini_state_t *st, char * section, char *fieldname, int val
                 _var = ini_read_int_scale(*fieldvalue, _scale, _scale2); \
             else \
                 ini_write_int_scale(st, section, fld, (_var), _scale, _scale2); \
+        }
+
+#define INI_INTMAXVAL(_field, _var) \
+        fld = _field; \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                _var = strtoimax(*fieldvalue, 0, 0); \
+            else \
+                ini_write_intmax(st, section, fld, (_var)); \
         }
 
 #define INI_DURATION(_field, _var) \

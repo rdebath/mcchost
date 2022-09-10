@@ -69,6 +69,7 @@ struct server_ini_t {
 
     int enable_heartbeat_poll;
     char heartbeat_url[1024];
+    char user_id_suffix[NB_SLEN];
 };
 #endif
 
@@ -462,7 +463,7 @@ login()
 	    // Special quick exits for bad callers.
 	    if (insize >= 1 && inbuf[0] != 0)
 		teapot(inbuf, insize);
-	    if (insize >= 2 && inbuf[1] < 3)
+	    if (insize >= 2 && (inbuf[1] < 3 || inbuf[1] > 9))
 		teapot(inbuf, insize);
 	    if (insize >= 2 && (inbuf[1] > 7 || inbuf[1] < 5)) {
 		if (insize >= 66) {
@@ -482,17 +483,18 @@ login()
     if (websocket) websocket = 1; // Reset for requestloop.
 
     convert_logon_packet(inbuf, &player);
-    strcpy(user_id, player.user_id);
+    snprintf(user_id, sizeof(user_id), "%s%s", player.user_id, ini_settings.user_id_suffix);
     protocol_base_version = player.protocol;
 
     if (player.protocol > 7 || player.protocol < 5)
 	disconnect(0, "Unsupported protocol version");
 
     // The older protocols are mostly the same but with fewer valid blocks.
-    // 7 -- classic 0.30	-- CPE only for this version.
+    // 7 -- classic 0.28 - 0.30	-- CPE only for this version.
     // 6 -- classic 0.0.20+	-- No setuser type packet.
     // 5 -- classic 0.0.19	-- No usertype field.
     // 3/4 -- classic 0.0.16+	-- Problems with teleport and spawn positions.
+    // ? -- classic 0.0.15a	-- No protocol version in ident packet.
     if (player.protocol < 7)
 	switch (player.protocol) {
 	case 6: client_block_limit = Block_Gold+1; break;
@@ -500,9 +502,9 @@ login()
 	default: client_block_limit = Block_Leaves+1; msglen[0]--; break;
 	}
 
-    for(int i = 0; user_id[i]; i++)
-	if (!isascii(user_id[i]) ||
-	    (!isalnum(user_id[i]) && user_id[i] != '.' && user_id[i] != '_')) {
+    for(int i = 0; player.user_id[i]; i++)
+	if (!isascii(player.user_id[i]) ||
+	    (!isalnum(player.user_id[i]) && player.user_id[i] != '.' && player.user_id[i] != '_')) {
 	    disconnect(0, "Invalid user name");
 	}
 
@@ -532,145 +534,11 @@ login()
 	user_authenticated = 1;
     else if (*server->secret != 0 && *server->secret != '-') {
 	// There's an attempted mppass or we require one.
-	if (check_mppass(player.mppass) == 0) {
+	if (check_mppass(player.user_id, player.mppass) == 0) {
 	    // printlog("User %s failed with mppass %s", user_id, player.mppass);
 	    disconnect(0, "Login failed! Close the game and refresh the server list.");
 	}
 
 	user_authenticated = 1;
     }
-}
-
-LOCAL void
-teapot(uint8_t * buf, int len)
-{
-    int dump_it = 1;
-    int rv = 4;
-    int send_new_logout = 0;
-    int send_tls_fail = 0;
-    int send_http_error = 0;
-
-    int is_ascii = 1;
-    for(int i = 0; is_ascii && i<len; i++)
-	if (!(buf[i] == '\r' || buf[i] == '\n' || (buf[i] >= ' ' && buf[i] <= '~')))
-	    is_ascii = 0;
-
-    if (client_ipv4_port) {
-	int fm = 1;
-	if (len == 0)
-	    rv = dump_it = 0;
-
-	else if (len > 0 && len < 5) {
-	    char hbuf[32] = "";
-	    for(int i=0; i<len; i++)
-		sprintf(hbuf+i*6, ", 0x%02x", buf[i]);
-	    printlog("Received byte%s %s from %s",
-		len>1?"s":"", hbuf+2, client_ipv4_str);
-	    fm = rv = dump_it = 0;
-
-	} else if (buf[0] == 0x16 && buf[1] == 0x03 && buf[1] >= 1 && buf[1] <= 3) { 
-	    printlog("Received a TLS Client hello packet from %s",
-		client_ipv4_str);
-	    fm = rv = dump_it = 0;
-	    send_tls_fail = 1;
-
-	} else if (len > 32 && buf[0] == 3 && !buf[1] && !buf[2] && buf[3] == len &&
-		buf[4] == len-5 && memcmp(buf+11, "Cookie: mstshash=", 17) == 0) {
-	    uint8_t * p = buf+28;
-	    char nbuf[256] = "";
-	    int i = 0;
-	    while(p<buf+len && *p > ' ' && *p < '~') {
-		nbuf[i++] = *p++; nbuf[i] = 0;
-	    }
-	    printlog("Failed connect from %s, RDP for \"%s\"", client_ipv4_str, nbuf);
-	    fm = rv = dump_it = 0;
-
-	} else if (len >= 19 && buf[0] == 3 && !buf[1] && !buf[2] && buf[3] == 19 &&
-		buf[4] == 14 && buf[5] == 0xe0 && !buf[6] && !buf[7]) {
-	    printlog("Failed connect from %s, RDP client hello", client_ipv4_str);
-	    fm = rv = dump_it = 0;
-
-	} else if (len > 12 && buf[1] == 0 && buf[0] >= 12 && buf[0] < len && buf[0] < 32 &&
-	    buf[buf[0]-2] == ((tcp_port_no>>8)&0xFF) && buf[buf[0]-1] == (tcp_port_no&0xFF)) {
-	    // This looks like a current protocol packet.
-	    printlog("Failed connect from %s, %s", client_ipv4_str,
-		"Using newer Minecraft protocol.");
-	    fm = rv = dump_it = 0;
-	    send_new_logout = 1;
-
-	} else if (len > 14 &&
-		(memcmp(buf, "GET ", 4) == 0 || memcmp(buf, "HEAD ", 5) == 0)) {
-	    send_http_error = 1;
-	    fm = rv = 0;
-
-	} else if (len > 14 && memcmp(buf, "PRI * HTTP/2.0", 14) == 0) {
-	    send_http_error = 1;
-	    printlog("Failed connect from %s, %s", client_ipv4_str,
-		"HTTP/2.0 client hello.");
-	    fm = rv = dump_it = 0;
-
-	}
-	if (fm)
-	    printlog("Failed connect from %s, %s", client_ipv4_str,
-		len ? "invalid client hello": "no data.");
-    }
-    else if (len <= 0)
-	printlog("Nothing received from remote");
-
-    if (dump_it) {
-	if (is_ascii) {
-	    char message[65536];
-	    int j = 0;
-	    for(int i = 0; i<len && j<sizeof(message)-4; i++) {
-		if (buf[i] >= ' ') message[j++] = buf[i];
-		else {
-		    message[j++] = '\\';
-		    if (buf[i] == '\n') message[j++] = 'n';
-		    if (buf[i] == '\r') message[j++] = 'r';
-		}
-	    }
-	    message[j] = 0;
-	    printlog("Text received was: %s", message);
-	} else {
-	    for(int i = 0; i<len; i++)
-		hex_logfile(buf[i]);
-	    hex_logfile(EOF);
-	}
-    }
-
-    if (line_ofd > 0)
-    {
-	if (send_new_logout) {
-	    // This should be a new protocol disconnect message.
-	    char msg[] =  {
-		     70,   0,  68, '{', '"', 't', 'e', 'x', 't', '"',
-		    ':', ' ', '"', 'O', 'n', 'l', 'y', ' ', 'c', 'l',
-		    'a', 's', 's', 'i', 'c', ' ', 'p', 'r', 'o', 't',
-		    'o', 'c', 'o', 'l', ' ', 's', 'e', 'v', 'e', 'n',
-		    ' ', 'i', 's', ' ', 's', 'u', 'p', 'p', 'o', 'r',
-		    't', 'e', 'd', '"', ',', ' ', '"', 'c', 'o', 'l',
-		    'o', 'r', '"', ':', ' ', '"', 'r', 'e', 'd', '"',
-		    '}', 1, 0, 0 };
-	    write_to_remote(msg, sizeof(msg)-1);
-	} else if (send_tls_fail) {
-	    char msg[] = { 0x15, 0x03, 0x01, 0x00, 0x02, 0x02, 80 };
-	    write_to_remote(msg, sizeof(msg));
-	} else if (send_http_error) {
-	    char msg[] =
-		"HTTP/1.1 426 Upgrade Required\r\n"
-		"Upgrade: mc/0.30+CPE, websocket, mc/0.30\r\n"
-		"\r\n";
-	    write_to_remote(msg, sizeof(msg)-1);
-
-	} else {
-	    char msg[] = "418 This is a classic (0.30) minecraft server with CPE\r\n";
-	    write_to_remote(msg, sizeof(msg)-1);
-	}
-
-	flush_to_remote();
-	shutdown(line_ofd, SHUT_RDWR);
-	if (line_ofd != line_ifd)
-	    shutdown(line_ifd, SHUT_RDWR);
-    }
-    exit(rv);
 }

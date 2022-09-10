@@ -316,18 +316,18 @@ process_extentry(pkt_extentry * pkt)
 	strcat(descbuf, " connected");
 	if (*client_software.c)
 	    sprintf(descbuf+strlen(descbuf),
-		" using \"%s\"", client_software.c);
+		" using \"%s\", ", client_software.c);
 	else
-	    sprintf(descbuf+strlen(descbuf), " using <unnamed>");
+	    sprintf(descbuf+strlen(descbuf), " using unnamed ");
 	
 	if (classicube_match_len+classicube_lastmatch == cpe_extn_advertised)
 	    sprintf(descbuf+strlen(descbuf),
-		", %d exts, Classicube%s", cpe_extn_advertised, websocket?" web":"");
+		"Classicube%s (%d extns)", websocket?" web":"", cpe_extn_advertised);
 	else if (classicube_match_len <= 1)
-	    sprintf(descbuf+strlen(descbuf), ", %sclient has %d extension%s",
+	    sprintf(descbuf+strlen(descbuf), "%sclient with %d extension%s",
 		websocket?"web-":"", cpe_extn_advertised, cpe_extn_advertised==1?"":"s");
 	else
-	    sprintf(descbuf+strlen(descbuf), ", CPE %sclient (CC %d of %d)",
+	    sprintf(descbuf+strlen(descbuf), "CPE %sclient (CC %d of %d)",
 		websocket?"web-":"", classicube_match_len, cpe_extn_advertised);
 
 	printlog("%s", descbuf);

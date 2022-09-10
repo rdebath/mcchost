@@ -31,6 +31,8 @@ int max_ping_ms = -1;
 int min_ping_ms = -1;
 int avg_ping_ms = -1;
 
+time_t last_user_write = 0;
+
 void
 run_request_loop()
 {
@@ -216,8 +218,12 @@ on_select_timeout()
     check_metadata_update();
     send_queued_chats(0);
     send_queued_blocks();
-    if (my_user.dirty)
+
+    secs = ((now-last_user_write) & 0xFF);
+    if (secs >= 45) {
 	write_current_user(0);
+	last_user_write = now;
+    }
 }
 
 void
@@ -382,7 +388,6 @@ process_client_message(int cmd, char * pktbuf)
 		sanitise_nbstring(pkt.message, p, 0);
 	    // p+=64;
 	    process_chat_message(pkt.message_type, pkt.message);
-	    update_player_move_time();
 	}
 	break;
 

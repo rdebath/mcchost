@@ -54,6 +54,26 @@ cmd_func_t mark_for_cmd = 0;
 char * mark_cmd_cmd = 0;
 char * mark_cmd_arg = 0;
 
+int
+can_place_block(block_t blk)
+{
+    if (level_prop->disallowchange || blk >= BLOCKMAX)
+	return 0;
+    if (server->cpe_disabled && blk >= Block_CP)
+        return 0;
+    if ((level_prop->blockdef[blk].block_perm&1) != 0)
+        return 0;
+    return 1;
+}
+
+static inline int
+can_delete_block(block_t blk)
+{
+    if ((level_prop->blockdef[blk].block_perm&2) != 0)
+        return 0;
+    return 1;
+}
+
 void
 cmd_place(char * cmd, char * arg)
 {
@@ -67,7 +87,7 @@ cmd_place(char * cmd, char * arg)
 	    if (i == 0) {
 		args[i] = block_id(p);
 		if (args[i] == BLOCKNIL) {
-		    printf_chat("&WUnknown block '%s'", p);
+		    printf_chat("&WUnknown block '%s'", p?p:"");
 		    return;
 		}
 	    } else
@@ -81,7 +101,8 @@ cmd_place(char * cmd, char * arg)
     }
 
     if (!level_block_queue || !level_blocks) return;
-    if (level_prop->disallowchange) { printf_chat("&WLevel cannot be changed"); return; }
+    if (level_prop->disallowchange) { printf_chat("&WThis level cannot be changed"); return; }
+    if (!can_place_block(args[0])) { printf_chat("&WYou cannot place block %s", block_name(args[0])); return; }
 
     // NB: Place is treated just like the client setblock, including any
     // Grass/Dirt/Slab conversions. The Cuboid call is NOT treated in the
@@ -94,15 +115,28 @@ cmd_place(char * cmd, char * arg)
 	pkt.coord.x = player_posn.x/32;	// check range [0..cells_x)
 	pkt.coord.y = (player_posn.y+16)/32;// Add half a block for slabs
 	pkt.coord.z = player_posn.z/32;
-	update_block(pkt);
     } else if(cnt == 4) {
 	pkt.coord.x = args[1];
 	pkt.coord.y = args[2];
 	pkt.coord.z = args[3];
-	update_block(pkt);
     } else {
 	plain_cuboid(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+	return;
     }
+
+    if (!level_block_queue || !level_blocks) return; // !!!
+    if (pkt.coord.x < 0 || pkt.coord.x >= level_prop->cells_x) return;
+    if (pkt.coord.y < 0 || pkt.coord.y >= level_prop->cells_y) return;
+    if (pkt.coord.z < 0 || pkt.coord.z >= level_prop->cells_z) return;
+
+    block_t b = level_blocks[World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z)];
+    if (b != Block_Air && b < BLOCKMAX && !can_delete_block(b)) {
+	printf_chat("&WYou cannot change the block at location (%d,%d,%d)",
+	    pkt.coord.x, pkt.coord.y, pkt.coord.z);
+	return;
+    }
+
+    update_block(pkt);
     return;
 }
 
@@ -171,16 +205,11 @@ cmd_mode(char * cmd, char * arg)
 	player_mode_mode = -1;
 	block_t b = block_id(block);
 	if (b == BLOCKNIL) {
-	    printf_chat("&WUnknown block '%s'", block);
+	    printf_chat("&WUnknown block '%s'", block?block:"");
 	    return;
 	}
 
-	// Classic mode, don't let them place blocks they can't remove.
-	if (!op_enabled && !cpe_requested) {
-	    if (b==Block_Bedrock) b=Block_Magma;
-	    if (b==Block_ActiveLava) b=Block_StillLava;
-	    if (b==Block_ActiveWater) b=Block_StillWater;
-	}
+	if (!can_place_block(b)) { printf_chat("&WYou cannot place block %s", block_name(b)); return; }
 
 	player_mode_mode = b;
 	printf_chat("&SPlayer /mode set to block &T%s", block_name(player_mode_mode));
@@ -231,12 +260,7 @@ process_player_setblock(pkt_setblock pkt)
 	pkt.mode = 2;
     }
 
-    int do_revert = 0;
-    if (level_prop->disallowchange || pkt.block >= BLOCKMAX) do_revert = 1;
-    if (!do_revert && server->cpe_disabled && pkt.block >= Block_CP)
-	do_revert = 1;
-    if (!do_revert && ((level_prop->blockdef[pkt.block].block_perm&1) != 0) )
-	do_revert = 1;
+    int do_revert = !can_place_block(pkt.block);
 
     if (!do_revert) {
 	uint64_t range = 0, r, ok_reach;
@@ -262,9 +286,8 @@ process_player_setblock(pkt_setblock pkt)
     if (pkt.coord.y < 0 || pkt.coord.y >= level_prop->cells_y) return;
     if (pkt.coord.z < 0 || pkt.coord.z >= level_prop->cells_z) return;
 
-    uintptr_t index = World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z);
-    block_t b = level_blocks[index];
-    if (b < BLOCKMAX && (level_prop->blockdef[b].block_perm&2) != 0) {
+    block_t b = level_blocks[World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z)];
+    if (b != Block_Air && b < BLOCKMAX && !can_delete_block(b)) {
 	revert_client(pkt);
 	return;
     }
@@ -472,7 +495,12 @@ cmd_cuboid(char * cmd, char * arg)
 
     block_t b = block_id(arg);
     if (b == BLOCKNIL) {
-	printf_chat("&WUnknown block '%s'", arg);
+	printf_chat("&WUnknown block '%s'", arg?arg:"");
+	return;
+    }
+
+    if (!can_place_block(b)) {
+	printf_chat("&WYou cannot place block %s", block_name(b));
 	return;
     }
 
@@ -516,6 +544,8 @@ plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
 	    {
 		uintptr_t index = World_Pack(x, y, z);
 		if (level_blocks[index] == b) continue;
+		if (b != Block_Air && b < BLOCKMAX && !can_delete_block(b))
+		    continue;
 		placecount++;
 		level_blocks[index] = b;
 		prelocked_update(x, y, z, b);
