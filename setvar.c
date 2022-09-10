@@ -98,6 +98,12 @@ cmd_setvar(char * cmd, char * arg)
 	    section = vbuf;
 	    varname = strtok(0, " ");
 	    value = strtok(0, "");
+	} else if (strcasecmp(section, "cuboid") == 0) {
+	    char * bno = strtok(0, " ");
+	    snprintf(vbuf, sizeof(vbuf), "cuboid.%s", bno);
+	    section = vbuf;
+	    varname = strtok(0, " ");
+	    value = strtok(0, "");
 	} else {
 	    varname = section;
 	    section = "level";

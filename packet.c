@@ -48,6 +48,8 @@
 #define PKID_ADDENTv1	0x17
 #define PKID_RMPLAYER	0x18
 #define PKID_MAPCOLOUR	0x19
+#define PKID_ADDCUBOID	0x1a
+#define PKID_RMCUBOID	0x1b
 #define PKID_BLOCKPERM	0x1c
 #define PKID_MAPAPPEAR	0x1e
 #define PKID_WEATHER	0x1f
@@ -178,9 +180,9 @@ int msglen[256] = {
     /* 0x18 */ 3,
 #define PKID_MAPCOLOUR	0x19
     /* 0x19 */ 8,
-#define PKID_ADDZONE	0x1a
+#define PKID_ADDCUBOID	0x1a
     /* 0x1a */ 86,
-#define PKID_RMZONE	0x1b
+#define PKID_RMCUBOID	0x1b
     /* 0x1b */ 2,
 #define PKID_BLOCKPERM	0x1c
     /* 0x1c */ 4,

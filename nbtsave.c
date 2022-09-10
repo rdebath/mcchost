@@ -243,6 +243,38 @@ save_map_to_file(char * fn, int background)
     if (bdopen)
 	bc_end(savefile);
 
+    // Not written by CC
+    bdopen = 0;
+    for(int i=0; i<MAX_CUBES; i++)
+	if (level_prop->cuboid[i].defined)
+	{
+	    if (!bdopen) {
+		bc_compound(savefile, "SelectionCuboid");
+		bdopen = 1;
+	    }
+
+	    char uniquename[64]; // Limitation of MCGalaxy loader.
+	    sprintf(uniquename, "SelectionCuboid%04x", i);
+
+	    bc_compound(savefile, uniquename);
+	    bc_ent_int(savefile, "SelectionID", i);
+	    bc_ent_string(savefile, "Label", level_prop->cuboid[i].name.c);
+	    bc_ent_int(savefile, "StartX", level_prop->cuboid[i].start_x);
+	    bc_ent_int(savefile, "StartY", level_prop->cuboid[i].start_y);
+	    bc_ent_int(savefile, "StartZ", level_prop->cuboid[i].start_z);
+	    bc_ent_int(savefile, "EndX", level_prop->cuboid[i].end_x);
+	    bc_ent_int(savefile, "EndY", level_prop->cuboid[i].end_y);
+	    bc_ent_int(savefile, "EndZ", level_prop->cuboid[i].end_z);
+	    bc_ent_int(savefile, "R", (level_prop->cuboid[i].colour>>16)&0xFF);
+	    bc_ent_int(savefile, "G", (level_prop->cuboid[i].colour>>8)&0xFF);
+	    bc_ent_int(savefile, "B", (level_prop->cuboid[i].colour)&0xFF);
+	    bc_ent_int(savefile, "Opacity", level_prop->cuboid[i].opacity);
+	    bc_end(savefile);
+	}
+
+    if (bdopen)
+	bc_end(savefile);
+
     if (level_prop->motd[0]) {
 	bc_compound(savefile, "Ident");
 	bc_ent_string(savefile, "Motd", level_prop->motd);
@@ -258,10 +290,6 @@ save_map_to_file(char * fn, int background)
     if (level_prop->seed[0])
 	bc_ent_string(savefile, "Seed", level_prop->seed);
     bc_end(savefile);
-
-    /* TODO
-	Zones ...
-    */
 
     bc_end(savefile);
     bc_end(savefile);

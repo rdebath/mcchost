@@ -144,6 +144,7 @@ send_metadata()
     send_env_colours();
     send_map_appearance();
     send_map_property();
+    send_cuboids();
     send_weather();
     send_textureurl();
     send_block_permission();
@@ -540,4 +541,16 @@ send_hack_control()
 {
     if (!extn_hackcontrol) return;
     send_hackcontrol_pkt(level_prop->hacks_flags, level_prop->hacks_jump);
+}
+
+void
+send_cuboids()
+{
+    if (!extn_selectioncuboid || !level_prop) return;
+
+    for(int i = 0; i<MAX_CUBES; i++)
+    {
+	if (!level_prop->cuboid[i].defined) continue;
+	send_selection_cuboid_pkt(i, level_prop->cuboid+i);
+    }
 }

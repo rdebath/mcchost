@@ -35,7 +35,6 @@ See "/help todo" for notes.
     -- Min= sets for bulk to be smaller
 
  +) TextHotKey
- +) SelectionCuboid -- Zone highlights
  +) EntityProperty -- model rotations
  +) VelocityControl -- Change movement now; /slap ?
  +) CustomParticles -- Make sparkles

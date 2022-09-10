@@ -30,6 +30,7 @@ static char last_lbl[256];
 static char last_sect[256];
 static int indent = 0;
 static int current_block = -1;
+static int current_cuboid = -1;
 static int inventory_block = -1;
 static int permission_block = -1;
 
@@ -138,7 +139,9 @@ read_element(gzFile ifd, int etype)
 	    return read_blockarray3(ifd, len);
 
 	uint8_t bin_buf[256];
-	if (len < 0 || len > sizeof(bin_buf)) {
+	if (len <= 0)
+	    ;
+	else if (len > sizeof(bin_buf)) {
 	    for(i=0; i<len; i++) {
 		if ((ch = gzgetc(ifd)) == EOF) return 0;
 	    }
@@ -202,7 +205,8 @@ read_element(gzFile ifd, int etype)
 	indent++;
 	for(;;) {
 	    etype = gzgetc(ifd);
-	    if (etype == NBT_END) {
+	    // NB: Allow an NBT_END to be clipped from the file.
+	    if (etype == NBT_END || etype == EOF) {
 		indent--;
 		*last_sect = 0;
 		return 1;
@@ -497,21 +501,23 @@ change_int_value(char * section, char * item, int64_t value)
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {
 	    current_block = value;
-	    if (!level_prop->blockdef[current_block].defined) {
-		if (current_block >= 0 && current_block<Block_CPE) {
-		    level_prop->blockdef[current_block] = default_blocks[current_block];
-		} else {
-		    blockdef_t t = default_blocks[1];
-		    sprintf(t.name.c, "@%d", current_block);
-		    level_prop->blockdef[current_block] = default_blocks[1];
+	    if (!(current_block < 0 || current_block >= BLOCKMAX)) {
+		if (!level_prop->blockdef[current_block].defined) {
+		    if (current_block >= 0 && current_block<Block_CPE) {
+			level_prop->blockdef[current_block] = default_blocks[current_block];
+		    } else {
+			blockdef_t t = default_blocks[1];
+			sprintf(t.name.c, "@%d", current_block);
+			level_prop->blockdef[current_block] = default_blocks[1];
+		    }
 		}
+		level_prop->blockdef[current_block].defined = 1;
+		level_prop->blockdef[current_block].inventory_order = -1;
+		level_prop->blockdef[current_block].fallback = -1;
 	    }
 
-	    level_prop->blockdef[current_block].defined = 1;
-	    level_prop->blockdef[current_block].inventory_order = -1;
-	    level_prop->blockdef[current_block].fallback = -1;
 	} else if (current_block < 0 || current_block >= BLOCKMAX) {
-	    // Skip -- no ID2.
+	    // Skip -- bad ID2.
 	} else if (strcmp(item, "CollideType") == 0) {
 	    level_prop->blockdef[current_block].collide = value;
 	} else if (strcmp(item, "Speed") == 0) {
@@ -559,6 +565,37 @@ change_int_value(char * section, char * item, int64_t value)
 	    level_prop->blockdef[current_block].dirt_block = value;
 	}
 
+    } else if (strncmp(section, "SelectionCuboid", 15) == 0) {
+	if (strcmp(item, "SelectionID") == 0) {
+	    current_cuboid = value;
+	    if (current_cuboid>= 0 && current_cuboid <MAX_CUBES)
+		level_prop->cuboid[current_cuboid].defined = 1;
+	} else if (current_cuboid<0 || current_cuboid >= MAX_CUBES) {
+	    // Bad cuboid
+	} else if (strcmp(item, "StartX") == 0) {
+	    level_prop->cuboid[current_cuboid].start_x = value;
+	} else if (strcmp(item, "StartY") == 0) {
+	    level_prop->cuboid[current_cuboid].start_y = value;
+	} else if (strcmp(item, "StartZ") == 0) {
+	    level_prop->cuboid[current_cuboid].start_z = value;
+	} else if (strcmp(item, "EndX") == 0) {
+	    level_prop->cuboid[current_cuboid].end_x = value;
+	} else if (strcmp(item, "EndY") == 0) {
+	    level_prop->cuboid[current_cuboid].end_y = value;
+	} else if (strcmp(item, "EndZ") == 0) {
+	    level_prop->cuboid[current_cuboid].end_z = value;
+	} else if (strcmp(item, "Colour") == 0) {
+	    level_prop->cuboid[current_cuboid].colour = value;
+	} else if (strcmp(item, "Opacity") == 0) {
+	    level_prop->cuboid[current_cuboid].opacity = value;
+	}
+	if (current_cuboid >= 0 && current_cuboid < MAX_CUBES) {
+	    int c = -1;
+	    if (strcmp(item, "R") == 0) c = 0;
+	    if (strcmp(item, "G") == 0) c = 1;
+	    if (strcmp(item, "B") == 0) c = 2;
+	    if (c>=0) set_colour(&level_prop->cuboid[current_cuboid].colour, c, value);
+	}
     }
 }
 
@@ -624,6 +661,12 @@ change_str_value(char * section, char * item, char * value)
 	if (strcmp(item, "Name") == 0) {
 	    if (current_block >= 0 && current_block < BLOCKMAX) {
 		cpy_nstr(level_prop->blockdef[current_block].name.c, MB_STRLEN, value);
+	    }
+	}
+    } else if (strncmp(section, "SelectionCuboid", 15) == 0) {
+	if (strcmp(item, "Label") == 0) {
+	    if (current_cuboid >= 0 && current_cuboid < MAX_CUBES) {
+		cpy_nstr(level_prop->cuboid[current_cuboid].name.c, MB_STRLEN, value);
 	    }
 	}
     } else if (strcasecmp(section, "Ident") == 0) {

@@ -98,6 +98,7 @@ struct map_info_t {
     struct blockdef_t blockdef[BLOCKMAX];
     uint8_t block_perms[BLOCKMAX];
 
+    struct selection_cuboid_t cuboid[MAX_CUBES];
     int magic_no2;
 };
 
@@ -107,6 +108,22 @@ struct map_len_t {
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
+};
+
+#define MAX_CUBES 128
+
+typedef struct selection_cuboid_t selection_cuboid_t;
+struct selection_cuboid_t {
+    uint8_t defined;
+    nbtstr_t name;
+    uint16_t start_x;
+    uint16_t start_y;
+    uint16_t start_z;
+    uint16_t end_x;
+    uint16_t end_y;
+    uint16_t end_z;
+    int colour;
+    uint8_t opacity;
 };
 
 typedef blockdef_t blockdef_t;

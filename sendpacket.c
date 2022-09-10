@@ -665,3 +665,47 @@ send_setspawn_pkt(xyzhv_t posn)
     *p++ = posn.v;
     write_to_remote(packetbuf, p-packetbuf);
 }
+
+void
+send_selection_cuboid_pkt(int id, struct selection_cuboid_t * cuboid)
+{
+    if (!cuboid || id < 0 || id > 127) return;
+    if (!cuboid->defined || cuboid->colour < 0) {
+	send_rm_selection_cuboid_pkt(id);
+	return;
+    }
+
+    int red = ((cuboid->colour>>16)&0xFF);
+    int green = ((cuboid->colour>>8)&0xFF);
+    int blue = ((cuboid->colour)&0xFF);
+    if (cuboid->colour < 0 || cuboid->colour > 0xFFFFFF)
+	red = green = blue = 0;
+
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_ADDCUBOID;
+    *p++ = id;
+    p += nb_string_write(p, cuboid->name.c);
+    nb_short(&p, cuboid->start_x);
+    nb_short(&p, cuboid->start_y);
+    nb_short(&p, cuboid->start_z);
+    nb_short(&p, cuboid->end_x);
+    nb_short(&p, cuboid->end_y);
+    nb_short(&p, cuboid->end_z);
+    nb_short(&p, red);
+    nb_short(&p, green);
+    nb_short(&p, blue);
+    nb_short(&p, cuboid->opacity);
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_rm_selection_cuboid_pkt(int id)
+{
+    if (id < 0 || id > 127) return;
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_RMCUBOID;
+    *p++ = id;
+    write_to_remote(packetbuf, p-packetbuf);
+}

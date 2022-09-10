@@ -302,6 +302,40 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	bn++;
     } while(st->all && bn < BLOCKMAX);
 
+    int cn = 0;
+    do
+    {
+	if (st->all) {
+	    if (!level_prop->cuboid[cn].defined) { cn++; continue; }
+	    sprintf(sectionbuf, "cuboid.%d", cn);
+	    section = sectionbuf;
+	} else {
+	    strncpy(sectionbuf, st->curr_section, 7);
+	    sectionbuf[7] = 0;
+	    if (strcasecmp(sectionbuf, "cuboid.") == 0) {
+		cn = atoi(st->curr_section+7);
+		if (cn < 0 || cn >= MAX_CUBES) break;
+		sprintf(sectionbuf, "cuboid.%d", cn);
+		section = sectionbuf;
+		level_prop->cuboid[cn].defined = 1;
+	    } else
+		break;
+	}
+
+	INI_BOOLVAL(WC("Defined"), level_prop->cuboid[cn].defined);
+	INI_NBTSTR("Label", level_prop->cuboid[cn].name);
+	INI_INTVAL("Start.X", level_prop->cuboid[cn].start_x);
+	INI_INTVAL("Start.Y", level_prop->cuboid[cn].start_y);
+	INI_INTVAL("Start.Z", level_prop->cuboid[cn].start_z);
+	INI_INTVAL("End.X", level_prop->cuboid[cn].end_x);
+	INI_INTVAL("End.Y", level_prop->cuboid[cn].end_y);
+	INI_INTVAL("End.Z", level_prop->cuboid[cn].end_z);
+	INI_INTHEX("Colour", level_prop->cuboid[cn].colour);
+	INI_INTVAL("Opacity", level_prop->cuboid[cn].opacity);
+
+	cn++;
+    } while(st->all && cn < MAX_CUBES);
+
     return found;
 }
 
