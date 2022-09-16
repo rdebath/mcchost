@@ -145,6 +145,7 @@ init_flat_level()
     gettimeofday(&start, 0);
 
     if (strcasecmp(level_prop->theme, "pixel") == 0) {
+	// Pixel: White sides and bedrock bottom layer
 	level_prop->side_level = 0;
 	level_prop->seed[0] = 0;
 	for(y=0; y<level_prop->cells_y; y++)
@@ -160,6 +161,7 @@ init_flat_level()
 		}
 
     } else if (strcasecmp(level_prop->theme, "empty") == 0) {
+	// Empty: Bedrock bottom layer
 	level_prop->side_level = 1;
 	level_prop->seed[0] = 0;
 	for(y=0; y<level_prop->cells_y; y++)
@@ -172,6 +174,7 @@ init_flat_level()
 		}
 
     } else if (strcasecmp(level_prop->theme, "air") == 0) {
+	// Air: Entire map is air
 	level_prop->seed[0] = 0;
 	for(y=0; y<level_prop->cells_y; y++)
 	    for(z=0; z<level_prop->cells_z; z++)
@@ -179,30 +182,32 @@ init_flat_level()
 		    level_blocks[World_Pack(x,y,z)] = Block_Air;
 
     } else if (strcasecmp(level_prop->theme, "rainbow") == 0) {
+	// Rainbow: Sides and bottom layer are random choice of colour blocks.
 	int has_seed = !!level_prop->seed[0];
-	uint32_t seed;
+	uint32_t seed = 1;
 	if (has_seed) seed = strtol(level_prop->seed, 0, 0);
-	else {init_rand_gen(); seed = random();}
 	level_prop->side_level = 1;
 	for(y=0; y<level_prop->cells_y; y++)
 	    for(z=0; z<level_prop->cells_z; z++)
 		for(x=0; x<level_prop->cells_x; x++)
 		{
-		    if (y == 0 || x == 0 || x == level_prop->cells_x-1 ||
-				  z == 0 || z == level_prop->cells_z-1) {
-			block_t px = lehmer_pm(seed)%(Block_White-Block_Red)+Block_Red;
-			level_blocks[World_Pack(x,y,z)] = px;
+		    if (    y == 0 || y == level_prop->cells_y-1 ||
+			    x == 0 || x == level_prop->cells_x-1 ||
+			    z == 0 || z == level_prop->cells_z-1) {
+			// Includes Grey and Black?
+			level_blocks[World_Pack(x,y,z)] =
+			    lehmer_pm(seed)%(Block_White-Block_Red)+Block_Red;
 		    } else {
 			level_blocks[World_Pack(x,y,z)] = Block_Air;
 		    }
 		}
-	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "space") == 0) {
+	// Space: Bottom layer bedrock, 2nd layer, sides and top layer are
+	// obsidian except for 1:100 which is Iron
 	int has_seed = !!level_prop->seed[0];
-	uint32_t seed;
+	uint32_t seed = 1;
 	if (has_seed) seed = strtol(level_prop->seed, 0, 0);
-	else {init_rand_gen(); seed = random();}
 	level_prop->side_level = 1;
 	level_prop->edge_block = Block_Obsidian;
 	level_prop->sky_colour = 0x000000;
@@ -226,7 +231,6 @@ init_flat_level()
 		    }
 		    level_blocks[World_Pack(x,y,z)] = px;
 		}
-	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "plain") == 0) {
 	int has_seed = !!level_prop->seed[0];
@@ -242,7 +246,16 @@ init_flat_level()
 	gen_plain_map(rng, 0);
 	level_prop->dirty_save = !has_seed;
 
+    } else if (strcasecmp(level_prop->theme, "plasma") == 0) {
+	int has_seed = !!level_prop->seed[0];
+	map_random_t rng[1];
+	map_init_rng(rng, level_prop->seed);
+	gen_rainbow_map(rng);
+	level_prop->dirty_save = !has_seed;
+	level_prop->side_level = 1;
+
     } else {
+	// Unknown map style is generated as flat.
 	if (strcasecmp(level_prop->theme, "flat") == 0) {
 	    if (level_prop->seed[0])
 		level_prop->side_level = atoi(level_prop->seed);
@@ -251,13 +264,14 @@ init_flat_level()
 	    level_prop->seed[0] = 0;
 	}
 
+	// Flat: Edge level is grass, everything below is dirt.
 	y1 = level_prop->side_level-1;
 	for(y=0; y<level_prop->cells_y; y++)
 	    for(z=0; z<level_prop->cells_z; z++)
 		for(x=0; x<level_prop->cells_x; x++)
 		{
 		    if (y>y1)
-			level_blocks[World_Pack(x,y,z)] = 0;
+			level_blocks[World_Pack(x,y,z)] = Block_Air;
 		    else if (y==y1)
 			level_blocks[World_Pack(x,y,z)] = Block_Grass;
 		    else

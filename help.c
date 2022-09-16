@@ -85,7 +85,7 @@ cmd_help(char * prefix, char *cmdargs)
 	    }
 
 	    convert_to_cp437(helpbuf, &l);
-	    post_chat(1, 0, helpbuf, l);
+	    post_chat(-1, 0, 0, helpbuf, l);
 	}
 	fclose(hfd);
 	return;
@@ -103,7 +103,7 @@ cmd_help(char * prefix, char *cmdargs)
 		    strcpy(helpbuf, *ln);
 		    l = strlen(helpbuf);
 		    convert_to_cp437(helpbuf, &l);
-		    post_chat(1, 0, helpbuf, l);
+		    post_chat(-1, 0, 0, helpbuf, l);
 		}
 		return;
 	    }

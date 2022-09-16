@@ -108,7 +108,7 @@ cmd_ishow(char * cmd, char * arg)
             char * p = buf+l;
             if (l != 0 && p[-1] == '\n') { p[-1] = 0; l--; }
             convert_to_cp437(buf, &l);
-            post_chat(1, 0, buf, l);
+            post_chat(-1, 0, 0, buf, l);
         }
         fclose(fd);
         return;

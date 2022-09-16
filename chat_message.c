@@ -41,21 +41,37 @@ process_chat_message(int message_type, char * msg)
 
     // Msg is now a concatenated multi packet message in CP437
     // Note that Classicube will have converted '&' to '%'.
+    int to_user = -1;
 
     if (msg[0] == '/') {
-	if (msg[1] != '/') {
+	if (msg[1] != '/' && msg[1] != '@') {
 	    revert_amp_to_perc(msg);
 	    run_command(msg);
 	    return;
 	}
 	msg++;
+    } else if (msg[0] == '@') {
+	char * user = strtok(msg+1, " ");
+	msg = strtok(0, "");
+	for(int i=0; i<MAX_USER; i++)
+	{
+	    client_entry_t c = shdat.client->user[i];
+	    if (!c.active) continue;
+	    if (strcmp(c.name.c, user) == 0) {
+		to_user = i; break;
+	    }
+	}
+	if (to_user<0) {
+	    printf_chat("No online players equal \"%s\"", user);
+	    return;
+	}
     }
 
     my_user.message_count++; my_user.dirty=1;
 
     update_player_move_time();
 
-    convert_inbound_chat(msg);
+    convert_inbound_chat(to_user, msg);
 
     if (pending_chat_size >= 65536) {
 	free(pending_chat);
@@ -67,10 +83,15 @@ process_chat_message(int message_type, char * msg)
 }
 
 void
-convert_inbound_chat(char * msg)
+convert_inbound_chat(int to_user, char * msg)
 {
     char * buf = malloc(strlen(msg) + 256);
-    char * p = buf + sprintf(buf, "&e%s:&f ", user_id);
+    char * p;
+    if (to_user < 0)
+	p = buf + sprintf(buf, "&e%s&e:&f ", user_id);
+    else
+	p = buf + sprintf(buf, "&9[>] &e%s&e: &f", user_id);
+
     for(char *s = msg; *s; s++) {
 	if (!extn_textcolours && (*s == '%' || *s == '&')) {
 	    char c = *s++;
@@ -90,7 +111,12 @@ convert_inbound_chat(char * msg)
     int l = p-buf+1;
     convert_from_paren(buf, &l);
 
-    post_chat(0, 0, buf, l-1);
+    if (to_user>= 0) {
+	post_chat(1, to_user, 0, buf, l-1);
+	buf[1] = 'S'; buf[3] = '<';
+	post_chat(-1, 0, 0, buf, l-1);
+    } else
+	post_chat(0, 0, 0, buf, l-1);
     free(buf);
 }
 
@@ -124,7 +150,7 @@ revert_amp_to_perc(char * msg)
 
 /* Post a long cp437 chat message to everyone (0) or just me (1) */
 void
-post_chat(int where, int type, char * chat, int chat_len)
+post_chat(int where, int to_id, int type, char * chat, int chat_len)
 {
     int colour = 'f', ncolour = 'e';
     pkt_message pkt = {.message_type = type};
@@ -133,8 +159,8 @@ post_chat(int where, int type, char * chat, int chat_len)
     if (chat_len <= 0 || chat[0] <= ' ' || chat[0] > '~')
 	colour = -1;
 
-    if (where == 0)
-	log_chat_message(chat, chat_len, type, user_id);
+    if (where >= 0)
+	log_chat_message(chat, chat_len, where, to_id, type);
     else if (!user_logged_in)
 	return; // Would go to everyone eventually.
 
@@ -208,10 +234,10 @@ post_chat(int where, int type, char * chat, int chat_len)
 	// Otherwise, truncate.
 	if (d >= MB_STRLEN) {
 	    if (type == 0) {
-		if (where == 1)
+		if (where == -1)
 		    send_message_pkt(0, pkt.message_type, pkt.message);
 		else
-		    update_chat(&pkt);
+		    update_chat(where, to_id, &pkt);
 	    } else
 		break;
 
@@ -225,10 +251,10 @@ post_chat(int where, int type, char * chat, int chat_len)
 
     if (d>0 || el) {
 	while(d<MB_STRLEN) pkt.message[d++] = ' ';
-	if (where == 1)
+	if (where == -1)
 	    send_message_pkt(0, pkt.message_type, pkt.message);
 	else
-	    update_chat(&pkt);
+	    update_chat(where, to_id, &pkt);
     }
 }
 
@@ -251,7 +277,7 @@ void printf_chat_w
 printf_chat(char * fmt, ...)
 {
     char pbuf[16<<10];
-    int to = 1, utf8 = 0, type = 0, percamp = 0;
+    int to = -1, utf8 = 0, type = 0, percamp = 0;
     char *f = fmt;
     va_list ap;
     va_start(ap, fmt);
@@ -289,5 +315,5 @@ printf_chat(char * fmt, ...)
 
     if (utf8)
 	convert_to_cp437(pbuf, &l);
-    post_chat(to, type, pbuf, l);
+    post_chat(to, 0, type, pbuf, l);
 }

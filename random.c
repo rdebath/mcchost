@@ -42,6 +42,12 @@ struct unx_random_t {
 #endif
 
 static int rand_init_done = 0;
+void
+reinit_rand_gen()
+{
+    rand_init_done = 0;
+    init_rand_gen();
+}
 
 void
 init_rand_gen()
@@ -123,8 +129,8 @@ map_init_rng(map_random_t *rng, char * seed)
 	// PCG32 likes distinct streams to have a large hamming distance.
 	uint64_t seed = v1;
 	jump_splitmix64(&seed, 0x75b4fb5cadd2212e); // Random jump for this app.
-	v1 = next_splitmix64(&seed);
-	v2 = next_splitmix64(&seed);
+	v1 = splitmix64_r(&seed);
+	v2 = splitmix64_r(&seed);
     }
     pcg32_srandom_r(rng, v1, v2);
     // printlog("Seed = %s, Rng = 0x%jx,0x%jx", seed, v1, v2);

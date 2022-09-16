@@ -7,7 +7,7 @@
 #include "websocket.h"
 
 /* These are shim functions to insert into the normal socket processing to
-   allow a websocket connection to be allowed instead.
+   allow a websocket connection to be accepted instead.
  */
 
 #define OPCODE_NOP	0	// Continued
@@ -312,7 +312,7 @@ base64(uint8_t * out, const uint8_t *in, int inlen)
 	    s = 0;
 	    out[j++] = b64[((pc & 0xF) << 2) | ((ch >> 6) & 0x3)];
 	    out[j++] = b64[ch & 0x3F];
-		break;
+	    break;
 	}
 	pc = ch;
     }

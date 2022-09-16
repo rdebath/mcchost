@@ -73,21 +73,10 @@ Logout with RAGEQUIT!!
 Perform various server hacks, OPERATORS ONLY!
 Aliases: /hacks
 */
-/*HELP crash H_CMD
-&T/crash
-Crash the server, default is a fatal() error.
-&T/crash 666&S Assertion failure
-&T/crash 606&S Segmentation violation
-&T/crash 696&S kill-9
-&T/crash 616&S exit(EXIT_FAILURE)
-*/
 #if INTERFACE
 #define CMD_QUITS  {N"quit", &cmd_quit}, {N"rq", &cmd_quit}, \
-    {N"hax", &cmd_quit}, {N"hacks", &cmd_quit, .dup=1}, \
-    {N"crash", &cmd_quit, .dup=1, .nodup=1}, {N"servercrash", &cmd_quit, .dup=1}
+    {N"hax", &cmd_quit}, {N"hacks", &cmd_quit, .dup=1}
 #endif
-
-int *crash_ptr = 0;
 
 void
 cmd_quit(char * cmd, char * arg)
@@ -96,23 +85,6 @@ cmd_quit(char * cmd, char * arg)
 
     if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
 	logout("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
-
-    if (strcasecmp(cmd, "crash") == 0) {
-	char * crash_type = arg;
-	if (!crash_type) return cmd_help(0, "crash");
-	assert(strcmp(crash_type, "666"));
-	if (crash_type && strcmp(crash_type, "696") == 0)
-	    kill(getpid(), SIGKILL);
-	if (strcmp(crash_type, "616") == 0)
-	    exit(EXIT_FAILURE);
-	if (strcmp(crash_type, "606") == 0)
-	    printf_chat("Value should fail %d", *crash_ptr);
-	if (crash_type) {
-	    char cbuf[1024];
-	    snprintf(cbuf, sizeof(cbuf), "Server crash! Error code %s", crash_type);
-	    fatal(cbuf);
-	}
-    }
 
     if (arg) {
 	char buf[256];

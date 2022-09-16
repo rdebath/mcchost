@@ -21,6 +21,7 @@ struct chat_entry_t {
     int to_level_id;
     int to_player_id;
     int to_team_id;
+    int not_player_id;
     pkt_message msg;
 }
 #endif
@@ -28,18 +29,24 @@ struct chat_entry_t {
 static int last_id = -1;
 static uint32_t last_generation;
 
-/* Send a single chat message to everyone (0) */
+/* Send a single chat message */
 void
-update_chat(pkt_message *pkt)
+update_chat(int to_where, int to_id, pkt_message *pkt)
 {
     if (!level_chat_queue || level_chat_queue->curr_offset >= level_chat_queue->queue_len)
 	create_chat_queue();
 
     lock_fn(chat_queue_lock);
     int id = level_chat_queue->curr_offset;
-    level_chat_queue->updates[id].to_level_id = 0;
-    level_chat_queue->updates[id].to_player_id = 0;
-    level_chat_queue->updates[id].to_team_id = 0;
+    level_chat_queue->updates[id].to_player_id = -1;
+    level_chat_queue->updates[id].to_level_id = -1;
+    level_chat_queue->updates[id].to_team_id = -1;
+    level_chat_queue->updates[id].not_player_id = -1;
+    switch (to_where) {
+    case 1: level_chat_queue->updates[id].to_player_id = to_id; break;
+    case 2: level_chat_queue->updates[id].to_level_id = to_id; break;
+    case 3: level_chat_queue->updates[id].to_team_id = to_id; break;
+    }
     level_chat_queue->updates[id].msg = *pkt;
     if (++level_chat_queue->curr_offset >= level_chat_queue->queue_len) {
 	level_chat_queue->curr_offset = 0;
@@ -101,6 +108,24 @@ send_queued_chats(int flush)
 	    last_id = 0;
 	}
 	unlock_fn(chat_queue_lock);
+
+	// Already seen it
+	if (upd.not_player_id >= 0 && upd.not_player_id == my_user_no)
+	    continue;
+
+	// To someone and not me
+	if (upd.to_player_id >= 0 && upd.to_player_id != my_user_no)
+	    continue;
+
+	// To somewhere and not here
+	if (upd.to_level_id >= 0) {
+	    int my_level = shdat.client->user[my_user_no].on_level;
+	    if (upd.to_level_id != my_level)
+		continue;
+	}
+
+	// To a team ... Not me.
+	if (upd.to_team_id >= 0) continue;
 
 	send_message_pkt(0, upd.msg.message_type, upd.msg.message);
     }

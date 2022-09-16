@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
-#include <assert.h>
 #include <arpa/inet.h>
+#include <assert.h>
 #include <ctype.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <lmdb.h>
 #include "userrecord.h"
@@ -451,8 +454,18 @@ open_userdb()
     // Maximum size of DB, MUST lock if done after mdb_env_open
     // E(mdb_env_set_mapsize(env, 10485760));
     E(mdb_env_set_maxdbs(env, 8));
-    E(mdb_env_set_maxreaders(env, server->max_players+3));
+    E(mdb_env_set_maxreaders(env, MAX_USER+4));
+
+#ifdef __SIZE_WIDTH__
+    char buf[256]; // lmdb files are not portable
+    sprintf(buf, USERDBXX_DIR, __SIZE_WIDTH__);
+    E(mdb_env_open(env, buf, 0/*MDB_RDWR*/, 0664));
+#else
     E(mdb_env_open(env, USERDB_DIR, 0/*MDB_RDWR*/, 0664));
+#endif
+
+    // Should I set the FD_CLOEXEC flag on this fd?
+    // E(mdb_env_get_fd(env, ...
 
     // Make sure the "tables" and "indexes" exist
     MDB_txn *txn;
@@ -464,6 +477,14 @@ open_userdb()
     E(mdb_txn_commit(txn));
 }
 
+void
+close_userdb()
+{
+    if (!userdb_open || env == 0) return;
+    mdb_env_close(env);
+    userdb_open = 0;
+    env = 0;
+}
 
 static inline void
 read_bin_fld(uint8_t **pp, int * bytes, void * data, int type)

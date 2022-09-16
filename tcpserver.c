@@ -312,15 +312,25 @@ do_restart()
 {
     printlog("Restarting %s ...", program_args[0]);
 
-    (void)signal(SIGHUP, SIG_DFL);
-    (void)signal(SIGCHLD, SIG_DFL);
-    (void)signal(SIGALRM, SIG_DFL);
-    (void)signal(SIGTERM, SIG_DFL);
+    (void)signal(SIGHUP, SIG_IGN);
+    (void)signal(SIGCHLD, SIG_IGN);
+    (void)signal(SIGALRM, SIG_IGN);
+    (void)signal(SIGTERM, SIG_IGN);
+
+    close_userdb();
     signal_available = 0;
     if (listen_socket>=0) close(listen_socket);
     listen_socket = 0;
     restart_sig = 0;
     close_logfile();
+
+    // This might be something we want to do ...
+    //for(int i=3; i<100; i++) (void)close(i);
+
+    (void)signal(SIGHUP, SIG_DFL);
+    (void)signal(SIGCHLD, SIG_DFL);
+    (void)signal(SIGALRM, SIG_DFL);
+    (void)signal(SIGTERM, SIG_DFL);
 
     // Note execvp never returns as it starts the shell on error.
     if (program_args[0][0] == '/')
@@ -329,7 +339,7 @@ do_restart()
 	execvp(program_args[0], program_args);
     perror(program_args[0]);
 
-    printlog("Restart failed attempting to continue ...");
+    printlog("Restart failed, attempting to continue ...");
 
     listen_socket = start_listen_socket("0.0.0.0", tcp_port_no);
     signal_available = 1;

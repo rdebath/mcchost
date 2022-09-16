@@ -9,6 +9,8 @@ See "/help todo" for notes.
  +) curl https://ipapi.co/40.89.244.232/utc_offset
     -- user.utc_offset & user.utc_user_offset
 
+ +) Fix max sessions, add max sessions from IP
+
  +) /backup & /restore
 
  +) Add "backup now" command.

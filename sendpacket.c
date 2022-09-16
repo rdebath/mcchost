@@ -54,8 +54,18 @@ nb_string_write(uint8_t *pkt, char * str)
 		pkt[l] = str[l];
 	    if (pkt[l] != ' ') lns = l;
 	}
-	if (!extn_emotefix && pkt[lns] < ' ' && lns < MB_STRLEN-1)
-	    pkt[lns+1] = '\'';
+	// CP437->ASCII translation creates spaces.
+	while (lns > 0 && pkt[lns-1] == '&') {
+	    pkt[lns] = ' '; pkt[lns-1] = ' ';
+	    while(lns > 0 && pkt[lns] == ' ') lns--;
+	}
+	// Emotes
+	if (!extn_emotefix && pkt[lns] < ' ') {
+	    if (lns < MB_STRLEN-1)
+		pkt[lns+1] = '`';
+	    else
+		pkt[lns] = '*';
+	}
     } else {
 	for(l=0; l<MB_STRLEN; l++) {
 	    if(str[l] == 0) break;

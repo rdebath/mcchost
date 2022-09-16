@@ -23,7 +23,7 @@
 
 #define MAX_USER	255
 #define MAX_LEVEL	255
-#define MAGIC_USR	0x0021FF7E
+#define MAGIC_USR	0x0021FF7C
 
 typedef struct client_entry_t client_entry_t;
 struct client_entry_t {
@@ -40,6 +40,7 @@ struct client_entry_t {
     uint8_t is_afk;
     uint8_t client_proto_ver;
     uint8_t client_cpe;
+    uint8_t client_dup;
     pid_t session_id;
 };
 
@@ -127,12 +128,14 @@ check_user()
 		    }
 		}
 		snprintf(buf2, sizeof(buf2), "&e%s%s", c.name.c, c.is_afk?" &7(AFK)":"");
-		send_addplayername_pkt(i, c.name.c, buf2, buf, 0);
+		if (i>=0 && i<255)
+		    send_addplayername_pkt(i, c.name.c, buf2, buf, 0);
 
 		if (c.visible == myuser[i].visible)
 		    myuser[i] = c;
 	    } else if (!c.active && myuser[i].active) {
-		send_removeplayername_pkt(i);
+		if (i>=0 && i<255)
+		    send_removeplayername_pkt(i);
 		myuser[i].active = 0;
 	    }
 	}
@@ -326,6 +329,24 @@ start_user()
     t.on_level = -1;
     t.level_bkp_id = -1;
     t.ip_address = client_ipv4_addr;
+
+    if (t.client_software.c[0] == 0) {
+	if (t.client_cpe)
+	    strcpy(t.client_software.c, "Classic 0.30/CPE");
+	else if (t.client_proto_ver == 7)
+	    strcpy(t.client_software.c, "Classic 0.28-0.30");
+	else if (t.client_proto_ver == 6)
+	    strcpy(t.client_software.c, "Classic 0.0.20-0.0.23");
+	else if (t.client_proto_ver == 5)
+	    strcpy(t.client_software.c, "Classic 0.0.19");
+	else if (t.client_proto_ver == 4)
+	    strcpy(t.client_software.c, "Classic 0.0.17-0.0.18");
+	else if (t.client_proto_ver == 3)
+	    strcpy(t.client_software.c, "Classic 0.0.16");
+	else
+	    strcpy(t.client_software.c, "Unknown");
+    }
+
     shdat.client->user[my_user_no] = t;
     shdat.client->generation++;
 
@@ -395,6 +416,7 @@ stop_user()
     if (my_user.user_logged_in)
 	write_current_user(2);
     my_user.user_logged_in = 0;
+    close_userdb();
 
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
     if (!shdat.client) return;
@@ -426,13 +448,14 @@ delete_session_id(int pid, char * killed_user, int len)
 
 	if (wipe_this)
 	{
-	    // Increment kick count, no lock
+	    // Increment kick count
 	    userrec_t user_rec;
 	    if (read_userrec(&user_rec, shdat.client->user[i].name.c, 0) == 0) {
 		user_rec.kick_count++;
 		user_rec.dirty = 1;
 		write_userrec(&user_rec, 0);
 	    }
+	    close_userdb(); // We will be fork()ing later.
 
 	    cleaned ++;
 	    if (killed_user)

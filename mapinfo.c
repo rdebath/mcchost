@@ -192,6 +192,7 @@ struct blockdef_t {
 #define Block_StillLava 11
 #define Block_Sand 12
 #define Block_Gravel 13
+#define Block_CoalOre 16
 #define Block_Log 17
 #define Block_Leaves 18
 #define Block_Sponge 19
@@ -206,6 +207,8 @@ struct blockdef_t {
 #define Block_Cyan 28
 #define Block_Blue 29
 #define Block_Pink 33
+#define Block_Black 34
+#define Block_Grey 35
 #define Block_White 36
 #define Block_Dandelion 37
 #define Block_Rose 38

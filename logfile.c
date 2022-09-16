@@ -83,7 +83,7 @@ close_logfile()
 }
 
 void
-log_chat_message(char * str, int len, int type, char* userid)
+log_chat_message(char * str, int len, int where, int to_id, int type)
 {
     if (!server || !server->flag_log_chat) return;
 
@@ -94,13 +94,19 @@ log_chat_message(char * str, int len, int type, char* userid)
 
     if (!check_reopen_logfile(tm)) return;
 
+    if (type == 100) return; // Will be logged as a command.
+
     if (!log_to_stderr)
 	fprintf(logfile, "%04d-%02d-%02d %02d:%02d:%02d ",
 	    tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
 	    tm->tm_hour, tm->tm_min, tm->tm_sec);
 
     if (type == 100)
-	fprintf(logfile, "%s announced: ", userid);
+	fprintf(logfile, "%s announced: ", user_id);
+    if (where == 1 && to_id >= 0 && to_id < MAX_USER) {
+	if (shdat.client && shdat.client->user[to_id].active)
+	    fprintf(logfile, "@%s ", shdat.client->user[to_id].name.c);
+    }
 
     for(int i=0; i<len; i++) {
 	if (cf) {

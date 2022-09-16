@@ -88,7 +88,7 @@ char program_name[512];
 filelock_t system_lock[1] = {{.name = SYS_LOCK_NAME}};
 server_t *server = 0;
 
-nbtstr_t client_software = {"(unknown)"};
+nbtstr_t client_software;
 
 char current_level_name[MAXLEVELNAMELEN+1];
 char current_level_fname[MAXLEVELNAMELEN*4];
@@ -183,6 +183,7 @@ main(int argc, char **argv)
 	}
     }
 
+    reinit_rand_gen();
     process_connection();
     run_request_loop();
     send_disconnect_message();
@@ -528,8 +529,9 @@ login()
 	disconnect(0, "Usernames must be between 1 and 16 characters");
 
     if (client_trusted && (!*player.mppass
-			|| strcmp("(none)", player.mppass) == 0
-			|| strcmp("0", player.mppass) == 0))
+			|| strcmp("-", player.mppass) == 0
+			|| strncmp("00000000000000000000000000000000", player.mppass, strlen(player.mppass)) == 0
+			|| strcmp("(none)", player.mppass) == 0))
 	// Trusted net and they haven't tried to enter an mppass.
 	user_authenticated = 1;
     else if (*server->secret != 0 && *server->secret != '-') {

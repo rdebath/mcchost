@@ -29,6 +29,7 @@
 #define LEVEL_BACKUP_NAME LEVEL_BACKUP_DIR_NAME "/%s.%d.cw"
 
 #define USERDB_DIR "userdb"
+#define USERDBXX_DIR "userdb%d"
 #define USER_DIR "user"
 #define USER_INI_NAME "user/%s.ini"
 
@@ -49,7 +50,6 @@ static char * dirlist[] = {
     LEVEL_MAP_DIR_NAME,
     LEVEL_BACKUP_DIR_NAME,
     USER_DIR,
-    USERDB_DIR,
     "help",
     "log",
     "ini",
@@ -152,6 +152,15 @@ init_dirs(int use_cwd)
 	    // Just complain as later processes will error.
 	}
     }
+
+#ifdef __SIZE_WIDTH__
+    char buf[256]; // lmdb files are not portable
+    sprintf(buf, USERDBXX_DIR, __SIZE_WIDTH__);
+#else
+    char * buf = USERDB_DIR;
+#endif
+    if (mkdir(buf, 0777) < 0 && errno != EEXIST)
+	perror("Failure creating userdb directory");
 }
 
 /*
