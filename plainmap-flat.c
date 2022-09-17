@@ -16,7 +16,7 @@
 // Water is placed above the sand.
 // Trees and flowers are planted on the land. (no clumps)
 void
-gen_plain_map_old(map_random_t *rng, int UNUSED(flg))
+gen_plain_flat_map(map_random_t *rng)
 {
     uint16_t *heightmap = calloc(level_prop->cells_x*level_prop->cells_z, sizeof(*heightmap));
 
@@ -68,8 +68,8 @@ gen_plain_map_old(map_random_t *rng, int UNUSED(flg))
 
     int flowerrate = 25 + 5 * bounded_random_r(rng, 15);
     int treerate = 10 + 10 * bounded_random_r(rng, 40);
-    for(z=3; z<level_prop->cells_z-3; z++)
-	for(x=3; x<level_prop->cells_x-3; x++)
+    for(z=3; z+3<level_prop->cells_z; z++)
+	for(x=3; x+3<level_prop->cells_x; x++)
 	{
 	    int y1 = heightmap[x+z*level_prop->cells_x];
 	    if (y1 <= level_prop->cells_y/2-1) continue;
@@ -92,7 +92,7 @@ gen_plain_map_old(map_random_t *rng, int UNUSED(flg))
 		level_blocks[World_Pack(x,y+i,z)] = Block_Log;
 
 	    for (int dy = height - 2; dy <= height + 1; dy++) {
-		if (y+dy >= level_prop->cells_y-1) continue;
+		if (y+dy >= level_prop->cells_y) continue;
 		int extent = dy > height - 1 ? 1 : 2;
 		for (int dz = -extent; dz <= extent; dz++)
                     for (int dx = -extent; dx <= extent; dx++)

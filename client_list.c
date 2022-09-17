@@ -283,6 +283,8 @@ start_user()
     lock_fn(system_lock);
     if (!shdat.client) fatal("Connection failed");
 
+    int connected_sessions = 0;
+
     for(int i=0; i<MAX_USER; i++)
     {
 	if (shdat.client->user[i].active != 1) {
@@ -290,6 +292,7 @@ start_user()
 		new_one = i;
 	    continue;
 	}
+	connected_sessions++;
 	nbtstr_t u = shdat.client->user[i].name;
 	if (strcmp(user_id, u.c) == 0) {
 	    if (shdat.client->user[i].session_id == 0 ||
@@ -310,6 +313,10 @@ start_user()
 	}
     }
 
+    if (server->max_players < 1) server->max_players = 1;
+    if (server->max_players > MAX_USER) server->max_players = MAX_USER;
+    if (server->max_players <= connected_sessions) new_one = -1;
+
     if (new_one < 0 || new_one >= MAX_USER) {
 	unlock_fn(system_lock);
 	if (kicked)
@@ -329,6 +336,7 @@ start_user()
     t.on_level = -1;
     t.level_bkp_id = -1;
     t.ip_address = client_ipv4_addr;
+    connected_sessions++;
 
     if (t.client_software.c[0] == 0) {
 	if (t.client_cpe)
@@ -352,6 +360,7 @@ start_user()
 
     myuser[my_user_no] = shdat.client->user[my_user_no];
     player_last_move = time(0);
+    server->connected_sessions = connected_sessions;
     unlock_fn(system_lock);
 }
 
@@ -425,6 +434,7 @@ stop_user()
 	shdat.client->generation++;
 	shdat.client->user[my_user_no].active = 0;
 	shdat.client->user[my_user_no].session_id = 0;
+	if (server->connected_sessions>0) server->connected_sessions--;
     }
 }
 
@@ -432,6 +442,9 @@ int
 delete_session_id(int pid, char * killed_user, int len)
 {
     int cleaned = 0;
+    if (server->max_players > MAX_USER || server->max_players < 0)
+	server->max_players = MAX_USER;
+
     open_client_list();
     if (!shdat.client) return 0;
     for(int i=0; i<MAX_USER; i++)

@@ -193,7 +193,7 @@ save_server_ini_file()
 {
     char buf[256];
     snprintf(buf, sizeof(buf), SERVER_CONF_TMP, getpid());
-    if (save_ini_file(system_ini_fields, buf) >= 0) {
+    if (save_ini_file(system_ini_fields, buf, SERVER_CONF_NAME) >= 0) {
 	if (rename(buf, SERVER_CONF_NAME) < 0)
 	    perror("rename server.ini");
     }

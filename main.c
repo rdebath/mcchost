@@ -41,6 +41,7 @@ struct server_t {
 
     int max_players;
     int loaded_levels;
+    int connected_sessions;
 
     time_t last_heartbeat;
     time_t last_backup;
@@ -146,7 +147,7 @@ main(int argc, char **argv)
         ini_settings.server_runonce = server_runonce;
         strcpy(ini_settings.heartbeat_url, heartbeat_url);
 
-	save_ini_file(system_ini_fields, SERVER_CONF_NAME);
+	save_ini_file(system_ini_fields, SERVER_CONF_NAME, 0);
 	fprintf(stderr, "Configuration saved\n");
 	exit(0);
     }

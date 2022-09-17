@@ -16,6 +16,7 @@ tags
 core
 core.*
 gmon.out
+*.cw
 
 # If you run it in this directory.
 model.ini

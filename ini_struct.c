@@ -7,14 +7,6 @@
 #include <ctype.h>
 
 #include "ini_struct.h"
-/*
- * TODO: Should unknown sections give warnings?
- * TODO: Comment preserving ini file load/save.
- *       -- Load as array of lines
- *       -- on write search for matching line and replace
- *       -- if not found add to end of existing section
- *       -- Order N^2 because of linear search
- */
 
 #if INTERFACE
 #include <stdio.h>
@@ -55,7 +47,7 @@ Character set of file is UTF8
 */
 
 #define WC(_x) WC2(!st->no_unsafe, _x)
-#define WC2(_c, _x) (st->write && (_c)) ?"; " _x:_x
+#define WC2(_c, _x) (st->write && (_c)) ?"":_x
 
 userrec_t * user_ini_tgt = 0;
 
@@ -372,18 +364,57 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 }
 
 int
-save_ini_file(ini_func_t filetype, char * filename)
+save_ini_file(ini_func_t filetype, char * filename, char * oldfilename)
 {
     ini_state_t st = (ini_state_t){.all=1, .write=1};
+    char * comment_data = 0;
+    if (!oldfilename) oldfilename = filename;
+    FILE * fd = fopen(oldfilename, "r");
+    if (fd) {
+	comment_data = read_comment_data(fd);
+	fclose(fd);
+    }
     st.fd = fopen(filename, "w");
     if (!st.fd) {
 	perror(filename);
 	return -1;
     }
+    if (comment_data) {
+	fprintf(st.fd, "%s", comment_data);
+	free(comment_data);
+    }
     filetype(&st,0,0);
     fclose(st.fd);
     if (st.curr_section) free(st.curr_section);
     return 0;
+}
+
+LOCAL char *
+read_comment_data(FILE * fd)
+{
+    char * comments = 0;
+    int len = 0, sz = 0;
+    char ibuf[BUFSIZ];
+    while(fgets(ibuf, sizeof(ibuf)-1, fd)) {
+	char * p;
+	for(p=ibuf; *p == ' ' || *p == '\t'; p++);
+	if (*p != '#' && *p != ';') continue;
+
+	p = ibuf + strlen(ibuf);
+	for(;p>ibuf && (p[-1] == '\n' || p[-1] == '\r' || p[-1] == ' ' || p[-1] == '\t');p--) { p[-1] = '\n'; *p = 0; }
+
+	if (len+strlen(ibuf)+2 > sz) {
+	    int n = len*2;
+	    if (n == 0) n = 1024;
+	    if (n < len+strlen(ibuf)+2) n += len+strlen(ibuf)+2;
+	    comments = realloc(comments, sz=n);
+	    if (!comments) return 0;
+	}
+	strcpy(comments+len, ibuf);
+	len += strlen(ibuf);
+    }
+
+    return comments;
 }
 
 int
@@ -514,6 +545,7 @@ ini_write_section(ini_state_t *st, char * section)
 LOCAL void
 ini_write_str(ini_state_t *st, char * section, char *fieldname, char *value)
 {
+    if (!fieldname || !*fieldname) return;
     ini_write_section(st, section);
     fprintf(st->fd, "%s =%s%s\n", fieldname, *value?" ":"", value);
 }
@@ -527,6 +559,7 @@ ini_read_str(char * buf, int len, char *value)
 LOCAL void
 ini_write_cp437(ini_state_t *st, char * section, char *fieldname, char *value)
 {
+    if (!fieldname || !*fieldname) return;
     ini_write_section(st, section);
     fprintf(st->fd, "%s =%s", fieldname, *value?" ":"\n");
     if (*value == 0) return;
@@ -604,6 +637,7 @@ ini_write_hexint(ini_state_t *st, char * section, char *fieldname, int value)
 LOCAL void
 ini_write_bool(ini_state_t *st, char * section, char *fieldname, int value)
 {
+    if (!fieldname || !*fieldname) return;
     ini_write_section(st, section);
     if (value < 0 || value > 1)
 	fprintf(st->fd, "%s = %d\n", fieldname, value);

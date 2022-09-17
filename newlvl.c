@@ -27,15 +27,17 @@ struct lvltheme_t {
 };
 #endif
 
+#define DEFAULT_THEME 0
+
 lvltheme_t themelist[] = {
-    {"general", 1},
     {"plain", 1},
+    {"general", 1},
     {"flat", 0},	// seed defaults to Y/2
     {"pixel", 0},
     {"empty", 0},
     {"air", 0},
-    {"space", 1},
-    {"rainbow", 1},
+    {"space", 1},	// seed defaults to 1
+    {"rainbow", 1},	// seed defaults to 1
     {0}
 };
 
@@ -118,21 +120,25 @@ cmd_newlvl(char * cmd, char * arg)
 	    return;
 	}
     }
-    if (themeid < 0) themeid = 0;
 
     FILE *ifd, *ofd;
     ofd = fopen(buf2, "w");
 
-    ifd = fopen(MODEL_INI_NAME, "r");
-    if (ifd) {
-	char buf[4096];
-	int c;
-	while((c=fread(buf, 1, sizeof(buf), ifd)) > 0)
-	    fwrite(buf, 1, c, ofd);
-	fclose(ifd);
-    }
+    if (themeid < 0 && x <= 0) {
+	ifd = fopen(MODEL_INI_NAME, "r");
+	if (ifd) {
+	    char buf[4096];
+	    int c;
+	    while((c=fread(buf, 1, sizeof(buf), ifd)) > 0)
+		fwrite(buf, 1, c, ofd);
+	    fclose(ifd);
+	} else
+	    themeid = DEFAULT_THEME;
+    } else if (themeid < 0)
+	themeid = DEFAULT_THEME;
 
-    fprintf(ofd, "[level]\n");
+    if (themeid >= 0 || x>0)
+	fprintf(ofd, "[level]\n");
 
     if (x>0) {
 	fprintf(ofd, "Size.X = %d\n", x);
@@ -140,19 +146,21 @@ cmd_newlvl(char * cmd, char * arg)
 	fprintf(ofd, "Size.Z = %d\n", z);
     }
 
-    fprintf(ofd, "Theme = %s\n", themelist[themeid].name);
+    if (themeid >= 0) {
+	fprintf(ofd, "Theme = %s\n", themelist[themeid].name);
 
-    if (se) {
-	int l = strlen(se)*4+4;
-	char * buf = malloc(l);
-	convert_to_utf8(buf, l, se);
-	fprintf(ofd, "Seed = %s\n", buf);
-	free(buf);
-    } else if (themelist[themeid].setrandom) {
-	char sbuf[MB_STRLEN*2+1] = "";
-	map_random_t rng[1];
-	map_init_rng(rng, sbuf);
-	fprintf(ofd, "Seed = %s\n", sbuf);
+	if (se) {
+	    int l = strlen(se)*4+4;
+	    char * buf = malloc(l);
+	    convert_to_utf8(buf, l, se);
+	    fprintf(ofd, "Seed = %s\n", buf);
+	    free(buf);
+	} else if (themelist[themeid].setrandom) {
+	    char sbuf[MB_STRLEN*2+1] = "";
+	    map_random_t rng[1];
+	    map_init_rng(rng, sbuf);
+	    fprintf(ofd, "Seed = %s\n", sbuf);
+	}
     }
 
     fclose(ofd);

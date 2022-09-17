@@ -171,11 +171,6 @@ open_level_files(char * level_name, int backup_id, char * fixname, int to_unload
 	    }
 	}
 
-	// If level missing -- extract a model *.cw file
-	if (!ok && access(MODEL_CW_NAME, R_OK) == 0) {
-	    ok = (load_map_from_file(MODEL_CW_NAME, fixname, level_name) >= 0);
-	}
-
 	if (!ok) level_prop->version_no = 0;
     }
 

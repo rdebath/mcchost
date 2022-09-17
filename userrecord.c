@@ -274,7 +274,7 @@ write_userrec(userrec_t * userrec, int ini_too)
 	char userini[PATH_MAX];
 	user_ini_tgt = userrec;
 	snprintf(userini, sizeof(userini), USER_INI_NAME, user_key);
-	save_ini_file(user_ini_fields, userini);
+	save_ini_file(user_ini_fields, userini, 0);
 	user_ini_tgt = 0;
     }
 

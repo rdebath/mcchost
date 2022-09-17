@@ -51,7 +51,7 @@ volatile int alarm_sig = 0;
 volatile int term_sig = 0;
 
 static int signal_available = 0;
-int restart_on_unload = 0;
+int restart_on_unload = 0, restart_needed = 0;
 static time_t last_execheck = 0;
 int trigger_backup = 0, trigger_unload = 0;
 
@@ -322,6 +322,7 @@ do_restart()
     if (listen_socket>=0) close(listen_socket);
     listen_socket = 0;
     restart_sig = 0;
+    restart_needed = 0;
     close_logfile();
 
     // This might be something we want to do ...
@@ -539,8 +540,11 @@ cleanup_zombies()
 		printlog("Backup and unload process %d failed", pid);
 	    backup_pid = 0;
 	    if (restart_on_unload) last_execheck = time(0) - 300;
-	} else
+	} else {
 	    client_process_finished++;
+	    if (server->connected_sessions == 0 && restart_needed)
+		last_execheck = time(0) - 300;
+	}
 
 	// No complaints on clean exit
 	if (WIFEXITED(status)) {
@@ -738,10 +742,11 @@ check_new_exe()
 
     if (server->loaded_levels == 0)
 	restart_sig = 1;
-    else {
+    else if (server->connected_sessions == 0) {
 	restart_on_unload = 1;
 	trigger_backup = 1;
-    }
+    } else
+	restart_needed = 1;
 
     unlock_fn(system_lock);
 }

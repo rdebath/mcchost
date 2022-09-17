@@ -17,10 +17,8 @@
 // Water is placed above the sand.
 // Trees and flowers are planted on the land. (no clumps)
 void
-gen_plain_map(map_random_t *rng, int style)
+gen_plain_map(map_random_t *rng)
 {
-    if (style) return gen_plain_map_old(rng, style);
-
     uint16_t *heightmap = calloc(level_prop->cells_x*level_prop->cells_z, sizeof(*heightmap));
 
     int flattened = 0, land_only = 0, flowerrate = 0, treerate = 0;
@@ -28,13 +26,13 @@ gen_plain_map(map_random_t *rng, int style)
     flattened = bounded_random_r(rng, 6) == 1;
     land_only = bounded_random_r(rng, 6) == 1;
 
-    map_random_t hrng[1];
-    seed_rng(rng, hrng);
+    map_random_t rng2[1];
+    seed_rng(rng, rng2);
 
-    gen_plain_heightmap(hrng, heightmap, land_only, flattened);
+    gen_plain_heightmap(rng2, heightmap, land_only, flattened);
 
     flowerrate = 25 + 25 * bounded_random_r(rng, 15);
-    treerate = 5 + 25 * bounded_random_r(rng, 30);
+    treerate = 100 * bounded_random_r(rng, 8);
 
     int x, y, z;
 
@@ -105,6 +103,9 @@ gen_plain_map(map_random_t *rng, int style)
 
     flowerrate = 0;
 
+// TODO: Trees and flowers from centre so they are same when map is stretched.
+// Also maybe need rng3 for this.
+
     for(z=3; z+3<level_prop->cells_z; z++)
     {
 	for(x=3; x+3<level_prop->cells_x; x++)
@@ -113,7 +114,8 @@ gen_plain_map(map_random_t *rng, int style)
 
 	    int y1 = heightmap[x+z*level_prop->cells_x];
 	    if (y1 <= level_prop->side_level) continue;
-	    if (y1+7 > level_prop->cells_y ||
+	    if (treerate == 0 ||
+		    y1+7 > level_prop->cells_y ||
 		    bounded_random_r(rng, treerate) != 1) {
 		if (flowerrate > 0) {
 		    y1 &= 0x7FFF;
@@ -134,7 +136,7 @@ gen_plain_map(map_random_t *rng, int style)
 		level_blocks[World_Pack(x,y+i,z)] = Block_Log;
 
 	    for (int dy = height - 2; dy <= height + 1; dy++) {
-		if (y+dy >= level_prop->cells_y-1) continue;
+		if (y+dy >= level_prop->cells_y) continue;
 		int extent = dy > height - 1 ? 1 : 2;
 		for (int dz = -extent; dz <= extent; dz++)
 		    for (int dx = -extent; dx <= extent; dx++)
@@ -173,46 +175,75 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
     int rm = level_prop->cells_x>level_prop->cells_z?level_prop->cells_x:level_prop->cells_z;
     rm = rm/2 + 2;
 
-    int min_y = land_only?level_prop->side_level-6:1;
-    if (min_y < 1) min_y = 1;
-
     int h = level_prop->side_level-1;
     if (!flattened && !land_only && level_prop->cells_y>15)
 	h += 1+bounded_random_r(srng, 8);
     if (h >= level_prop->cells_y) h = level_prop->side_level;
     if (h >= level_prop->cells_y) h = level_prop->cells_y/2;
-
-    heightmap[cx+cz*level_prop->cells_x] = h;
     level_prop->spawn.y = (h+3) *32+16;
+
+    heightmap[cx+cz*level_prop->cells_x] = 0x7FFF;
 
     int first_e = 2;
     if (!flattened) first_e += bounded_random_r(srng, 6);
     for(int e = first_e; e>0; e--) {
+
+	// Use a derived RNG so that different size maps keep similar centres.
 	map_random_t rng[1];
 	seed_rng(srng, rng);
 
 	int s = (1<<(e-1));
-	if (s>level_prop->cells_y) continue;
+	//if (s>level_prop->cells_y) continue;
 	for(int r=s; r<rm; r+=s) {
-	    for(int x=cx-r+1; x<=cx+r; x+=s) gen_plain(rng, heightmap, x, cz-r, s, min_y, flattened);
-	    for(int z=cz-r+1; z<=cz+r; z+=s) gen_plain(rng, heightmap, cx+r, z, s, min_y, flattened);
-	    for(int x=cx+r-1; x>=cx-r; x-=s) gen_plain(rng, heightmap, x, cz+r, s, min_y, flattened);
-	    for(int z=cz+r-1; z>=cz-r; z-=s) gen_plain(rng, heightmap, cx-r, z, s, min_y, flattened);
+	    for(int x=cx-r+1; x<=cx+r; x+=s) gen_plain(rng, heightmap, x, cz-r, s, flattened);
+	    for(int z=cz-r+1; z<=cz+r; z+=s) gen_plain(rng, heightmap, cx+r, z, s, flattened);
+	    for(int x=cx+r-1; x>=cx-r; x-=s) gen_plain(rng, heightmap, x, cz+r, s, flattened);
+	    for(int z=cz+r-1; z>=cz-r; z-=s) gen_plain(rng, heightmap, cx-r, z, s, flattened);
 	}
     }
 
     heightmap[cx+cz*level_prop->cells_x] = 0;
-    gen_plain(srng, heightmap, cx, cz, 1, min_y, flattened);
+    gen_plain(srng, heightmap, cx, cz, 1, flattened);
+
+#if 0
+    int ratio = 1;
+    {
+	int min_h = 0xFFFF, max_h = 0;
+	for(int z=0; z<level_prop->cells_z; z++)
+	    for(int x=0; x<level_prop->cells_x; x++)
+	    {
+		int y1 = heightmap[x+z*level_prop->cells_x];
+		if (y1>max_h) max_h = y1;
+		if (y1<min_h) min_h = y1;
+	    }
+
+	if (max_h-min_h > level_prop->cells_y) ratio ++;
+    }
+#endif
+
+    int min_y = land_only?level_prop->side_level-6:0;
+    if (min_y < 0) min_y = 0;
+
+    for(int z=0; z<level_prop->cells_z; z++)
+	for(int x=0; x<level_prop->cells_x; x++)
+	{
+	    int y1 = heightmap[x+z*level_prop->cells_x];
+	    y1 -= 0x7FFF;
+	    y1 += h;
+	    if (y1 < min_y) y1 = min_y;
+	    if (y1 >= level_prop->cells_y) y1 = level_prop->cells_y-1;
+	    heightmap[x+z*level_prop->cells_x] = y1;
+	}
 }
 
 LOCAL void
-gen_plain(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s, int mmin_y, int flattened)
+gen_plain(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s, int flattened)
 {
     if (tx < 0 || tx >= level_prop->cells_x) return;
     if (tz < 0 || tz >= level_prop->cells_z) return;
     int mx = level_prop->cells_x;
 
-    int min_y = mmin_y, max_y = level_prop->cells_y-1, avg=0, avcnt=0;
+    int min_y = 1, max_y = 0xFFFF, avg=0, avcnt=0;
     for(int dx = -s; dx<2*s; dx++)
 	for(int dz = -s; dz<2*s; dz++)
 	{
@@ -232,14 +263,17 @@ gen_plain(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s, int mm
 	    avg += h; avcnt++;
 	}
 
+#if 0
     // This adds "spikes" that will drag up/down the local area before
     // being removed by the finer passes.
     if (s >= 32) {
 	max_y = max_y + (max_y-min_y);
 	min_y = min_y - (max_y-min_y);
-	if (max_y >= level_prop->cells_y) max_y = level_prop->cells_y-1;
+	//if (max_y >= level_prop->cells_y) max_y = level_prop->cells_y-1;
+	if (max_y >= 0xFFFF) max_y = 0xFFFF;
 	if (min_y < 1) min_y = 1;
     }
+#endif
 
     if (min_y > max_y && avcnt) {
 	avg += avcnt/2; avg /= avcnt;

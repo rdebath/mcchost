@@ -33,7 +33,6 @@
 #define USER_DIR "user"
 #define USER_INI_NAME "user/%s.ini"
 
-#define MODEL_CW_NAME "model.cw"
 #define MODEL_INI_NAME "model.ini"
 #define SYS_CONF_NAME "system/system.dat"
 #define SYS_STAT_NAME "system/userlevels.dat"

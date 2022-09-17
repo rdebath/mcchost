@@ -1,20 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <inttypes.h>
 #include <string.h>
 #include <limits.h>
 #include <time.h>
+#include <fcntl.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 #include "createmap.h"
 
 /*
  * This populates a default map file properties.
-
-TODO:
-    Default size from blocks file (move map_len_t right to end of file)
-	--> only works if no blockdefs
  */
 
 void
@@ -40,26 +39,16 @@ createmap(char * levelname)
 
     init_map_null();
 
-    level_prop->time_created = time(0),
+    level_prop->time_created = time(0);
 
-    load_ini_file(level_ini_fields, MODEL_INI_NAME, 1, 0);
+    if (!oldsize.valid)
+	read_blockfile_size(levelname, &oldsize);
 
     patch_map_nulls(oldsize);
 
     open_blocks(levelname);
 
-    map_len_t test_map;
-    memcpy(&test_map, (void*)(level_blocks+level_prop->total_blocks),
-	    sizeof(map_len_t));
-
-    int blocks_valid = 1;
-    if (test_map.magic_no != MAP_MAGIC) blocks_valid = 0;
-    if (test_map.cells_x != level_prop->cells_x) blocks_valid = 0;
-    if (test_map.cells_y != level_prop->cells_y) blocks_valid = 0;
-    if (test_map.cells_z != level_prop->cells_z) blocks_valid = 0;
-
-    if (!blocks_valid)
-	init_flat_level();
+    init_block_file();
 }
 
 void
@@ -90,10 +79,7 @@ init_map_null()
     level_prop->uuid[10] &= 0x3F;
     level_prop->uuid[10] |= 0x80;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
     memcpy(level_prop->blockdef, default_blocks, sizeof(default_blocks));
-#pragma GCC diagnostic pop
 
     for (int i = 0; i<BLOCKMAX; i++) {
 	level_prop->blockdef[i].inventory_order = i;
@@ -137,9 +123,87 @@ patch_map_nulls(xyzhv_t oldsize)
 }
 
 void
-init_flat_level()
+init_block_file()
 {
     map_len_t test_map;
+    memcpy(&test_map, (void*)(level_blocks+level_prop->total_blocks),
+	    sizeof(map_len_t));
+
+    int blocks_valid = 1;
+    if (test_map.magic_no != MAP_MAGIC) blocks_valid = 0;
+    if (test_map.cells_x != level_prop->cells_x) blocks_valid = 0;
+    if (test_map.cells_y != level_prop->cells_y) blocks_valid = 0;
+    if (test_map.cells_z != level_prop->cells_z) blocks_valid = 0;
+
+    if (blocks_valid)
+	level_prop->dirty_save = 1;
+    else {
+	test_map.magic_no = MAP_MAGIC;
+	test_map.cells_x = level_prop->cells_x;
+	test_map.cells_y = level_prop->cells_y;
+	test_map.cells_z = level_prop->cells_z;
+	memcpy((void*)(level_blocks+level_prop->total_blocks),
+		&test_map, sizeof(map_len_t));
+
+	init_level_blocks();
+    }
+}
+
+/* Check the file
+ */
+void
+read_blockfile_size(char * levelname, xyzhv_t * oldsize)
+{
+    char sharename[256];
+    sprintf(sharename, LEVEL_BLOCKS_NAME, levelname);
+
+    int sz = 1;
+    {
+        int p = sysconf(_SC_PAGESIZE);
+        sz += p - 1;
+        sz -= sz % p;
+    }
+
+    struct stat st;
+    if (stat(sharename, &st) < 0 || (st.st_mode & S_IFMT) == 0) return; // Nope
+    if (st.st_size < sz) return; // Too small
+
+    int fd = open(sharename, O_RDONLY|O_NOFOLLOW|O_CLOEXEC, 0600);
+    if (fd < 0) return; // Okay then
+
+    lseek(fd, -sz, SEEK_END);
+    char buf[sz];
+    int cc = read(fd, buf, sizeof(buf));
+    close(fd);
+    if (cc <= 0) return;
+
+    // Clunky search for the size of a map near the end of the block
+    // file. Seems to work.
+    union {
+	char buf[sizeof(map_len_t)];
+	map_len_t size;
+    } b;
+    for(int i=0; i<sz-sizeof(map_len_t); i++) {
+	memcpy(b.buf, buf+i, sizeof(map_len_t));
+	if (b.size.magic_no == MAP_MAGIC) {
+	    unsigned x = b.size.cells_x;
+	    unsigned y = b.size.cells_y;
+	    unsigned z = b.size.cells_z;
+	    if (x>16384||y>16384||z>16384|| (int64_t)x*y*z > INT_MAX)
+		continue;
+
+	    oldsize->x = x;
+	    oldsize->y = y;
+	    oldsize->z = z;
+	    oldsize->valid = 1;
+	    return;
+	}
+    }
+}
+
+void
+init_level_blocks()
+{
     int x, y, z, y1;
     struct timeval start, now;
     gettimeofday(&start, 0);
@@ -236,14 +300,14 @@ init_flat_level()
 	int has_seed = !!level_prop->seed[0];
 	map_random_t rng[1];
 	map_init_rng(rng, level_prop->seed);
-	gen_plain_map(rng, 1);
+	gen_plain_flat_map(rng);
 	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "general") == 0) {
 	int has_seed = !!level_prop->seed[0];
 	map_random_t rng[1];
 	map_init_rng(rng, level_prop->seed);
-	gen_plain_map(rng, 0);
+	gen_plain_map(rng);
 	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "plasma") == 0) {
@@ -284,11 +348,4 @@ init_flat_level()
 	level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
 	level_prop->theme, level_prop->seed[0]?", seed=":"", level_prop->seed,
 	(now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0);
-
-    test_map.magic_no = MAP_MAGIC;
-    test_map.cells_x = level_prop->cells_x;
-    test_map.cells_y = level_prop->cells_y;
-    test_map.cells_z = level_prop->cells_z;
-    memcpy((void*)(level_blocks+level_prop->total_blocks),
-	    &test_map, sizeof(map_len_t));
 }

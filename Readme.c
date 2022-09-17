@@ -21,9 +21,6 @@ See "/help todo" for notes.
 
  +) Add VERSION computation to "/help license".
 
- +) Too many 'Saving "main" to map directory' calls.
-    -- Due to sig ALRM ?
-
  +) Antispam (Block, text, commands ?)
     -- If text is identical to previous do a special?
 
@@ -45,8 +42,6 @@ See "/help todo" for notes.
  +) Move more global variables into ini_settings structure.
 
  +) Record data rates for server bytes/s I/O
-
- +) INI file preserve (some?) comments.
 
  +) User name spaces.
     -- Do we place an affix onto display names ?
@@ -134,9 +129,9 @@ See "/help todo" for notes.
 
     -- External command that acts like a client?
 
+ +) INI file better way to preserve comments.
  +) lmdb appears with Debian jessie, do I want a fallback ?
  +) Switch to using libcurl ?
-
  +) Safe /nick -- approximatly matches real name
     -- Match case insensitive, common substring.
     -- How to descibe "too different" to user?

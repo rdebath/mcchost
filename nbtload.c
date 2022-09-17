@@ -729,34 +729,3 @@ cpy_nstr(char *buf, int buflen, char *str)
     *d = 0;
 }
 
-LOCAL int
-try_asciimode(gzFile ifd, char * levelfile)
-{
-    ini_state_t st = {.quiet = 0, .filename = levelfile};
-
-    printlog("Trying to load \"%s\" as an ini file", levelfile);
-
-    init_map_null();
-    level_prop->time_created = time(0);
-
-    char ibuf[BUFSIZ];
-    while(gzgets(ifd, ibuf, sizeof(ibuf))) {
-        if (load_ini_line(&st, level_ini_fields, ibuf) == 0) {
-	    level_prop->version_no = level_prop->magic_no = 0;
-	    return 0;
-	}
-    }
-
-    xyzhv_t oldsize = {0};
-    patch_map_nulls(oldsize);
-
-    if (open_blocks(levelfile) < 0)
-	return 0;
-
-    init_flat_level();
-
-    // Don't want to backup the ini file, not a real cw file.
-    level_prop->last_backup = level_prop->time_created;
-
-    return 1;
-}

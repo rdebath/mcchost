@@ -1,0 +1,133 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <strings.h>
+#include <zlib.h>
+#include <sys/stat.h>
+
+#include "ini_level.h"
+
+/* ASCII mode for CW files is basically an ini file as saved by /isave
+ * But in addition it has the ability to run /place and plain /cuboid
+ * commands to populate a simple variation on flat or pixel.
+ *
+ * NB: Using lots of pl/z commands for a complex level will be much
+ *     larger than just using a real CW file.
+ *
+ * Lines starting with "/pl", "/place", "/z", "/cuboid", "/m" and "/mark" are
+ * known commands all other commands are ignored.
+ */
+int
+try_asciimode(gzFile ifd, char * levelfile)
+{
+    ini_state_t st = {.quiet = 0, .filename = levelfile};
+    int blocks_opened = 0;
+
+    printlog("Trying to load \"%s\" as an ini file", levelfile);
+
+    init_map_null();
+    level_prop->time_created = time(0);
+    // Don't want to backup the ini file, not a real cw file.
+    level_prop->last_backup = level_prop->time_created;
+
+    char ibuf[BUFSIZ];
+    while(gzgets(ifd, ibuf, sizeof(ibuf))) {
+	char * p = ibuf;
+	while (*p == ' ' || *p == '\t') p++;
+	if (*p == '/' ) {
+	    if (!blocks_opened) {
+		blocks_opened = 1;
+		xyzhv_t oldsize = {0};
+		patch_map_nulls(oldsize);
+
+		if (open_blocks(levelfile) < 0)
+		    return 0;
+	    }
+	    st.no_unsafe = 1;
+	    apply_ini_command(p+1);
+	    continue;
+	}
+        if (load_ini_line(&st, level_ini_fields, ibuf) == 0) {
+	    level_prop->version_no = level_prop->magic_no = 0;
+	    return 0;
+	}
+    }
+
+    if (!blocks_opened) {
+	xyzhv_t oldsize = {0};
+	read_blockfile_size(levelfile, &oldsize);
+	patch_map_nulls(oldsize);
+
+	if (open_blocks(levelfile) < 0)
+	    return 0;
+
+	init_block_file();
+    }
+    return 1;
+}
+
+static int cub_state = 0;
+static int blk, mark[3];
+
+LOCAL void
+apply_ini_command(char * buf)
+{
+    char * cmd = strtok(buf, " ");
+    if (cmd == 0) return;
+    if (strcasecmp(cmd, "place") == 0 || strcasecmp(cmd, "pl") == 0) {
+	int b = block_id(strtok(0, " "));
+	int v = 0, a[3];
+	for(int i = 0; i<3; i++) {
+	    char * s = strtok(0, " ");
+	    if (s) v = atoi(s);
+	    a[i] = v;
+	}
+	if (a[0] < 0 || a[1] < 0 || a[2] < 0) return;
+	if (a[0] >= level_prop->cells_x) return;
+	if (a[1] >= level_prop->cells_y) return;
+	if (a[2] >= level_prop->cells_z) return;
+	if (b < 0 || b >= BLOCKMAX) b = 1;
+	level_blocks[World_Pack(a[0],a[1],a[2])] = b;
+	return;
+    }
+    if (strcasecmp(cmd, "cuboid") == 0 || strcasecmp(cmd, "z") == 0) {
+	cub_state = 1;
+	blk = block_id(strtok(0, ""));
+	if (blk < 0 || blk >= BLOCKMAX) blk = 1;
+	return;
+    }
+    if (strcasecmp(cmd, "mark") == 0 || strcasecmp(cmd, "m") == 0) {
+	int v = 0, a[3];
+	for(int i = 0; i<3; i++) {
+	    char * s = strtok(0, " ");
+	    if (s) v = atoi(s);
+	    a[i] = v;
+	}
+	if (cub_state == 1) {
+	    for(int i = 0; i<3; i++)
+		mark[i] = a[i];
+	    cub_state = 2;
+	    return;
+	}
+	if (cub_state != 2) return;
+	cub_state = 0;
+
+	// Crop to map
+	int m[3] = {level_prop->cells_x, level_prop->cells_y, level_prop->cells_z};
+	for(int i = 0; i<3; i++) {
+	    if (a[i] < mark[i]) { int t=mark[i]; mark[i]=a[i]; a[i]=t;}
+	    if (a[i] < 0 && mark[i] < 0) return; // Off map
+	    if (a[i] >= m[i] && mark[i] >= m[i]) return;
+	    if (a[i] < 0) a[i] = 0;
+	    if (mark[i] < 0) mark[i] = 0;
+	    if (a[i] >= m[i]) a[i] = m[i]-1;
+	    if (mark[i] >= m[i]) mark[i] = m[i]-1;
+	}
+
+	for(int y=mark[1]; y<a[1]+1; y++)
+	    for(int z=mark[2]; z<a[2]+1; z++)
+		for(int x=mark[0]; x<a[0]+1; x++)
+		    level_blocks[World_Pack(x,y,z)] = blk;
+    }
+}
