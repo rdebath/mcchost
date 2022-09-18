@@ -443,6 +443,9 @@ send_inventory_order()
 {
     if (!extn_inventory_order) return;
 
+    if (player_on_new_level && level_prop && level_prop->reset_hotbar)
+	reset_hotbar_on_mapload = 1;
+
     if (!level_prop || (level_prop->readonly && level_prop->disallowchange)) {
 	for(int inv = 0; inv < client_block_limit; inv++)
 	    send_inventory_order_pkt(inv, 0);

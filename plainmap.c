@@ -232,6 +232,8 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
 	    y1 += h;
 	    if (y1 < min_y) y1 = min_y;
 	    if (y1 >= level_prop->cells_y) y1 = level_prop->cells_y-1;
+	    if (level_prop->cells_y > 16 && y1 >= level_prop->cells_y-8)
+		y1 = level_prop->cells_y-8;
 	    heightmap[x+z*level_prop->cells_x] = y1;
 	}
 }

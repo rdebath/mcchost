@@ -107,6 +107,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_DURATION("AFKInterval", server->afk_interval);
 	INI_DURATION("AFKKickInterval", server->afk_kick_interval);
+	INI_INTVAL("PlayerUpdateMS", server->player_update_ms);
 
     }
 
@@ -223,6 +224,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_FIXEDP("SkyboxHorSpeed", level_prop->skybox_hor_speed, 1024);
 	INI_FIXEDP("SkyboxVerSpeed", level_prop->skybox_ver_speed, 1024);
 
+	INI_BOOLVAL("ResetHotbar", level_prop->reset_hotbar);
 	INI_BOOLVAL("DisallowChange", level_prop->disallowchange);
 	INI_BOOLVAL("ReadOnly", level_prop->readonly);
 	INI_BOOLVAL("NoUnload", level_prop->no_unload);
@@ -344,6 +346,7 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     {
 	INI_INTMAXVAL("UserNo", user_ini_tgt->user_no);
 	INI_STRARRAYCP437("UserId", user_ini_tgt->user_id);
+	INI_STRARRAYCP437("Nick", user_ini_tgt->nick);
 	INI_STRARRAYCP437("Title", user_ini_tgt->title);
 	INI_STRARRAYCP437("Colour", user_ini_tgt->colour);
 	INI_STRARRAYCP437("TitleColour", user_ini_tgt->title_colour);

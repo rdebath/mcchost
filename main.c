@@ -54,6 +54,8 @@ struct server_t {
     int flag_log_commands;
     int flag_log_chat;
 
+    int player_update_ms;
+
     int magic2;
 };
 

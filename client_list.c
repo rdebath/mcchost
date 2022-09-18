@@ -71,6 +71,7 @@ static struct timeval last_check;
 xyzhv_t player_posn = {0};
 block_t player_held_block = -1;
 time_t player_last_move;
+int player_on_new_level = 1;
 
 void
 check_user()
@@ -90,9 +91,12 @@ check_user()
     gettimeofday(&now, 0);
     if (last_check.tv_sec == 0) last_check = now;
 
+    if (server->player_update_ms < 20) server->player_update_ms = 20;
+    if (server->player_update_ms > 2000) server->player_update_ms = 2000;
+
     uint32_t msnow = now.tv_sec * 1000 + now.tv_usec / 1000;
     uint32_t mslast = last_check.tv_sec * 1000 + last_check.tv_usec / 1000;
-    if (msnow-mslast<100 || msnow==mslast)
+    if (msnow-mslast<server->player_update_ms || msnow==mslast)
 	return;
     last_check = now;
 
@@ -221,6 +225,7 @@ reset_player_list()
     }
 
     last_check.tv_sec = 1;
+    player_on_new_level = 0;
 }
 
 void
@@ -375,6 +380,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
     strcpy(current_level_fname, levelfile);
     current_level_backup_id = backup_id;
     player_posn.valid = 0;
+    player_on_new_level = 1;
 
     lock_fn(system_lock);
 

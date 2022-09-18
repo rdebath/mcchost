@@ -285,6 +285,7 @@ save_map_to_file(char * fn, int background)
     bc_ent_int(savefile, "DisallowChange", level_prop->disallowchange);
     bc_ent_int(savefile, "ReadOnly", level_prop->readonly);
     bc_ent_int(savefile, "NoUnload", level_prop->no_unload);
+    bc_ent_int(savefile, "ResetHotbar", level_prop->reset_hotbar);
     if (level_prop->theme[0] && (!level_prop->software[0] || level_prop->seed[0]))
 	bc_ent_string(savefile, "Theme", level_prop->theme);
     if (level_prop->seed[0])

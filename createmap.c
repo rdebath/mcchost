@@ -204,8 +204,8 @@ read_blockfile_size(char * levelname, xyzhv_t * oldsize)
 void
 init_level_blocks()
 {
-    int x, y, z, y1;
-    struct timeval start, now;
+    int x, y, z, y1, quiet = 0;
+    struct timeval start;
     gettimeofday(&start, 0);
 
     if (strcasecmp(level_prop->theme, "pixel") == 0) {
@@ -327,6 +327,7 @@ init_level_blocks()
 	    strcpy(level_prop->theme, "Flat");
 	    level_prop->seed[0] = 0;
 	}
+	quiet = 1;
 
 	// Flat: Edge level is grass, everything below is dirt.
 	y1 = level_prop->side_level-1;
@@ -343,9 +344,12 @@ init_level_blocks()
 		}
     }
 
-    gettimeofday(&now, 0);
-    printlog("Map gen (%d,%d,%d) theme=%s%s%s, time %.2fms",
-	level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
-	level_prop->theme, level_prop->seed[0]?", seed=":"", level_prop->seed,
-	(now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0);
+    if (!quiet) {
+	struct timeval now;
+	gettimeofday(&now, 0);
+	printlog("Map gen (%d,%d,%d) theme=%s%s%s, time %.2fms",
+	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
+	    level_prop->theme, level_prop->seed[0]?", seed=":"", level_prop->seed,
+	    (now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0);
+    }
 }

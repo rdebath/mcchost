@@ -42,6 +42,7 @@ struct userrec_t
 
     // Saved to ini file
     int64_t coin_count;
+    char nick[NB_SLEN];
     char title[NB_SLEN];
     char colour[NB_SLEN];
     char title_colour[NB_SLEN];
@@ -242,12 +243,15 @@ write_current_user(int when)
 	my_user.logon_count++;
 	my_user.user_logged_in = 1;
 
-	// Datafix.
+	// Datafix. Expires: Tue 14 Nov 22:13:20 GMT 2023
 	if (now < 1700000000)
 	    if (my_user.time_online_secs > 1500000000) my_user.time_online_secs = 0;
 
-	if (*client_ipv4_str)
+	if (*client_ipv4_str) {
 	    snprintf(my_user.last_ip, sizeof(my_user.last_ip), "%s", client_ipv4_str);
+	    char *p = strrchr(my_user.last_ip, ':');
+	    if (p) *p = 0;
+	}
     }
 
     if (now > my_user.time_of_last_save && my_user.user_logged_in) {

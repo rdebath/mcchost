@@ -41,10 +41,11 @@ struct map_info_t {
     int last_map_download_size;
 
     // Do we want/need to backup/save/update ?
-    int readonly;
-    int disallowchange;	// even if readonly, you can change the working map.
-    int no_unload;
     int force_save;
+    int readonly;
+    int no_unload;
+    int disallowchange;	// even if readonly, you can change the working map.
+    int reset_hotbar;
 
     int dirty_save;
     uint32_t metadata_generation;

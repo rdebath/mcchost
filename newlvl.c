@@ -27,17 +27,17 @@ struct lvltheme_t {
 };
 #endif
 
-#define DEFAULT_THEME 0
+#define DEFAULT_THEME -1
 
 lvltheme_t themelist[] = {
-    {"plain", 1},
-    {"general", 1},
     {"flat", 0},	// seed defaults to Y/2
+    {"general", 1},
+    {"plain", 1},
     {"pixel", 0},
     {"empty", 0},
+    {"space", 0},	// seed defaults to 1
+    {"rainbow", 0},	// seed defaults to 1
     {"air", 0},
-    {"space", 1},	// seed defaults to 1
-    {"rainbow", 1},	// seed defaults to 1
     {0}
 };
 
@@ -106,7 +106,7 @@ cmd_newlvl(char * cmd, char * arg)
 	}
     }
 
-    int themeid = -1;
+    int themeid = DEFAULT_THEME;
     if (th) {
 	for(int i=0; themelist[i].name; i++) {
 	    if (strcasecmp(th, themelist[i].name) == 0) {
@@ -124,21 +124,18 @@ cmd_newlvl(char * cmd, char * arg)
     FILE *ifd, *ofd;
     ofd = fopen(buf2, "w");
 
-    if (themeid < 0 && x <= 0) {
-	ifd = fopen(MODEL_INI_NAME, "r");
-	if (ifd) {
-	    char buf[4096];
-	    int c;
-	    while((c=fread(buf, 1, sizeof(buf), ifd)) > 0)
-		fwrite(buf, 1, c, ofd);
-	    fclose(ifd);
-	} else
-	    themeid = DEFAULT_THEME;
-    } else if (themeid < 0)
-	themeid = DEFAULT_THEME;
+    // INI file to alter default setup of levels.
+    // Define blocks, etc.
+    ifd = fopen(MODEL_INI_NAME, "r");
+    if (ifd) {
+	char buf[4096];
+	int c;
+	while((c=fread(buf, 1, sizeof(buf), ifd)) > 0)
+	    fwrite(buf, 1, c, ofd);
+	fclose(ifd);
+    }
 
-    if (themeid >= 0 || x>0)
-	fprintf(ofd, "[level]\n");
+    fprintf(ofd, "\n[level]\n");
 
     if (x>0) {
 	fprintf(ofd, "Size.X = %d\n", x);

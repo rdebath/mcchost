@@ -6,21 +6,24 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) How to define default map theme and size.
+    -- From model.ini ?
+    -- If model.ini how to default seed.
+
  +) curl https://ipapi.co/40.89.244.232/utc_offset
     -- user.utc_offset & user.utc_user_offset
 
- +) Fix max sessions, add max sessions from IP
-
- +) /backup & /restore
-
- +) Add "backup now" command.
-    -- Save and *copy* to backup.
-    -- Save with no last backup date? Or just a "manual backup" flag.
+ +) /backup, /restore and /undo
+    -- Add "backup now" command.
+        -- Save and *copy* to backup.
+        -- Save with no last backup date? Or just a "manual backup" flag.
 
  +) Permission for level modifiable by anyone (with /set etc).
 
  +) Add VERSION computation to "/help license".
 
+ +) Add max sessions from IP
+ +) Add connect delay/fail for IPs recently seen.
  +) Antispam (Block, text, commands ?)
     -- If text is identical to previous do a special?
 
@@ -61,15 +64,12 @@ See "/help todo" for notes.
  +) Web server for texture files.
     -- Internal server or generic external inetd server?
 
- +) Dump/load userDB as file.
-    -- Also single user and delete "username".
-    -- Use mdb_dump and mdb_load ?
+ +) Delete player.
+ +) Regenerate userDB from ini files. (Due to flaky format of lmdb files)
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
  +) Improve the /set command, more help, option lists.
- +) reset_hotbar_on_mapload is a level option in the CW file ?
- +) Merge ini and nbt processing ?
 
  +) Config paths for "backup" and "map" directories ?
     -- Symlinks work now. Enough?
@@ -89,7 +89,7 @@ See "/help todo" for notes.
     -- Should resizelvl backup on shrink?
 
  +) /import -- download *.cw file from web.
-    -- Rename file to strict % form, don't overwrite.
+    -- Rename file to strict name form, don't overwrite.
     -- Output of curl import command to user ?
 
  +) /newlvl, more "nice" levels?
@@ -129,7 +129,7 @@ See "/help todo" for notes.
 
     -- External command that acts like a client?
 
- +) INI file better way to preserve comments.
+ +) INI file: Better way to preserve comments?
  +) lmdb appears with Debian jessie, do I want a fallback ?
  +) Switch to using libcurl ?
  +) Safe /nick -- approximatly matches real name
@@ -142,7 +142,7 @@ Features:
 
 All files in subdirectories.
     system.ini  --> move?
-    model.cw    --> move?
+    system.${port}.ini  --> move?
     model.ini   --> move?
     map/${level}.cw
     system/chat.queue
@@ -217,6 +217,9 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
 
  +) Slow map loads; do I need to poll client chat?
     -- Background _load_ of maps as well as saves?
+
+ +) Merge ini and nbt processing ?
+    -- Names are too random
 */
 
 /*HELP usecases
