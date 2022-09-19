@@ -75,8 +75,18 @@ The dimensions of a cubic block (usually 0..16)
 &TNoCPE&S Disable negoation of CPE
 &TSaveInterval&S Time between level save checks
 &TBackupInterval&S Time between level backups
-
-Other options in server.ini can also be set, but may not take effect immediatly.
+&TSoftware&S Software name
+&TOPFlag&S Okay to send OP flag on client startup
+&THeartbeat&S URL of heartbeat server.
+&TPollHeartbeat&S Enable polling of heartbeat server
+&TUserSuffix&S Added to end of users on this port
+&TMaxPlayers&S Players allowed to connect
+&TLocalNet&S IP address range of trusted clients
+&TFlagLogCommands&S Copy user commands to log
+&TFlagLogChat&S Copy user chat to log
+&TAFKInterval&S Time til player marked as AFK
+&TAFKKickInterval&S Time til player kicked for AFK
+&TPlayerUpdateMS&S Minumum period between updates of player positions
 */
 
 void

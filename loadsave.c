@@ -257,8 +257,9 @@ scan_and_save_levels(int unlink_only)
 		if (user_count && no_unload) do_save = 0; // Don't save while in use.
 
 		// Time to backup ?
-		time_t now = time(0);
-		int do_bkp = (now - server->backup_interval >= level_prop->last_backup);
+		time_t now = time(0), last_backup = level_prop->last_backup;
+		if (last_backup == 0) last_backup = level_prop->time_created;
+		int do_bkp = (now - server->backup_interval >= last_backup);
 		if (force_backup) do_bkp = 2; // NB: Saves delete time too.
 		if (do_bkp && !unlink_only) do_save = 1;
 

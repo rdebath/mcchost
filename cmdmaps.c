@@ -87,7 +87,7 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 	}
     }
     if (backups) {
-	DIR *directory = opendir("backup");
+	DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
 	if (directory) {
 	    read_maps(&maps, 1, directory, ar2);
 	    closedir(directory);

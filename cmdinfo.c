@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <string.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <inttypes.h>
+#include <dirent.h>
 
 #include "cmdinfo.h"
 
@@ -24,6 +25,7 @@ Alias: &S/ServerInfo
 #if INTERFACE
 #define CMD_INFO \
     {N"info", &cmd_info}, {N"i", &cmd_info, .dup=1}, \
+    {N"minfo", &cmd_minfo}, {N"mi", &cmd_minfo, .dup=1}, \
     {N"sinfo", &cmd_sinfo}, {N"serverinfo", &cmd_sinfo, .dup=1}
 #endif
 
@@ -158,18 +160,108 @@ cmd_sinfo(char * UNUSED(cmd), char * UNUSED(arg))
 
     printf_chat("  Player positions are updated &T%g&S times/second",
 	((int)(10000.0/server->player_update_ms))/10.0);
+}
+
+void
+cmd_minfo(char * UNUSED(cmd), char * UNUSED(arg))
+{
+    time_t now = time(0);
+    if (!level_prop) {
+	printf_chat("&WThe void is eternal and unknowable");
+	return;
+    }
+    printf_chat("&TAbout &7%s: &SWidth=%d Height=%d Length=%d",
+	current_level_name, level_prop->cells_x,
+	level_prop->cells_y, level_prop->cells_z);
+
+    char timebuf[256], timebuf2[256];
+    if (level_prop->time_created == 0)
+	strcpy(timebuf, " (unknown)");
+    else
+	conv_duration(timebuf, now-level_prop->time_created);
+
+    int last_bkp = -1;
+    time_t last_backup_time = 0;
+    last_bkp = find_recent_backup(current_level_fname, &last_backup_time);
+    char bkp_msg[512];
+    if (last_bkp <= 0) strcpy(bkp_msg, "no backups yet");
+    else {
+	conv_duration(timebuf2, now-last_backup_time);
+	snprintf(bkp_msg, sizeof(bkp_msg), "last backup (%s ago): &T%d",
+	    timebuf2+1, last_bkp);
+    }
+
+    printf_chat("  Created%s ago, %s", timebuf, bkp_msg);
+    if (level_prop->motd[0])
+	printf_chat("  MOTD: &b%s", level_prop->motd);
+    else
+	printf_chat("  MOTD: &Wignore");
+
+/*
+About main: Width=128 Height=64 Length=128
+  Physics are OFF, gun usage is disabled
+  Created 43d 13h 55m ago, last backup (606d 10h 4m ago): 25
+  BlockDB (Used for /b) is Enabled with 3735158 entries
+  Visitable by Guest+
+  Modifiable by Nobody+
+Envionment settings
+  No custom terrain set for this map.
+  No custom texture pack set for this map.
+  Colors: Fog none, Sky none, Clouds none, Sunlight none, Shadowlight none
+  Water level: 33, Bedrock offset: -2, Clouds height:
+> 66, Max fog distance: 0
+  Edge Block: Stone, Horizon Block: Grass
+  Clouds speed: 1.00%, Weather speed: 1.00%
+  Weather fade rate: 1.00%, Exponential fog: OFF
+  Skybox rotations: Horizontal none, Vertical none
+Physics settings:
+  Finite mode: OFF, Random flow: ON
+  Finite high water OFF
+  Animal hunt AI: ON, Edge water: OFF
+  Grass growing: ON, Fern tree growing: OFF
+  Leaf decay: OFF, Physics overload: 1500
+  Physics speed: 250 milliseconds between ticks
+Survival settings:
+  Survival death: OFF (Fall: 9, Drown: 70)
+  Guns: OFF, Killer blocks: ON
+General settings:
+  MOTD: ignore
+  Local level only chat: OFF
+  Load on /goto: ON, Auto unload: ON
+  Buildable: OFF, Deletable: OFF, Drawing: ON
+*/
 
 }
+
+#define HOURSECS (60*60)
+#define DAYSECS (24*HOURSECS)
+// Gregorian calendar year
+#define YEARSECS (365*DAYSECS+2425*DAYSECS/10000)
+#define MONTHSECS (YEARSECS/12)
 
 void
 conv_duration(char * timebuf, time_t duration)
 {
     *timebuf = 0;
-    intmax_t s = duration, s0 = duration;
-    if (s > 86400) { sprintf(timebuf+strlen(timebuf), " %jdd", s/86400); s -= s/86400*86400; }
-    if (s > 3600) { sprintf(timebuf+strlen(timebuf), " %jdh", s/3600); s -= s/3600*3600; }
-    if (s > 60) { sprintf(timebuf+strlen(timebuf), " %jdm", s/60); s -= s/60*60; }
-    if (s > 0 || s0 <= 0) sprintf(timebuf+strlen(timebuf), " %jds", s);
+    int c = 0;
+    intmax_t s = duration, s0 = s;
+    // Note: This has a month and year as an exact number of seconds based on
+    // the average length of the Gregorian calendar year. After going though
+    // the leap year rules the exact year length is set as 365.2425 days.
+    // The length of a month is then calculated as 30d 10h 29m 6s
+    // (The measured value is about 365.2421875 but varies by leap seconds)
+    // As it's not an exact number of days don't use it till over 99days.
+    if (s > DAYSECS*99) {
+	if (s > YEARSECS) { sprintf(timebuf+strlen(timebuf), " %jdy", s/YEARSECS); s -= s/YEARSECS*YEARSECS; c++;}
+	if (s > MONTHSECS) { sprintf(timebuf+strlen(timebuf), " %jdmo", s/MONTHSECS); s -= s/MONTHSECS*MONTHSECS; c++;}
+    }
+    if (s > DAYSECS) { sprintf(timebuf+strlen(timebuf), " %jdd", s/DAYSECS); s -= s/DAYSECS*DAYSECS; c++;}
+    if (c<3)
+	if (s > HOURSECS) { sprintf(timebuf+strlen(timebuf), " %jdh", s/HOURSECS); s -= s/HOURSECS*HOURSECS; c++;}
+    if (c<3)
+	if (s > 60) { sprintf(timebuf+strlen(timebuf), " %jdm", s/60); s -= s/60*60; c++;}
+    if (c<3)
+	if (s > 0 || s0 <= 0) sprintf(timebuf+strlen(timebuf), " %jds", s);
 }
 
 time_t
@@ -217,4 +309,66 @@ process_start_time(int pid)
     process_start_time = boot_time + process_start_time_since_boot / jiffies_per_second;
 
     return process_start_time;
+}
+
+int
+find_recent_backup(char * matchstr, time_t * mtimep)
+{
+    struct dirent *entry;
+    DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
+    if (!directory) return -1;
+
+    int max_backup_id = -1;
+    int mlen = 0;
+    if (matchstr && *matchstr) mlen = strlen(matchstr);
+
+    char bkpfname[MAXLEVELNAMELEN*4+sizeof(int)*3+9];
+
+    while( (entry=readdir(directory)) )
+    {
+#if defined(_DIRENT_HAVE_D_TYPE) && defined(DT_REG) && defined(DT_UNKNOWN)
+	if (entry->d_type != DT_REG && entry->d_type != DT_UNKNOWN)
+	    continue;
+#endif
+	int l = strlen(entry->d_name);
+	if (l<=3 || strcmp(entry->d_name+l-3, ".cw") != 0) continue;
+
+	char nbuf[MAXLEVELNAMELEN*4+sizeof(int)*3+3];
+	char nbuf2[MAXLEVELNAMELEN+1];
+	int backup_id = 0;
+
+	l -= 3;
+	if (l>sizeof(nbuf)-2) continue;
+	memcpy(nbuf, entry->d_name, l);
+	nbuf[l] = 0;
+
+	char * p = strrchr(nbuf, '.');
+	if (p == 0) continue;
+	backup_id = atoi(p+1);
+	if (backup_id<=0) continue;
+	*p = 0;
+
+	unfix_fname(nbuf2, sizeof(nbuf2), nbuf);
+	if (*nbuf2 == 0) continue;
+	l = strlen(nbuf2);
+	if (l>MAXLEVELNAMELEN) continue;
+
+	if (mlen)
+	    if (strcmp(matchstr, nbuf2) != 0) continue;
+
+	if (backup_id > max_backup_id) {
+	    max_backup_id = backup_id;
+	    strcpy(bkpfname, entry->d_name);
+	}
+    }
+    closedir(directory);
+    if (mtimep) {
+        struct stat st;
+	char buf[PATH_MAX];
+	strcpy(buf, LEVEL_BACKUP_DIR_NAME);
+	strcat(buf, "/");
+	strcat(buf, bkpfname);
+        if (stat(buf, &st) >= 0) *mtimep = st.st_mtime;
+    }
+    return max_backup_id;
 }

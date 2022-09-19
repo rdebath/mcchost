@@ -27,9 +27,6 @@ try_asciimode(gzFile ifd, char * levelfile)
     printlog("Trying to load \"%s\" as an ini file", levelfile);
 
     init_map_null();
-    level_prop->time_created = time(0);
-    // Don't want to backup the ini file, not a real cw file.
-    level_prop->last_backup = level_prop->time_created;
 
     char ibuf[BUFSIZ];
     while(gzgets(ifd, ibuf, sizeof(ibuf))) {

@@ -169,7 +169,7 @@ read_blockfile_size(char * levelname, xyzhv_t * oldsize)
     if (st.st_size < sz) return; // Too small
 
     int fd = open(sharename, O_RDONLY|O_NOFOLLOW|O_CLOEXEC, 0600);
-    if (fd < 0) return; // Okay then
+    if (fd < 0) return; // Okay, ... weird.
 
     lseek(fd, -sz, SEEK_END);
     char buf[sz];

@@ -54,6 +54,21 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
     if (!load_ok)
 	return -1;
 
+    if (level_prop && level_prop->time_created == 0) {
+	// Hmm, no creation time, pickup the file modified time.
+	struct stat st;
+	char buf[PATH_MAX];
+	// First look for backup No.1
+	snprintf(buf, sizeof(buf), LEVEL_BACKUP_NAME, level_fname, 1);
+	if (stat(buf, &st) >= 0)
+	    level_prop->time_created = st.st_mtime;
+	// Otherwise the cw file itself.
+	else if (stat(filename, &st) >= 0)
+	    level_prop->time_created = st.st_mtime;
+	if (level_prop->time_created == 0)
+	    level_prop->time_created = time(0);
+    }
+
     return 0;
 }
 

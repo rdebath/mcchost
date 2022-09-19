@@ -164,6 +164,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAYCP437("Name", server->name);
 	INI_STRARRAYCP437("Motd", server->motd);
 	INI_STRARRAYCP437("Level", current_level_name);
+	INI_TIME_T("TimeCreated", level_prop->time_created);
 
     } else if (st->curr_section && strcmp("source", st->curr_section) == 0)
 	return 1;
@@ -187,6 +188,9 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAYCP437("Software", level_prop->software);
 	INI_STRARRAYCP437("Theme", level_prop->theme);
 	INI_STRARRAYCP437("Seed", level_prop->seed);
+	if (!st->write) {
+	    INI_TIME_T("TimeCreated", level_prop->time_created);
+	}
 
 	INI_FIXEDP("Spawn.X", level_prop->spawn.x, 32);
 	INI_FIXEDP("Spawn.Y", level_prop->spawn.y, 32);
@@ -715,6 +719,25 @@ ini_write_int_duration(ini_state_t *st, char * section, char *fieldname, int val
 	value/time_units[unit].scale, time_units[unit].id);
 }
 
+LOCAL time_t
+ini_read_int_time_t(char * value)
+{
+    time_t nval = iso8601_to_time_t(value);
+    if (nval == 0)
+	nval = strtoimax(value, 0, 0);
+    if (nval <= 9999 && strlen(value) > 4) nval = 0;
+    return nval;
+}
+
+LOCAL void
+ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t value)
+{
+    ini_write_section(st, section);
+    char timebuf[256] = "";
+    time_t_to_iso8601(timebuf, value);
+    fprintf(st->fd, "%s = %s\n", fieldname, timebuf);
+}
+
 
 #if INTERFACE
 #define INI_STRARRAY(_field, _var) \
@@ -815,6 +838,16 @@ ini_write_int_duration(ini_state_t *st, char * section, char *fieldname, int val
                 _var = ini_read_int_duration(*fieldvalue); \
             else \
                 ini_write_int_duration(st, section, fld, (_var)); \
+        }
+
+#define INI_TIME_T(_field, _var) \
+        fld = _field; \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                _var = ini_read_int_time_t(*fieldvalue); \
+            else \
+                ini_write_int_time_t(st, section, fld, (_var)); \
         }
 
 #define INI_BOOLVAL(_field, _var) \

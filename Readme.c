@@ -9,6 +9,7 @@ See "/help todo" for notes.
  +) How to define default map theme and size.
     -- From model.ini ?
     -- If model.ini how to default seed.
+    -- Copy model.cw for default newlvl ?
 
  +) curl https://ipapi.co/40.89.244.232/utc_offset
     -- user.utc_offset & user.utc_user_offset
