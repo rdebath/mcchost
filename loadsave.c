@@ -180,6 +180,8 @@ scan_and_save_levels(int unlink_only)
     int loaded_levels = 0;
     int check_again = unlink_only || restart_on_unload;
     int trigger_full_run = 0;
+    int level_deleted = 0;
+    nbtstr_t deleted_level = {0};
 
     // fprintf(stderr, "Trace scan_and_save_levels(%d)\n", unlink_only);
 
@@ -302,6 +304,10 @@ scan_and_save_levels(int unlink_only)
 		// unload.
 		nbtstr_t lv = shdat.client->levels[lvid].level;
 		level_name = lv.c;
+		if (shdat.client->levels[lvid].delete_on_unload) {
+		    deleted_level = lv;
+		    level_deleted = 1;
+		}
 		char fixedname[MAXLEVELNAMELEN*4];
 		int backup_id = shdat.client->levels[lvid].backup_id;
 		fix_fname(fixedname, sizeof(fixedname), level_name);
@@ -343,6 +349,13 @@ scan_and_save_levels(int unlink_only)
 	shdat.client->cleanup_generation = shdat.client->generation;
     else
 	shdat.client->cleanup_generation = shdat.client->generation-1;
+
+    if (level_deleted) {
+	// Waiting til we're outside the system lock means that we only
+	// display the last one deleted; that's probably fine.
+	printf_chat("@Level %s deleted", deleted_level.c);
+	stop_chat_queue();
+    }
 
     return trigger_full_run;
 }

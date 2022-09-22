@@ -38,7 +38,8 @@ struct unx_random_t {
 	// Using the zx81 Lehmer rng means that we have a short (64k)
 	// sequence of blocks that will cover the floor of a 256x256
 	// map just once. As such there should be four repeats across
-	// the floor of a 512x512 map. It looks okay none the less.
+	// the floor of a 512x512 map. A much larger map is needed to
+	// see the repitition.
 #endif
 
 static int rand_init_done = 0;

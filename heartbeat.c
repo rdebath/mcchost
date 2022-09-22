@@ -7,10 +7,29 @@
 
 #include "heartbeat.h"
 
-#define CURLLEN 128
+#define CURLLEN 256
 #define ASCII_ONLY
 
 static char curlbuf[CURLLEN];
+
+/*
+    Betacraft.uk shit:
+    Additional required curl arguments:
+	"-H", "Accept:",
+	"-H", "User-Agent:"
+    Does not support their own user list, must have paywalled Minecraft Acct
+    Does not support %20 url encoding in server name.
+
+    Failed: "-A", "curl/1.234"
+    Failed: "-A", "MCscripts"
+    Failed: "-A", "Mozilla/5.0 (X11; Linux x86_64)"
+    "--user-agent", "MCGalaxy", // Whitelisted ?
+
+    --> user 'rdebath+', Login failed! Mppass required
+    -- Need to add /pass and /setpass commands.
+    -- Should add mppass as a password. (Doesn't work for betacraft)
+    -- Perhaps add "connect to /void" if not authenticated. (0.30 is buggy tho)
+*/
 
 void
 send_heartbeat_poll()
@@ -42,7 +61,6 @@ send_heartbeat_poll()
     char softwarebuf[256];
     char secretbuf[NB_SLEN];
     int valid_salt = (*server->secret != 0 && *server->secret != '-');
-    int use_get = 1; // (strstr(heartbeat_url, "classic") != 0);
 
     if (valid_salt)
 	convert_secret(secretbuf, 0);
@@ -71,7 +89,7 @@ send_heartbeat_poll()
     //  └┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀
     //  αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ 
 
-    if (use_get)
+    if (!ini_settings.use_http_post)
 	snprintf(cmdbuf, sizeof(cmdbuf),
 	    "%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s&%s%s",
 	    heartbeat_url,
@@ -87,7 +105,7 @@ send_heartbeat_poll()
 	    );
     else
 	snprintf(cmdbuf, sizeof(cmdbuf),
-	    "%s%d&%s%d&%s%s&%s%s&%s%d&%s%s&%s%d&%s%s&%s%s",
+	    "&%s%d&%s%d&%s%s&%s%s&%s%d&%s%s&%s%d&%s%s&%s%s",
 	    "port=",tcp_port_no,
 	    "max=",server->max_players,
 	    "name=",ccnet_cp437_quoteurl(server->name,namebuf,sizeof(namebuf), 1),
@@ -108,7 +126,7 @@ send_heartbeat_poll()
 	char dumpbuf[256];
 	sprintf(dumpbuf, "log/curl-%d-h.txt", tcp_port_no);
 
-	if (use_get) {
+	if (!ini_settings.use_http_post) {
 	    FILE * fd = fopen(cmdfilebuf, "w");
 	    if (fd) {
 		fprintf(fd, "curl ... %s\n", cmdbuf);
@@ -118,7 +136,7 @@ send_heartbeat_poll()
 	    // SHUT UP CURL!!
 	    // -s   Complete silence ... WTF
 	    // -S   Okay yes, show error message
-	    // -f   Yes, and error meesages from the web server to stderr.
+	    // -f   Yes, and error messages from the web server to stderr.
 	    if (execlp("curl", "curl",
 		    "-s", "-S", "-4",
 		    "--http0.9",
@@ -135,19 +153,22 @@ send_heartbeat_poll()
 	} else {
 	    FILE * fd = fopen(cmdfilebuf, "w");
 	    if (fd) {
-		fprintf(fd, "curl ... --data-binary %s %s\n", cmdbuf, heartbeat_url);
+		fprintf(fd, "curl ...\\\n  --data-binary %s \\\n  %s\n",
+		    cmdbuf, heartbeat_url);
 		fclose(fd);
 	    }
 
 	    // SHUT UP CURL!!
 	    // -s   Complete silence ... WTF
 	    // -S   Okay yes, show error message
-	    // -f   Yes, and error meesages from the web server to stderr.
+	    // -f   Yes, and error messages from the web server to stderr.
 	    if (execlp("curl", "curl",
 		    "-s", "-S", "-4",
 		    "--http0.9",
 		    "-o", logbuf,
 		    "-D", dumpbuf,
+		    "-H", "Accept:",
+		    "-H", "User-Agent:"
 		    "--data-binary", cmdbuf,
 		    heartbeat_url,
 		    (char*)0) < 0)

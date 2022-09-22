@@ -23,7 +23,8 @@ the known sections.
 Any value defined as "seconds" may also be set in minutes,
 hours or days by adding "m", "h" or "d"
 
-See &T/help set level&S, &T/help set block&S and &T/help set server&S
+See &T/help set level&S, &T/help set block&S,
+&T/help set server&S and &T/help set system&S
 */
 
 /*HELP set_level
@@ -71,23 +72,35 @@ The dimensions of a cubic block (usually 0..16)
 &TMain&S Which level to use as main.
 &TSalt&S Secret to use for classicube.net
 &TKeyRotation&S Number of seconds between key rotations.
-&TPrivate&S Set &TTrue&S to hide registration
-&TNoCPE&S Disable negoation of CPE
-&TSaveInterval&S Time between level save checks
-&TBackupInterval&S Time between level backups
-&TSoftware&S Software name
-&TOPFlag&S Okay to send OP flag on client startup
-&THeartbeat&S URL of heartbeat server.
-&TPollHeartbeat&S Enable polling of heartbeat server
-&TUserSuffix&S Added to end of users on this port
 &TMaxPlayers&S Players allowed to connect
-&TLocalNet&S IP address range of trusted clients
-&TFlagLogCommands&S Copy user commands to log
-&TFlagLogChat&S Copy user chat to log
 &TAFKInterval&S Time til player marked as AFK
 &TAFKKickInterval&S Time til player kicked for AFK
 &TPlayerUpdateMS&S Minumum period between updates of player positions
+
+&TPrivate&S Set &TTrue&S to hide registration
+&THeartbeat&S URL of heartbeat server. &W**
+&TPollHeartbeat&S Enable polling of heartbeat server &W**
+&TUserSuffix&S Added to end of users on this port &W**
+
+&W**&S Per port configuration.
 */
+
+/*HELP set_system
+&T/set server&S name value
+
+&TSoftware&S Software name
+&TOPFlag&S Okay to send OP flag on client startup
+&TNoCPE&S Disable negotiation of CPE
+&TLocalNet&S IP address CIDR range of trusted clients
+&TSaveInterval&S Time between level save checks
+&TBackupInterval&S Time between level backups
+&TFlagLogCommands&S Copy user commands to log
+&TFlagLogChat&S Copy user chat to log
+
+&Ttcp&S, &Tport&S, &Trunonce&S, &Tinetd&S, &Tdetach&S
+  per port defaults for the command line options.
+*/
+
 
 void
 cmd_setvar(char * cmd, char * arg)

@@ -33,6 +33,7 @@ lvltheme_t themelist[] = {
     {"flat", 0},	// seed defaults to Y/2
     {"general", 1},
     {"plain", 1},
+    {"plasma", 1},
     {"pixel", 0},
     {"empty", 0},
     {"space", 0},	// seed defaults to 1

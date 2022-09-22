@@ -73,6 +73,10 @@ struct server_ini_t {
     int enable_heartbeat_poll;
     char heartbeat_url[1024];
     char user_id_suffix[NB_SLEN];
+    int use_http_post;
+
+    int trusted_localnet;
+    char localnet_cidr[64];
 };
 #endif
 
@@ -97,7 +101,7 @@ char current_level_name[MAXLEVELNAMELEN+1];
 char current_level_fname[MAXLEVELNAMELEN*4];
 int current_level_backup_id = 0;
 
-char heartbeat_url[1024] = "http://www.classicube.net/server/heartbeat/";
+char heartbeat_url[1024] = "https://www.classicube.net/server/heartbeat/";
 char logfile_pattern[1024] = "";
 int server_runonce = 0;
 int save_conf = 0;
@@ -523,7 +527,8 @@ login()
 	    cpe_requested&&!server->cpe_disabled?"":" classic", user_id);
 
     if (*server->secret != 0 && *server->secret != '-') {
-	if (strlen(player.mppass) != 32 && !client_trusted)
+	if (strlen(player.mppass) != 32 && !client_trusted &&
+		strcmp(player.mppass, server->secret) != 0)
 	    disconnect(0, "Login failed! Mppass required");
     }
 
@@ -542,8 +547,9 @@ login()
 	if (check_mppass(player.user_id, player.mppass) == 0) {
 	    // printlog("User %s failed with mppass %s", user_id, player.mppass);
 	    disconnect(0, "Login failed! Close the game and refresh the server list.");
-	}
 
-	user_authenticated = 1;
+	    // user_ghosted = 1;
+	} else
+	    user_authenticated = 1;
     }
 }

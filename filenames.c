@@ -33,6 +33,9 @@
 #define USER_DIR "user"
 #define USER_INI_NAME "user/%s.ini"
 
+#define SECRET_DIR "secret"
+#define SECRET_PW_NAME "secret/%s.pwl"
+
 #define MODEL_INI_NAME "model.ini"
 #define SYS_CONF_NAME "system/system.dat"
 #define SYS_STAT_NAME "system/userlevels.dat"
@@ -49,6 +52,7 @@ static char * dirlist[] = {
     LEVEL_MAP_DIR_NAME,
     LEVEL_BACKUP_DIR_NAME,
     USER_DIR,
+    SECRET_DIR,
     "help",
     "log",
     "ini",

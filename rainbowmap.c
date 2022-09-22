@@ -10,8 +10,11 @@
 #include "rainbowmap.h"
 
 void
-gen_rainbow_map(map_random_t *rng)
+gen_rainbow_map(char * seed)
 {
+    map_random_t rng[1];
+    map_init_rng(rng, seed);
+
     uint16_t *heightmap = calloc(level_prop->cells_x*level_prop->cells_z, sizeof(*heightmap));
 
     gen_rainbow_heightmap(rng, heightmap);
@@ -30,22 +33,19 @@ gen_rainbow_map(map_random_t *rng)
 }
 
 LOCAL void
-gen_rainbow_heightmap(map_random_t *srng, uint16_t * heightmap)
+gen_rainbow_heightmap(map_random_t *rng, uint16_t * heightmap)
 {
     int cx = level_prop->cells_x/2;
     int cz = level_prop->cells_z/2;
     int rm = level_prop->cells_x>level_prop->cells_z?level_prop->cells_x:level_prop->cells_z;
     rm = rm/2 + 2;
 
-    int h = 5000 + bounded_random_r(srng, 8);
+    int h = 5000 + bounded_random_r(rng, 12);
 
     heightmap[cx+cz*level_prop->cells_x] = h;
 
-    int first_e = 2 + bounded_random_r(srng, 6);
+    int first_e = 5 + bounded_random_r(rng, 3);
     for(int e = first_e; e>0; e--) {
-	map_random_t rng[1];
-	seed_rng(srng, rng);
-
 	int s = (1<<(e-1));
 	for(int r=s; r<rm; r+=s) {
 	    for(int x=cx-r+1; x<=cx+r; x+=s) gen_rainbow(rng, heightmap, x, cz-r, s);
@@ -56,7 +56,7 @@ gen_rainbow_heightmap(map_random_t *srng, uint16_t * heightmap)
     }
 
     heightmap[cx+cz*level_prop->cells_x] = 0;
-    gen_rainbow(srng, heightmap, cx, cz, 1);
+    gen_rainbow(rng, heightmap, cx, cz, 1);
 }
 
 LOCAL void

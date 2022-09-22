@@ -15,7 +15,8 @@ See <http://creativecommons.org/publicdomain/zero/1.0/>. */
    It is a very fast generator passing BigCrush, and it can be useful if
    for some reason you absolutely want 64 bits of state. */
 
-/* static uint64_t x; / * The state can be seeded with any value. */
+#include "splitmix64.h"
+#if INTERFACE
 
 // Note the constant ...
 // ((1+sqrt(5))/2-1)*(2^64) or (2/(1+sqrt(5)))*(2^64)
@@ -24,7 +25,8 @@ See <http://creativecommons.org/publicdomain/zero/1.0/>. */
 // Need an odd value, so round down.
 #define GOLDEN_GAMMA 0x9e3779b97f4a7c15
 
-uint64_t splitmix64_r(uint64_t *x) {
+/* uint64_t x; // The state can be seeded with any value. */
+inline static uint64_t splitmix64_r(uint64_t *x) {
 	uint64_t z = (*x += GOLDEN_GAMMA);
 	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
 	z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
@@ -35,7 +37,7 @@ uint64_t splitmix64_r(uint64_t *x) {
  * which attempts to compute a new replacement for the Weyl sequence
  * while avoiding the (few) bad choices.
  */
-void jump_splitmix64(uint64_t *x, uint64_t steps) {
+inline static void jump_splitmix64(uint64_t *x, uint64_t steps) {
     *x += GOLDEN_GAMMA * steps;
 }
 
@@ -43,11 +45,21 @@ void jump_splitmix64(uint64_t *x, uint64_t steps) {
  * Can be used as a stateless variant by incrementing jump for each call.
  * On most current CPUs this is still constant time, but one more multiply.
  */
-uint64_t fwd_splitmix64(uint64_t seed, uint64_t jump) {
+inline static uint64_t splitmix64_ctr(uint64_t seed, uint64_t jump) {
     jump_splitmix64(&seed, jump);
     return splitmix64_r(&seed);
 }
 
+// See pcg_basic.c:pcg32_boundedrand_r for design of this function.
+inline static uint32_t splitmix64_bounded_r(uint64_t *rng, uint32_t bound) {
+    uint32_t threshold = -bound % bound;
+    for (;;) {
+        uint32_t r = (uint32_t) splitmix64_r(rng);
+        if (r >= threshold)
+            return r % bound;
+    }
+}
+#endif
 
 /*
     David Stafford's tested hash replacement values for MurmurHash3

@@ -193,7 +193,7 @@ read_fld(uint8_t **pp, int * bytes, void * data, enum csv_type type, int len)
     }
 }
 
-static void
+void
 copy_user_key(char *p, char * user_id)
 {
     for(char * s = user_id; *s; s++)

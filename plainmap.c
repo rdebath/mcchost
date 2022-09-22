@@ -15,10 +15,13 @@
 // Spirals up to 32 blocks between points are used to make larger features.
 // Depending on the height in each position it's classified as land or sand.
 // Water is placed above the sand.
-// Trees and flowers are planted on the land. (no clumps)
+// Trees and flowers are planted on the land.
 void
-gen_plain_map(map_random_t *rng)
+gen_plain_map(char * seed)
 {
+    map_random_t rng[1];
+    map_init_rng(rng, seed);
+
     uint16_t *heightmap = calloc(level_prop->cells_x*level_prop->cells_z, sizeof(*heightmap));
 
     int flattened = 0, land_only = 0, flowerrate = 0, treerate = 0;
@@ -44,18 +47,9 @@ gen_plain_map(map_random_t *rng)
 	    else
 	    {
 		int y1 = heightmap[x+z*level_prop->cells_x];
-		if (y1>level_prop->side_level-1 || land_only) {
+		if (y1>level_prop->side_level-1) {
 		    y1--; // First grass "above" water at water level.
-		    if (land_only && y1<level_prop->side_level-1)
-			y1 = level_prop->side_level-1;
-		    if (y==y1+1 && flowerrate != 0) {
-			if (bounded_random_r(rng, flowerrate) == 1)
-			    level_blocks[World_Pack(x,y,z)] = Block_Dandelion;
-			else if (bounded_random_r(rng, flowerrate) == 1)
-			    level_blocks[World_Pack(x,y,z)] = Block_Rose;
-			else
-			    level_blocks[World_Pack(x,y,z)] = Block_Air;
-		    } else if (y>y1)
+		    if (y>y1)
 			level_blocks[World_Pack(x,y,z)] = Block_Air;
 		    else if (y==y1)
 			level_blocks[World_Pack(x,y,z)] = Block_Grass;
@@ -101,10 +95,20 @@ gen_plain_map(map_random_t *rng)
 	    heightmap[x2+z2*level_prop->cells_x] |= 0x8000;
 	}
 
-    flowerrate = 0;
-
-// TODO: Trees and flowers from centre so they are same when map is stretched.
-// Also maybe need rng3 for this.
+    if (flowerrate > 3) {
+	for(z=0; z<level_prop->cells_z; z++)
+	    for(x=0; x<level_prop->cells_x; x++)
+	    {
+		int y1 = heightmap[x+z*level_prop->cells_x];
+		if (y1 < level_prop->side_level-land_only) continue;
+		if (y1 >= level_prop->cells_y-1) continue;
+		int r = bounded_random_r(rng, flowerrate);
+		if (r == 1)
+		    level_blocks[World_Pack(x,y1+1,z)] = Block_Dandelion;
+		else if (r == 2)
+		    level_blocks[World_Pack(x,y1+1,z)] = Block_Rose;
+	    }
+    }
 
     for(z=3; z+3<level_prop->cells_z; z++)
     {
@@ -117,14 +121,6 @@ gen_plain_map(map_random_t *rng)
 	    if (treerate == 0 ||
 		    y1+7 > level_prop->cells_y ||
 		    bounded_random_r(rng, treerate) != 1) {
-		if (flowerrate > 0) {
-		    y1 &= 0x7FFF;
-		    if (y1 >= level_prop->cells_y-1) continue;
-		    if (bounded_random_r(rng, flowerrate) == 1)
-			level_blocks[World_Pack(x,y1+1,z)] = Block_Dandelion;
-		    else if (bounded_random_r(rng, flowerrate) == 1)
-			level_blocks[World_Pack(x,y1+1,z)] = Block_Rose;
-		}
 		continue;
 	    }
 
@@ -205,24 +201,38 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
     heightmap[cx+cz*level_prop->cells_x] = 0;
     gen_plain(srng, heightmap, cx, cz, 1, flattened);
 
-#if 0
-    int ratio = 1;
+    if (land_only)
+	for(int z=0; z<level_prop->cells_z; z++)
+	    for(int x=0; x<level_prop->cells_x; x++)
+	    {
+		int y1 = heightmap[x+z*level_prop->cells_x];
+		y1 -= 0x7FFF;
+		y1 += h;
+		if (y1<level_prop->side_level)
+		    y1 = heightmap[x+z*level_prop->cells_x] =
+			(level_prop->side_level)*2 - y1;
+		y1 -= h;
+		y1 += 0x7FFF;
+		heightmap[x+z*level_prop->cells_x] = y1;
+	    }
+
+    int limit = 0;
+#if 1
     {
 	int min_h = 0xFFFF, max_h = 0;
 	for(int z=0; z<level_prop->cells_z; z++)
 	    for(int x=0; x<level_prop->cells_x; x++)
 	    {
 		int y1 = heightmap[x+z*level_prop->cells_x];
+		y1 -= 0x7FFF;
+		y1 += h;
 		if (y1>max_h) max_h = y1;
 		if (y1<min_h) min_h = y1;
 	    }
 
-	if (max_h-min_h > level_prop->cells_y) ratio ++;
+	if (max_h >= level_prop->cells_y) limit = max_h;
     }
 #endif
-
-    int min_y = land_only?level_prop->side_level-6:0;
-    if (min_y < 0) min_y = 0;
 
     for(int z=0; z<level_prop->cells_z; z++)
 	for(int x=0; x<level_prop->cells_x; x++)
@@ -230,7 +240,8 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
 	    int y1 = heightmap[x+z*level_prop->cells_x];
 	    y1 -= 0x7FFF;
 	    y1 += h;
-	    if (y1 < min_y) y1 = min_y;
+	    if (y1 < 0) y1 = 0;
+	    if (limit && y1 > h) y1 = ((y1-h)*(level_prop->cells_y-h)/(limit-h))+h;
 	    if (y1 >= level_prop->cells_y) y1 = level_prop->cells_y-1;
 	    if (level_prop->cells_y > 16 && y1 >= level_prop->cells_y-8)
 		y1 = level_prop->cells_y-8;

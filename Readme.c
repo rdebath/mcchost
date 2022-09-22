@@ -6,6 +6,23 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Option AllowUserLevel
+
+ +) If we loaded a port specific file we should not save override server.ini
+    -- Does this mean I want to merge port specific data into server.ini ?
+
+ +) Move "salt" to it's own file?
+    -- Perms set to 0600
+    -- Option for not saving salt to file
+    -- secret/ directory for this and user passwd?
+    -- Option for file location ?
+    -- Make salt sent to server 2*base62 uint64_t
+
+ +) Add /pass (and /setpass) for betacraft.
+    -- They don't have a login server.
+    -- Should I use HMAC (too) for password hashing; where to store secret?
+    -- /setpass should only write file if pass is different.
+
  +) How to define default map theme and size.
     -- From model.ini ?
     -- If model.ini how to default seed.

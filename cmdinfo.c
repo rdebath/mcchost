@@ -170,9 +170,19 @@ cmd_minfo(char * UNUSED(cmd), char * UNUSED(arg))
 	printf_chat("&WThe void is eternal and unknowable");
 	return;
     }
-    printf_chat("&TAbout &7%s: &SWidth=%d Height=%d Length=%d",
-	current_level_name, level_prop->cells_x,
-	level_prop->cells_y, level_prop->cells_z);
+
+    if (current_level_backup_id > 0)
+	printf_chat("&TAbout &WMuseum&S (&7%s %d): &SWidth=%d Height=%d Length=%d",
+	    current_level_name, current_level_backup_id,
+	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
+    else if (current_level_backup_id == 0)
+	printf_chat("&TAbout &7%s: &SWidth=%d Height=%d Length=%d",
+	    current_level_name, level_prop->cells_x,
+	    level_prop->cells_y, level_prop->cells_z);
+    else
+	printf_chat("&WAbout %s&S: &SWidth=%d Height=%d Length=%d",
+	    current_level_name, level_prop->cells_x,
+	    level_prop->cells_y, level_prop->cells_z);
 
     char timebuf[256], timebuf2[256];
     if (level_prop->time_created == 0)
@@ -182,7 +192,11 @@ cmd_minfo(char * UNUSED(cmd), char * UNUSED(arg))
 
     int last_bkp = -1;
     time_t last_backup_time = 0;
-    last_bkp = find_recent_backup(current_level_fname, &last_backup_time);
+    {
+	char fixname[MAXLEVELNAMELEN*4];
+	fix_fname(fixname, sizeof(fixname), current_level_name);
+	last_bkp = find_recent_backup(fixname, &last_backup_time);
+    }
     char bkp_msg[512];
     if (last_bkp <= 0) strcpy(bkp_msg, "no backups yet");
     else {

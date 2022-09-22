@@ -16,8 +16,11 @@
 // Water is placed above the sand.
 // Trees and flowers are planted on the land. (no clumps)
 void
-gen_plain_flat_map(map_random_t *rng)
+gen_plain_flat_map(char *seed)
 {
+    map_random_t rng[1];
+    map_init_rng(rng, seed);
+
     uint16_t *heightmap = calloc(level_prop->cells_x*level_prop->cells_z, sizeof(*heightmap));
 
     gen_plain_heightmap(rng, heightmap);

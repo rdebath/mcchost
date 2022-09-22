@@ -148,6 +148,9 @@ tcpserver()
     restart_sig = 0;
     last_execheck = time(0);
 
+    printf_chat("@Listener process started for port %d", tcp_port_no);
+    stop_chat_queue();
+
     while(!term_sig)
     {
 	int max_sock = listen_socket;
@@ -509,7 +512,7 @@ cleanup_zombies()
     child_sig = 0;
     char msgbuf[256];
     char userid[64];
-    int died_badly = 0, client_process_finished = 0;
+    int died_badly = 0, unclean_disconnect = 0, client_process_finished = 0;
 
     while ((pid = waitpid(-1, &status, WNOHANG)) != 0)
     {
@@ -584,6 +587,10 @@ cleanup_zombies()
 #endif
 
 	    died_badly = delete_session_id(pid, userid, sizeof(userid));
+	    if (WTERMSIG(status) == SIGPIPE) {
+		unclean_disconnect = died_badly;
+		died_badly = 0;
+	    }
 
 	    // If there was a core dump try to spit out something.
 	    if (WCOREDUMP_X(status)) {
@@ -606,10 +613,15 @@ cleanup_zombies()
 	    }
 	}
 
-	if (died_badly && *userid && *msgbuf)
-	{
-	    printf_chat("@&W- &7%s: &W%s", userid, msgbuf);
-	    stop_chat_queue();
+	if (*userid && *msgbuf) {
+	    if (died_badly) {
+		printf_chat("@&W- &7%s: &W%s", userid, msgbuf);
+		stop_chat_queue();
+	    }
+	    if (unclean_disconnect) {
+		printf_chat("@&W- &7%s &S%s", userid, "disconnected");
+		stop_chat_queue();
+	    }
 	}
 
 	if (client_process_finished)

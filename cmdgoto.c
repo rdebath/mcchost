@@ -163,6 +163,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 
     if (backup_id == 0) {
 	if (!check_level(level, fixedname)) {
+	    unfix_fname(levelname, sizeof(levelname), fixedname);
 	    printf_chat("&WLevel &S%s&W is not available.", levelname);
 	    return 0;
 	}

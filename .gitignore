@@ -32,3 +32,20 @@ user/
 userdb/
 userdb32/
 userdb64/
+
+# You don't need to see my identification.
+*.cer
+*.crl
+*.crt
+*.csr
+*.hsh
+*.jks
+*.jwk
+*.key
+*.p7b
+*.pem
+*.pfx
+*.ppk
+*.prv
+*.pwl
+*.sec

@@ -55,7 +55,7 @@ run_command(char * msg)
 	}
     }
 
-    printf_chat("&SUnknown command \"%s\" -- see &T/cmds", cmd);
+    printf_chat("&SUnknown command \"%s&S\" -- see &T/cmds", cmd);
     return;
 }
 

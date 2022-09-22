@@ -298,23 +298,17 @@ init_level_blocks()
 
     } else if (strcasecmp(level_prop->theme, "plain") == 0) {
 	int has_seed = !!level_prop->seed[0];
-	map_random_t rng[1];
-	map_init_rng(rng, level_prop->seed);
-	gen_plain_flat_map(rng);
+	gen_plain_flat_map(level_prop->seed);
 	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "general") == 0) {
 	int has_seed = !!level_prop->seed[0];
-	map_random_t rng[1];
-	map_init_rng(rng, level_prop->seed);
-	gen_plain_map(rng);
+	gen_plain_map(level_prop->seed);
 	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "plasma") == 0) {
 	int has_seed = !!level_prop->seed[0];
-	map_random_t rng[1];
-	map_init_rng(rng, level_prop->seed);
-	gen_rainbow_map(rng);
+	gen_rainbow_map(level_prop->seed);
 	level_prop->dirty_save = !has_seed;
 	level_prop->side_level = 1;
 

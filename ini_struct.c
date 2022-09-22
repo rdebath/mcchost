@@ -86,6 +86,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_STRARRAY("Heartbeat", ini_settings.heartbeat_url);
 	INI_BOOLVAL("PollHeartbeat", ini_settings.enable_heartbeat_poll);
+	INI_BOOLVAL("UseHttpPost", ini_settings.use_http_post);
 	INI_STRARRAY("UserSuffix", ini_settings.user_id_suffix);
 
 	if (st->write) fprintf(st->fd, "\n");
