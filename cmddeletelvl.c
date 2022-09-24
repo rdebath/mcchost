@@ -24,7 +24,7 @@ cmd_deletelvl(char * cmd, char * arg)
     if (!levelname) return cmd_help(0, cmd);
 
     char userlevel[256];
-    snprintf(userlevel, sizeof(userlevel), "%s+", user_id);
+    saprintf(userlevel, "%s+", user_id);
     if (strcmp(levelname, "+") == 0 || strcmp(levelname, userlevel) == 0) {
 	levelname = userlevel;
     } else if (!client_trusted) {
@@ -40,7 +40,7 @@ cmd_deletelvl(char * cmd, char * arg)
 	printf_chat("&WMap '%s' can not exist", levelname);
 	return;
     }
-    snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+    saprintf(buf2, LEVEL_CW_NAME, fixedname);
     if (access(buf2, F_OK) != 0) {
 	printf_chat("&WMap '%s' does not exist", levelname);
 	return;

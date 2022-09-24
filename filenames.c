@@ -105,7 +105,7 @@ init_dirs(int use_cwd)
 	if (vargames)
 	    strcpy(dirpath, "/var/games/mcchost"); // Just some random location.
 	else
-	    snprintf(dirpath, sizeof(dirpath), "%s/.mcchost", home_d);
+	    saprintf(dirpath, "%s/.mcchost", home_d);
 
 	struct stat st;
 	if (stat(dirpath, &st) >= 0 && (st.st_mode & S_IFMT) != 0) {
@@ -147,8 +147,7 @@ init_dirs(int use_cwd)
     for(int i = 0; dirlist[i]; i++) {
 	if (mkdir(dirlist[i], 0777) < 0 && errno != EEXIST) {
 	    char buf[256];
-	    snprintf(buf, sizeof(buf),
-		"Failure creating directory: \"%s\"", dirlist[i]);
+	    saprintf(buf, "Failure creating directory: \"%s\"", dirlist[i]);
 	    perror(buf);
 	    // System is rather essential, but ...
 	    if (!i) exit(127);

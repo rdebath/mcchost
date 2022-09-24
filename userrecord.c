@@ -277,7 +277,7 @@ write_userrec(userrec_t * userrec, int ini_too)
     if (ini_too && userrec->ini_valid) {
 	char userini[PATH_MAX];
 	user_ini_tgt = userrec;
-	snprintf(userini, sizeof(userini), USER_INI_NAME, user_key);
+	saprintf(userini, USER_INI_NAME, user_key);
 	save_ini_file(user_ini_fields, userini, 0);
 	user_ini_tgt = 0;
     }
@@ -347,7 +347,7 @@ read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
 	if (load_ini) {
 	    char userini[PATH_MAX];
 	    user_ini_tgt = rec_buf;
-	    snprintf(userini, sizeof(userini), USER_INI_NAME, user_key);
+	    saprintf(userini, USER_INI_NAME, user_key);
 	    load_ini_file(user_ini_fields, userini, 1, 0);
 	    user_ini_tgt = 0;
 	}

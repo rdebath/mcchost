@@ -75,6 +75,9 @@ struct server_ini_t {
     char user_id_suffix[NB_SLEN];
     int use_http_post;
 
+    int allow_ip_verify;
+    int allow_pass_verify;
+
     int trusted_localnet;
     char localnet_cidr[64];
 };
@@ -107,8 +110,8 @@ int server_runonce = 0;
 int save_conf = 0;
 
 // Per server settings, not shared across instance
-// Commandline overrides this but is NOT saved to server.ini
-server_ini_t ini_settings = {0};
+// Commandline overrides this
+server_ini_t ini_settings = {.allow_ip_verify=1};
 
 int op_enabled = 0;	// Op flag was set for this session
 int cpe_enabled = 0;	// Set if this session is using CPE
@@ -124,7 +127,7 @@ int    proc_args_len = 0;
 int
 main(int argc, char **argv)
 {
-    snprintf(program_name, sizeof(program_name), "%s", argv[0]);
+    saprintf(program_name, "%s", argv[0]);
 
     init_textcolours();
 
@@ -165,7 +168,7 @@ main(int argc, char **argv)
 	char fixname[MAXLEVELNAMELEN*4];
 	char sharename[256];
 	fix_fname(fixname, sizeof(fixname), main_level());
-	snprintf(sharename, sizeof(sharename), LEVEL_LOCK_NAME, fixname);
+	saprintf(sharename, LEVEL_LOCK_NAME, fixname);
 	level_lock->name = strdup(sharename);
 	lock_start(level_lock);
 	lock_stop(level_lock);
@@ -491,7 +494,7 @@ login()
     if (websocket) websocket = 1; // Reset for requestloop.
 
     convert_logon_packet(inbuf, &player);
-    snprintf(user_id, sizeof(user_id), "%s%s", player.user_id, ini_settings.user_id_suffix);
+    saprintf(user_id, "%s%s", player.user_id, ini_settings.user_id_suffix);
     protocol_base_version = player.protocol;
 
     if (player.protocol > 7 || player.protocol < 5)
@@ -527,7 +530,8 @@ login()
 	    cpe_requested&&!server->cpe_disabled?"":" classic", user_id);
 
     if (*server->secret != 0 && *server->secret != '-') {
-	if (strlen(player.mppass) != 32 && !client_trusted &&
+	if (!client_trusted && !ini_settings.allow_pass_verify &&
+		strlen(player.mppass) != 32 &&
 		strcmp(player.mppass, server->secret) != 0)
 	    disconnect(0, "Login failed! Mppass required");
     }
@@ -536,19 +540,21 @@ login()
     if (strlen(user_id) > 16)
 	disconnect(0, "Usernames must be between 1 and 16 characters");
 
-    if (client_trusted && (!*player.mppass
+    if (client_trusted && ini_settings.allow_ip_verify && (!*player.mppass
 			|| strcmp("-", player.mppass) == 0
 			|| strncmp("00000000000000000000000000000000", player.mppass, strlen(player.mppass)) == 0
 			|| strcmp("(none)", player.mppass) == 0))
+    {
 	// Trusted net and they haven't tried to enter an mppass.
 	user_authenticated = 1;
-    else if (*server->secret != 0 && *server->secret != '-') {
+
+    } else if (*server->secret != 0 && *server->secret != '-') {
 	// There's an attempted mppass or we require one.
 	if (check_mppass(player.user_id, player.mppass) == 0) {
-	    // printlog("User %s failed with mppass %s", user_id, player.mppass);
-	    disconnect(0, "Login failed! Close the game and refresh the server list.");
-
-	    // user_ghosted = 1;
+	    if (!ini_settings.allow_pass_verify)
+		disconnect(0, "Login failed! Close the game and refresh the server list.");
+	    else
+		printlog("User %s failed with mppass \"%s\", try /pass", user_id, player.mppass);
 	} else
 	    user_authenticated = 1;
     }

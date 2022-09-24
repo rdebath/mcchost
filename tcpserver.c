@@ -554,7 +554,7 @@ cleanup_zombies()
 	    if (WEXITSTATUS(status)) {
 		printlog("Process %d had exit status %d",
 		    pid, WEXITSTATUS(status));
-		snprintf(msgbuf, sizeof(msgbuf),
+		saprintf(msgbuf,
 		    "kicked by panic with exit status %d",
 		    WEXITSTATUS(status));
 	    }
@@ -569,7 +569,7 @@ cleanup_zombies()
 		WTERMSIG(status),
 		WCOREDUMP_X(status)?" (core dumped)":"");
 
-	    snprintf(msgbuf, sizeof(msgbuf),
+	    saprintf(msgbuf,
 		"kicked by signal %s (%d)%s",
 		strsignal(WTERMSIG(status)),
 		WTERMSIG(status),
@@ -580,7 +580,7 @@ cleanup_zombies()
 		WTERMSIG(status),
 		WCOREDUMP_X(status)?" (core dumped)":"");
 
-	    snprintf(msgbuf, sizeof(msgbuf),
+	    saprintf(msgbuf,
 		"kicked by signal %d %s",
 		WTERMSIG(status),
 		WCOREDUMP_X(status)?" (core dumped)":"");

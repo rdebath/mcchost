@@ -117,13 +117,13 @@ cmd_setvar(char * cmd, char * arg)
 	    value = strtok(0, "");
 	} else if (strcasecmp(section, "block") == 0) {
 	    char * bno = strtok(0, " ");
-	    snprintf(vbuf, sizeof(vbuf), "block.%s", bno);
+	    saprintf(vbuf, "block.%s", bno);
 	    section = vbuf;
 	    varname = strtok(0, " ");
 	    value = strtok(0, "");
 	} else if (strcasecmp(section, "cuboid") == 0) {
 	    char * bno = strtok(0, " ");
-	    snprintf(vbuf, sizeof(vbuf), "cuboid.%s", bno);
+	    saprintf(vbuf, "cuboid.%s", bno);
 	    section = vbuf;
 	    varname = strtok(0, " ");
 	    value = strtok(0, "");
@@ -215,7 +215,7 @@ void
 save_server_ini_file()
 {
     char buf[256];
-    snprintf(buf, sizeof(buf), SERVER_CONF_TMP, getpid());
+    saprintf(buf, SERVER_CONF_TMP, getpid());
     if (save_ini_file(system_ini_fields, buf, SERVER_CONF_NAME) >= 0) {
 	if (rename(buf, SERVER_CONF_NAME) < 0)
 	    perror("rename server.ini");

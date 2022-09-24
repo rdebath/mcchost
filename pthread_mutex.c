@@ -92,7 +92,7 @@ lock_start(filelock_t * ln)
 	E(pthread_mutex_init(&mutex0, &att));
 
 	char tmpfile[PATH_MAX];
-	snprintf(tmpfile, sizeof(tmpfile), "%s.%d.tmp", ln->name, getpid());
+	saprintf(tmpfile, "%s.%d.tmp", ln->name, getpid());
 
 	// Ensure location is clear
 	(void)unlink(tmpfile);

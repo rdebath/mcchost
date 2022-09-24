@@ -34,6 +34,12 @@ static int current_cuboid = -1;
 static int inventory_block = -1;
 static int permission_block = -1;
 
+#if INTERFACE
+#define MCG_PHYSICS_0FFSET CPELIMIT	//768
+#endif
+uint8_t mcg_physics[256];
+static char mcgalaxy_names[];
+
 int
 load_map_from_file(char * filename, char * level_fname, char * level_name)
 {
@@ -59,7 +65,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 	struct stat st;
 	char buf[PATH_MAX];
 	// First look for backup No.1
-	snprintf(buf, sizeof(buf), LEVEL_BACKUP_NAME, level_fname, 1);
+	saprintf(buf, LEVEL_BACKUP_NAME, level_fname, 1);
 	if (stat(buf, &st) >= 0)
 	    level_prop->time_created = st.st_mtime;
 	// Otherwise the cw file itself.
@@ -152,6 +158,9 @@ read_element(gzFile ifd, int etype)
 
 	if (strcmp(last_lbl, "BlockArray3") == 0 && len>0)
 	    return read_blockarray3(ifd, len);
+
+	if (strcmp(last_lbl, "BlockArrayPhysics") == 0 && len>0)
+	    return read_blockarray_physics(ifd, len);
 
 	uint8_t bin_buf[256];
 	if (len <= 0)
@@ -341,6 +350,49 @@ read_blockarray3(gzFile ifd, uint32_t len)
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
 	if (ch)
 	    level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
+    }
+    return 1;
+}
+
+LOCAL int
+read_blockarray_physics(gzFile ifd, uint32_t len)
+{
+    if (level_blocks == 0 || level_prop->total_blocks < len) {
+	printlog("Incorrect BlockArrayPhysics found");
+	return 1;
+    }
+
+    for(uint32_t i=0; i<len; i++) {
+	int ch;
+	if ((ch = gzgetc(ifd)) == EOF) return 0;
+	if (ch)
+	    level_blocks[i] = ch + MCG_PHYSICS_0FFSET;
+    }
+
+    init_mcg_physics();
+    char * start = mcgalaxy_names;
+    for(int i = 0; i<256; i++) {
+	int blk = i + MCG_PHYSICS_0FFSET;
+	char namebuf[64];
+	*namebuf = 0;
+	if (start) {
+	    char * e = strchr(start, '@');
+	    if (e) {
+		if (e!=start) memcpy(namebuf, start, e-start);
+		namebuf[e-start] = 0;
+		start = e+1;
+	    } else
+		start = e;
+	}
+	if (!level_prop->blockdef[blk].defined) {
+	    level_prop->blockdef[blk] = level_prop->blockdef[mcg_physics[i]];
+	    level_prop->blockdef[blk].defined = 1;
+	    level_prop->blockdef[blk].no_save = 1;
+	    level_prop->blockdef[blk].fallback = mcg_physics[i];
+	    level_prop->blockdef[blk].inventory_order = 0;
+	    if (*namebuf)
+		strcpy(level_prop->blockdef[blk].name.c, namebuf);
+	}
     }
     return 1;
 }
@@ -745,3 +797,217 @@ cpy_nstr(char *buf, int buflen, char *str)
     *d = 0;
 }
 
+void
+init_mcg_physics()
+{
+    // MCGalaxy physics block fallback and visual representations.
+    for(int i = 0; i<256; i++)
+	if (i<66) mcg_physics[i] = i;
+	else mcg_physics[i] = Block_Orange;
+
+    mcg_physics[66] = 0;
+    mcg_physics[67] = 0;
+    mcg_physics[68] = 0;
+    mcg_physics[69] = 0;
+    mcg_physics[71] = 36;
+    mcg_physics[72] = 36;
+    mcg_physics[73] = 10;
+    mcg_physics[74] = 46;
+    mcg_physics[75] = 21;
+    mcg_physics[80] = 4;
+    mcg_physics[81] = 0;
+    mcg_physics[83] = 21;
+    mcg_physics[84] = 0;
+    mcg_physics[85] = 22;
+    mcg_physics[86] = 23;
+    mcg_physics[87] = 24;
+    mcg_physics[89] = 26;
+    mcg_physics[90] = 27;
+    mcg_physics[91] = 28;
+    mcg_physics[92] = 30;
+    mcg_physics[93] = 31;
+    mcg_physics[94] = 32;
+    mcg_physics[95] = 33;
+    mcg_physics[96] = 34;
+    mcg_physics[97] = 35;
+    mcg_physics[98] = 36;
+    mcg_physics[100] = 20;
+    mcg_physics[101] = 49;
+    mcg_physics[102] = 45;
+    mcg_physics[103] = 1;
+    mcg_physics[104] = 4;
+    mcg_physics[105] = 0;
+    mcg_physics[106] = 9;
+    mcg_physics[107] = 11;
+    mcg_physics[108] = 4;
+    mcg_physics[109] = 19;
+    mcg_physics[110] = 5;
+    mcg_physics[111] = 17;
+    mcg_physics[112] = 10;
+    mcg_physics[113] = 49;
+    mcg_physics[114] = 20;
+    mcg_physics[115] = 1;
+    mcg_physics[116] = 18;
+    mcg_physics[117] = 12;
+    mcg_physics[118] = 5;
+    mcg_physics[119] = 25;
+    mcg_physics[120] = 46;
+    mcg_physics[121] = 44;
+    mcg_physics[122] = 17;
+    mcg_physics[123] = 49;
+    mcg_physics[124] = 20;
+    mcg_physics[125] = 1;
+    mcg_physics[126] = 18;
+    mcg_physics[127] = 12;
+    mcg_physics[128] = 5;
+    mcg_physics[129] = 25;
+    mcg_physics[130] = 36;
+    mcg_physics[131] = 34;
+    mcg_physics[132] = 0;
+    mcg_physics[133] = 9;
+    mcg_physics[134] = 11;
+    mcg_physics[135] = 46;
+    mcg_physics[136] = 44;
+    mcg_physics[137] = 0;
+    mcg_physics[138] = 9;
+    mcg_physics[139] = 11;
+    mcg_physics[140] = 8;
+    mcg_physics[141] = 10;
+    mcg_physics[143] = 27;
+    mcg_physics[144] = 22;
+    mcg_physics[145] = 8;
+    mcg_physics[146] = 10;
+    mcg_physics[147] = 28;
+    mcg_physics[148] = 17;
+    mcg_physics[149] = 49;
+    mcg_physics[150] = 20;
+    mcg_physics[151] = 1;
+    mcg_physics[152] = 18;
+    mcg_physics[153] = 12;
+    mcg_physics[154] = 5;
+    mcg_physics[155] = 25;
+    mcg_physics[156] = 46;
+    mcg_physics[157] = 44;
+    mcg_physics[158] = 11;
+    mcg_physics[159] = 9;
+    mcg_physics[160] = 0;
+    mcg_physics[161] = 9;
+    mcg_physics[162] = 11;
+    mcg_physics[164] = 0;
+    mcg_physics[165] = 0;
+    mcg_physics[166] = 9;
+    mcg_physics[167] = 11;
+    mcg_physics[168] = 0;
+    mcg_physics[169] = 0;
+    mcg_physics[170] = 0;
+    mcg_physics[171] = 0;
+    mcg_physics[172] = 0;
+    mcg_physics[173] = 0;
+    mcg_physics[174] = 0;
+    mcg_physics[175] = 28;
+    mcg_physics[176] = 22;
+    mcg_physics[177] = 21;
+    mcg_physics[178] = 11;
+    mcg_physics[179] = 0;
+    mcg_physics[180] = 0;
+    mcg_physics[181] = 0;
+    mcg_physics[182] = 46;
+    mcg_physics[183] = 46;
+    mcg_physics[184] = 10;
+    mcg_physics[185] = 10;
+    mcg_physics[186] = 46;
+    mcg_physics[187] = 20;
+    mcg_physics[188] = 41;
+    mcg_physics[189] = 42;
+    mcg_physics[190] = 11;
+    mcg_physics[191] = 9;
+    mcg_physics[192] = 0;
+    mcg_physics[193] = 8;
+    mcg_physics[194] = 10;
+    mcg_physics[195] = 10;
+    mcg_physics[196] = 8;
+    mcg_physics[197] = 0;
+    mcg_physics[200] = 0;
+    mcg_physics[201] = 0;
+    mcg_physics[202] = 0;
+    mcg_physics[203] = 0;
+    mcg_physics[204] = 0;
+    mcg_physics[205] = 0;
+    mcg_physics[206] = 0;
+    mcg_physics[207] = 0;
+    mcg_physics[208] = 0;
+    mcg_physics[209] = 0;
+    mcg_physics[210] = 0;
+    mcg_physics[211] = 21;
+    mcg_physics[212] = 10;
+    mcg_physics[213] = 0;
+    mcg_physics[214] = 0;
+    mcg_physics[215] = 0;
+    mcg_physics[216] = 0;
+    mcg_physics[217] = 0;
+    mcg_physics[220] = 42;
+    mcg_physics[221] = 3;
+    mcg_physics[222] = 2;
+    mcg_physics[223] = 29;
+    mcg_physics[224] = 47;
+    mcg_physics[225] = 0;
+    mcg_physics[226] = 0;
+    mcg_physics[227] = 0;
+    mcg_physics[228] = 0;
+    mcg_physics[229] = 0;
+    mcg_physics[230] = 27;
+    mcg_physics[231] = 46;
+    mcg_physics[232] = 48;
+    mcg_physics[233] = 24;
+    mcg_physics[235] = 36;
+    mcg_physics[236] = 34;
+    mcg_physics[237] = 8;
+    mcg_physics[238] = 10;
+    mcg_physics[239] = 21;
+    mcg_physics[240] = 29;
+    mcg_physics[242] = 10;
+    mcg_physics[245] = 41;
+    mcg_physics[246] = 19;
+    mcg_physics[247] = 35;
+    mcg_physics[248] = 21;
+    mcg_physics[249] = 29;
+    mcg_physics[250] = 49;
+    mcg_physics[251] = 34;
+    mcg_physics[252] = 16;
+    mcg_physics[253] = 41;
+    mcg_physics[254] = 0;
+}
+
+LOCAL char mcgalaxy_names[] =
+    "Air@Stone@Grass@Dirt@Cobblestone@Wood@Sapling@Bedrock@"
+    "Active_Water@Water@Active_Lava@Lava@Sand@Gravel@Gold_Ore@Iron_Ore@"
+    "Coal@Log@Leaves@Sponge@Glass@Red@Orange@Yellow@"
+    "Lime@Green@Teal@Aqua@Cyan@Blue@Indigo@Violet@"
+    "Magenta@Pink@Black@Gray@White@Dandelion@Rose@Brown_Shroom@"
+    "Red_Shroom@Gold@Iron@DoubleSlab@Slab@Brick@TNT@BookShelf@"
+    "MossyRocks@Obsidian@CobblestoneSlab@Rope@SandStone@Snow@Fire@LightPink@"
+    "ForestGreen@Brown@DeepBlue@Turquoise@Ice@CeramicTile@MagmaBlock@Pillar@"
+    "Crate@StoneBrick@@@@@FlagBase@@"
+    "@Fast_Hot_Lava@C4@C4_Det@@@@@"
+    "Door_Cobblestone@@@Door_Red@@Door_Orange@Door_Yellow@Door_LightGreen@"
+    "@Door_AquaGreen@Door_Cyan@Door_LightBlue@Door_Purple@Door_LightPurple@Door_Pink@Door_DarkPink@"
+    "Door_DarkGrey@Door_LightGrey@Door_White@@Op_Glass@Opsidian@Op_Brick@Op_Stone@"
+    "Op_Cobblestone@Op_Air@Op_Water@Op_Lava@@Lava_Sponge@Wood_Float@Door@"
+    "Lava_Fast@Door_Obsidian@Door_Glass@Door_Stone@Door_Leaves@Door_Sand@Door_Wood@Door_Green@"
+    "Door_TNT@Door_Stair@tDoor@tDoor_Obsidian@tDoor_Glass@tDoor_Stone@tDoor_Leaves@tDoor_Sand@"
+    "tDoor_Wood@tDoor_Green@White_Message@Black_Message@Air_Message@Water_Message@Lava_Message@tDoor_TNT@"
+    "tDoor_Stair@tDoor_Air@tDoor_Water@tDoor_lava@Waterfall@Lavafall@@Water_Faucet@"
+    "Lava_Faucet@Finite_Water@Finite_Lava@Finite_Faucet@oDoor@oDoor_Obsidian@oDoor_Glass@oDoor_Stone@"
+    "oDoor_Leaves@oDoor_Sand@oDoor_Wood@oDoor_Green@oDoor_TNT@oDoor_Stair@oDoor_Lava@oDoor_Water@"
+    "Air_Portal@Water_Portal@Lava_Portal@Custom_Block@Air_Door@Air_Switch@Door_Water@Door_Lava@"
+    "oDoor_Air@oDoor_Obsidian_Air@oDoor_Glass_Air@oDoor_Stone_Air@oDoor_Leaves_Air@oDoor_Sand_Air@oDoor_Wood_Air@Blue_Portal@"
+    "Orange_Portal@oDoor_Red@oDoor_TNT_Air@oDoor_Stair_Air@oDoor_Lava_Air@oDoor_Water_Air@Small_TNT@Big_TNT@"
+    "TNT_Explosion@Lava_Fire@Nuke_TNT@RocketStart@RocketHead@Firework@Hot_Lava@Cold_Water@"
+    "Nerve_Gas@Active_Cold_Water@Active_Hot_Lava@Magma@Geyser@Checkpoint@@@"
+    "Air_Flood@Door_Air@Air_Flood_Layer@Air_Flood_Down@Air_Flood_Up@@@@"
+    "@@@Door8_Air@Door9_Air@@@@"
+    "@@@@Door_Iron@Door_Dirt@Door_Grass@Door_Blue@"
+    "Door_Book@@@@@@Train@Creeper@"
+    "Zombie@Zombie_Head@@Dove@Pidgeon@Duck@Phoenix@Red_Robin@"
+    "Blue_Bird@@Killer_Phoenix@@@GoldFish@Sea_Sponge@Shark@"
+    "Salmon@Betta_Fish@Lava_Shark@Snake@Snake_Tail@Door_Gold@@@";

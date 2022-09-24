@@ -180,7 +180,7 @@ save_map_to_file(char * fn, int background)
     int bdopen = 0;
     for(int i=1; i<BLOCKMAX; i++) {
 	int id = (i+256)%BLOCKMAX;
-	if (level_prop->blockdef[id].defined) {
+	if (level_prop->blockdef[id].defined && !level_prop->blockdef[id].no_save) {
 	    if (!bdopen) {
 		bc_compound(savefile, "BlockDefinitions");
 		bdopen = 1;
@@ -296,7 +296,16 @@ save_map_to_file(char * fn, int background)
     bc_end(savefile);
 
     if (level_blocks) {
-	int flg = 0, flg2 = 0;
+	int flg = 0, flg2 = 0, flg3 = 0;
+
+	int use_mcg_physics = 0; // Use BA3 or BA_Physics for blocks > 767
+	for(int i = MCG_PHYSICS_0FFSET; i<MCG_PHYSICS_0FFSET+255; i++) {
+	    if (level_prop->blockdef[i].defined && level_prop->blockdef[i].no_save) {
+		use_mcg_physics = 1;
+		init_mcg_physics();
+		break;
+	    }
+	}
 
 	// Save as much as we can, lost blocks would be at the top of the Y axis.
 	int saveable_blocks = level_prop->total_blocks;
@@ -308,10 +317,13 @@ save_map_to_file(char * fn, int background)
 
 	for (intptr_t i = 0; i<saveable_blocks; i++) {
 	    int b = level_blocks[i];
-	    // if (b>=BLOCKMAX) b = BLOCKMAX-1;
-	    if (b>=CPELIMIT) {flg2 = 1; b &= 0xFF; }
-	    gzputc(savefile, b & 0xFF);
-	    flg |= (b>0xFF);
+	    if (use_mcg_physics && b>MCG_PHYSICS_0FFSET && b<MCG_PHYSICS_0FFSET+255)
+		gzputc(savefile, mcg_physics[b&0xFF]);
+	    else {
+		if (b>=CPELIMIT) {flg2 = 1; b &= 0xFF; }
+		gzputc(savefile, b & 0xFF);
+		flg |= (b>0xFF);
+	    }
 	}
 
 	// Written by CC
@@ -321,9 +333,12 @@ save_map_to_file(char * fn, int background)
 
 	    for (intptr_t i = 0; i<saveable_blocks; i++) {
 		int b = level_blocks[i];
-		// if (b>=BLOCKMAX) b = BLOCKMAX-1;
-		if (b>=CPELIMIT) b &= 0xFF;
-		gzputc(savefile, b>>8);
+		if (use_mcg_physics && b>MCG_PHYSICS_0FFSET && b<MCG_PHYSICS_0FFSET+255)
+		    gzputc(savefile, 0);
+		else {
+		    if (b>=CPELIMIT) b &= 0xFF;
+		    gzputc(savefile, b>>8);
+		}
 	    }
 	}
 
@@ -332,6 +347,9 @@ save_map_to_file(char * fn, int background)
 	    // What format should I use for this?
 	    // Currently it's a corrected high byte but this means BA2 makes
 	    // a random block in 0..767. This byte is only set if BA2 is wrong.
+	    // Another option is to discard BA2 completely, put the 255
+	    // fallback into BA1 and have BA3 and BA4 with the actual value.
+
 	    bc_ent_bytes_header(savefile, "BlockArray3", saveable_blocks);
 
 	    for (intptr_t i = 0; i<saveable_blocks; i++) {
@@ -342,9 +360,18 @@ save_map_to_file(char * fn, int background)
 		else
 		    gzputc(savefile, 0);
 	    }
+	}
+	// Not written by CC
+	if (flg3) {
+	    bc_ent_bytes_header(savefile, "BlockArrayPhysics", saveable_blocks);
 
-	    // Another option is to discard BA2 completely, put the 255
-	    // fallback into BA1 and have BA3 and BA4 with the actual value.
+	    for (intptr_t i = 0; i<saveable_blocks; i++) {
+		int b = level_blocks[i];
+		if (b>MCG_PHYSICS_0FFSET && b<MCG_PHYSICS_0FFSET+255)
+		    gzputc(savefile, b);
+		else
+		    gzputc(savefile, 0);
+	    }
 	}
     }
 

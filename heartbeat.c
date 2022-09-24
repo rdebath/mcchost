@@ -90,7 +90,7 @@ send_heartbeat_poll()
     //  αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ 
 
     if (!ini_settings.use_http_post)
-	snprintf(cmdbuf, sizeof(cmdbuf),
+	saprintf(cmdbuf,
 	    "%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s&%s%s",
 	    heartbeat_url,
 	    "port=",tcp_port_no,
@@ -104,7 +104,7 @@ send_heartbeat_poll()
 	    "web=","True"
 	    );
     else
-	snprintf(cmdbuf, sizeof(cmdbuf),
+	saprintf(cmdbuf,
 	    "&%s%d&%s%d&%s%s&%s%s&%s%d&%s%s&%s%d&%s%s&%s%s",
 	    "port=",tcp_port_no,
 	    "max=",server->max_players,

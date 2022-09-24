@@ -41,6 +41,7 @@ struct client_entry_t {
     uint8_t client_proto_ver;
     uint8_t client_cpe;
     uint8_t client_dup;
+    uint8_t authenticated;
     pid_t session_id;
 };
 
@@ -111,7 +112,8 @@ check_user()
 	client_entry_t c = shdat.client->user[i];
 
 	// Is this user visible.
-	c.visible = (c.active && c.on_level == my_level && c.level_bkp_id >= 0);
+	c.visible = (c.active && c.authenticated &&
+		c.on_level == my_level && c.level_bkp_id >= 0);
 
 	if (extn_extplayerlist) {
 	    if (c.active && (!myuser[i].active ||
@@ -124,14 +126,14 @@ check_user()
 		    nbtstr_t n = shdat.client->levels[l].level;
 		    if (shdat.client->levels[l].loaded) {
 			if (shdat.client->levels[l].backup_id == 0)
-			    snprintf(buf, sizeof(buf), "On %s", n.c);
+			    saprintf(buf, "On %s", n.c);
 			else if (shdat.client->levels[l].backup_id > 0)
-			    snprintf(buf, sizeof(buf), "Museum %d %s", shdat.client->levels[l].backup_id, n.c);
+			    saprintf(buf, "Museum %d %s", shdat.client->levels[l].backup_id, n.c);
 			else
-			    snprintf(buf, sizeof(buf), "Nowhere");
+			    saprintf(buf, "Nowhere");
 		    }
 		}
-		snprintf(buf2, sizeof(buf2), "&e%s%s", c.name.c, c.is_afk?" &7(AFK)":"");
+		saprintf(buf2, "&e%s%s", c.name.c, c.is_afk?" &7(AFK)":"");
 		if (i>=0 && i<255)
 		    send_addplayername_pkt(i, c.name.c, buf2, buf, 0);
 
@@ -233,6 +235,18 @@ update_player_pos(pkt_player_posn pkt)
 {
     player_posn = pkt.pos;
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
+
+#if 0
+    if (!user_authenticated) {
+	xyzhv_t nil = {0}, pos = level_prop->spawn;
+	pos.y = -1023*32;
+	send_posn_pkt(255, &nil, pos);
+	return;
+    }
+#endif
+
+    if (shdat.client)
+	shdat.client->user[my_user_no].authenticated = user_authenticated;
 
     player_held_block = pkt.held_block;
 
@@ -341,6 +355,7 @@ start_user()
     t.on_level = -1;
     t.level_bkp_id = -1;
     t.ip_address = client_ipv4_addr;
+    t.authenticated = user_authenticated;
     connected_sessions++;
 
     if (t.client_software.c[0] == 0) {
@@ -416,9 +431,9 @@ start_level(char * levelname, char * levelfile, int backup_id)
     if (extn_extplayerlist) {
 	char buf[256] = "";
 	if (current_level_backup_id == 0)
-	    snprintf(buf, sizeof(buf), "On %s", current_level_name);
+	    saprintf(buf, "On %s", current_level_name);
 	else if (current_level_backup_id > 0)
-	    snprintf(buf, sizeof(buf), "Museum %d %s", current_level_backup_id, current_level_name);
+	    saprintf(buf, "Museum %d %s", current_level_backup_id, current_level_name);
 	else
 	    strcpy(buf, "Nowhere");
 	send_addplayername_pkt(255, user_id, user_id, buf, 0);

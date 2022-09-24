@@ -248,7 +248,7 @@ process_args(int argc, char **argv)
 
 	    if (tcp_port_no > 0 && tcp_port_no <= 65535 && !save_conf) {
 		char buf[256];
-		snprintf(buf, sizeof(buf), SERVER_CONF_PORT, tcp_port_no);
+		saprintf(buf, SERVER_CONF_PORT, tcp_port_no);
 		load_ini_file(system_ini_fields, buf, 1, 0);
 
 		// Don't let this override!

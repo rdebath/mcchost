@@ -96,7 +96,7 @@ teapot(uint8_t * buf, int len)
 	if (is_ascii) {
 	    char message[65536];
 	    int j = 0;
-	    for(int i = 0; i<len && j<sizeof(message)-4; i++) {
+	    for(int i = 0; i<len && j<(int)sizeof(message)-4; i++) {
 		if (buf[i] >= ' ') message[j++] = buf[i];
 		else {
 		    message[j++] = '\\';
@@ -116,7 +116,7 @@ teapot(uint8_t * buf, int len)
     if (line_ofd > 0)
     {
 	if (send_http_error) {
-	    char msg[] =
+	    unsigned char msg[] =
 		"HTTP/1.1 426 Upgrade Required\r\n"
 		"Upgrade: mc/0.30+CPE, websocket, mc/0.30\r\n"
 		"\r\n";
@@ -124,7 +124,7 @@ teapot(uint8_t * buf, int len)
 	} else
 
 	if (send_logout) {
-	    char buf[65];
+	    unsigned char buf[65];
 	    char msg[] = "This is a classic (0.30) minecraft server with CPE";
 	    memset(buf, ' ', sizeof(buf));
 	    memcpy(buf+1, msg, sizeof(msg)-1);
@@ -136,7 +136,7 @@ teapot(uint8_t * buf, int len)
 	if (send_new_logout) {
 	    // This should be a new protocol disconnect message.
 	    // Don't send this there are stupid scanners out there.
-	    char msg[] =  {
+	    unsigned char msg[] =  {
 		     70,   0,  68, '{', '"', 't', 'e', 'x', 't', '"',
 		    ':', ' ', '"', 'O', 'n', 'l', 'y', ' ', 'c', 'l',
 		    'a', 's', 's', 'i', 'c', ' ', 'p', 'r', 'o', 't',
@@ -150,12 +150,12 @@ teapot(uint8_t * buf, int len)
 #endif
 
 	if (send_tls_fail) {
-	    char msg[] = { 0x15, 0x03, 0x01, 0x00, 0x02, 0x02, 80 };
+	    unsigned char msg[] = { 0x15, 0x03, 0x01, 0x00, 0x02, 0x02, 80 };
 	    write_to_remote(msg, sizeof(msg));
 	} else
 
 	{
-	    char msg[] = "418 This is a classic (0.30) minecraft server with CPE\r\n";
+	    unsigned char msg[] = "418 This is a classic (0.30) minecraft server with CPE\r\n";
 	    write_to_remote(msg, sizeof(msg)-1);
 	}
 

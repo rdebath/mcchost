@@ -88,6 +88,8 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("PollHeartbeat", ini_settings.enable_heartbeat_poll);
 	INI_BOOLVAL("UseHttpPost", ini_settings.use_http_post);
 	INI_STRARRAY("UserSuffix", ini_settings.user_id_suffix);
+	INI_BOOLVAL("AllowIPVerify", ini_settings.allow_ip_verify);
+	INI_BOOLVAL("AllowPassVerify", ini_settings.allow_pass_verify);
 
 	if (st->write) fprintf(st->fd, "\n");
 
@@ -260,6 +262,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	if (level_prop->blockdef[bn].defined || !st->write) {
 	    INI_BOOLVAL(WC("Defined"), level_prop->blockdef[bn].defined);
+	    INI_BOOLVAL(WC("NoSave"), level_prop->blockdef[bn].no_save);
 	    INI_NBTSTR("Name", level_prop->blockdef[bn].name);
 	    INI_INTVAL("Collide", level_prop->blockdef[bn].collide);
 	    INI_BOOLVAL("TransmitsLight", level_prop->blockdef[bn].transmits_light);

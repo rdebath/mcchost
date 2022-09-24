@@ -65,7 +65,7 @@ cmd_museum(char * UNUSED(cmd), char * arg)
 	lvl = current_level_name;
     }
 
-    snprintf(buf2, sizeof(buf2), LEVEL_BACKUP_NAME, fixedname, backup_id);
+    saprintf(buf2, LEVEL_BACKUP_NAME, fixedname, backup_id);
     if (access(buf2, F_OK) != 0){
 	fprintf_logfile("Backup file \"%s\" does not exist.", buf2);
 	printf_chat("&SBackup %d for level %s does not exist", backup_id, lvl);

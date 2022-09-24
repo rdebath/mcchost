@@ -112,13 +112,13 @@ open_level_files(char * level_name, int backup_id, char * fixname, int to_unload
     check_level_name(fixname); // Last check.
     shdat.level_fixed_name = strdup(fixname);
 
-    snprintf(sharename, sizeof(sharename), LEVEL_LOCK_NAME, fixname);
+    saprintf(sharename, LEVEL_LOCK_NAME, fixname);
     level_lock->name = strdup(sharename);
     lock_start(level_lock);
 
-    snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, fixname);
+    saprintf(sharename, LEVEL_BLOCKS_NAME, fixname);
     del_on_err = access(sharename, F_OK);
-    snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, fixname);
+    saprintf(sharename, LEVEL_PROPS_NAME, fixname);
     if (del_on_err == 0)
 	del_on_err = access(sharename, F_OK);
     if (del_on_err < 0) {
@@ -143,7 +143,7 @@ open_level_files(char * level_name, int backup_id, char * fixname, int to_unload
 	// If it's not dirty, the cw file should be the master so okay to delete.
 	if (!level_prop->dirty_save) {
 	    char cwfilename[256];
-	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, fixname);
+	    saprintf(cwfilename, LEVEL_CW_NAME, fixname);
 	    if (access(cwfilename, R_OK) == 0)
 		del_on_err = 1;
 	}
@@ -155,9 +155,9 @@ open_level_files(char * level_name, int backup_id, char * fixname, int to_unload
 	// If level missing -- extract the matching *.cw file
 	char cwfilename[256];
 	if (backup_id == 0)
-	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_CW_NAME, fixname);
+	    saprintf(cwfilename, LEVEL_CW_NAME, fixname);
 	else
-	    snprintf(cwfilename, sizeof(cwfilename), LEVEL_BACKUP_DIR_NAME "/%s.cw", fixname);
+	    saprintf(cwfilename, LEVEL_BACKUP_DIR_NAME "/%s.cw", fixname);
 	if (access(cwfilename, R_OK) == 0) {
 	    ok = (load_map_from_file(cwfilename, fixname, level_name) >= 0);
 	    // If the cw extraction fails we don't want to use anything
@@ -215,7 +215,7 @@ create_property_file(char * level_name, char * fixname)
     stop_shared_mmap();
 
     char sharename[256];
-    snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, fixname);
+    saprintf(sharename, LEVEL_PROPS_NAME, fixname);
     if (allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP) < 0) {
 	printf_chat("&WLevel open failed for %s", level_name);
 	return;
@@ -289,17 +289,17 @@ unlink_level(char * levelname, int silent)
 {
     char sharename[256];
 
-    snprintf(sharename, sizeof(sharename), LEVEL_PROPS_NAME, levelname);
+    saprintf(sharename, LEVEL_PROPS_NAME, levelname);
     if (access(sharename, F_OK) == 0)
 	if (unlink(sharename) < 0 && !silent)
 	    perror(sharename);
 
-    snprintf(sharename, sizeof(sharename), LEVEL_BLOCKS_NAME, levelname);
+    saprintf(sharename, LEVEL_BLOCKS_NAME, levelname);
     if (access(sharename, F_OK) == 0)
 	if (unlink(sharename) < 0 && !silent)
 	    perror(sharename);
 
-    snprintf(sharename, sizeof(sharename), LEVEL_QUEUE_NAME, levelname);
+    saprintf(sharename, LEVEL_QUEUE_NAME, levelname);
     if (access(sharename, F_OK) == 0)
 	if (unlink(sharename) < 0 && !silent)
 	    perror(sharename);
@@ -310,8 +310,7 @@ LOCAL void check_level_name(char * levelname)
     if (strchr(levelname, '/') != 0 || levelname[0] == '.'
 	|| strlen(levelname) > MAXLEVELNAMELEN*4) {
 	char buf[256];
-	snprintf(buf, sizeof(buf),
-	    "Illegal level file name \"%.66s\"", levelname);
+	saprintf(buf, "Illegal level file name \"%.66s\"", levelname);
 	fatal(buf);
     }
 }
@@ -326,7 +325,7 @@ create_block_queue(char * levelname)
     char sharename[256];
     int queue_count = MIN_QUEUE;
 
-    snprintf(sharename, sizeof(sharename), LEVEL_QUEUE_NAME, levelname);
+    saprintf(sharename, LEVEL_QUEUE_NAME, levelname);
 
     // First minimum size.
     level_block_queue_len = sizeof(*level_block_queue) + queue_count * sizeof(xyzb_t);

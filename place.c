@@ -221,6 +221,8 @@ process_player_setblock(pkt_setblock pkt)
 {
     if (!level_block_queue || !level_blocks) return; // !!!
 
+    if (!user_authenticated) { revert_client(pkt); return; }
+
     if (player_mark_mode) {
 	int l = sizeof(marks)/sizeof(*marks);
 	int v = 0;

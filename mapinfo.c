@@ -160,6 +160,7 @@ struct blockdef_t {
     uint8_t block_perm;
 
     uint8_t defined;
+    uint8_t no_save; // Use for physics block emulation
 
     // Physics flags
     uint8_t fire_flag;

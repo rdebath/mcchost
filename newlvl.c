@@ -56,7 +56,7 @@ cmd_newlvl(char * cmd, char * arg)
 
     char userlevel[256];
 
-    snprintf(userlevel, sizeof(userlevel), "%s+", user_id);
+    saprintf(userlevel, "%s+", user_id);
     if (strcmp(levelname, "+") == 0 || strcmp(levelname, userlevel) == 0) {
 	levelname = userlevel;
     } else if (!client_trusted) {
@@ -72,7 +72,7 @@ cmd_newlvl(char * cmd, char * arg)
 	printf_chat("&WUnusable level name, try another");
 	return;
     }
-    snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+    saprintf(buf2, LEVEL_CW_NAME, fixedname);
     if (access(buf2, F_OK) == 0) {
 	printf_chat("&WMap '%s' already exists", levelname);
 	return;

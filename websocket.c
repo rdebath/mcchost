@@ -86,7 +86,7 @@ websocket_startup(uint8_t * buf, int buflen)
     sha1digest(sha1_buf, 0, obuf, l);
     base64(key_resp, sha1_buf, 20);
 
-    snprintf(obuf, sizeof(obuf), "%s\r\n%s\r\n%s\r\n%s%s\r\n%s\r\n\r\n",
+    saprintf(obuf, "%s\r\n%s\r\n%s\r\n%s%s\r\n%s\r\n\r\n",
 	"HTTP/1.1 101 Switching Protocols",
 	"Upgrade: websocket",
 	"Connection: Upgrade",

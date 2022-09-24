@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <strings.h>
@@ -57,7 +58,7 @@ cmd_crash(char * UNUSED(cmd), char * arg)
 
     } else if (crash_type) {
 	char cbuf[1024];
-	snprintf(cbuf, sizeof(cbuf), "Server crash! Error code %s", crash_type);
+	saprintf(cbuf, "Server crash! Error code %s", crash_type);
 	fatal(cbuf);
     }
 }

@@ -49,7 +49,7 @@ cmd_help(char * prefix, char *cmdargs)
 	strcpy(helptopic, "help");
     else {
 	while (cmdargs && *cmdargs == ' ') cmdargs++;
-	snprintf(helptopic, sizeof(helptopic),"%s%s%s",
+	saprintf(helptopic,"%s%s%s",
 	    prefix?prefix:"",
 	    !prefix||!cmdargs?"":" ",
 	    cmdargs?cmdargs:"");
@@ -71,7 +71,7 @@ cmd_help(char * prefix, char *cmdargs)
 	*d = 0;
     }
 
-    snprintf(helpbuf, sizeof(helpbuf), "help/%s.txt", helptopic);
+    saprintf(helpbuf, "help/%s.txt", helptopic);
     FILE * hfd = fopen(helpbuf, "r");
     if (hfd) {
 	int ln = 0;

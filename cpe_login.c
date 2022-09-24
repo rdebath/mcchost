@@ -163,7 +163,7 @@ process_extentry(pkt_extentry * pkt)
 
 	if (extensions[i].nolate && !cpe_pending) {
 	    char ebuf[256];
-	    snprintf(ebuf, sizeof(ebuf),
+	    saprintf(ebuf,
 		"Extension \"%s\" cannot be enabled late.",
 		extensions[i].name);
 	    fatal(ebuf);

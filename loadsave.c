@@ -26,9 +26,9 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 
     char tmp_fn[256], map_fn[256], bak_fn[256];
     int cw_ok = 1;
-    snprintf(tmp_fn, sizeof(tmp_fn), LEVEL_TMP_NAME, level_fname);
-    snprintf(map_fn, sizeof(map_fn), LEVEL_CW_NAME, level_fname);
-    snprintf(bak_fn, sizeof(bak_fn), LEVEL_BAK_NAME, level_fname);
+    saprintf(tmp_fn, LEVEL_TMP_NAME, level_fname);
+    saprintf(map_fn, LEVEL_CW_NAME, level_fname);
+    saprintf(bak_fn, LEVEL_BAK_NAME, level_fname);
     if ((cw_ok = (access(map_fn, F_OK) == 0)) && access(map_fn, W_OK) != 0) {
 	// map _file_ is write protected; don't replace.
 	printlog("Discarding changes to %s -- write protected.", level_fname);
@@ -102,7 +102,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 		perror("Rename of bak file to history failed");
 		txok = 0;
 	    } else {
-		snprintf(tmp_fn, sizeof(tmp_fn), "%s/%s.tmp", LEVEL_BACKUP_DIR_NAME, level_fname);
+		saprintf(tmp_fn, "%s/%s.tmp", LEVEL_BACKUP_DIR_NAME, level_fname);
 
 		FILE *ifd, *ofd;
 		ifd = fopen(bak_fn, "r");
@@ -314,7 +314,7 @@ scan_and_save_levels(int unlink_only)
 		if (shdat.client->levels[lvid].backup_id>0) {
 		    char fixedname2[MAXLEVELNAMELEN*4];
 		    strcpy(fixedname2, fixedname);
-		    snprintf(fixedname, sizeof(fixedname), "%s.%d",
+		    saprintf(fixedname, "%s.%d",
 			fixedname2, backup_id);
 		}
 
@@ -324,7 +324,7 @@ scan_and_save_levels(int unlink_only)
 		    // We known nobody may have the level lock and we have the system
 		    // lock, so it's safe to delete the pthread mutex file too.
 		    char sharename[256];
-		    snprintf(sharename, sizeof(sharename), LEVEL_LOCK_NAME, fixedname);
+		    saprintf(sharename, LEVEL_LOCK_NAME, fixedname);
 		    (void)unlink(sharename);
 		}
 

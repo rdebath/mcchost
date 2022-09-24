@@ -45,7 +45,7 @@ cmd_iload(char * cmd, char * arg)
     int ro = level_prop->readonly;
     char fixedname[200], buf[256];
     fix_fname(fixedname, sizeof(fixedname), arg);
-    snprintf(buf, sizeof(buf), "ini/%s.ini", fixedname);
+    saprintf(buf, "ini/%s.ini", fixedname);
 
     lock_fn(level_lock);
     int rv = load_ini_file(level_ini_fields, buf, 0, 1);
@@ -72,7 +72,7 @@ cmd_isave(char * cmd, char * arg)
 
     char fixedname[200], buf2[256];
     fix_fname(fixedname, sizeof(fixedname), arg);
-    snprintf(buf2, sizeof(buf2), "ini/%s.ini", fixedname);
+    saprintf(buf2, "ini/%s.ini", fixedname);
 
     if (access(buf2, F_OK) == 0) {
 	printf_chat("#&WConfig file %s not overwritten", buf2);
@@ -92,7 +92,7 @@ cmd_ishow(char * cmd, char * arg)
 
     char fixedname[200], buf2[256];
     fix_fname(fixedname, sizeof(fixedname), arg);
-    snprintf(buf2, sizeof(buf2), "ini/%s.ini", fixedname);
+    saprintf(buf2, "ini/%s.ini", fixedname);
 
     if (access(buf2, F_OK) != 0) {
         printf_chat("#&WConfig file %s does not exist", buf2);

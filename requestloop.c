@@ -47,7 +47,7 @@ bytes_queued_to_send()
     return ttl_start != ttl_end;
 }
 
-void write_to_remote(char * str, int len)
+void write_to_remote(uint8_t * str, int len)
 {
     char wbuf[16];
 
@@ -434,6 +434,7 @@ process_client_message(int cmd, char * pktbuf)
 	break;
 
     case PKID_PLAYERCLK:
+	if (user_authenticated) // Maybe move to process_* function.
 	{
 	    char * p = pktbuf+1;
 	    pkt_playerclick pkt;

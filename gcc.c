@@ -25,4 +25,11 @@
 #define STDATOMIC
 #endif
 
+#if defined(__GNUC__)
+// How can I concisely tell this compiler that truncation is the whole damn point!
+#define saprintf(array, ...) (void)(snprintf(array, sizeof(array), __VA_ARGS__)?({asm("");}):0)
+#else
+#define saprintf(array, ...) (void)snprintf(array, sizeof(array), __VA_ARGS__)
+#endif
+
 #endif /*INTERFACE*/

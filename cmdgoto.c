@@ -45,7 +45,7 @@ cmd_goto(char * cmd, char * arg)
 	arg[l-1] = 0;
 	arg++;
 	fix_fname(fixedname, sizeof(fixedname), arg);
-	snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+	saprintf(buf2, LEVEL_CW_NAME, fixedname);
 	if (access(buf2, F_OK) != 0) {
 	    printf_chat("&SLevel \"%s\" does not exist", arg);
 	    return;
@@ -54,9 +54,9 @@ cmd_goto(char * cmd, char * arg)
 	choose_random_level(fixedname, sizeof(fixedname));
     } else if (strcasecmp(arg, "+") == 0 || strcasecmp(arg, "-") == 0) {
 	char userlevel[256];
-	snprintf(userlevel, sizeof(userlevel), "%.60s+", user_id);
+	saprintf(userlevel, "%.60s+", user_id);
 	fix_fname(fixedname, sizeof(fixedname), userlevel);
-	snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+	saprintf(buf2, LEVEL_CW_NAME, fixedname);
 	if (access(buf2, F_OK) != 0) {
 	    printf_chat("&SYour Level \"%s\" does not exist, use /newlvl to created it", userlevel);
 	    return;
@@ -65,12 +65,12 @@ cmd_goto(char * cmd, char * arg)
     } else {
 	fix_fname(fixedname, sizeof(fixedname), arg);
 
-	snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+	saprintf(buf2, LEVEL_CW_NAME, fixedname);
 	if (access(buf2, F_OK) != 0) {
 	    char * newfixed = find_file_match(fixedname, arg);
 
 	    if (newfixed != 0) {
-		snprintf(fixedname, sizeof(fixedname), "%s", newfixed);
+		saprintf(fixedname, "%s", newfixed);
 		free(newfixed);
 	    }
 	    else return;
@@ -168,7 +168,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 	    return 0;
 	}
 
-        snprintf(buf2, sizeof(buf2), LEVEL_CW_NAME, fixedname);
+        saprintf(buf2, LEVEL_CW_NAME, fixedname);
         if (access(buf2, F_OK) != 0) {
             printf_chat("&SLevel \"%s\" does not exist", level);
             return 0;
@@ -176,7 +176,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 
     } else if (backup_id > 0) {
 
-	snprintf(buf2, sizeof(buf2), LEVEL_BACKUP_NAME, fixedname, backup_id);
+	saprintf(buf2, LEVEL_BACKUP_NAME, fixedname, backup_id);
 	if (access(buf2, F_OK) != 0){
 	    fprintf_logfile("Backup file \"%s\" does not exist.", buf2);
 	    printf_chat("&SBackup %d for level %s does not exist", backup_id, level);
@@ -199,7 +199,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
     if (backup_id) {
 	char fixedname2[MAXLEVELNAMELEN*4];
 	strcpy(fixedname2, fixedname);
-	snprintf(fixedname, sizeof(fixedname), "%s.%d", fixedname2, backup_id);
+	saprintf(fixedname, "%s.%d", fixedname2, backup_id);
     }
 
     stop_shared();

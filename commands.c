@@ -37,6 +37,14 @@ run_command(char * msg)
     char * cmd = strtok(msg+1, " ");
     if (cmd == 0) return;
     if (strcasecmp(cmd, "womid") == 0) { player_last_move = time(0); return; }
+    if (!user_authenticated) {
+	if (strcasecmp(cmd, "pass") != 0 && strcasecmp(cmd, "setpass") != 0 &&
+	    strcasecmp(cmd, "quit") != 0 && strcasecmp(cmd, "rq") != 0)
+	{
+	    printf_chat("You must verify using &T/pass [pass]&S first (or &T/rq&S)");
+	    return;
+	}
+    }
 
     for(int i = 0; command_list[i].name; i++) {
 	if (strcasecmp(cmd, command_list[i].name) == 0) {
@@ -88,7 +96,7 @@ cmd_quit(char * cmd, char * arg)
 
     if (arg) {
 	char buf[256];
-	snprintf(buf, sizeof(buf), "Left the game: %s", arg);
+	saprintf(buf, "Left the game: %s", arg);
 	logout(buf);
     } else
 	logout("Left the game.");
