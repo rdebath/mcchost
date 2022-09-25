@@ -6,6 +6,98 @@
 
 #include "args.h"
 
+#if INTERFACE
+#include <time.h>
+
+#define SWNAME "MCCHost"
+
+// These settings are shared between the servers, they cannot be
+// different for different ports. But they get set immediatly they
+// are changed by the user.
+typedef struct server_t server_t;
+struct server_t {
+    int magic;
+    char software[NB_SLEN];
+    char name[NB_SLEN];
+    char motd[MB_STRLEN*2+1];
+    char main_level[NB_SLEN];
+
+    char secret[NB_SLEN];
+    time_t key_rotation;
+
+    time_t save_interval;
+    time_t backup_interval;
+
+    int op_flag;
+    int cpe_disabled;
+    int private;
+
+    int max_players;
+    int loaded_levels;
+    int connected_sessions;
+
+    time_t last_heartbeat;
+    time_t last_backup;
+    time_t last_unload;
+    int last_heartbeat_port;
+
+    time_t afk_interval;
+    time_t afk_kick_interval;
+
+    int flag_log_commands;
+    int flag_log_chat;
+
+    int player_update_ms;
+
+    struct server_ini_t shared_ini_settings;
+    int magic2;
+};
+
+// These settings are per port or per process settings, however,
+// they can only be changed when the listener process restarts.
+typedef struct server_ini_t server_ini_t;
+struct server_ini_t {
+    int use_port_specific_file;
+
+    int tcp_port_no;
+    int server_runonce;
+    int start_tcp_server;
+    int inetd_mode;
+    int detach_tcp_server;
+
+    int enable_heartbeat_poll;
+    char heartbeat_url[1024];
+    char user_id_suffix[NB_SLEN];
+    int use_http_post;
+
+    int disallow_ip_verify;
+    int allow_pass_verify;
+
+    int trusted_localnet;
+    char localnet_cidr[64];
+};
+#endif
+
+// Shared settings, stored in memory shared between all processes
+server_t *server = 0;
+// Per server settings, not shared across instance
+// Commandline overrides this
+server_ini_t server_ini_settings = {0};
+server_ini_t * ini_settings = &server_ini_settings;
+
+// GBL for above shared ram
+filelock_t system_lock[1] = {{.name = SYS_LOCK_NAME}};
+
+// Copied from ini_settings
+int start_tcp_server = 0;
+int detach_tcp_server = 0;
+int log_to_stderr = 0;
+int tcp_port_no = 25565;
+int enable_heartbeat_poll = 1;
+int server_runonce = 0;
+
+int save_conf = 0;
+char program_name[512];
 char ** program_args = 0;
 int proc_self_exe_ok = 0;
 char * proc_self_exe = 0;
@@ -38,6 +130,13 @@ process_args(int argc, char **argv)
 
 	    int addarg = 1;
 	    do {
+		if (strcmp(argv[ar], "-help") == 0 ||
+		    strcmp(argv[ar], "-h") == 0 ||
+		    strcmp(argv[ar], "--help") == 0) {
+		    show_args_help();
+		    exit(0);
+		}
+
 		if (ar+1 < argc) {
 		    if (strcmp(argv[ar], "-name") == 0) {
 			char cbuf[NB_SLEN*4];
@@ -65,7 +164,7 @@ process_args(int argc, char **argv)
 		    }
 
 		    if (strcmp(argv[ar], "-heartbeat") == 0) {
-			strncpy(heartbeat_url, argv[ar+1], sizeof(heartbeat_url)-1);
+			strncpy(ini_settings->heartbeat_url, argv[ar+1], sizeof(ini_settings->heartbeat_url)-1);
 			ar++; addarg++;
 			enable_heartbeat_poll = 1;
 			break;
@@ -231,10 +330,13 @@ process_args(int argc, char **argv)
 		};
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);
+	    server_ini_settings = server->shared_ini_settings;
+	    ini_settings = &server->shared_ini_settings;
 
 	    // If set, use server.ini over program default.
-	    if (ini_settings.tcp_port_no > 0 && ini_settings.tcp_port_no <= 65535)
-		tcp_port_no = ini_settings.tcp_port_no;
+	    if (server->shared_ini_settings.tcp_port_no > 0 &&
+		    server->shared_ini_settings.tcp_port_no <= 65535)
+		tcp_port_no = server->shared_ini_settings.tcp_port_no;
 
 	    // Argument overrides even on first pass.
 	    if (port_no > 0 && port_no <= 65535)
@@ -249,21 +351,25 @@ process_args(int argc, char **argv)
 	    if (tcp_port_no > 0 && tcp_port_no <= 65535 && !save_conf) {
 		char buf[256];
 		saprintf(buf, SERVER_CONF_PORT, tcp_port_no);
-		load_ini_file(system_ini_fields, buf, 1, 0);
+		if (access(buf, F_OK) == 0) {
+		    load_ini_file(system_x_ini_fields, buf, 1, 0);
+		    server_ini_settings.use_port_specific_file = 1;
+		    ini_settings = &server_ini_settings;
+		}
 
 		// Don't let this override!
-		ini_settings.tcp_port_no = tcp_port_no;
+		ini_settings->tcp_port_no = tcp_port_no;
 	    }
 
 	    // These will be overridden on second pass.
-	    start_tcp_server = ini_settings.start_tcp_server;
-	    tcp_port_no = ini_settings.tcp_port_no;
-	    detach_tcp_server = ini_settings.detach_tcp_server;
-	    enable_heartbeat_poll = ini_settings.enable_heartbeat_poll;
-	    server_runonce = ini_settings.server_runonce;
-	    if (*ini_settings.heartbeat_url)
-		strcpy(heartbeat_url, ini_settings.heartbeat_url);
-	    // inetd_mode = ini_settings.inetd_mode;
+	    start_tcp_server = ini_settings->start_tcp_server;
+	    tcp_port_no = ini_settings->tcp_port_no;
+	    detach_tcp_server = ini_settings->detach_tcp_server;
+	    enable_heartbeat_poll = ini_settings->enable_heartbeat_poll;
+
+	    // Only reasonable from command line
+	    // inetd_mode = ini_settings->inetd_mode;
+	    // server_runonce = ini_settings->server_runonce;
 	}
     }
 
@@ -316,4 +422,43 @@ getprogram(char * argv0)
     // Last try, assume the PATH will get fixed sometime.
     char * p = strrchr(argv0, '/');
     program_args[0] = p?strdup(p+1):strdup("");
+}
+
+void
+save_system_ini_file()
+{
+    ini_settings->start_tcp_server = start_tcp_server;
+    ini_settings->tcp_port_no = tcp_port_no;
+    ini_settings->enable_heartbeat_poll = enable_heartbeat_poll;
+    ini_settings->server_runonce = server_runonce;
+
+    // Only change these if we are specifically saving the config.
+    if (save_conf) {
+	// This will be overridded when the server is restarted.
+	ini_settings->detach_tcp_server = detach_tcp_server;
+    }
+
+    // Only reasonable from command line
+    // inetd_mode = ini_settings->inetd_mode;
+    // server_runonce = ini_settings->server_runonce;
+
+    char buf[256];
+    saprintf(buf, SERVER_CONF_TMP, getpid());
+    if (save_ini_file(system_ini_fields, buf, SERVER_CONF_NAME) >= 0) {
+        if (rename(buf, SERVER_CONF_NAME) < 0)
+            perror("rename server.ini");
+    }
+    unlink(buf);
+
+    if (ini_settings->use_port_specific_file) {
+	char buf[256];
+	saprintf(buf, SERVER_CONF_PORT, tcp_port_no);
+	char tbuf[256];
+	saprintf(tbuf, SERVER_CONF_TMP, getpid());
+
+	if (save_ini_file(system_x_ini_fields, tbuf, buf) >= 0) {
+	    if (rename(tbuf, buf) < 0)
+		perror("rename server.$port.ini");
+	}
+    }
 }

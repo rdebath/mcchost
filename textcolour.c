@@ -80,14 +80,7 @@ cmd_textcolour(char * cmd, char *arg)
 	return cmd_help("", cmd);
 
     send_textcolours();
-
-    char buf[256];
-    saprintf(buf, SERVER_CONF_TMP, getpid());
-    if (save_ini_file(system_ini_fields, buf, SERVER_CONF_NAME) >= 0) {
-	if (rename(buf, SERVER_CONF_NAME) < 0)
-	    perror("rename server.ini");
-    }
-    unlink(buf);
+    save_system_ini_file();
 }
 
 void

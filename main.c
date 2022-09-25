@@ -13,76 +13,6 @@
 
 #include "main.h"
 
-#if INTERFACE
-#include <time.h>
-
-#define SWNAME "MCCHost"
-
-// These settings are shared between the servers, they cannot be
-// different for different ports. But they get set immediatly they
-// are changed by the user.
-typedef struct server_t server_t;
-struct server_t {
-    int magic;
-    char software[NB_SLEN];
-    char name[NB_SLEN];
-    char motd[MB_STRLEN*2+1];
-    char main_level[NB_SLEN];
-
-    char secret[NB_SLEN];
-    time_t key_rotation;
-
-    time_t save_interval;
-    time_t backup_interval;
-
-    int op_flag;
-    int cpe_disabled;
-    int private;
-
-    int max_players;
-    int loaded_levels;
-    int connected_sessions;
-
-    time_t last_heartbeat;
-    time_t last_backup;
-    time_t last_unload;
-    int last_heartbeat_port;
-
-    time_t afk_interval;
-    time_t afk_kick_interval;
-
-    int flag_log_commands;
-    int flag_log_chat;
-
-    int player_update_ms;
-
-    int magic2;
-};
-
-// These settings are per port or per process settings, however,
-// they can only be changed when the listener process restarts.
-typedef struct server_ini_t server_ini_t;
-struct server_ini_t {
-
-    int tcp_port_no;
-    int server_runonce;
-    int start_tcp_server;
-    int inetd_mode;
-    int detach_tcp_server;
-
-    int enable_heartbeat_poll;
-    char heartbeat_url[1024];
-    char user_id_suffix[NB_SLEN];
-    int use_http_post;
-
-    int allow_ip_verify;
-    int allow_pass_verify;
-
-    int trusted_localnet;
-    char localnet_cidr[64];
-};
-#endif
-
 int line_ofd = -1;
 int line_ifd = -1;
 
@@ -93,25 +23,13 @@ int inetd_mode = 0;
 int start_heartbeat_task = 0;
 int start_backup_task = 0;
 
-char program_name[512];
-
-filelock_t system_lock[1] = {{.name = SYS_LOCK_NAME}};
-server_t *server = 0;
-
 nbtstr_t client_software;
 
 char current_level_name[MAXLEVELNAMELEN+1];
 char current_level_fname[MAXLEVELNAMELEN*4];
 int current_level_backup_id = 0;
 
-char heartbeat_url[1024] = "https://www.classicube.net/server/heartbeat/";
 char logfile_pattern[1024] = "";
-int server_runonce = 0;
-int save_conf = 0;
-
-// Per server settings, not shared across instance
-// Commandline overrides this
-server_ini_t ini_settings = {.allow_ip_verify=1};
 
 int op_enabled = 0;	// Op flag was set for this session
 int cpe_enabled = 0;	// Set if this session is using CPE
@@ -148,15 +66,7 @@ main(int argc, char **argv)
 	set_logfile(logfile_pattern, 0);
 
     if (save_conf) {
-        ini_settings.start_tcp_server = start_tcp_server;
-        ini_settings.tcp_port_no = tcp_port_no;
-        ini_settings.inetd_mode = 0;
-        ini_settings.detach_tcp_server = detach_tcp_server;
-        ini_settings.enable_heartbeat_poll = enable_heartbeat_poll;
-        ini_settings.server_runonce = server_runonce;
-        strcpy(ini_settings.heartbeat_url, heartbeat_url);
-
-	save_ini_file(system_ini_fields, SERVER_CONF_NAME, 0);
+	save_system_ini_file();
 	fprintf(stderr, "Configuration saved\n");
 	exit(0);
     }
@@ -226,7 +136,8 @@ process_connection()
     user_logged_in = 1; // May not be "authenticated", but they exist.
 
     // If in classic mode, don't allow place of bedrock.
-    op_enabled = (server->op_flag && cpe_requested);
+    // But also Classic v7 protocol for c0.28_01 does not support op packet.
+    op_enabled = (server->op_flag && protocol_base_version == 7 && cpe_requested);
 
     if (cpe_requested && !server->cpe_disabled) {
 	send_ext_list();
@@ -364,7 +275,8 @@ show_args_help()
     fprintf(f, "             (The default is ~/.mcchost.)\n\n");
 
     fprintf(f, "  -tcp       Open a tcp socket for listening, no default secret.\n");
-    fprintf(f, "  -net       Open a socket, register the secret at:\n%16s%s\n", "", heartbeat_url);
+    fprintf(f, "  -net       Open a socket, register the secret at:\n%16s%s\n",
+	    "", "https://www.classicube.net");
     fprintf(f, "  -port X    Set port number listened to.\n\n");
     fprintf(f, "  -inetd     Assume socket is stdin/out from inetd or similar\n");
     fprintf(f, "  -detach    Background self, eg if starting from command line.\n");
@@ -494,7 +406,7 @@ login()
     if (websocket) websocket = 1; // Reset for requestloop.
 
     convert_logon_packet(inbuf, &player);
-    saprintf(user_id, "%s%s", player.user_id, ini_settings.user_id_suffix);
+    saprintf(user_id, "%s%s", player.user_id, ini_settings->user_id_suffix);
     protocol_base_version = player.protocol;
 
     if (player.protocol > 7 || player.protocol < 5)
@@ -521,16 +433,19 @@ login()
 
     cpe_requested = player.cpe_flag;
 
-    if (client_ipv4_port)
-	printlog("Logging in%s user '%s' from %s",
-	    cpe_requested&&!server->cpe_disabled?"":" classic", user_id,
-	    client_ipv4_str);
-    else
+    if (client_ipv4_port) {
+	char proto[30] = "";
+	if (protocol_base_version != 7)
+	    sprintf(proto, " (protocol %d)", player.protocol);
+	printlog("Logging in%s user%s '%s' from %s",
+	    cpe_requested&&!server->cpe_disabled?"":" classic",
+	    proto, user_id, client_ipv4_str);
+    } else
 	printlog("Logging in%s user '%s'",
 	    cpe_requested&&!server->cpe_disabled?"":" classic", user_id);
 
     if (*server->secret != 0 && *server->secret != '-') {
-	if (!client_trusted && !ini_settings.allow_pass_verify &&
+	if (!client_trusted && !ini_settings->allow_pass_verify &&
 		strlen(player.mppass) != 32 &&
 		strcmp(player.mppass, server->secret) != 0)
 	    disconnect(0, "Login failed! Mppass required");
@@ -540,7 +455,7 @@ login()
     if (strlen(user_id) > 16)
 	disconnect(0, "Usernames must be between 1 and 16 characters");
 
-    if (client_trusted && ini_settings.allow_ip_verify && (!*player.mppass
+    if (client_trusted && !ini_settings->disallow_ip_verify && (!*player.mppass
 			|| strcmp("-", player.mppass) == 0
 			|| strncmp("00000000000000000000000000000000", player.mppass, strlen(player.mppass)) == 0
 			|| strcmp("(none)", player.mppass) == 0))
@@ -551,7 +466,7 @@ login()
     } else if (*server->secret != 0 && *server->secret != '-') {
 	// There's an attempted mppass or we require one.
 	if (check_mppass(player.user_id, player.mppass) == 0) {
-	    if (!ini_settings.allow_pass_verify)
+	    if (!ini_settings->allow_pass_verify)
 		disconnect(0, "Login failed! Close the game and refresh the server list.");
 	    else
 		printlog("User %s failed with mppass \"%s\", try /pass", user_id, player.mppass);

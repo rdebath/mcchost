@@ -55,8 +55,14 @@ run_command(char * msg)
 
 	    cmd = command_list[c].name;
 	    char * arg = strtok(0, "");
-	    if (server->flag_log_commands)
-		fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
+	    if (server->flag_log_commands) {
+		int redact_args = (!strcasecmp(cmd, "pass") ||
+				   !strcasecmp(cmd, "setpass"));
+		if (redact_args)
+		    fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?"<redacted>":"");
+		else
+		    fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
+	    }
 	    update_player_move_time();
 	    command_list[c].function(cmd, arg);
 	    return;

@@ -153,7 +153,7 @@ cmd_setvar(char * cmd, char * arg)
 	    return;
 	}
 
-	save_server_ini_file();
+	save_system_ini_file();
 
 	// Send heartbeat immediatly.
 	if (!strcasecmp("private", varname)) {
@@ -209,16 +209,4 @@ cmd_restart(char * UNUSED(cmd), char * UNUSED(arg))
 	printf_chat("&SNo listener process exists for this session");
     else
 	printf_chat("&WListener process not found");
-}
-
-void
-save_server_ini_file()
-{
-    char buf[256];
-    saprintf(buf, SERVER_CONF_TMP, getpid());
-    if (save_ini_file(system_ini_fields, buf, SERVER_CONF_NAME) >= 0) {
-	if (rename(buf, SERVER_CONF_NAME) < 0)
-	    perror("rename server.ini");
-    }
-    unlink(buf);
 }

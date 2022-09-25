@@ -27,16 +27,10 @@
 #define WCOREDUMP_X(X) 0
 #endif
 
-int start_tcp_server = 0;
-int detach_tcp_server = 0;
-int log_to_stderr = 0;
-int tcp_port_no = 25565;
 int listen_socket = -1;
 int logger_pid = 0;
 int heartbeat_pid = 0;
 int backup_pid = 0;
-
-int enable_heartbeat_poll = 1;
 time_t last_heartbeat = 0;
 
 char client_ipv4_str[INET_ADDRSTRLEN+10];

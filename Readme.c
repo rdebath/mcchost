@@ -6,27 +6,20 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Fix "will create directories before erroring on arguments".
+
  +) Option AllowUserLevel
 
- +) If we loaded a port specific file we should not save override server.ini
-    -- Does this mean I want to merge port specific data into server.ini ?
-
  +) Move "salt" to it's own file?
-    -- Perms set to 0600
+    -- Put in secret/ directory? (with 0600)
     -- Option for not saving salt to file
-    -- secret/ directory for this and user passwd?
     -- Option for file location ?
-    -- Make salt sent to server 2*base62 uint64_t
-
- +) Add /pass (and /setpass) for betacraft.
-    -- They don't have a login server.
-    -- Should I use HMAC (too) for password hashing; where to store secret?
-    -- /setpass should only write file if pass is different.
 
  +) How to define default map theme and size.
     -- From model.ini ?
     -- If model.ini how to default seed.
     -- Copy model.cw for default newlvl ?
+    -- If theme needs seed use mtime of file as default?
 
  +) curl https://ipapi.co/40.89.244.232/utc_offset
     -- user.utc_offset & user.utc_user_offset
@@ -59,8 +52,6 @@ See "/help todo" for notes.
  +) VelocityControl -- Change movement now; /slap ?
  +) CustomParticles -- Make sparkles
  +) CustomModels -- Weird bots etc.
-
- +) Move more global variables into ini_settings structure.
 
  +) Record data rates for server bytes/s I/O
 

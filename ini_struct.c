@@ -50,6 +50,7 @@ Character set of file is UTF8
 #define WC2(_c, _x) (st->write && (_c)) ?"":_x
 
 userrec_t * user_ini_tgt = 0;
+server_ini_t * server_ini_tgt = 0;
 
 int
 system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
@@ -78,20 +79,9 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	if (st->write) fprintf(st->fd, "\n");
 
-	INI_BOOLVAL("tcp", ini_settings.start_tcp_server);
-	INI_INTVAL("Port", ini_settings.tcp_port_no);
-	INI_BOOLVAL("Runonce", ini_settings.server_runonce);
-	INI_BOOLVAL("Inetd", ini_settings.inetd_mode);
-	INI_BOOLVAL("Detach", ini_settings.detach_tcp_server);
-
-	INI_STRARRAY("Heartbeat", ini_settings.heartbeat_url);
-	INI_BOOLVAL("PollHeartbeat", ini_settings.enable_heartbeat_poll);
-	INI_BOOLVAL("UseHttpPost", ini_settings.use_http_post);
-	INI_STRARRAY("UserSuffix", ini_settings.user_id_suffix);
-	INI_BOOLVAL("AllowIPVerify", ini_settings.allow_ip_verify);
-	INI_BOOLVAL("AllowPassVerify", ini_settings.allow_pass_verify);
-
-	if (st->write) fprintf(st->fd, "\n");
+	server_ini_tgt = &server->shared_ini_settings;
+	found |= system_x_ini_fields(st, fieldname, fieldvalue);
+	server_ini_tgt = 0;
 
 	INI_INTVAL("MaxPlayers", server->max_players);
 	INI_STRARRAY(WC2(!*localnet_cidr, "Localnet"), localnet_cidr);
@@ -150,6 +140,43 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	tn++;
     } while(st->all && tn < 256);
 
+    return found;
+}
+
+int
+system_x_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
+{
+    char *section = "", *fld;
+    int found = 0;
+    int zero_tgt = 0;
+
+    if (server_ini_tgt == 0) {
+	zero_tgt = 1;
+	server_ini_tgt = &server_ini_settings;
+    }
+
+    section = "server";
+    if (st->all || strcmp(section, st->curr_section) == 0)
+    {
+	INI_BOOLVAL("tcp", server_ini_tgt->start_tcp_server);
+	INI_INTVAL("Port", server_ini_tgt->tcp_port_no);
+	INI_BOOLVAL("Detach", server_ini_tgt->detach_tcp_server);
+
+	INI_STRARRAY("Heartbeat", server_ini_tgt->heartbeat_url);
+	INI_BOOLVAL("PollHeartbeat", server_ini_tgt->enable_heartbeat_poll);
+	INI_BOOLVAL("UseHttpPost", server_ini_tgt->use_http_post);
+	INI_STRARRAY("UserSuffix", server_ini_tgt->user_id_suffix);
+	INI_BOOLVAL("DisallowIPVerify", server_ini_tgt->disallow_ip_verify);
+	INI_BOOLVAL("AllowPassVerify", server_ini_tgt->allow_pass_verify);
+
+	// Do not store in ini file
+	// INI_BOOLVAL("Runonce", server_ini_tgt->server_runonce);
+	// INI_BOOLVAL("Inetd", server_ini_tgt->inetd_mode);
+
+	if (st->write) fprintf(st->fd, "\n");
+    }
+
+    if (zero_tgt) server_ini_tgt = 0;
     return found;
 }
 
@@ -442,7 +469,7 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet, int no_unsafe)
 
     char ibuf[BUFSIZ];
     while(fgets(ibuf, sizeof(ibuf), ifd)) {
-	if (load_ini_line(&st, filetype, ibuf) == 0) { rv = -1; break; }
+	if (load_ini_line(&st, filetype, ibuf) == 0) { rv = -1; if(!quiet) break; }
     }
 
     fclose(ifd);

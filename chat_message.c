@@ -45,6 +45,7 @@ process_chat_message(int message_type, char * msg)
 
     if (!user_authenticated && msg[0] != '/') {
 	printf_chat("You must verify using &T/pass [pass]&S first");
+	log_chat_message(msg, strlen(msg), 0, 0, -1);
 	return;
     }
 

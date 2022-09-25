@@ -324,7 +324,7 @@ send_discon_msg_pkt(char * message)
 void
 send_op_pkt(int opflg)
 {
-    if (protocol_base_version < 7) return;
+    if (!op_enabled) return;
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_OPER;

@@ -300,6 +300,16 @@ process_client_message(int cmd, char * pktbuf)
     if (!cpe_enabled && cmd > PKID_OPER)
 	logout("Unexpected packet type received");
 
+#if 0
+    if (!cpe_enabled) {
+	fprintf_logfile("Packet %d (process_client_message)", cmd);
+	for(int i = 0; i<msglen[cmd]; i++) {
+	    hex_logfile(pktbuf[i] & 0xFF);
+	}
+	hex_logfile(EOF);
+    }
+#endif
+
     switch(cmd)
     {
     case PKID_SETBLOCK:

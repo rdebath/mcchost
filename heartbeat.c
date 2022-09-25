@@ -56,7 +56,14 @@ send_heartbeat_poll()
 	return;
     }
 
-    char cmdbuf[4096];
+    char heartbeat_url[1024];
+    if (ini_settings->heartbeat_url[0] == 0)
+	strcpy(heartbeat_url, "https://www.classicube.net/server/heartbeat/");
+    else
+	strcpy(heartbeat_url, ini_settings->heartbeat_url);
+
+    char urlbuf[4096] = "";
+    char postbuf[4096] = "";
     char namebuf[256];
     char softwarebuf[256];
     char secretbuf[NB_SLEN];
@@ -89,8 +96,8 @@ send_heartbeat_poll()
     //  └┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀
     //  αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ 
 
-    if (!ini_settings.use_http_post)
-	saprintf(cmdbuf,
+    if (!ini_settings->use_http_post)
+	saprintf(urlbuf,
 	    "%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s&%s%s",
 	    heartbeat_url,
 	    "port=",tcp_port_no,
@@ -104,7 +111,7 @@ send_heartbeat_poll()
 	    "web=","True"
 	    );
     else
-	saprintf(cmdbuf,
+	saprintf(postbuf,
 	    "&%s%d&%s%d&%s%s&%s%s&%s%d&%s%s&%s%d&%s%s&%s%s",
 	    "port=",tcp_port_no,
 	    "max=",server->max_players,
@@ -126,10 +133,10 @@ send_heartbeat_poll()
 	char dumpbuf[256];
 	sprintf(dumpbuf, "log/curl-%d-h.txt", tcp_port_no);
 
-	if (!ini_settings.use_http_post) {
+	if (!ini_settings->use_http_post) {
 	    FILE * fd = fopen(cmdfilebuf, "w");
 	    if (fd) {
-		fprintf(fd, "curl ... %s\n", cmdbuf);
+		fprintf(fd, "curl ... %s\n", urlbuf);
 		fclose(fd);
 	    }
 
@@ -142,7 +149,7 @@ send_heartbeat_poll()
 		    "--http0.9",
 		    "-o", logbuf,
 		    "-D", dumpbuf,
-		    cmdbuf,
+		    urlbuf,
 		    (char*)0) < 0)
 		perror("execlp(\"curl\"...)");
 
@@ -154,7 +161,7 @@ send_heartbeat_poll()
 	    FILE * fd = fopen(cmdfilebuf, "w");
 	    if (fd) {
 		fprintf(fd, "curl ...\\\n  --data-binary %s \\\n  %s\n",
-		    cmdbuf, heartbeat_url);
+		    postbuf, heartbeat_url);
 		fclose(fd);
 	    }
 
@@ -168,8 +175,8 @@ send_heartbeat_poll()
 		    "-o", logbuf,
 		    "-D", dumpbuf,
 		    "-H", "Accept:",
-		    "-H", "User-Agent:"
-		    "--data-binary", cmdbuf,
+		    "-H", "User-Agent:",
+		    "--data-binary", postbuf,
 		    heartbeat_url,
 		    (char*)0) < 0)
 		perror("execlp(\"curl\"...)");
