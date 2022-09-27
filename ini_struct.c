@@ -100,6 +100,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_DURATION("AFKInterval", server->afk_interval);
 	INI_DURATION("AFKKickInterval", server->afk_kick_interval);
+	INI_BOOLVAL("AllowUserLevels", server->allow_user_levels);
 	INI_INTVAL("PlayerUpdateMS", server->player_update_ms);
 
     }

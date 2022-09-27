@@ -9,6 +9,12 @@
 
 #include "cmdcrash.h"
 
+// I expect some people won't like that this does _real_ crashes,
+// so if you -DFAKECRASH it becomes just another exit command.
+// Except the 646 one, which crashes the _client_.
+//
+// If you don't like that either, delete this file.
+
 /*HELP crash H_CMD
 &T/crash
 Crash the server, default is a fatal() error.
@@ -19,7 +25,7 @@ Crash the server, default is a fatal() error.
 &T/crash 646&S Client crash for Java 0.30
 */
 #if INTERFACE
-#define CMD_ZCRASH \
+#define CMD_CRASH \
     {N"crash", &cmd_crash }, {N"servercrash", &cmd_quit, .dup=1}
 #endif
 
@@ -32,17 +38,10 @@ cmd_crash(char * UNUSED(cmd), char * arg)
 
     char * crash_type = arg;
     if (!crash_type) return cmd_help(0, "crash");
-    assert(strcmp(crash_type, "666"));
 
-    if (crash_type && strcmp(crash_type, "696") == 0)
-	kill(getpid(), SIGKILL);
-    else if (strcmp(crash_type, "616") == 0)
-	exit(EXIT_FAILURE);
-    else if (strcmp(crash_type, "606") == 0)
-	printf_chat("Value should fail %d", *crash_ptr);
-    else if (strcmp(crash_type, "646") == 0) {
+    if (strcmp(crash_type, "646") == 0) {
 	if (cpe_enabled)
-	    return printf_chat("You have CPE enabled, 646 should be fixed.");
+	    return printf_chat("You have CPE enabled, 646 is fixed.");
 
 	uint8_t packetbuf[128];
 	uint8_t *p = packetbuf;
@@ -54,11 +53,45 @@ cmd_crash(char * UNUSED(cmd), char * arg)
 	write_to_remote(packetbuf, p-packetbuf);
 	flush_to_remote();
 
-	printf_chat("If you see this it didn't crash");
+	return printf_chat("If you see this it didn't crash");
+    }
 
-    } else if (crash_type) {
+#ifdef FAKECRASH
+    char * emsg = 0;
+    if (strcmp(crash_type, "666") == 0) {
+	emsg = "kicked by signal Aborted (6) (core dumped)";
+    } else if (strcmp(crash_type, "606") == 0) {
+	emsg = "kicked by signal Segmentation fault (11) (core dumped)";
+    } else if (strcmp(crash_type, "696") == 0) {
+	emsg = "kicked by signal Killed (9)";
+    } else if (strcmp(crash_type, "616") == 0) {
+	emsg = "kicked by panic with exit status 1";
+    }
+    if (emsg) {
+	printf_chat("@&W- &7%s &W%s", user_id, emsg);
+	stop_user();
+	exit(0);
+    }
+    if (crash_type) {
+	char cbuf[1024];
+	saprintf(cbuf, "Server crash! Error code %s", crash_type);
+	crashed(cbuf);
+    }
+#else
+    assert(strcmp(crash_type, "666"));
+
+    if (crash_type && strcmp(crash_type, "696") == 0)
+	kill(getpid(), SIGKILL);
+    else if (strcmp(crash_type, "616") == 0)
+	exit(EXIT_FAILURE);
+    else if (strcmp(crash_type, "606") == 0)
+	printf_chat("Value should fail %d", *crash_ptr);
+    else
+
+    else if (crash_type) {
 	char cbuf[1024];
 	saprintf(cbuf, "Server crash! Error code %s", crash_type);
 	fatal(cbuf);
     }
+#endif
 }

@@ -172,8 +172,10 @@ tcpserver()
 		int socket = accept_new_connection();
 
 		int pid = 0;
-		if (!server_runonce)
+		if (!server_runonce) {
+		    close_userdb();
 		    pid = E(fork(), "Forking failure");
+		}
 		if (pid == 0)
 		{
 		    if (!detach_tcp_server)

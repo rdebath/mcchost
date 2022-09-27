@@ -228,6 +228,13 @@ fatal(char * emsg)
 }
 
 void
+crashed(char * emsg)
+{
+    printf_chat("@&W- &7%s &WCrashed: &S%s", user_id, emsg);
+    disconnect(0, emsg);
+}
+
+void
 logout(char * emsg)
 {
     printf_chat("@&W- &7%s &S%s", user_id, emsg);

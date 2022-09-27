@@ -1,4 +1,6 @@
+#ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wcomment"
+#endif
 
 /*HELP readme
 This is a Minecraft classic server with CPE (Classic Protocol Extensions)
@@ -7,8 +9,8 @@ See "/help todo" for notes.
 
 /*HELP todo
  +) Fix "will create directories before erroring on arguments".
-
- +) Option AllowUserLevel
+ +) Allow main= to be an absolute path? (Unconverted '/' characters)
+    -- level dir contains name "main.X.blocks" with real dot?
 
  +) Move "salt" to it's own file?
     -- Put in secret/ directory? (with 0600)
@@ -28,8 +30,6 @@ See "/help todo" for notes.
     -- Add "backup now" command.
         -- Save and *copy* to backup.
         -- Save with no last backup date? Or just a "manual backup" flag.
-
- +) Permission for level modifiable by anyone (with /set etc).
 
  +) Add VERSION computation to "/help license".
 
@@ -80,9 +80,6 @@ See "/help todo" for notes.
 
  +) Improve the /set command, more help, option lists.
 
- +) Config paths for "backup" and "map" directories ?
-    -- Symlinks work now. Enough?
-
  +) /sendcmd command
  +) /summon command
  +) /info /sinfo /minfo commands
@@ -113,6 +110,11 @@ See "/help todo" for notes.
     -- Routine to construct bitmap from "nice" permissions.
     -- Routine takes care of "if has_build_perm(level)"
     -- /newlvl; No create, create personal, create any.
+
+ +) Permission for level modifiable by anyone (with /set etc).
+    -- Permissions for levels with multiple owners.
+    -- Permissions for user with any level access (but not server)
+    -- Permissions for /goto
 
  +) NAME: (*) MCCHost
 
@@ -221,14 +223,13 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
     -- Options --inetd and --tcp at same time?
     -- No advantage over --net --> Runs register every 30 seconds.
     -- No advantage over normal inetd mode --> connections are rare.
-
  +) Don't update backup time on delete of loaded map?
-
  +) Slow map loads; do I need to poll client chat?
     -- Background _load_ of maps as well as saves?
-
  +) Merge ini and nbt processing ?
     -- Names are too random
+ +) Config paths for "backup" and "map" directories ?
+    -- Symlinks work now. Enough?
 */
 
 /*HELP usecases

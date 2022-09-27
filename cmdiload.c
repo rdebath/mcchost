@@ -35,12 +35,7 @@ cmd_iload(char * cmd, char * arg)
     if (!arg || !*arg)
 	return printf_chat("&WUsage: /%s filename", cmd);
 
-    if (!client_trusted) {
-	char buf[128];
-	sprintf(buf, "%s+", user_id);
-	if (strcmp(current_level_name, buf) != 0)
-	    return printf_chat("&WPermission denied, only available on level %s", buf);
-    }
+    if (!perm_level_check(0, 0)) return;
 
     int ro = level_prop->readonly;
     char fixedname[200], buf[256];

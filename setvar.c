@@ -161,12 +161,9 @@ cmd_setvar(char * cmd, char * arg)
 		kill(alarm_handler_pid, SIGALRM);
 	}
     } else {
-	if (!client_trusted) {
-	    char buf[128];
-	    sprintf(buf, "%s+", user_id);
-	    if (strcmp(current_level_name, buf) != 0)
-		return printf_chat("&WPermission denied, only available on level %s", buf);
-	}
+	if (!perm_level_check(0, 0))
+	    return;
+
 	int ro = level_prop->readonly;
 
 	if (!level_ini_fields(st, varname, &value)) {

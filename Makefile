@@ -41,7 +41,10 @@ INSTDIR=${HOME}/bin
 INSTALLER=rsync -Pax
 
 ${PROG}: ${OBJ} ${OBJGEN}
-	$(CC) -o ${PROG} $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) ${OBJ} ${OBJGEN} $(LDFLAGS)
+ifeq ($(findstring s,$(MFLAGS)),)
+	@echo "$(CC) -o ${PROG} \$${CFLAGS} \$${OBJLIST} \$${LDFLAGS}"
+endif
+	@$(CC) -o ${PROG} $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) ${OBJ} ${OBJGEN} $(LDFLAGS)
 
 .PHONY: install clean makeheaders lib_text
 
@@ -83,7 +86,7 @@ makeheaders: lib/makeheaders
 	lib/makeheaders lib_md5.c:include/lib_md5.h
 	lib/makeheaders -H >include/md5.h lib_md5.c
 ifeq ($(findstring s,$(MFLAGS)),)
-	@echo "lib/makeheaders \$$FILES include/md5.h"
+	@echo "lib/makeheaders \$${FILES} include/md5.h"
 endif
 	@lib/makeheaders ${MKHDRARG} include/md5.h
 
@@ -96,7 +99,7 @@ ${ODIR}/lib_text.o: lib_text.c include/lib_text.h
 
 ${ODIR}/%.o: %.c
 ifeq ($(findstring s,$(MFLAGS)),)
-	@echo "$(CC) \$$FLAGS -c -o" $@ $<
+	@echo "$(CC) \$${CFLAGS} -c -o" $@ $<
 endif
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c -o $@ $<
 

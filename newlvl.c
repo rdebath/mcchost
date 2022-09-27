@@ -45,24 +45,19 @@ lvltheme_t themelist[] = {
 void
 cmd_newlvl(char * cmd, char * arg)
 {
-    char * levelname = strtok(arg, " ");
+    char * lvlarg = strtok(arg, " ");
     char * sx = strtok(0, " ");
     char * sy = strtok(0, " ");
     char * sz = strtok(0, " ");
     char * th = strtok(0, " ");
     char * se = strtok(0, "");
 
-    if (!levelname || (sx && !sz)) return cmd_help(0, cmd);
+    if (!lvlarg || (sx && !sz)) return cmd_help(0, cmd);
 
-    char userlevel[256];
-
-    saprintf(userlevel, "%s+", user_id);
-    if (strcmp(levelname, "+") == 0 || strcmp(levelname, userlevel) == 0) {
-	levelname = userlevel;
-    } else if (!client_trusted) {
-	printf_chat("&WPermission denied, your level name is '%s'", userlevel);
+    char levelname[256];
+    saprintf(levelname, "%s", lvlarg);
+    if (!perm_level_check(levelname, 1))
 	return;
-    }
 
     char fixedname[MAXLEVELNAMELEN*4], buf2[256], lvlname[MAXLEVELNAMELEN+1];
 

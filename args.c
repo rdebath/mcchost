@@ -47,6 +47,7 @@ struct server_t {
     int flag_log_commands;
     int flag_log_chat;
 
+    int allow_user_levels;
     int player_update_ms;
 
     struct server_ini_t shared_ini_settings;
@@ -326,6 +327,7 @@ process_args(int argc, char **argv)
 		    .flag_log_chat = 1,
 		    .afk_interval = 10*60,
 		    .afk_kick_interval = 45*60,
+		    .allow_user_levels = 1,
 		    .player_update_ms = 100,
 		};
 

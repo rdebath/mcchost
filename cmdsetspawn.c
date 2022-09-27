@@ -17,12 +17,7 @@ Sets spawn location set to your current location and orientation
 void
 cmd_setspawn(char * UNUSED(cmd),char * UNUSED(arg))
 {
-    if (!client_trusted) {
-	char buf[128];
-	sprintf(buf, "%s+", user_id);
-	if (strcmp(current_level_name, buf) != 0)
-	    return printf_chat("&WPermission denied, only available on level %s", buf);
-    }
+    if (!perm_level_check(0, 0)) return;
 
     level_prop->spawn.x = player_posn.x;
     level_prop->spawn.y = player_posn.y;	// TODO? Make this exact?

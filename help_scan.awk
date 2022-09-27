@@ -9,10 +9,15 @@
 #
 
 BEGIN{
-    flg=0;count=0;
+    flg=0;count=0;ifzero=0;
     print "/* ⇉⇉⇉ This file was automatically generated.  Do not edit! ⇇⇇⇇ */"
     print "#include \"lib_text.h\"\n"
 }
+
+/^#if 0/ { ifzero++; next; }
+ifzero && /^#if/ { ifzero++; next; }
+ifzero && /^#endif/ { ifzero--; next; }
+ifzero { next; }
 
 /^\/\*HELP/ {
     if (flg) save_text();
@@ -29,7 +34,9 @@ BEGIN{
 /^\/\*HELP/ {next;}
 
 /^#define\ *CMD_[A-Z0-9]*[	 ]*[\\{]/ {
+    cmdlist = cmdlist "#ifdef " $2 "\n"
     cmdlist = cmdlist "    " $2 ",\n"
+    cmdlist = cmdlist "#endif\n"
 }
 
 flg==0 {next;}
