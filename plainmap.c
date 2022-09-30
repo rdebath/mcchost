@@ -21,13 +21,15 @@ gen_plain_map(char * seed)
     flattened = bounded_random_r(rng, 6) == 1;
     land_only = bounded_random_r(rng, 6) == 1;
 
-    map_random_t rng2[1];
-    seed_rng(rng, rng2);
+    {
+	map_random_t rng2[1];
+	seed_rng(rng, rng2);
 
-    gen_plain_heightmap(rng2, heightmap, land_only, flattened);
+	gen_plain_heightmap(rng2, heightmap, land_only, flattened);
+    }
 
     flowerrate = 25 + 25 * bounded_random_r(rng, 15);
-    treerate = 100 * bounded_random_r(rng, 8);
+    treerate = 5 + 50 * bounded_random_r(rng, 16);
 
     int x, y, z;
 
@@ -66,6 +68,28 @@ gen_plain_map(char * seed)
 		}
 	    }
 
+    if (flowerrate > 3) {
+	// Flowers are placed in positions that change when the
+	// map size is different.
+	map_random_t rng2[1];
+	seed_rng(rng, rng2);
+
+	for(z=0; z<level_prop->cells_z; z++)
+	    for(x=0; x<level_prop->cells_x; x++)
+	    {
+		int y1 = heightmap[x+z*level_prop->cells_x];
+		if (y1 < level_prop->side_level-land_only) continue;
+		if (y1 >= level_prop->cells_y-1) continue;
+		int r = bounded_random_r(rng2, flowerrate);
+		if (r == 1)
+		    level_blocks[World_Pack(x,y1,z)] = Block_Dandelion;
+		else if (r == 2)
+		    level_blocks[World_Pack(x,y1,z)] = Block_Rose;
+		else if (r == 3 && bounded_random_r(rng2, flowerrate) == 1)
+		    level_blocks[World_Pack(x,y1,z)] = Block_Sapling;
+	    }
+    }
+
     // Merge side_level and side_level+1
     for(z=0; z<level_prop->cells_z; z++)
 	for(x=0; x<level_prop->cells_x; x++)
@@ -87,72 +111,7 @@ gen_plain_map(char * seed)
 	    heightmap[x2+z2*level_prop->cells_x] |= 0x8000;
 	}
 
-    if (flowerrate > 3) {
-	for(z=0; z<level_prop->cells_z; z++)
-	    for(x=0; x<level_prop->cells_x; x++)
-	    {
-		int y1 = heightmap[x+z*level_prop->cells_x];
-		if (y1 < level_prop->side_level-land_only) continue;
-		if (y1 >= level_prop->cells_y-1) continue;
-		int r = bounded_random_r(rng, flowerrate);
-		if (r == 1)
-		    level_blocks[World_Pack(x,y1+1,z)] = Block_Dandelion;
-		else if (r == 2)
-		    level_blocks[World_Pack(x,y1+1,z)] = Block_Rose;
-	    }
-    }
-
-    for(z=3; z+3<level_prop->cells_z; z++)
-    {
-	for(x=3; x+3<level_prop->cells_x; x++)
-	{
-	    if (x>=level_prop->cells_x || z>=level_prop->cells_z) continue;
-
-	    int y1 = heightmap[x+z*level_prop->cells_x];
-	    if (y1 <= level_prop->side_level) continue;
-	    if (treerate == 0 ||
-		    y1+7 > level_prop->cells_y ||
-		    bounded_random_r(rng, treerate) != 1) {
-		continue;
-	    }
-
-	    int height = 3 + bounded_random_r(rng, 4);
-	    int y = y1+1;
-
-	    level_blocks[World_Pack(x,y1,z)] = Block_Dirt;
-	    for(int i=0; i<height; i++)
-		level_blocks[World_Pack(x,y+i,z)] = Block_Log;
-
-	    for (int dy = height - 2; dy <= height + 1; dy++) {
-		if (y+dy >= level_prop->cells_y) continue;
-		int extent = dy > height - 1 ? 1 : 2;
-		for (int dz = -extent; dz <= extent; dz++)
-		    for (int dx = -extent; dx <= extent; dx++)
-		    {
-			int xx = (x + dx), yy = (y + dy), zz = (z + dz);
-			if (xx == x && zz == z && dy <= height) continue;
-
-			if (abs(dx) == extent && abs(dz) == extent) {
-			    if (dy > height) continue;
-			    if (bounded_random_r(rng, 2) == 0)
-				level_blocks[World_Pack(xx,yy,zz)] = Block_Leaves;
-			} else {
-			    level_blocks[World_Pack(xx,yy,zz)] = Block_Leaves;
-			}
-		    }
-	    }
-
-	    // None too close.
-	    for(int dx = -5; dx<6; dx++)
-		for(int dz = -5; dz<6; dz++)
-		{
-		    int x2 = x+dx, z2 = z+dz;
-		    if (x2 < 0 || x2 >= level_prop->cells_x) continue;
-		    if (z2 < 0 || z2 >= level_prop->cells_z) continue;
-		    heightmap[x2+z2*level_prop->cells_x] |= 0x8000;
-		}
-	}
-    }
+    spiral_tree_planting(rng, heightmap, treerate);
 }
 
 LOCAL void
@@ -183,10 +142,10 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
 	int s = (1<<(e-1));
 	//if (s>level_prop->cells_y) continue;
 	for(int r=s; r<rm; r+=s) {
-	    for(int x=cx-r+1; x<=cx+r; x+=s) gen_plain(rng, heightmap, x, cz-r, s, flattened);
-	    for(int z=cz-r+1; z<=cz+r; z+=s) gen_plain(rng, heightmap, cx+r, z, s, flattened);
-	    for(int x=cx+r-1; x>=cx-r; x-=s) gen_plain(rng, heightmap, x, cz+r, s, flattened);
-	    for(int z=cz+r-1; z>=cz-r; z-=s) gen_plain(rng, heightmap, cx-r, z, s, flattened);
+	    for(int x=cx-r+s; x<=cx+r; x+=s) gen_plain(rng, heightmap, x, cz-r, s, flattened);
+	    for(int z=cz-r+s; z<=cz+r; z+=s) gen_plain(rng, heightmap, cx+r, z, s, flattened);
+	    for(int x=cx+r-s; x>=cx-r; x-=s) gen_plain(rng, heightmap, x, cz+r, s, flattened);
+	    for(int z=cz+r-s; z>=cz-r; z-=s) gen_plain(rng, heightmap, cx-r, z, s, flattened);
 	}
     }
 
@@ -294,5 +253,114 @@ gen_plain(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s, int fl
     } else {
 	avg += avcnt/2; avg /= avcnt;
 	heightmap[tx+tz*mx] = avg;
+    }
+}
+
+#if 0
+LOCAL void
+linear_tree_planting(map_random_t *rng, uint16_t * heightmap, int treerate)
+{
+    for(int z=3; z+3<level_prop->cells_z; z++)
+    {
+	for(int x=3; x+3<level_prop->cells_x; x++)
+	{
+	    if (x>=level_prop->cells_x || z>=level_prop->cells_z) continue;
+
+	    int y1 = heightmap[x+z*level_prop->cells_x];
+	    if (y1 <= level_prop->side_level) continue;
+	    if (treerate == 0 ||
+		    y1+7 > level_prop->cells_y ||
+		    bounded_random_r(rng, treerate) != 1) {
+		continue;
+	    }
+
+	    plant_tree(rng, x, y1, z);
+
+	    // None too close.
+	    for(int dx = -5; dx<6; dx++)
+		for(int dz = -5; dz<6; dz++)
+		{
+		    int x2 = x+dx, z2 = z+dz;
+		    if (x2 < 0 || x2 >= level_prop->cells_x) continue;
+		    if (z2 < 0 || z2 >= level_prop->cells_z) continue;
+		    heightmap[x2+z2*level_prop->cells_x] |= 0x8000;
+		}
+	}
+    }
+}
+#endif
+
+LOCAL void
+spiral_tree_planting(map_random_t *rng, uint16_t * heightmap, int treerate)
+{
+    int s = 1;
+    int cx = level_prop->cells_x/2;
+    int cz = level_prop->cells_z/2;
+    int rm = level_prop->cells_x>level_prop->cells_z?level_prop->cells_x:level_prop->cells_z;
+    rm = rm/2 + 1;
+
+    try_plant_tree(rng, heightmap, treerate, cx, cz);
+    for(int r=s; r<rm; r+=s) {
+        for(int x=cx-r+s; x<=cx+r; x+=s) try_plant_tree(rng, heightmap, treerate, x, cz-r);
+        for(int z=cz-r+s; z<=cz+r; z+=s) try_plant_tree(rng, heightmap, treerate, cx+r, z);
+        for(int x=cx+r-s; x>=cx-r; x-=s) try_plant_tree(rng, heightmap, treerate, x, cz+r);
+        for(int z=cz+r-s; z>=cz-r; z-=s) try_plant_tree(rng, heightmap, treerate, cx-r, z);
+    }
+}
+
+LOCAL void
+try_plant_tree(map_random_t *rng, uint16_t * heightmap, int treerate, int x, int z)
+{
+    if (x-3 < 0 || x+3 >= level_prop->cells_x ||
+	z-3 < 0 || z+3 >= level_prop->cells_z) return;
+
+    int y1 = heightmap[x+z*level_prop->cells_x];
+    if (y1 <= level_prop->side_level) return;
+    if (treerate == 0 || y1 > 0x8000 || bounded_random_r(rng, treerate) != 1)
+	return;
+
+    map_random_t rng2[1];
+    seed_rng(rng, rng2);
+    if (y1+7 <= level_prop->cells_y)
+	plant_tree(rng2, x, y1, z);
+
+    // None too close.
+    for(int dx = -4; dx<5; dx++)
+	for(int dz = -4; dz<5; dz++)
+	{
+	    int x2 = x+dx, z2 = z+dz;
+	    if (x2 < 0 || x2 >= level_prop->cells_x) continue;
+	    if (z2 < 0 || z2 >= level_prop->cells_z) continue;
+	    heightmap[x2+z2*level_prop->cells_x] |= 0x8000;
+	}
+}
+
+LOCAL void
+plant_tree(map_random_t *rng, int x, int y1, int z)
+{
+    int height = 3 + bounded_random_r(rng, 4);
+    int y = y1+1;
+
+    level_blocks[World_Pack(x,y1,z)] = Block_Dirt;
+    for(int i=0; i<height; i++)
+	level_blocks[World_Pack(x,y+i,z)] = Block_Log;
+
+    for (int dy = height - 2; dy <= height + 1; dy++) {
+	if (y+dy >= level_prop->cells_y) continue;
+	int extent = dy > height - 1 ? 1 : 2;
+	for (int dz = -extent; dz <= extent; dz++)
+	    for (int dx = -extent; dx <= extent; dx++)
+	    {
+		int xx = (x + dx), yy = (y + dy), zz = (z + dz);
+		if (xx == x && zz == z && dy <= height) continue;
+
+		if (abs(dx) == extent && abs(dz) == extent) {
+		    if (dy > height) continue;
+		    if (bounded_random_r(rng, 2) == 0)
+			level_blocks[World_Pack(xx,yy,zz)] = Block_Leaves;
+		} else {
+		    level_blocks[World_Pack(xx,yy,zz)] = Block_Leaves;
+		}
+	    }
     }
 }

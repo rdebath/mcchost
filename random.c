@@ -78,7 +78,7 @@ map_init_rng(map_random_t *rng, char * seed)
 #ifdef PCG32_INITIALIZER
     char sbuf[MB_STRLEN*2+1] = "";
     if (!seed) seed = sbuf;
-    if (!*seed) {
+    if (!*seed || (*seed == '-' && seed[1] == 0)) {
 	init_rand_gen();
 	uint32_t n1 = pcg32_random(), n2 = pcg32_random();
 	snprintf(seed, sizeof(sbuf), "%08x-%04x-%04x-%04x-%04x%08x",
@@ -129,7 +129,7 @@ map_init_rng(map_random_t *rng, char * seed)
 #else
     char sbuf[MB_STRLEN*2+1] = "";
     if (!seed) seed = sbuf;
-    if (!*seed) {
+    if (!*seed || (*seed == '-' && seed[1] == 0)) {
 	init_rand_gen();
 	uint64_t v0 = random();
 	v0 = (v0<<31) + random();

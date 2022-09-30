@@ -42,7 +42,7 @@ INSTALLER=rsync -Pax
 
 ${PROG}: ${OBJ} ${OBJGEN}
 ifeq ($(findstring s,$(MFLAGS)),)
-	@echo "$(CC) -o ${PROG} \$${CFLAGS} \$${OBJLIST} \$${LDFLAGS}"
+	@echo "$(CC) \$${CFLAGS} -o ${PROG} \$${OBJLIST} \$${LDFLAGS}"
 endif
 	@$(CC) -o ${PROG} $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) ${OBJ} ${OBJGEN} $(LDFLAGS)
 
@@ -99,7 +99,8 @@ ${ODIR}/lib_text.o: lib_text.c include/lib_text.h
 
 ${ODIR}/%.o: %.c
 ifeq ($(findstring s,$(MFLAGS)),)
-	@echo "$(CC) \$${CFLAGS} -c -o" $@ $<
+	@[ "$V" = '' ] && echo "$(CC) \$${CFLAGS} -c -o" $@ $< ||:
+	@[ "$V" != '' ] && echo "$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c -o $@ $<" ||:
 endif
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c -o $@ $<
 
