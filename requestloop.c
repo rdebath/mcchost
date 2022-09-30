@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <errno.h>
-#include <assert.h>
-#include <sys/time.h>
 #if _POSIX_VERSION >= 200112L
 #include <sys/select.h>
 #endif

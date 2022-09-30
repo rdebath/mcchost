@@ -1,12 +1,7 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
-#include <sys/time.h>
 
 #include "client_list.h"
 
@@ -18,7 +13,6 @@
  */
 
 #if INTERFACE
-#include <time.h>
 #include <sys/types.h>
 
 #define MAX_USER	255

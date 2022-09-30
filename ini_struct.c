@@ -1,15 +1,8 @@
-#include <stdlib.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <string.h>
-#include <strings.h>
 #include <math.h>
-#include <ctype.h>
 
 #include "ini_struct.h"
 
 #if INTERFACE
-#include <stdio.h>
 
 typedef int (*ini_func_t)(ini_state_t *st, char * fieldname, char **value);
 

@@ -1,12 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <arpa/inet.h>
-#include <assert.h>
-#include <ctype.h>
 #include <fcntl.h>
-#include <limits.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 

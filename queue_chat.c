@@ -1,11 +1,8 @@
 
-#include <unistd.h>
-#include <stdio.h>
 
 #include "queue_chat.h"
 
 #if INTERFACE
-#include <stdint.h>
 
 typedef chat_queue_t chat_queue_t;
 struct chat_queue_t {

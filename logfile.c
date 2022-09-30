@@ -1,12 +1,4 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <strings.h>
-#include <time.h>
-#include <ctype.h>
-#include <sys/time.h>
 
 #include "logfile.h"
 

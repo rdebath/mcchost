@@ -8,20 +8,18 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Support for downloading the texture file to clients
+    -- Only IPs in client list will work.
+    -- Other peers would receive "Upgrade" as now.
+    -- Only http://server:port/~texture/*.{zip,png} would work.
+    -- NB: Just "current map" doesn't work because in different process.
+    -- Moderatly agressive timing restrictions.
+    -- Remember CORS and Content-Type
+
  +) Fix "will create directories before erroring on arguments".
+
  +) Allow main= to be an absolute path? (Unconverted '/' characters)
-    -- level dir contains name "main.X.blocks" with real dot?
-
- +) Move "salt" to it's own file?
-    -- Put in secret/ directory? (with 0600)
-    -- Option for not saving salt to file
-    -- Option for file location ?
-
- +) How to define default map theme and size.
-    -- From model.ini ?
-    -- If model.ini how to default seed.
-    -- Copy model.cw for default newlvl ?
-    -- If theme needs seed use mtime of file as default?
+    -- level dir contains name "main.lvl.blocks" with real dot?
 
  +) curl https://ipapi.co/40.89.244.232/utc_offset
     -- user.utc_offset & user.utc_user_offset
@@ -103,6 +101,9 @@ See "/help todo" for notes.
     -- Sub-themes, fcraft?
 
  +) Block/User history records.
+    -- Stored in a ${level} file normally.
+    -- Only saved into a compressed file on level unload
+	-- NoUnload ? -- Or no users on level ?
 
  +) Permissions -- currently "client_trusted"
     -- Need enum of permit flags.
@@ -194,7 +195,8 @@ Backup while physics running --> Copy level.* then freeze physics.
     Copy can more easily do patchups.
 
 Physics with no users.
-    Only run for a limited time; perhaps 15 minutes by default.
+    Only run for a limited time even if level stays loaded?
+    Multiple levels take turns?
 
 Implementation:
 

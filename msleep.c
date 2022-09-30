@@ -1,7 +1,7 @@
 
-#include <unistd.h>
-#include <time.h>
 #include <errno.h>
+
+#include "msleep.h"
 
 #if _POSIX_VERSION >= 200112L
 

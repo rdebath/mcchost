@@ -1,9 +1,4 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <strings.h>
 #include <zlib.h>
 #include <sys/stat.h>
 
@@ -50,14 +45,25 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 	return -1;
     }
 
-    int load_ok = load_cwfile(ifd, level_fname, level_name);
+    int loaded = load_cwfile(ifd, level_fname, level_name);
+
+    if (loaded == 0) {
+	// Looks like it might be a text file.
+	struct stat st = {0};
+	(void)stat(filename, &st);
+	if (!try_asciimode(ifd, level_fname, (uint64_t)st.st_mtime)) {
+	    fprintf_logfile("Level \"%s\" NBT and INI load failed.", level_name);
+	    loaded = -1;
+	} else
+	    loaded = 1;
+    }
 
     int rv = gzclose(ifd);
     if (rv) {
 	printlog("Load '%s' failed error Z%d", filename, rv);
 	return -1;
     }
-    if (!load_ok)
+    if (loaded != 1)
 	return -1;
 
     if (level_prop && level_prop->time_created == 0) {
@@ -106,7 +112,7 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
     if (ch == NBT_COMPOUND) {
 	*last_lbl = *last_sect = 0;
 	if (!read_element(ifd, NBT_LABEL))
-	    return 0;
+	    return -1;
 
 	ClassicWorld_found = !strcmp("ClassicWorld", last_lbl);
 	if (!ClassicWorld_found)
@@ -114,20 +120,18 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
 
 	if (!ClassicWorld_found) {
 	    fprintf_logfile("Level \"%s\" incorrect NBT schema label \"%s\".", level_name, last_lbl);
-	    return 0;
+	    return -1;
 	}
 	fprintf_logfile("Loading %s map for \"%s\"", last_lbl, level_name);
 	create_property_file(level_name, level_fname);
 	init_map_null();
 	if (!read_element(ifd, ch))
-	    return 0;
+	    return -1;
     } else if (ch == EOF || (ch&0x80) != 0) {
 	fprintf_logfile("Level \"%s\" unknown file format", level_name);
+	return -1;
+    } else
 	return 0;
-    } else if (!try_asciimode(ifd, level_fname)) {
-	fprintf_logfile("Level \"%s\" NBT and INI load failed.", level_name);
-	return 0;
-    }
 
     if (ClassicWorld_found || (level_prop->cells_x>0 && level_prop->cells_y>0 && level_prop->cells_z>0))
 	;

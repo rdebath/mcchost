@@ -19,11 +19,7 @@
 *********************************************************************/
 
 /*************************** HEADER FILES ***************************/
-#include <stdio.h>
-#include <stdlib.h>
 #include <memory.h>
-#include <stddef.h>
-#include <stdint.h>
 
 #include "sha256.h"
 
@@ -237,9 +233,7 @@ sha256digest(uint8_t *digest, char *hexdigest, const uint8_t *data, size_t datab
 *********************************************************************/
 
 /*************************** HEADER FILES ***************************/
-#include <stdio.h>
 #include <memory.h>
-#include <string.h>
 
 /*********************** FUNCTION DEFINITIONS ***********************/
 int sha256_test()

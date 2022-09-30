@@ -1,7 +1,5 @@
 
 #if INTERFACE
-#include <stdint.h>
-#include <time.h>
 
 #define BLOCKMAX 1024
 #define BLOCKNIL ((block_t)-1)

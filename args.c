@@ -1,13 +1,7 @@
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/time.h>
-#include <limits.h>
 
 #include "args.h"
 
 #if INTERFACE
-#include <time.h>
 
 #define SWNAME "MCCHost"
 

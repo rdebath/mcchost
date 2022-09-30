@@ -1,10 +1,7 @@
-#include <unistd.h>
-#include <stdio.h>
 
 #include "queue_block.h"
 
 #if INTERFACE
-#include <stdint.h>
 
 #define MIN_QUEUE 250
 #define STD_QUEUE 2048

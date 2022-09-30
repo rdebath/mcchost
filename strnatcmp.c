@@ -37,10 +37,7 @@
  * Change order so non-alphanumeric characters move to the end.
  */
 
-#include <ctype.h>
-#include <string.h>
 #include <assert.h>
-#include <stdio.h>
 
 #include "strnatcmp.h"
 

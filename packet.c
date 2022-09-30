@@ -1,7 +1,6 @@
 #include "packet.h"
 
 #if INTERFACE
-#include <stdint.h>
 
 #define MB_STRLEN 64
 #define NB_SLEN (MB_STRLEN+1)

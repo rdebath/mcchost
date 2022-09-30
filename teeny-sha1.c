@@ -43,10 +43,7 @@ SOFTWARE.
  * the declaration (example below) in the sources files where needed.
  ******************************************************************************/
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "teeny-sha1.h"
 
 /* Declaration:
 extern int sha1digest(uint8_t *digest, char *hexdigest, const uint8_t *data, size_t databytes);
@@ -252,10 +249,6 @@ sha1digest(uint8_t *digest, char *hexdigest, const uint8_t *data, size_t databyt
  *   cc -g -O2 -Wall teeny-sha1.c teeny-sha1-test.c -o teeny-sha1-test
  ******************************************************************************/
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
 

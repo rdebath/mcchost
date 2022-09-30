@@ -357,10 +357,7 @@ static void Transform (UINT4 *buf, UINT4 *in)
  */
 
 #ifdef TESTMD5
-#include <stdio.h>
 #include <sys/types.h>
-#include <time.h>
-#include <string.h>
 /* -- include the following file if the file md5.h is separate -- */
 /* #include "md5.h" */
 

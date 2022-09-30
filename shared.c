@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -26,7 +22,6 @@
 #include "shared.h"
 
 #if INTERFACE
-#include <stdint.h>
 
 #define SHMID_PROP	0
 #define SHMID_BLOCKS	1

@@ -1,10 +1,7 @@
-#include <string.h>
-#include <stdint.h>
 
 #include "cp437.h"
 
 #if INTERFACE
-#include <stdio.h>
 typedef struct emconv_t emconv_t;
 struct emconv_t {
     char * name;
@@ -239,7 +236,6 @@ emconv_t emconv[] = {
 
 
 #if TEST
-#include <string.h>
 int
 main(int argc, char ** argv)
 {

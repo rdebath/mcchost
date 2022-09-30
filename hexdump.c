@@ -1,9 +1,7 @@
-#include <string.h>
 
 #include "hexdump.h"
 
 #if INTERFACE
-#include <stdio.h>
 #define hexdump_use_iso 0
 #endif
 

@@ -1,14 +1,6 @@
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
 #include <math.h>
 
 #include "sendpacket.h"
-
-#if INTERFACE
-#include <stdint.h>
-#endif
 
 static inline void
 nb_short(uint8_t **ptr, int v)

@@ -1,13 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <inttypes.h>
-#include <string.h>
-#include <limits.h>
-#include <time.h>
 #include <fcntl.h>
-#include <sys/time.h>
 #include <sys/stat.h>
 
 #include "createmap.h"
@@ -48,7 +39,7 @@ createmap(char * levelname)
 
     open_blocks(levelname);
 
-    init_block_file();
+    init_block_file(0);
 }
 
 void
@@ -123,7 +114,7 @@ patch_map_nulls(xyzhv_t oldsize)
 }
 
 void
-init_block_file()
+init_block_file(uint64_t fallback_seed)
 {
     map_len_t test_map;
     memcpy(&test_map, (void*)(level_blocks+level_prop->total_blocks),
@@ -145,7 +136,7 @@ init_block_file()
 	memcpy((void*)(level_blocks+level_prop->total_blocks),
 		&test_map, sizeof(map_len_t));
 
-	init_level_blocks();
+	init_level_blocks(fallback_seed);
     }
 }
 
@@ -202,7 +193,7 @@ read_blockfile_size(char * levelname, xyzhv_t * oldsize)
 }
 
 void
-init_level_blocks()
+init_level_blocks(uint64_t fallback_seed)
 {
     int x, y, z, y1, quiet = 0;
     struct timeval start;
@@ -297,16 +288,22 @@ init_level_blocks()
 		}
 
     } else if (strcasecmp(level_prop->theme, "plain") == 0) {
+	if (!level_prop->seed[0] && fallback_seed)
+	    sprintf(level_prop->seed, "%jd", (uintmax_t)fallback_seed);
 	int has_seed = !!level_prop->seed[0];
 	gen_plain_flat_map(level_prop->seed);
 	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "general") == 0) {
+	if (!level_prop->seed[0] && fallback_seed)
+	    sprintf(level_prop->seed, "%jd", (uintmax_t)fallback_seed);
 	int has_seed = !!level_prop->seed[0];
 	gen_plain_map(level_prop->seed);
 	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "plasma") == 0) {
+	if (!level_prop->seed[0] && fallback_seed)
+	    sprintf(level_prop->seed, "%jd", (uintmax_t)fallback_seed);
 	int has_seed = !!level_prop->seed[0];
 	gen_rainbow_map(level_prop->seed);
 	level_prop->dirty_save = !has_seed;

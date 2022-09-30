@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <strings.h>
 #include <zlib.h>
-#include <sys/stat.h>
 
 #include "ini_level.h"
 
@@ -19,7 +13,7 @@
  * known commands all other commands are ignored.
  */
 int
-try_asciimode(gzFile ifd, char * levelfile)
+try_asciimode(gzFile ifd, char * levelfile, uint64_t fallback_seed)
 {
     ini_state_t st = {.quiet = 0, .filename = levelfile};
     int blocks_opened = 0;
@@ -59,7 +53,7 @@ try_asciimode(gzFile ifd, char * levelfile)
 	if (open_blocks(levelfile) < 0)
 	    return 0;
 
-	init_block_file();
+	init_block_file(fallback_seed);
     }
     return 1;
 }
