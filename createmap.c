@@ -288,25 +288,19 @@ init_level_blocks(uint64_t fallback_seed)
 		}
 
     } else if (strcasecmp(level_prop->theme, "plain") == 0) {
-	if (!level_prop->seed[0] && fallback_seed)
-	    sprintf(level_prop->seed, "%jd", (uintmax_t)fallback_seed);
-	int has_seed = !!level_prop->seed[0];
+	level_prop->dirty_save |=
+	    populate_map_seed(level_prop->seed, fallback_seed);
 	gen_plain_flat_map(level_prop->seed);
-	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "general") == 0) {
-	if (!level_prop->seed[0] && fallback_seed)
-	    sprintf(level_prop->seed, "%jd", (uintmax_t)fallback_seed);
-	int has_seed = !!level_prop->seed[0];
+	level_prop->dirty_save |=
+	    populate_map_seed(level_prop->seed, fallback_seed);
 	gen_plain_map(level_prop->seed);
-	level_prop->dirty_save = !has_seed;
 
     } else if (strcasecmp(level_prop->theme, "plasma") == 0) {
-	if (!level_prop->seed[0] && fallback_seed)
-	    sprintf(level_prop->seed, "%jd", (uintmax_t)fallback_seed);
-	int has_seed = !!level_prop->seed[0];
+	level_prop->dirty_save |=
+	    populate_map_seed(level_prop->seed, fallback_seed);
 	gen_rainbow_map(level_prop->seed);
-	level_prop->dirty_save = !has_seed;
 	level_prop->side_level = 1;
 
     } else {

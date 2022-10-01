@@ -72,29 +72,70 @@ init_rand_gen()
 #endif
 }
 
-void
-map_init_rng(map_random_t *rng, char * seed)
+/* Returns 1 if we used a non-repeatable source for the seed.
+ * If the seed is already populated, or we use fallback_seed
+ * this returns 0.
+ */
+int
+populate_map_seed(char * seed, uint64_t fallback_seed)
 {
+    if (!seed) return 0;
+    // If we have a fallback seed, use it.
+    if (!seed[0] && fallback_seed) {
+	sprintf(seed, "%jd", (uintmax_t)fallback_seed);
+	return 0;
+    }
 #ifdef PCG32_INITIALIZER
-    char sbuf[MB_STRLEN*2+1] = "";
-    if (!seed) seed = sbuf;
+    // Generate a random GUID to fill most of the bits.
     if (!*seed || (*seed == '-' && seed[1] == 0)) {
 	init_rand_gen();
 	uint32_t n1 = pcg32_random(), n2 = pcg32_random();
-	snprintf(seed, sizeof(sbuf), "%08x-%04x-%04x-%04x-%04x%08x",
+	sprintf(seed, "%08x-%04x-%04x-%04x-%04x%08x",
 	    pcg32_random(),
 	    n1 & 0xFFFF,
 	    0x4000 + ((n1>>16) & 0xFFF),
 	    0x8000 + ((n2>>16) & 0x3FFF),
 	    n2 & 0xFFFF,
 	    pcg32_random());
+	return 1;
     }
+#else
+    // Just generate a 64bit integer;
+    // But will have only 32 bits of randomness, at most, because of the
+    // seed for srandom().
+    if (!*seed || (*seed == '-' && seed[1] == 0)) {
+        init_rand_gen();
+        uint64_t v0 = random();
+        v0 = (v0<<31) + random();
+        sprintf(seed, "0x%jx", (uintmax_t)v0);
+	return 1;
+    }
+#endif
+    return 0;
+}
 
-    // if it appears to be a guid, shuffle.
-    char xbuf[MB_STRLEN*2+1], *sseed = seed;
+void
+map_init_rng(map_random_t *rng, char * seed)
+{
+    if (!seed) seed = "1";
+
+    int is_guid = 0;
     if (strlen(seed) == 36 && seed[8] == '-' && seed[13] == '-' &&
 	    seed[18] == '-' && seed[23] == '-') {
+	is_guid = 1; // Looks about right; check the digits.
+	for(int i = 0; seed[i]; i++) {
+	    if (i == 8 || i == 13 || i == 18 || i == 23) continue;
+	    int ch = seed[i];
+	    if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'))) {
+		is_guid = 0;
+		break;
+	    }
+	}
+    }
 
+    // Shuffle a guid into two 64bit numbers.
+    char xbuf[MB_STRLEN*2+1], *sseed = seed;
+    if (is_guid) {
 	// XXXXXXXX-XXXX-4XXX-YXXX-XXXXXXXXXXXX␀
 	// 0123456789012345678901234567890123456
 	// Y=[89ab] X=[0-9a-f]
@@ -112,12 +153,24 @@ map_init_rng(map_random_t *rng, char * seed)
 	sseed = xbuf;
     }
 
+#ifdef PCG32_INITIALIZER
     uint64_t v1, v2;
-    char * com = 0;
-    v1 = strtoumax(sseed, &com, 0);
-    if (com && *com == ',' && com[1] != 0)
-	v2 = strtoumax(com+1, 0, 0);
+    char * e = 0;
+    v1 = strtoumax(sseed, &e, 0);
+    if (e && *e == ',' && e[1] != 0)
+	v2 = strtoumax(e+1, 0, 0);
     else {
+	// Hash in leftovers; but only to 64bits.
+	for(uint8_t * p = (uint8_t*)e; *p; p++)
+	    v1 = *p + ((v1<<6)+(v1<<16)-v1);
+
+	if (*e) {
+	    if (v1 < 1000000000)
+		printlog("Seed = \"%s\" -> Converted = %jd", seed, v1);
+	    else
+		printlog("Seed = \"%s\" -> Converted = 0x%jx", seed, v1);
+	}
+
 	// PCG32 likes distinct streams to have a large hamming distance.
 	uint64_t seed = v1;
 	jump_splitmix64(&seed, 0x75b4fb5cadd2212e); // Random jump for this app.
@@ -125,21 +178,14 @@ map_init_rng(map_random_t *rng, char * seed)
 	v2 = splitmix64_r(&seed);
     }
     pcg32_srandom_r(rng, v1, v2);
-    // printlog("Seed = %s, Rng = 0x%jx,0x%jx", seed, v1, v2);
+    // printlog("Seed = \"%s\", PCG32-Rng = 0x%jx,0x%jx", seed, v1, v2);
 #else
-    char sbuf[MB_STRLEN*2+1] = "";
-    if (!seed) seed = sbuf;
-    if (!*seed || (*seed == '-' && seed[1] == 0)) {
-	init_rand_gen();
-	uint64_t v0 = random();
-	v0 = (v0<<31) + random();
-	snprintf(seed, sizeof(sbuf), "0x%jx", (uintmax_t)v0);
-    }
     uint64_t v1;
-    if (strlen(seed) == 36 && seed[8] == '-')
-	v1 = strtoumax(seed, 0, 16);
-    else
-	v1 = strtoumax(seed, 0, 0);
+    char * e = 0;
+    v1 = strtoumax(sseed, &e, 0);
+    // Anything after an initial number is hashed.
+    for(uint8_t * p = (uint8_t*)e; *p; p++)
+	v1 = *p + ((v1<<6)+(v1<<16)-v1);
     map_random_t t = {0};
     *rng = t;
     initstate_r((unsigned int)(v1^(v1>>32)), rng->statebuf, sizeof(rng->statebuf), &rng->rand_data);

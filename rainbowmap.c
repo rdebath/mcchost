@@ -40,10 +40,10 @@ gen_rainbow_heightmap(map_random_t *rng, uint16_t * heightmap)
     for(int e = first_e; e>0; e--) {
 	int s = (1<<(e-1));
 	for(int r=s; r<rm; r+=s) {
-	    for(int x=cx-r+1; x<=cx+r; x+=s) gen_rainbow(rng, heightmap, x, cz-r, s);
-	    for(int z=cz-r+1; z<=cz+r; z+=s) gen_rainbow(rng, heightmap, cx+r, z, s);
-	    for(int x=cx+r-1; x>=cx-r; x-=s) gen_rainbow(rng, heightmap, x, cz+r, s);
-	    for(int z=cz+r-1; z>=cz-r; z-=s) gen_rainbow(rng, heightmap, cx-r, z, s);
+	    for(int x=cx-r+s; x<=cx+r; x+=s) gen_rainbow(rng, heightmap, x, cz-r, s);
+	    for(int z=cz-r+s; z<=cz+r; z+=s) gen_rainbow(rng, heightmap, cx+r, z, s);
+	    for(int x=cx+r-s; x>=cx-r; x-=s) gen_rainbow(rng, heightmap, x, cz+r, s);
+	    for(int z=cz+r-s; z>=cz-r; z-=s) gen_rainbow(rng, heightmap, cx-r, z, s);
 	}
     }
 

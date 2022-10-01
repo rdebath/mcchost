@@ -145,8 +145,7 @@ cmd_newlvl(char * cmd, char * arg)
 	    free(buf);
 	} else if (themelist[themeid].setrandom) {
 	    char sbuf[MB_STRLEN*2+1] = "";
-	    map_random_t rng[1];
-	    map_init_rng(rng, sbuf);
+	    populate_map_seed(sbuf, 0);
 	    fprintf(ofd, "Seed = %s\n", sbuf);
 	}
     }

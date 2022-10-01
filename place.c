@@ -57,7 +57,7 @@ can_place_block(block_t blk)
 {
     if (level_prop->disallowchange || blk >= BLOCKMAX)
 	return 0;
-    if (server->cpe_disabled && blk >= Block_CP)
+    if (server->cpe_disabled && (blk == Block_Grass || blk == Block_DoubleSlab || blk >= Block_CP))
         return 0;
     if ((level_prop->blockdef[blk].block_perm&1) != 0)
         return 0;

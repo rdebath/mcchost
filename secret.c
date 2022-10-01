@@ -136,14 +136,29 @@ convert_secret(char sbuf[NB_SLEN], int tick)
 void
 base62_128(uint8_t * bits128, char * str)
 {
+#ifdef __SIZEOF_INT128__
+    // Base62 128 bit number print with all leading zeros.
+    // bits128 is assumed to be bigendian so hex printing is trivial.
+    unsigned __int128 v = 0;
+    for(int i=0; i<16; i++)
+	v = (v<<8) + bits128[i];
+    for(int i=0; i<22; i++) {
+	int c = v % 62;
+	v /= 62;
+	str[21-i] = base62[c];
+    }
+    str[22] = 0;
+#else
     // Note: log(2**64)/log(62) = 10.748721853250684
     // And: log(2**128)/log(62) = 21.497443706501369
     // So it's the same size if we convert as one 128 bit value or two 64's
+    //
+    // NB: Two Bigending 64bit integers concatenated.
     for(int set=0; set<2; set++) {
 	uint64_t v = 0;
 	for(int i=0; i<8; i++)
 	    v = (v<<8) + bits128[i];
-	for(int i = 0; i<11; i++) {
+	for(int i=0; i<11; i++) {
 	    int c = v % 62;
 	    v /= 62;
 	    str[10-i] = base62[c];
@@ -152,4 +167,5 @@ base62_128(uint8_t * bits128, char * str)
 	str += 11;
 	*str = 0;
     }
+#endif
 }
