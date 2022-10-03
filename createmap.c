@@ -236,11 +236,17 @@ init_level_blocks(uint64_t fallback_seed)
 		for(x=0; x<level_prop->cells_x; x++)
 		    level_blocks[World_Pack(x,y,z)] = Block_Air;
 
-    } else if (strcasecmp(level_prop->theme, "rainbow") == 0) {
+    } else if (strcasecmp(level_prop->theme, "rainbow") == 0 ||
+               strcasecmp(level_prop->theme, "bw") == 0) {
 	// Rainbow: Sides and bottom layer are random choice of colour blocks.
-	int has_seed = !!level_prop->seed[0];
-	uint32_t seed = 1;
-	if (has_seed) seed = strtol(level_prop->seed, 0, 0);
+	int f = (strcasecmp(level_prop->theme, "bw") == 0);
+	int min_blk = f?Block_Black:Block_Red;
+	int mod_r = f?2:(Block_Grey + 1 - min_blk);
+	int mul_r = f?2:1;
+	level_prop->dirty_save |=
+	    populate_map_seed(level_prop->seed, fallback_seed);
+	map_random_t rng[1];
+	map_init_rng(rng, level_prop->seed);
 	level_prop->side_level = 1;
 	for(y=0; y<level_prop->cells_y; y++)
 	    for(z=0; z<level_prop->cells_z; z++)
@@ -251,7 +257,7 @@ init_level_blocks(uint64_t fallback_seed)
 			    z == 0 || z == level_prop->cells_z-1) {
 			// Includes Grey and Black?
 			level_blocks[World_Pack(x,y,z)] =
-			    lehmer_pm(seed)%(Block_White-Block_Red)+Block_Red;
+			    bounded_random_r(rng, mod_r)*mul_r+min_blk;
 		    } else {
 			level_blocks[World_Pack(x,y,z)] = Block_Air;
 		    }
@@ -260,9 +266,10 @@ init_level_blocks(uint64_t fallback_seed)
     } else if (strcasecmp(level_prop->theme, "space") == 0) {
 	// Space: Bottom layer bedrock, 2nd layer, sides and top layer are
 	// obsidian except for 1:100 which is Iron
-	int has_seed = !!level_prop->seed[0];
-	uint32_t seed = 1;
-	if (has_seed) seed = strtol(level_prop->seed, 0, 0);
+	level_prop->dirty_save |=
+	    populate_map_seed(level_prop->seed, fallback_seed);
+	map_random_t rng[1];
+	map_init_rng(rng, level_prop->seed);
 	level_prop->side_level = 1;
 	level_prop->edge_block = Block_Obsidian;
 	level_prop->sky_colour = 0x000000;
@@ -279,7 +286,7 @@ init_level_blocks(uint64_t fallback_seed)
 		    else if (y==1 || y == level_prop->cells_y-1 ||
 			     x == 0 || x == level_prop->cells_x-1 ||
 			     z == 0 || z == level_prop->cells_z-1) {
-			if (lehmer_pm(seed)%100 == 1)
+			if (bounded_random_r(rng, 100) == 1)
 			    px = Block_Iron;
 			else
 			    px = Block_Obsidian;
@@ -300,7 +307,7 @@ init_level_blocks(uint64_t fallback_seed)
     } else if (strcasecmp(level_prop->theme, "plasma") == 0) {
 	level_prop->dirty_save |=
 	    populate_map_seed(level_prop->seed, fallback_seed);
-	gen_rainbow_map(level_prop->seed);
+	gen_plasma_map(level_prop->seed);
 	level_prop->side_level = 1;
 
     } else {

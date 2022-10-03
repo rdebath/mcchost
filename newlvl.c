@@ -31,8 +31,9 @@ lvltheme_t themelist[] = {
     {"plasma", 1},
     {"pixel", 0},
     {"empty", 0},
-    {"space", 0},	// seed defaults to 1
-    {"rainbow", 0},	// seed defaults to 1
+    {"space", 0},
+    {"rainbow", 0},
+    {"bw", 0},
     {"air", 0},
     {0}
 };

@@ -67,7 +67,7 @@ gen_plain_flat_map(char *seed)
 	for(x=3; x+3<level_prop->cells_x; x++)
 	{
 	    int y1 = heightmap[x+z*level_prop->cells_x];
-	    if (y1 <= level_prop->cells_y/2-1) continue;
+	    if ((y1&0x7FFF) <= level_prop->cells_y/2-1) continue;
 	    if (y1+7 > level_prop->cells_y ||
 		    bounded_random_r(rng, treerate) != 1) {
 		y1 &= 0x7FFF;

@@ -85,7 +85,7 @@ gen_plain_map(char * seed)
 		    level_blocks[World_Pack(x,y1,z)] = Block_Dandelion;
 		else if (r == 2)
 		    level_blocks[World_Pack(x,y1,z)] = Block_Rose;
-		else if (r == 3 && bounded_random_r(rng2, flowerrate) == 1)
+		else if (r == 3 && bounded_random_r(rng2, 4) == 0)
 		    level_blocks[World_Pack(x,y1,z)] = Block_Sapling;
 	    }
     }
@@ -122,9 +122,9 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
     int rm = level_prop->cells_x>level_prop->cells_z?level_prop->cells_x:level_prop->cells_z;
     rm = rm/2 + 2;
 
-    int h = level_prop->side_level-1;
+    int h = level_prop->side_level;
     if (!flattened && !land_only && level_prop->cells_y>15)
-	h += 1+bounded_random_r(srng, 8);
+	h += bounded_random_r(srng, 8);
     if (h >= level_prop->cells_y) h = level_prop->side_level;
     if (h >= level_prop->cells_y) h = level_prop->cells_y/2;
     level_prop->spawn.y = (h+3) *32+16;

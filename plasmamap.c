@@ -1,15 +1,15 @@
 
-#include "rainbowmap.h"
+#include "plasmamap.h"
 
 void
-gen_rainbow_map(char * seed)
+gen_plasma_map(char * seed)
 {
     map_random_t rng[1];
     map_init_rng(rng, seed);
 
     uint16_t *heightmap = calloc(level_prop->cells_x*level_prop->cells_z, sizeof(*heightmap));
 
-    gen_rainbow_heightmap(rng, heightmap);
+    gen_plasma_heightmap(rng, heightmap);
 
     int x, y, z;
     for(z=0; z<level_prop->cells_z; z++)
@@ -25,7 +25,7 @@ gen_rainbow_map(char * seed)
 }
 
 LOCAL void
-gen_rainbow_heightmap(map_random_t *rng, uint16_t * heightmap)
+gen_plasma_heightmap(map_random_t *rng, uint16_t * heightmap)
 {
     int cx = level_prop->cells_x/2;
     int cz = level_prop->cells_z/2;
@@ -40,19 +40,19 @@ gen_rainbow_heightmap(map_random_t *rng, uint16_t * heightmap)
     for(int e = first_e; e>0; e--) {
 	int s = (1<<(e-1));
 	for(int r=s; r<rm; r+=s) {
-	    for(int x=cx-r+s; x<=cx+r; x+=s) gen_rainbow(rng, heightmap, x, cz-r, s);
-	    for(int z=cz-r+s; z<=cz+r; z+=s) gen_rainbow(rng, heightmap, cx+r, z, s);
-	    for(int x=cx+r-s; x>=cx-r; x-=s) gen_rainbow(rng, heightmap, x, cz+r, s);
-	    for(int z=cz+r-s; z>=cz-r; z-=s) gen_rainbow(rng, heightmap, cx-r, z, s);
+	    for(int x=cx-r+s; x<=cx+r; x+=s) gen_plasma(rng, heightmap, x, cz-r, s);
+	    for(int z=cz-r+s; z<=cz+r; z+=s) gen_plasma(rng, heightmap, cx+r, z, s);
+	    for(int x=cx+r-s; x>=cx-r; x-=s) gen_plasma(rng, heightmap, x, cz+r, s);
+	    for(int z=cz+r-s; z>=cz-r; z-=s) gen_plasma(rng, heightmap, cx-r, z, s);
 	}
     }
 
     heightmap[cx+cz*level_prop->cells_x] = 0;
-    gen_rainbow(rng, heightmap, cx, cz, 1);
+    gen_plasma(rng, heightmap, cx, cz, 1);
 }
 
 LOCAL void
-gen_rainbow(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s)
+gen_plasma(map_random_t *rng, uint16_t * heightmap, int tx, int tz, int s)
 {
     if (tx < 0 || tx >= level_prop->cells_x) return;
     if (tz < 0 || tz >= level_prop->cells_z) return;
