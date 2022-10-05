@@ -39,6 +39,17 @@ run_command(char * msg)
 	}
     }
 
+    if (add_antispam_event(player_cmd_spam, server->cmd_spam_count, server->cmd_spam_interval, server->cmd_spam_ban)) {
+	int secs = 0;
+	if (player_cmd_spam->banned_til)
+	    secs = player_cmd_spam->banned_til - time(0);
+	if (secs < 2)
+	    printf_chat("You have been blocked from using commands");
+	else
+	    printf_chat("Blocked from using commands for %d seconds", secs);
+	return;
+    }
+
     for(int i = 0; command_list[i].name; i++) {
 	if (strcasecmp(cmd, command_list[i].name) == 0) {
 	    int c = i;
@@ -51,7 +62,10 @@ run_command(char * msg)
 	    if (server->flag_log_commands) {
 		int redact_args = (!strcasecmp(cmd, "pass") ||
 				   !strcasecmp(cmd, "setpass"));
-		if (redact_args)
+		if (!server->flag_log_place_commands &&
+			strcasecmp(cmd, "place") == 0)
+		    ;
+		else if (redact_args)
 		    fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?"<redacted>":"");
 		else
 		    fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");

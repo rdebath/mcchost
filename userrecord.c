@@ -214,12 +214,12 @@ copy_user_key(char *p, char * user_id)
 void
 write_current_user(int when)
 {
+    time_t now = time(0);
+    if (when == 0 && now - my_user.time_of_last_save >= 300)
+	my_user.dirty = 1;
+
     if (when == 0 && !my_user.dirty) return;
     if (when == 2 && !my_user.user_logged_in) return;
-
-    time_t now = time(0);
-    if (when == 0 && now - my_user.time_of_last_save >= 120)
-	my_user.dirty = 1;
 
     if (my_user.user_no == 0) {
 	if (*user_id == 0) return;

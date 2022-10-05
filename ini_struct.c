@@ -87,6 +87,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	if (st->write) fprintf(st->fd, "\n");
 
 	INI_BOOLVAL("FlagLogCommands", server->flag_log_commands);
+	INI_BOOLVAL("FlagLogPlaceCommands", server->flag_log_place_commands);
 	INI_BOOLVAL("FlagLogChat", server->flag_log_chat);
 
 	if (st->write) fprintf(st->fd, "\n");
@@ -95,6 +96,17 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_DURATION("AFKKickInterval", server->afk_kick_interval);
 	INI_BOOLVAL("AllowUserLevels", server->allow_user_levels);
 	INI_INTVAL("PlayerUpdateMS", server->player_update_ms);
+
+	if (st->write) fprintf(st->fd, "\n");
+
+	INI_INTVAL("BlockSpamCount", server->block_spam_count);
+	INI_DURATION("BlockSpamInterval", server->block_spam_interval);
+	INI_INTVAL("CmdSpamCount", server->cmd_spam_count);
+	INI_DURATION("CmdSpamInterval", server->cmd_spam_interval);
+	INI_DURATION("CmdSpamBan", server->cmd_spam_ban);
+	INI_INTVAL("ChatSpamCount", server->chat_spam_count);
+	INI_DURATION("ChatSpamInterval", server->chat_spam_interval);
+	INI_DURATION("ChatSpamBan", server->chat_spam_ban);
 
     }
 

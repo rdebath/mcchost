@@ -39,10 +39,22 @@ struct server_t {
     time_t afk_kick_interval;
 
     int flag_log_commands;
+    int flag_log_place_commands;
     int flag_log_chat;
 
     int allow_user_levels;
     int player_update_ms;
+
+    int block_spam_count;
+    int block_spam_interval;
+
+    int cmd_spam_count;
+    int cmd_spam_interval;
+    int cmd_spam_ban;
+
+    int chat_spam_count;
+    int chat_spam_interval;
+    int chat_spam_ban;
 
     struct server_ini_t shared_ini_settings;
     int magic2;
@@ -318,11 +330,20 @@ process_args(int argc, char **argv)
 		    .key_rotation = 6*3600,
 		    .max_players = 128,
 		    .flag_log_commands = 1,
+		    .flag_log_place_commands = 1,
 		    .flag_log_chat = 1,
 		    .afk_interval = 10*60,
 		    .afk_kick_interval = 45*60,
 		    .allow_user_levels = 1,
 		    .player_update_ms = 100,
+		    .block_spam_count = 200,
+		    .block_spam_interval = 5,
+		    .cmd_spam_count = 25,
+		    .cmd_spam_interval = 1,
+		    .cmd_spam_ban = 30,
+		    .chat_spam_count = 8,
+		    .chat_spam_interval = 5,
+		    .chat_spam_ban = 60,
 		};
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);

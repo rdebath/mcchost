@@ -36,6 +36,7 @@ struct client_entry_t {
     uint8_t client_cpe;
     uint8_t client_dup;
     uint8_t authenticated;
+    uint8_t trusted;
     pid_t session_id;
 };
 
@@ -67,6 +68,9 @@ xyzhv_t player_posn = {0};
 block_t player_held_block = -1;
 time_t player_last_move;
 int player_on_new_level = 1;
+aspam_t player_block_spam[1];
+aspam_t player_cmd_spam[1];
+aspam_t player_chat_spam[1];
 
 void
 check_user()
@@ -350,6 +354,7 @@ start_user()
     t.level_bkp_id = -1;
     t.ip_address = client_ipv4_addr;
     t.authenticated = user_authenticated;
+    t.trusted = 0;
     connected_sessions++;
 
     if (t.client_software.c[0] == 0) {

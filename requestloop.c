@@ -191,8 +191,12 @@ on_select_timeout()
     time(&now);
     int secs = ((now-last_ping) & 0xFF);
     if (secs > tc) {
-	if (cpe_pending)
-	    fatal("CPE Protocol negotiation failure");
+	if (cpe_pending) {
+	    fprintf_logfile("User %s CPE failure (%d,%d) with %s",
+		user_id, cpe_extn_advertised, cpe_extn_remaining, client_software.c);
+
+	    logout("Connection failure, CPE logon not completed within a minute.");
+	}
 
 	// Send keepalive.
 	if (!extn_pingpong)
@@ -406,6 +410,14 @@ process_client_message(int cmd, char * pktbuf)
 	    if (cpe_pending) {
 		cpe_extn_remaining = count;
 		cpe_extn_advertised = cpe_extn_remaining;
+
+		if (cpe_extn_advertised <= 0) {
+		    fprintf_logfile("Note: Client for %s advertised %d extensions",
+			user_id, cpe_extn_advertised);
+		    pkt_extentry pkt = {0};
+		    process_extentry(&pkt);
+		}
+
 	    } else
 		cpe_extn_remaining = 0;
 	}

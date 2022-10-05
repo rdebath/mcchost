@@ -181,7 +181,7 @@ process_extentry(pkt_extentry * pkt)
 	    *extensions[i].enabled_flag = 1;
     }
 
-    if (!enabled_extension)
+    if (!enabled_extension && (pkt->version || pkt->extname[0]))
 	printlog("Unknown extension %s:%d", pkt->extname, pkt->version);
 
     if (!customblock_pkt_sent && extn_customblocks) {
@@ -317,14 +317,17 @@ process_extentry(pkt_extentry * pkt)
 		" using \"%s\", ", client_software.c);
 	else
 	    sprintf(descbuf+strlen(descbuf), " using unnamed ");
-	
-	if (classicube_match_len+classicube_lastmatch == cpe_extn_advertised)
+
+	if (cpe_extn_advertised > 9 && classicube_match_len+classicube_lastmatch == cpe_extn_advertised)
 	    sprintf(descbuf+strlen(descbuf),
 		"Classicube%s (%d extns)", websocket?" web":"", cpe_extn_advertised);
-	else if (classicube_match_len <= 1)
+	else
+
+	if (classicube_match_len <= 1)
 	    sprintf(descbuf+strlen(descbuf), "%sclient with %d extension%s",
 		websocket?"web-":"", cpe_extn_advertised, cpe_extn_advertised==1?"":"s");
 	else
+
 	    sprintf(descbuf+strlen(descbuf), "CPE %sclient (CC %d of %d)",
 		websocket?"web-":"", classicube_match_len, cpe_extn_advertised);
 

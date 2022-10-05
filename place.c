@@ -262,6 +262,11 @@ process_player_setblock(pkt_setblock pkt)
 
     int do_revert = !can_place_block(pkt.block);
 
+    if (add_antispam_event(player_block_spam, server->block_spam_count, server->block_spam_interval, 0)) {
+	my_user.kick_count++;
+	logout("Kicked for suspected griefing.");
+    }
+
     if (!do_revert) {
 	uint64_t range = 0, r, ok_reach;
 	r = (pkt.coord.x*32 - player_posn.x); range += r*r;

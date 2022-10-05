@@ -70,6 +70,11 @@ process_chat_message(int message_type, char * msg)
 	}
     }
 
+    if (add_antispam_event(player_chat_spam, server->chat_spam_count, server->chat_spam_interval, server->chat_spam_ban)) {
+	printf_chat("You have been muted for spamming");
+	return;
+    }
+
     my_user.message_count++; my_user.dirty=1;
 
     update_player_move_time();
