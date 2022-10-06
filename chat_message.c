@@ -71,7 +71,14 @@ process_chat_message(int message_type, char * msg)
     }
 
     if (add_antispam_event(player_chat_spam, server->chat_spam_count, server->chat_spam_interval, server->chat_spam_ban)) {
-	printf_chat("You have been muted for spamming");
+        int secs = 0;
+        if (player_chat_spam->banned_til)
+            secs = player_chat_spam->banned_til - time(0);
+        if (secs < 2 || player_chat_spam->ban_flg == 0) {
+	    player_chat_spam->ban_flg = 1;
+	    printf_chat("You have been muted for spamming");
+	} else
+	    printf_chat("You are muted for %d more second%s", secs, secs==1?"":"s");
 	return;
     }
 

@@ -385,10 +385,15 @@ send_clickdistance()
 {
     if (!extn_clickdistance) return;
 
-    send_clickdistance_pkt(
-	    level_prop->click_distance > 0
+    int click_distance = my_user.click_distance;
+
+    if (click_distance <= 0)
+	click_distance =
+	    level_prop->click_distance >= 0
 	    ? level_prop->click_distance
-	    : 160);
+	    : 160;
+
+    send_clickdistance_pkt(click_distance);
 }
 
 void

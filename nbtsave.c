@@ -55,10 +55,23 @@ save_map_to_file(char * fn, int background)
     bc_ent_int16(savefile, "Z", level_prop->cells_z);
 
     // Part written by CC
-    if (level_prop->software[0]) {
+    if (level_prop->software[0] || level_prop->seed[0]) {
 	bc_compound(savefile, "MapGenerator");
-	bc_ent_string(savefile, "Software", level_prop->software);
+	if (level_prop->software[0])
+	    bc_ent_string(savefile, "Software", level_prop->software);
+	else
+	    bc_ent_string(savefile, "Software", server->software);
 	bc_ent_string(savefile, "MapGeneratorName", level_prop->theme);
+	if (level_prop->seed[0]) {
+	    // CC Only allows an integer here.
+	    char sbuf[sizeof(int)*3+3];
+	    int seed = strtol(level_prop->seed, 0, 0);
+	    sprintf(sbuf, "%d", seed);
+	    if (strcmp(sbuf, level_prop->seed) == 0)
+		bc_ent_int32(savefile, "Seed", seed);
+	    else
+		bc_ent_string(savefile, "Seed", level_prop->seed);
+	}
 	bc_end(savefile);
     }
 

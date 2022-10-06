@@ -6,6 +6,7 @@ typedef struct aspam_t aspam_t;
 struct aspam_t {
     int64_t ms_start;
     time_t banned_til;
+    int32_t ban_flg;
     int32_t events;
     int32_t cheater;
 };
@@ -47,6 +48,7 @@ add_antispam_event(aspam_t * counter, int32_t spam_count, int32_t spam_time, int
 	counter->ms_start = ms_now;
 	counter->events = 1;
 	counter->cheater = 0;
+	if (!rv) counter->ban_flg = 0;
 	return rv;
     }
 
@@ -68,7 +70,7 @@ add_antispam_event(aspam_t * counter, int32_t spam_count, int32_t spam_time, int
 	counter->banned_til = now.tv_sec + spam_ban;
 
     // yesssss.
-    if (counter->banned_til && counter->banned_til < ms_deadline/1000)
+    if (counter->banned_til == 0 || counter->banned_til < ms_deadline/1000)
 	counter->banned_til = ms_deadline/1000;
 
     return 1;

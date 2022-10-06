@@ -45,7 +45,10 @@ run_command(char * msg)
 	    secs = player_cmd_spam->banned_til - time(0);
 	if (secs < 2)
 	    printf_chat("You have been blocked from using commands");
-	else
+	else if (player_cmd_spam->ban_flg == 0) {
+	    player_cmd_spam->ban_flg = 1;
+	    printf_chat("You have been blocked from using commands for %d seconds", secs);
+	} else
 	    printf_chat("Blocked from using commands for %d seconds", secs);
 	return;
     }

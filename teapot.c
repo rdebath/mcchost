@@ -55,7 +55,7 @@ teapot(uint8_t * buf, int len)
 	} else if (len > 12 && buf[1] == 0 && buf[0] >= 12 && buf[0] < len && buf[0] < 32 &&
 	    buf[buf[0]-2] == ((tcp_port_no>>8)&0xFF) && buf[buf[0]-1] == (tcp_port_no&0xFF)) {
 	    printlog("Failed connect from %s, %s", client_ipv4_str,
-		"Using newer Minecraft protocol.");
+		"Using a Minecraft protocol.");
 	    fm = rv = dump_it = 0;
 	    send_logout = 1;
 

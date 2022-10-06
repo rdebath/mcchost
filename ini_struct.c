@@ -59,11 +59,11 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAYCP437("Motd", server->motd);
 	INI_STRARRAYCP437("Main", server->main_level);
 
-	if (!st->no_unsafe) {
+	if (!st->no_unsafe)
 	    INI_STRARRAY("Salt", server->secret);	//Base62
-	} else if (st->write) {
+	else if (st->write)
 	    INI_STRARRAY(WC("Salt"), "XXXXXXXXXXXXXXXX");
-	}
+
 	INI_DURATION("KeyRotation", server->key_rotation);
 
 	INI_BOOLVAL("Private", server->private);
@@ -132,16 +132,14 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 		break;
 	}
 
-	if (!st->write || textcolour[tn].name.c[0]) {
+	if (!st->write || textcolour[tn].name.c[0])
 	    INI_NBTSTR("Name", textcolour[tn].name);
-	}
 	if (!st->write || textcolour[tn].colour >= 0) {
 	    INI_INTHEX("Colour", textcolour[tn].colour);
 	    INI_INTVAL("Alpha", textcolour[tn].a);
 	}
-	if (!st->write || textcolour[tn].fallback) {
+	if (!st->write || textcolour[tn].fallback)
 	    INI_INTVAL("Fallback", textcolour[tn].fallback);
-	}
 
 	tn++;
     } while(st->all && tn < 256);
@@ -224,9 +222,8 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAYCP437("Software", level_prop->software);
 	INI_STRARRAYCP437("Theme", level_prop->theme);
 	INI_STRARRAYCP437("Seed", level_prop->seed);
-	if (!st->write) {
+	if (!st->write)
 	    INI_TIME_T("TimeCreated", level_prop->time_created);
-	}
 
 	INI_FIXEDP("Spawn.X", level_prop->spawn.x, 32);
 	INI_FIXEDP("Spawn.Y", level_prop->spawn.y, 32);
@@ -329,9 +326,8 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	}
 	if (level_prop->blockdef[bn].block_perm || !st->write) {
 	    INI_BLKVAL("Permission", level_prop->blockdef[bn].block_perm);
-	    if (!level_prop->blockdef[bn].defined && st->write) {
+	    if (!level_prop->blockdef[bn].defined && st->write)
 		INI_BOOLVAL("Defined", level_prop->blockdef[bn].defined);
-	    }
 	}
 
 	bn++;
@@ -394,13 +390,15 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTMAXVAL("BlocksPlaced", user_ini_tgt->blocks_placed);
 	INI_INTMAXVAL("BlocksDeleted", user_ini_tgt->blocks_deleted);
 	INI_INTMAXVAL("BlocksDrawn", user_ini_tgt->blocks_drawn);
-	INI_INTMAXVAL("FirstLogon", user_ini_tgt->first_logon);
-	INI_INTMAXVAL("LastLogon", user_ini_tgt->last_logon);
+	INI_TIME_T("FirstLogon", user_ini_tgt->first_logon);
+	INI_TIME_T("LastLogon", user_ini_tgt->last_logon);
 	INI_INTMAXVAL("LogonCount", user_ini_tgt->logon_count);
 	INI_INTMAXVAL("KickCount", user_ini_tgt->kick_count);
 	INI_INTMAXVAL("DeathCount", user_ini_tgt->death_count);
 	INI_INTMAXVAL("MessageCount", user_ini_tgt->message_count);
 	INI_INTMAXVAL("CoinCount", user_ini_tgt->coin_count);
+	if (user_ini_tgt->click_distance >= 0 || !st->write)
+	    INI_FIXEDP("ClickDistance", user_ini_tgt->click_distance, 32);
 	INI_DURATION("TimeOnline", user_ini_tgt->time_online_secs);
 	INI_STRARRAY("LastIP", user_ini_tgt->last_ip);
     }
@@ -778,6 +776,7 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
 
 #if INTERFACE
 #define INI_STRARRAY(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -785,9 +784,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 ini_read_str((_var), sizeof(_var), *fieldvalue); \
             else \
                 ini_write_str(st, section, fld, (_var)); \
-        }
+        } \
+    }while(0)
 
 #define INI_STRARRAYCP437(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -795,9 +796,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 ini_read_cp437((_var), sizeof(_var), *fieldvalue); \
             else \
                 ini_write_cp437(st, section, fld, (_var)); \
-        }
+        } \
+    }while(0)
 
 #define INI_NBTSTR(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -805,9 +808,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 ini_read_nbtstr(&(_var), *fieldvalue); \
             else \
                 ini_write_nbtstr(st, section, fld, &(_var)); \
-        }
+        } \
+    }while(0)
 
 #define INI_INTVAL(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -815,9 +820,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 _var = atoi(*fieldvalue); \
             else \
                 ini_write_int(st, section, fld, (_var)); \
-        }
+        } \
+    }while(0)
 
 #define INI_BLKVAL(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -825,9 +832,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 _var = atoi(*fieldvalue); \
             else \
                 ini_write_int_blk(st, section, fld, (_var)); \
-        }
+        } \
+    }while(0)
 
 #define INI_INTHEX(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -835,9 +844,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 _var = strtol(*fieldvalue, 0, 0); \
             else \
                 ini_write_hexint(st, section, fld, (_var)); \
-        }
+        } \
+    }while(0)
 
 #define INI_FIXEDP(_field, _var, _scale) \
+    do{ \
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -845,9 +856,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 _var = ini_read_int_scale(*fieldvalue, _scale, 1); \
             else \
                 ini_write_int_scale(st, section, fld, (_var), _scale, 1); \
-        }
+        }\
+    }while(0)
 
 #define INI_FIXEDP2(_field, _var, _scale, _scale2) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -855,9 +868,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 _var = ini_read_int_scale(*fieldvalue, _scale, _scale2); \
             else \
                 ini_write_int_scale(st, section, fld, (_var), _scale, _scale2); \
-        }
+        } \
+    }while(0)
 
 #define INI_INTMAXVAL(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -865,9 +880,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 _var = strtoimax(*fieldvalue, 0, 0); \
             else \
                 ini_write_intmax(st, section, fld, (_var)); \
-        }
+        } \
+    }while(0)
 
 #define INI_DURATION(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -875,9 +892,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 _var = ini_read_int_duration(*fieldvalue); \
             else \
                 ini_write_int_duration(st, section, fld, (_var)); \
-        }
+        } \
+    }while(0)
 
 #define INI_TIME_T(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -885,9 +904,11 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 _var = ini_read_int_time_t(*fieldvalue); \
             else \
                 ini_write_int_time_t(st, section, fld, (_var)); \
-        }
+        } \
+    }while(0)
 
 #define INI_BOOLVAL(_field, _var) \
+    do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
@@ -895,6 +916,7 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 _var = ini_read_bool(*fieldvalue); \
             else \
                 ini_write_bool(st, section, fld, (_var)); \
-        }
+        } \
+    }while(0)
 
 #endif

@@ -14,7 +14,7 @@
  *
  */
 #if INTERFACE
-enum csv_type {FLD_I32, FLD_I64, FLD_STR=16};
+enum csv_type {FLD_I32, FLD_I64, FLD_SKIP, FLD_STR=16};
 
 typedef struct userrec_t userrec_t;
 struct userrec_t
@@ -35,6 +35,7 @@ struct userrec_t
 
     // Saved to ini file
     int64_t coin_count;
+    int32_t click_distance;
     char nick[NB_SLEN];
     char title[NB_SLEN];
     char colour[NB_SLEN];
@@ -181,6 +182,7 @@ read_fld(uint8_t **pp, int * bytes, void * data, enum csv_type type, int len)
 	break;
 
     default:
+    case FLD_SKIP:
 	*pp += e+1;
 	return;
     }
@@ -339,6 +341,7 @@ read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
 	// INI file loaded first, overridden by DB
 	if (load_ini) {
 	    char userini[PATH_MAX];
+	    rec_buf->click_distance = -1;  // Map default
 	    user_ini_tgt = rec_buf;
 	    saprintf(userini, USER_INI_NAME, user_key);
 	    load_ini_file(user_ini_fields, userini, 1, 0);
@@ -397,13 +400,13 @@ read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
     read_fld(&p, &bytes, &rec_buf->blocks_placed, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->blocks_deleted, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->blocks_drawn, FLD_I64, 0);
-    read_fld(&p, &bytes, &rec_buf->first_logon, FLD_I64, 0);
+    read_fld(&p, &bytes, 0, FLD_SKIP, 0);
     read_fld(&p, &bytes, &rec_buf->last_logon, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->logon_count, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->kick_count, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->death_count, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->message_count, FLD_I64, 0);
-    read_fld(&p, &bytes, rec_buf->last_ip, FLD_STR, sizeof(rec_buf->last_ip));
+    read_fld(&p, &bytes, 0, FLD_SKIP, 0);
     read_fld(&p, &bytes, &rec_buf->time_online_secs, FLD_I64, 0);
 
     E(mdb_txn_commit(txn));

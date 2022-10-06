@@ -343,7 +343,7 @@ process_args(int argc, char **argv)
 		    .cmd_spam_ban = 30,
 		    .chat_spam_count = 8,
 		    .chat_spam_interval = 5,
-		    .chat_spam_ban = 60,
+		    .chat_spam_ban = 10,
 		};
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);

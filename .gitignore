@@ -8,9 +8,6 @@ obj*/build-opts.*
 *.h
 lib_text.c
 
-# Except
-!inline.h
-
 # Editing, crashing, debugging etc
 tags
 core

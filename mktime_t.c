@@ -15,15 +15,27 @@ time_t_to_iso8601(char * timebuf, time_t t)
 time_t
 iso8601_to_time_t(const char * iso8601_datetime)
 {
-    // Format should be: "YYYY-MM-DDTHH:MM:SSZ" no others allowed.
+    // Format should be: "YYYY-MM-DDTHH:MM:SSZ"
+    // But also allow:   "YYYY-MM-DDTHH:MM:SS±XX:XX"
     if (!iso8601_datetime || strlen(iso8601_datetime) < 19) return 0;
     if (strlen(iso8601_datetime) > 30) return 0;
-    char isodt[32];
+    char isodt[32] = ".........................*";
     strcpy(isodt, iso8601_datetime);
-    // Allow "local time zone" of UTC.
-    if (isodt[19] != 0 && isodt[19] != 'z' && isodt[19] != 'Z') return 0;
+    if (isodt[10] != ' ' && isodt[10] != 't' && isodt[10] != 'T') return 0;
     if (isodt[4] != '-' || isodt[7] != '-' || isodt[13] != ':' || isodt[16] != ':')
 	return 0;
+
+    // Timezones.
+    int tz = 0;
+    if (isodt[19] != 0 && isodt[19] != 'z' && isodt[19] != 'Z') {
+	if (isodt[19] != '+' && isodt[19] != '-') return 0;
+	if (isodt[22] != ':' || isodt[25] != 0) return 0;
+	int s = (isodt[19]=='+')?-1:1;
+	isodt[22] = 0;
+	tz = atoi(isodt+23) + 60 * atoi(isodt+20);
+	tz *= s;
+    }
+
     // Slice it
     isodt[4]=isodt[7]=isodt[10]=isodt[13]=isodt[16]=isodt[19]=0;
     struct tm tm = {0};
@@ -31,7 +43,7 @@ iso8601_to_time_t(const char * iso8601_datetime)
     tm.tm_mon = atoi(isodt+5);
     tm.tm_mday = atoi(isodt+8);
     tm.tm_hour = atoi(isodt+11);
-    tm.tm_min = atoi(isodt+14);
+    tm.tm_min = atoi(isodt+14) + tz;
     tm.tm_sec = atoi(isodt+17);
     // Dice it
     return mktime_t(&tm);

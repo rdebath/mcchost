@@ -28,5 +28,6 @@
 #define uint16_t uint16_t
 #define uint32_t uint32_t
 #define uint64_t uint64_t
+#define tm tm
 #endif
 #endif

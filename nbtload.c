@@ -435,6 +435,9 @@ change_int_value(char * section, char * item, int64_t value)
 	if (strcmp(item, "LastModified") == 0) level_prop->last_modified = value;
 	if (strcmp(item, "LastBackup") == 0) level_prop->last_backup = value;
 
+    } else if (strcasecmp(section, "MapGenerator") == 0) {
+	if (strcasecmp(item, "Seed") == 0)
+	    sprintf(level_prop->seed, "%jd", (intmax_t)value);
     } else if (strcmp(section, "Spawn") == 0) {
 	if (strcmp(item, "X") == 0) level_prop->spawn.x = value*32+16;
 	if (strcmp(item, "Y") == 0) level_prop->spawn.y = value*32+16;
@@ -758,6 +761,9 @@ change_str_value(char * section, char * item, char * value)
 	}
 	if (strcasecmp(item, "MapGeneratorName") == 0) {
 	    cpy_nstr(level_prop->theme, MB_STRLEN*2, value);
+	}
+	if (strcasecmp(item, "Seed") == 0) {
+	    cpy_nstr(level_prop->seed, MB_STRLEN*2, value);
 	}
 
 #if 0 // Bots?
