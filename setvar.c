@@ -107,7 +107,9 @@ cmd_setvar(char * cmd, char * arg)
     char vbuf[256];
 
     if (section) {
-	if (strcasecmp(section, "server") == 0 || strcasecmp(section, "level") == 0 ||
+	if (strcasecmp(section, "server") == 0 ||
+		strcasecmp(section, "system") == 0 ||
+		strcasecmp(section, "level") == 0 ||
 		strncmp(section, "textcolour", 10) == 0) {
 	    varname = strtok(0, " ");
 	    value = strtok(0, "");

@@ -48,6 +48,7 @@ static char * dirlist[] = {
     LEVEL_BACKUP_DIR_NAME,
     USER_DIR,
     SECRET_DIR,
+    "texture",
     "help",
     "log",
     "ini",

@@ -56,7 +56,7 @@ iso8601_to_time_t(const char * iso8601_datetime)
 #define NumLY(y)  (((y) - 1969) / 4 - ((y) - 1901) / 100 + ((y) - 1601) / 400)
 
 /* mktime cannot be reliably forced to use UTC, this only does UTC. */
-LOCAL time_t
+time_t
 mktime_t(struct tm *tm)
 {
 static int mdays[] = {31,28,31,30,31,30,31,31,30,31,30,31};

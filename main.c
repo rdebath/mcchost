@@ -235,18 +235,27 @@ disconnect(int rv, char * emsg)
     stop_user();
     send_discon_msg_pkt(emsg);
     flush_to_remote();
+
+    if (inetd_mode && user_authenticated) {
+	socket_shutdown(1);
+	scan_and_save_levels(0);
+    } else
+	socket_shutdown(0);
+    exit(rv);
+}
+
+void
+socket_shutdown(int do_close)
+{
     shutdown(line_ofd, SHUT_RDWR);
     if (line_ofd != line_ifd)
 	shutdown(line_ifd, SHUT_RDWR);
 
-    if (inetd_mode && user_authenticated) {
+    if (do_close) {
 	close(line_ofd);
 	if (line_ofd != line_ifd)
 	    close(line_ifd);
-	// Cleanup
-	scan_and_save_levels(0);
     }
-    exit(rv);
 }
 
 void
@@ -361,6 +370,12 @@ login()
 		    if (read(line_ifd, inbuf, eoh-inbuf+4) != eoh-inbuf+4) // NOM! Header.
 			fatal("Buffered socket read() failed");
 		    insize = 0; // Clean
+#ifdef MAXHTTPDOWNLOAD
+		} else if(http_download(inbuf, insize)) {
+		    flush_to_remote();
+		    socket_shutdown(1);
+		    exit(0);
+#endif
 		} else {
 		    *eoh = '\r';
 		    teapot(inbuf, insize);

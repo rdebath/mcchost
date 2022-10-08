@@ -80,7 +80,7 @@ flush_to_remote()
     {
 	if( rv != ttl_end-ttl_start ) ttl_start += rv;
 	else ttl_start = ttl_end = 0;
-    } else if (rv < 0)
+    } else if (rv < 0 && errno != EWOULDBLOCK)
 	fatal("write line_fd syscall");
 }
 

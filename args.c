@@ -25,6 +25,7 @@ struct server_t {
     int op_flag;
     int cpe_disabled;
     int private;
+    int disable_web_server;
 
     int max_players;
     int loaded_levels;
