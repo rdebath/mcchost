@@ -10,8 +10,11 @@
 
 BEGIN{
     flg=0;count=0;ifzero=0;
-    print "/* ⇉⇉⇉ This file was automatically generated.  Do not edit! ⇇⇇⇇ */"
-    print "#include \"lib_text.h\"\n"
+    if (files < 1) files=0;
+    if (!files) {
+	print "/* ⇉⇉⇉ This file was automatically generated.  Do not edit! ⇇⇇⇇ */"
+	print "#include \"lib_text.h\"\n"
+    }
 }
 
 /^#if 0/ { ifzero++; next; }
@@ -46,19 +49,29 @@ flg==0 {next;}
 function save_text() {
     gsub("\n*$", "", text);
     gsub("\t", "        ", text); # Don't use tabs!!
-    gsub("\\\\", "\\\\\\\\", text); # Seriously!?
-    gsub("\"", "\\\"", text);
 
-    gsub("\n", "\",\n    \"", text);
-    sub("$", "\",\n    0\n};\n", text);
-    if (text == "") text = "\",0};\n";
+    if (!files) {
+	gsub("\\\\", "\\\\\\\\", text); # Seriously!?
+	gsub("\"", "\\\"", text);
 
-    t1 = textname; sub(",.*", "", t1);
-    t1 = "static char *lines_" t1 "[] = {"
-    text = t1 "\n    \"" text
+	gsub("\n", "\",\n    \"", text);
+	sub("$", "\",\n    0\n};\n", text);
+	if (text == "") text = "\",0};\n";
 
-    print "/* Help for "textname" */"
-    print text
+	t1 = textname; sub(",.*", "", t1);
+	t1 = "static char *lines_" t1 "[] = {"
+	text = t1 "\n    \"" text
+
+	print "/* Help for "textname" */"
+	print text
+    }
+
+    if (files && text != "") {
+	c = split(textname, a, ",");
+	for(j=0; j<c; j++) {
+	    print text > "help/" a[j+1] ".txt"
+	}
+    }
 
     list[count] = textname;
     aclass[count] = class;
@@ -66,22 +79,24 @@ function save_text() {
 }
 
 END{
-    print "help_text_t helptext[] = {";
-    for(i=0; i<count; i++) {
-	t1 = list[i]; sub(",.*", "", t1);
-	c = split(list[i], a, ",");
-	for(j=0; j<c; j++)
-	    print "    {", "\"" a[j+1] "\",", aclass[i]",", "lines_" t1, "},"
-    }
-    print "    {0,0,0}"
-    print "};"
+    if (!files) {
+	print "help_text_t helptext[] = {";
+	for(i=0; i<count; i++) {
+	    t1 = list[i]; sub(",.*", "", t1);
+	    c = split(list[i], a, ",");
+	    for(j=0; j<c; j++)
+		print "    {", "\"" a[j+1] "\",", aclass[i]",", "lines_" t1, "},"
+	}
+	print "    {0,0,0}"
+	print "};"
 
-    print ""
-    print "#define N .name= /*STFU*/"
-    print "command_t command_list[] ="
-    print "{"
-    print cmdlist;
-    print "    {N(0)}"
-    print "};"
-    print "#undef N"
+	print ""
+	print "#define N .name= /*STFU*/"
+	print "command_t command_list[] ="
+	print "{"
+	print cmdlist;
+	print "    {N(0)}"
+	print "};"
+	print "#undef N"
+    }
 }

@@ -16,7 +16,7 @@ DBGSRC=-fdebug-prefix-map='$(shell pwd)'=src
 # Use -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
 # WTH is the point of the "truncation" warnings!
 WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation
-CFLAGS=-Iinclude -O2 -g3 -pthread ${WARN} ${DEFS} ${HEADER}
+CFLAGS=-Iinclude -O2 -g3 -pthread ${WARN} ${DEFS} ${HEADER} ${DBGSRC}
 LDFLAGS=-lz -lm -llmdb
 HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
 

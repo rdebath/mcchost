@@ -207,7 +207,7 @@ send_queued_blocks()
 	if (reload_pending > 1) { reload_pending--; return; }
 
 	reload_pending = 0;
-	if (client_trusted) {
+	if (perm_is_admin()) {	// Message for admin only
 	    if (check_block_queue(1))
 		printf_chat("Reset block queue and reload");
 	    else

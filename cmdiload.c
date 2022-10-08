@@ -5,11 +5,13 @@
 /*HELP iload,iniload H_CMD
 &T/iload [name]
 Load an ini file into the current level.
+See &T/help inifile&S for syntax
 Aliases: &T/iniload
 */
 /*HELP isave,inisave H_CMD
 &T/isave [name]
 Save the properties of the current level into ini/${name}.ini
+See &T/help inifile&S for syntax
 Aliases: &T/inisave
 */
 /*HELP ishow,inishow H_CMD

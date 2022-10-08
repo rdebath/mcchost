@@ -62,6 +62,8 @@ run_command(char * msg)
 
 	    cmd = command_list[c].name;
 	    char * arg = strtok(0, "");
+	    if (!perm_can_run(cmd, c)) return;
+
 	    if (server->flag_log_commands) {
 		int redact_args = (!strcasecmp(cmd, "pass") ||
 				   !strcasecmp(cmd, "setpass"));

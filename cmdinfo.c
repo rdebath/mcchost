@@ -119,16 +119,36 @@ show_user_info(userrec_t *user)
     printf_chat(" Logged in &a%jd&S times, &a%jd&S of which ended in a kick",
 	(intmax_t)user->logon_count, (intmax_t)user->kick_count);
 
-    time_t f = user->first_logon, l = user->last_logon;
-    struct tm first_log, last_log;
-    gmtime_r(&f, &first_log);
-    gmtime_r(&l, &last_log);
+    if (!my_user.timezone[0])
+	detect_timezone();
 
-    printf_chat(" First login &a%04d-%02d-%02d&S, Last login &a%04d-%02d-%02d&S (UTC)",
-	first_log.tm_year+1900, first_log.tm_mon+1, first_log.tm_mday,
-	last_log.tm_year+1900, last_log.tm_mon+1, last_log.tm_mday);
+    time_t f[1] = {user->first_logon}, l[1] = {user->last_logon};
+    if (my_user.timezone[0]) {
+        setenv("TZ", my_user.timezone, 1);
+        tzset();
+	struct tm tm[1];
+	localtime_r(f, tm);
+	char s[256];
+	strftime(s, sizeof(s), "%a, %d %b %Y %T %z", tm);
+	printf_chat(" First login &a%s", s);
 
-    if (client_trusted)
+	localtime_r(l, tm);
+	strftime(s, sizeof(s), "%a, %d %b %Y %T %z", tm);
+	printf_chat(" Last login &a%s", s);
+
+        unsetenv("TZ");
+        tzset();
+    } else {
+	struct tm first_log, last_log;
+	gmtime_r(f, &first_log);
+	gmtime_r(l, &last_log);
+
+	printf_chat(" First login &a%04d-%02d-%02d&S, Last login &a%04d-%02d-%02d&S (UTC)",
+	    first_log.tm_year+1900, first_log.tm_mon+1, first_log.tm_mday,
+	    last_log.tm_year+1900, last_log.tm_mon+1, last_log.tm_mday);
+    }
+
+    if (perm_is_admin())
 	printf_chat(" IP address of &a%s", user->last_ip);
 }
 

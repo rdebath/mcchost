@@ -60,72 +60,73 @@ static inline void ERR(int n, char * tn)
     if (n == -1) { perror(tn); exit(9); }
 }
 
+void
+find_dirs() {
+    // The current directory has not been explicity set as the one we
+    // should work in so move to the default. (Use symlink to move that)
+
+    // Special case: If we've been started as root try to use the login
+    // id "games" and store our maps in /var/games/mcchost.
+
+    const char *home_d = 0;
+    int vargames = 0;
+    uid_t id = getuid();
+    uid_t run_as = 0;
+    gid_t grun_as = 0;
+
+    if (id > 0)
+	if ((home_d = getenv("HOME")) == 0)
+	    home_d = getpwuid(id)->pw_dir;
+
+    if (!home_d) vargames = 1;
+
+    if (id == 0) {
+	struct passwd *uid = getpwnam("games");
+	if (uid) run_as = uid->pw_uid;
+	struct group * gid = getgrnam("games");
+	if (gid) grun_as = gid->gr_gid;
+	vargames = 1;
+
+	if (!uid || !gid) {
+	    fprintf(stderr, "Unable to switch to user and group \"games\"\n");
+	    exit(9);
+	}
+    }
+
+    char dirpath[PATH_MAX];
+    if (vargames)
+	strcpy(dirpath, "/var/games/mcchost"); // Just some random location.
+    else
+	saprintf(dirpath, "%s/.mcchost", home_d);
+
+    struct stat st;
+    if (stat(dirpath, &st) >= 0 && (st.st_mode & S_IFMT) != 0) {
+	// Game directory exists --> use it.
+    } else {
+	// Make /var/games if it doesn't exist.
+	if (id == 0 && vargames) (void) mkdir("/var/games", 0755);
+
+	// Try to create the directory.
+	E(mkdir(dirpath, 0700));
+	if (id == 0 && vargames) {
+	    if (grun_as) E(chmod(dirpath, 02770));
+	    if (run_as || grun_as)
+		E(chown(dirpath, run_as, grun_as));
+	}
+    }
+
+    if (id == 0) {
+	if (grun_as) E(setgid(grun_as));
+	if (run_as) E(setuid(run_as));
+	if (vargames && grun_as) (void) umask(007);
+    }
+
+    E(chdir(dirpath));
+}
 
 void
-init_dirs(int use_cwd)
+init_dirs()
 {
-    if (!use_cwd) {
-	// The current directory has not been explicity set as the one we
-	// should work in so move to the default. (Use symlink to move that)
-
-	// Special case: If we've been started as root try to use the login
-	// id "games" and store our maps in /var/games/mcchost.
-
-	const char *home_d = 0;
-	int vargames = 0;
-	uid_t id = getuid();
-	uid_t run_as = 0;
-	gid_t grun_as = 0;
-
-	if (id > 0)
-	    if ((home_d = getenv("HOME")) == 0)
-		home_d = getpwuid(id)->pw_dir;
-
-	if (!home_d) vargames = 1;
-
-	if (id == 0) {
-	    struct passwd *uid = getpwnam("games");
-	    if (uid) run_as = uid->pw_uid;
-	    struct group * gid = getgrnam("games");
-	    if (gid) grun_as = gid->gr_gid;
-	    vargames = 1;
-
-	    if (!uid || !gid) {
-		fprintf(stderr, "Unable to switch to user and group \"games\"\n");
-		exit(9);
-	    }
-	}
-
-	char dirpath[PATH_MAX];
-	if (vargames)
-	    strcpy(dirpath, "/var/games/mcchost"); // Just some random location.
-	else
-	    saprintf(dirpath, "%s/.mcchost", home_d);
-
-	struct stat st;
-	if (stat(dirpath, &st) >= 0 && (st.st_mode & S_IFMT) != 0) {
-	    // Game directory exists --> use it.
-	} else {
-	    // Make /var/games if it doesn't exist.
-	    if (id == 0 && vargames) (void) mkdir("/var/games", 0755);
-
-	    // Try to create the directory.
-	    E(mkdir(dirpath, 0700));
-	    if (id == 0 && vargames) {
-		if (grun_as) E(chmod(dirpath, 02770));
-		if (run_as || grun_as)
-		    E(chown(dirpath, run_as, grun_as));
-	    }
-	}
-
-	if (id == 0) {
-	    if (grun_as) E(setgid(grun_as));
-	    if (run_as) E(setuid(run_as));
-	    if (vargames && grun_as) (void) umask(007);
-	}
-
-	E(chdir(dirpath));
-    }
 
     if (getuid() == 0) {
 	// Don't run as root

@@ -29,7 +29,6 @@ time_t last_heartbeat = 0;
 char client_ipv4_str[INET_ADDRSTRLEN+10];
 int client_ipv4_port = 0;
 uint32_t client_ipv4_addr = 0;
-int client_trusted = 0;
 int disable_restart = 0;
 
 volatile int restart_sig = 0;
@@ -375,8 +374,6 @@ start_listen_socket(char * listen_addr, int port)
 LOCAL int
 accept_new_connection()
 {
-    client_trusted = 0;
-
     struct sockaddr_in client_addr;
     memset(&client_addr, 0, sizeof(client_addr));
     socklen_t client_len = sizeof(client_addr);
@@ -387,21 +384,25 @@ accept_new_connection()
     client_ipv4_port = ntohs(client_addr.sin_port);
     sprintf(client_ipv4_str+strlen(client_ipv4_str), ":%d", client_ipv4_port);
 
+    int ip_is_local = 0;
+
     if (client_addr.sin_family == AF_INET)
     {
 	uint32_t caddr = ntohl(client_addr.sin_addr.s_addr);
 	client_ipv4_addr = caddr;
 	if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost (network)
-	    client_trusted = 1;
+	    ip_is_local = 1;
 	if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
-	    client_trusted = 1;
+	    ip_is_local = 1;
     }
+
+    client_trusted = ip_is_local;
 
     if (server_runonce)
 	printlog("Connected, closing listen socket.");
     else
 	printlog("Incoming connection from %s%s on port %d.",
-	    client_trusted?"trusted host ":"",
+	    ip_is_local?"trusted host ":"",
 	    client_ipv4_str, tcp_port_no);
 
     return new_client_sock;
@@ -423,6 +424,7 @@ check_inetd_connection()
 
     if (line_ifd < 0) return;
 
+    int ip_is_local = 0;
     client_ipv4_port = -1;
 
     if (isatty(line_ifd))
@@ -441,9 +443,9 @@ check_inetd_connection()
 	    uint32_t caddr = ntohl(addr.s4.sin_addr.s_addr);
 	    client_ipv4_addr = caddr;
 	    if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost (network)
-		client_trusted = 1;
+		ip_is_local = 1;
 	    if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
-		client_trusted = 1;
+		ip_is_local = 1;
 	}
 
 	if (addr.s6.sin6_family == AF_INET6)
@@ -454,16 +456,18 @@ check_inetd_connection()
 	}
     }
 
+    client_trusted = ip_is_local;
+
     // In inetd mode our port is unknown
     tcp_port_no = read_sock_port_no(line_ifd);
 
     if (tcp_port_no > 0)
 	printlog("Inetd connection from %s%s on port %d.",
-	    client_trusted?"trusted host ":"",
+	    ip_is_local?"trusted host ":"",
 	    client_ipv4_str, tcp_port_no);
     else
 	printlog("%sonnection from %s.",
-	    client_trusted?"Trusted c":"C", client_ipv4_str);
+	    ip_is_local?"Trusted c":"C", client_ipv4_str);
 }
 
 void

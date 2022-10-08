@@ -45,22 +45,8 @@ main(int argc, char **argv)
     proc_args_mem = argv[0];
     proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0] + 1;
 
-    if (!inetd_mode && !start_tcp_server && !save_conf
-	&& !start_heartbeat_task && !start_backup_task
-	&& (isatty(0) || isatty(1)))
-	show_args_help();
-
-    if (inetd_mode && start_tcp_server)
-	show_args_help();
-
     if (*logfile_pattern)
 	set_logfile(logfile_pattern, 0);
-
-    if (save_conf) {
-	save_system_ini_file();
-	fprintf(stderr, "Configuration saved\n");
-	exit(0);
-    }
 
     lock_start(system_lock);
 

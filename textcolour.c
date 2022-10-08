@@ -38,7 +38,7 @@ cmd_textcolour(char * cmd, char *arg)
 
     if (!subcmd) return cmd_help("", cmd);
 
-    if (!client_trusted) {
+    if (!perm_is_admin()) {
 	printf_chat("&WPermission denied, need to be admin.");
 	return;
     }

@@ -139,8 +139,11 @@ cmd_setvar(char * cmd, char * arg)
 
     if (strcasecmp(section, "server") == 0 || strcasecmp(section, "system") == 0 ||
 	    strncmp(section, "textcolour", 10) == 0) {
-	if (!client_trusted)
+	if (!perm_is_admin())
 	    return printf_chat("&WPermission denied, need to be admin.");
+
+	// Alias
+	if (strcasecmp(section, "system") == 0) st->curr_section = "server";
 
 	if (!system_ini_fields(st, varname, &value)) {
 
@@ -189,7 +192,7 @@ Restarts the server listener process.
 void
 cmd_restart(char * UNUSED(cmd), char * UNUSED(arg))
 {
-    if (!client_trusted)
+    if (!perm_is_admin())
 	return printf_chat("&WPermission denied, need to be admin.");
 
     if (alarm_handler_pid) {

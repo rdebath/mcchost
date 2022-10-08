@@ -401,6 +401,7 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_FIXEDP("ClickDistance", user_ini_tgt->click_distance, 32);
 	INI_DURATION("TimeOnline", user_ini_tgt->time_online_secs);
 	INI_STRARRAY("LastIP", user_ini_tgt->last_ip);
+	INI_STRARRAY("Timezone", user_ini_tgt->timezone);
     }
     return found;
 }

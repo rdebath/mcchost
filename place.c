@@ -221,7 +221,27 @@ process_player_setblock(pkt_setblock pkt)
 
     if (!user_authenticated) { revert_client(pkt); return; }
 
-    if (player_mark_mode) {
+    int do_revert = 0;
+
+    {
+	uint64_t range = 0, r, ok_reach;
+	r = (pkt.coord.x*32 - player_posn.x); range += r*r;
+	r = (pkt.coord.y*32 - player_posn.y); range += r*r;
+	r = (pkt.coord.z*32 - player_posn.z); range += r*r;
+	ok_reach = level_prop->click_distance;
+	if (my_user.click_distance > 0) ok_reach = my_user.click_distance;
+	if (ok_reach == 0) do_revert = 1;
+	else if (ok_reach > 0) {
+	    if (ok_reach > 5*32) ok_reach += 4*32; else ok_reach += 2*32;
+	    ok_reach *= ok_reach;
+	    if (range >= ok_reach) {
+		printf_chat("You can't build that far away.");
+		do_revert = 1;
+	    }
+	}
+    }
+
+    if (!do_revert && player_mark_mode) {
 	int l = sizeof(marks)/sizeof(*marks);
 	int v = 0;
 	while(v<l && marks[v].valid) v++;
@@ -260,28 +280,11 @@ process_player_setblock(pkt_setblock pkt)
 	pkt.mode = 2;
     }
 
-    int do_revert = !can_place_block(pkt.block);
+    if (!do_revert) do_revert = !can_place_block(pkt.block);
 
     if (add_antispam_event(player_block_spam, server->block_spam_count, server->block_spam_interval, 0)) {
 	my_user.kick_count++;
 	logout("Kicked for suspected griefing.");
-    }
-
-    if (!do_revert) {
-	uint64_t range = 0, r, ok_reach;
-	r = (pkt.coord.x*32 - player_posn.x); range += r*r;
-	r = (pkt.coord.y*32 - player_posn.y); range += r*r;
-	r = (pkt.coord.z*32 - player_posn.z); range += r*r;
-	ok_reach = level_prop->click_distance;
-	if (ok_reach == 0) do_revert = 1;
-	else if (ok_reach > 0) {
-	    if (ok_reach > 5*32) ok_reach += 4*32; else ok_reach += 2*32;
-	    ok_reach *= ok_reach;
-	    if (range >= ok_reach) {
-		printf_chat("You can't build that far away.");
-		do_revert = 1;
-	    }
-	}
     }
 
     if (do_revert) { revert_client(pkt); return; }

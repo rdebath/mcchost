@@ -8,7 +8,7 @@ List out the connected users
 
 #if INTERFACE
 #define CMD_WHO \
-    {N"who", &cmd_who}, \
+    {N"who", &cmd_who}, {N"players", &cmd_who, .dup=1}, \
     {N"pclients", &cmd_clients}, {N"clients", &cmd_clients, .dup=1}
 #endif
 

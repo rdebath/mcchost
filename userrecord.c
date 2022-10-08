@@ -40,6 +40,7 @@ struct userrec_t
     char title[NB_SLEN];
     char colour[NB_SLEN];
     char title_colour[NB_SLEN];
+    char timezone[NB_SLEN];
 
     // Not saved
     int dirty;
@@ -400,7 +401,10 @@ read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
     read_fld(&p, &bytes, &rec_buf->blocks_placed, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->blocks_deleted, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->blocks_drawn, FLD_I64, 0);
-    read_fld(&p, &bytes, 0, FLD_SKIP, 0);
+    if (rec_buf->first_logon == 0)
+	read_fld(&p, &bytes, &rec_buf->first_logon, FLD_I64, 0);
+    else
+	read_fld(&p, &bytes, 0, FLD_SKIP, 0);
     read_fld(&p, &bytes, &rec_buf->last_logon, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->logon_count, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->kick_count, FLD_I64, 0);

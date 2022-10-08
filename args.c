@@ -315,8 +315,16 @@ process_args(int argc, char **argv)
 	if (!pass2) {
 	    // First pass is done so now we are in the right dir we read in
 	    // the defaults and file configs.
+	    if (!found_dir_arg)
+		find_dirs();
+
+	    // Missing sever.ini means we can check this early.
+	    if (access(SERVER_CONF_NAME, F_OK) != 0)
+		check_something_todo();
+
+	    init_dirs();
+
 	    server = 0;
-	    init_dirs(found_dir_arg);
 	    open_system_conf();
 
 	    if (server->magic != MAP_MAGIC || server->magic2 != MAP_MAGIC2)
@@ -390,6 +398,17 @@ process_args(int argc, char **argv)
 	}
     }
 
+    check_something_todo();
+
+    if (enable_heartbeat_poll && server->secret[0] == 0)
+	generate_secret();
+
+    if (save_conf) {
+	save_system_ini_file();
+	fprintf(stderr, "Configuration saved\n");
+	exit(0);
+    }
+
     // The -dir arg isn't added, make sure we don't go anywhere.
     program_args[bc++] = strdup("-cwd");
     plen += 5;
@@ -400,9 +419,19 @@ process_args(int argc, char **argv)
 	program_args[bc++] = strdup("-no-detach");
 	plen += 11;
     } while(plen < 32);
+}
 
-    if (enable_heartbeat_poll && server->secret[0] == 0)
-	generate_secret();
+LOCAL void
+check_something_todo()
+{
+    // Check we're supposed to do something.
+    if (!inetd_mode && !start_tcp_server && !save_conf
+	&& !start_heartbeat_task && !start_backup_task
+	&& (isatty(0) || isatty(1)))
+	show_args_help();
+
+    if (inetd_mode && start_tcp_server)
+	show_args_help();
 }
 
 LOCAL void

@@ -9,6 +9,7 @@ See "/help todo" for notes.
 
 /*HELP todo
  +) Support for downloading the texture file to clients
+    -- Internal server or generic external inetd server?
     -- Only IPs in client list will work.
     -- Other peers would receive "Upgrade" as now.
     -- Only http://server:port/~texture/*.{zip,png} would work.
@@ -16,25 +17,16 @@ See "/help todo" for notes.
     -- Moderatly agressive timing restrictions.
     -- Remember CORS and Content-Type
 
- +) Fix "will create directories before erroring on arguments".
-
  +) Allow main= to be an absolute path? (Unconverted '/' characters)
     -- level dir contains name "main.lvl.blocks" with real dot?
-
- +) curl https://ipapi.co/40.89.244.232/utc_offset
-    -- user.utc_offset & user.utc_user_offset
 
  +) /backup, /restore and /undo
     -- Add "backup now" command.
         -- Save and *copy* to backup.
         -- Save with no last backup date? Or just a "manual backup" flag.
 
- +) Add VERSION computation to "/help license".
-
  +) Add max sessions from IP
  +) Add connect delay/fail for IPs recently seen.
- +) Antispam (Block, text, commands ?)
-    -- If text is identical to previous do a special?
 
  +) BulkBlockUpdate -- Hmmm.
     -- 8bit:  2048 --> 1282     8,  Min 161, pk 187
@@ -53,24 +45,6 @@ See "/help todo" for notes.
 
  +) Record data rates for server bytes/s I/O
 
- +) User name spaces.
-    -- Do we place an affix onto display names ?
-    -- Have #123 alias for any user, name collision workaround?
-
-    -- "unauthenticated" for no salt public internet
-       --> Do we want to merge into one user for all ?
-       --> Use IP (People dislike seeing actual IPs) as user ?
-       --> One/multiple connects per IP ?
-       --> Use hash(IP) as real user and allow nicknames?
-
-    -- "localnet" for connections from local network
-    -- "secret_001" for a particular "salt" TTP.
-
-    -- Normally "local" and "secret" would be the same namespace.
-
- +) Web server for texture files.
-    -- Internal server or generic external inetd server?
-
  +) Delete player.
  +) Regenerate userDB from ini files. (Due to flaky format of lmdb files)
 
@@ -80,11 +54,10 @@ See "/help todo" for notes.
 
  +) /sendcmd command
  +) /summon command
- +) /info /sinfo /minfo commands
  +) /kick command
  +) /clones command
 
- +) More /cuboid variants ?
+ +) More /cuboid variants ? /fill ?
 
  +) Level limited chat -- primitive chatroom.
  +) Team chat, less primitive chatroom.
@@ -105,7 +78,7 @@ See "/help todo" for notes.
     -- Only saved into a compressed file on level unload
 	-- NoUnload ? -- Or no users on level ?
 
- +) Permissions -- currently "client_trusted"
+ +) Permissions
     -- Need enum of permit flags.
     -- Bitmap of allow/deny.
     -- Routine to construct bitmap from "nice" permissions.
@@ -119,17 +92,9 @@ See "/help todo" for notes.
 
  +) NAME: (*) MCCHost
 
- +) Command to save all help texts as real files.
-        no overwrite -- save to *.bak in this case?
-
  +) Run external command with stdout/err sent to client (</dev/null)
     -- Map gen? Import?
     -- Sent to level chat ? -- Physics?
-
- +) Tinybox mode (proxy?)
-    Create a map on a small VPS and send logs, backups etc to external storage.
-    -- One map mode?
-    -- Use symlinks and sshfs ?
 
  +) Scripting language interface
     -- Lua ?
@@ -143,10 +108,6 @@ See "/help todo" for notes.
 
  +) INI file: Better way to preserve comments?
  +) lmdb appears with Debian jessie, do I want a fallback ?
- +) Switch to using libcurl ?
- +) Safe /nick -- approximatly matches real name
-    -- Match case insensitive, common substring.
-    -- How to descibe "too different" to user?
 
 Features:
     -- CW file also contains pending physics operations.
@@ -232,6 +193,9 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
     -- Names are too random
  +) Config paths for "backup" and "map" directories ?
     -- Symlinks work now. Enough?
+ +) Tinybox mode (proxy?)
+    Create a map on a small VPS and send logs, backups etc to external storage.
+    -- Use symlinks and sshfs.
 */
 
 /*HELP usecases

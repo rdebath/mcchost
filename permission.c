@@ -1,6 +1,24 @@
 
 #include "permission.h"
 
+#if INTERFACE
+inline static int
+perm_is_admin()
+{
+    return client_trusted;
+}
+
+inline static int
+perm_can_run(char * UNUSED(cmd), int UNUSED(cmd_id))
+{
+    return 1;
+}
+#endif
+
+int client_trusted = 0;
+
+/* Does user have extended permissions for "levelname"
+ */
 int
 perm_level_check(char * levelname, int expand_plus)
 {
@@ -22,7 +40,7 @@ perm_level_check(char * levelname, int expand_plus)
 
     // TODO: Levels with list of users who can access.
 
-    if (!client_trusted) {
+    if (!perm_is_admin()) {
 	if (*userlevel)
 	    printf_chat("&WPermission denied, your level name is '%s'", userlevel);
 	else if (levelname == current_level_name)

@@ -444,8 +444,10 @@ process_client_message(int cmd, char * pktbuf)
 	    }
 
 	    cpe_pending |= 2;
-	    if (cpe_pending == 3)
+	    if (cpe_pending == 3) {
 		complete_connection();
+		if (extn_pingpong) last_ping = time(0) - 60;
+	    }
 	}
 	break;
 

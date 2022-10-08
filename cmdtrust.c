@@ -8,7 +8,7 @@
 
 /*HELP trust H_CMD
 &T/TRUST [player]
-Turns off anit-grief for player.
+Turns off anti-grief for player.
 */
 
 void

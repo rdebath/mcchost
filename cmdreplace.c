@@ -10,8 +10,8 @@ Aliases: /r
 */
 
 /*HELP replaceall,ra H_CMD
-&T/replace [block] [block2].. [new]
-Replaces [block] with [new] for the map.
+&T/replaceall [block] [block2].. [new]
+Replaces [block] with [new] for the whole map.
   If more than one [block] is given, they are all replaced.
   If only [block] is given, replaces with your held block.
 Aliases: /ra

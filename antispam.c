@@ -4,11 +4,11 @@
 #if INTERFACE
 typedef struct aspam_t aspam_t;
 struct aspam_t {
-    int64_t ms_start;
-    time_t banned_til;
-    int32_t ban_flg;
-    int32_t events;
-    int32_t cheater;
+    int64_t ms_start;   // We started counting events from this time (ms).
+    time_t banned_til;  // Time calculated from spam_ban
+    int32_t events;     // How many events since ms_start
+    int cheater;        // Detect speed *just* above the limit
+    int ban_flg;        // Flag for the caller to display first message
 };
 
 #endif
