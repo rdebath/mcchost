@@ -60,6 +60,7 @@ f_block_convert(block_t in)
 
     if (in < client_block_limit) return in;
     if (in >= Block_Dandelion && in <= Block_RedMushroom) in = Block_Sapling;
+    if (in == Block_Slab) in = Block_Air;
     if (in < client_block_limit) return in;
     return Block_Bedrock;
 }

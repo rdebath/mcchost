@@ -210,7 +210,7 @@ tcpserver()
 	alarm_sig = 0;
     }
 
-    if (enable_heartbeat_poll && !server->private) {
+    if (enable_heartbeat_poll && !ini_settings->private) {
 	printlog("Shutting down service");
 	send_heartbeat_poll();
     } else

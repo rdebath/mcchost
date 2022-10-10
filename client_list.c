@@ -44,12 +44,13 @@ struct client_entry_t {
 };
 
 struct client_level_t {
-    int loaded;
     int backup_id;
-    int no_unload;
-    int force_unload;
-    int delete_on_unload;
     nbtstr_t level;
+    uint8_t loaded;
+    uint8_t no_unload;
+    uint8_t force_unload;
+    uint8_t force_backup;
+    uint8_t delete_on_unload;
 };
 
 typedef struct client_data_t client_data_t;

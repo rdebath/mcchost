@@ -66,7 +66,6 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_DURATION("KeyRotation", server->key_rotation);
 
-	INI_BOOLVAL("Private", server->private);
 	INI_BOOLVAL("OPFlag", server->op_flag);
 	INI_BOOLVAL("NoCPE", server->cpe_disabled);
 	INI_BOOLVAL("DisableWebServer", server->disable_web_server);
@@ -170,6 +169,7 @@ system_x_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAY("Heartbeat", server_ini_tgt->heartbeat_url);
 	INI_BOOLVAL("PollHeartbeat", server_ini_tgt->enable_heartbeat_poll);
 	INI_BOOLVAL("UseHttpPost", server_ini_tgt->use_http_post);
+	INI_BOOLVAL("Private", server_ini_tgt->private);
 	INI_STRARRAY("UserSuffix", server_ini_tgt->user_id_suffix);
 	INI_BOOLVAL("DisallowIPVerify", server_ini_tgt->disallow_ip_verify);
 	INI_BOOLVAL("AllowPassVerify", server_ini_tgt->allow_pass_verify);

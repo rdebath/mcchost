@@ -1,5 +1,5 @@
 
-#include "newlvl.h"
+#include "cmdnewlvl.h"
 
 /*HELP newlvl H_CMD
 &T/newlvl name [width height length] [theme] [seed]

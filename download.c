@@ -126,6 +126,8 @@ http_download(uint8_t * buf, int buflen)
 	}
 
 	printlog("Sending %s \"%s\" to client %s", head_only?"HEAD":"file", fn, client_ipv4_str);
+
+	fcntl(line_ifd, F_SETFL, 0);
 	flush_to_remote();
 	while(bytes_queued_to_send()) {
 	    msleep(500);

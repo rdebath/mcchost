@@ -84,57 +84,65 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     level_prop->dirty_save = 0;
     unlock_fn(level_lock);
 
-    if (access(bak_fn, F_OK) == 0) {
-	char hst_fn[256];
-	next_backup_filename(hst_fn, sizeof(hst_fn), level_fname);
-
-	// rename or copy/del bak_fn to hst_fn
-	if (rename(bak_fn, hst_fn) < 0) {
-	    int txok = 1;
-	    if (errno != EXDEV) {
-		perror("Rename of bak file to history failed");
-		txok = 0;
-	    } else {
-		saprintf(tmp_fn, "%s/%s.tmp", LEVEL_BACKUP_DIR_NAME, level_fname);
-
-		FILE *ifd, *ofd;
-		ifd = fopen(bak_fn, "r");
-		if (ifd) {
-		    ofd = fopen(tmp_fn, "w");
-		    if (!ofd) txok = 0;
-		    else {
-			char buf[4096];
-			int c;
-			while(txok && (c=fread(buf, 1, sizeof(buf), ifd)) > 0)
-			    txok = (fwrite(buf, 1, c, ofd) == c);
-			fclose(ofd);
-		    }
-		    fclose(ifd);
-		} else
-		    txok = 0;
-
-		if (txok && rename(tmp_fn, hst_fn) < 0) {
-		    txok = 0;
-		}
-		if (!txok) {
-		    perror("Backup copy and rename failed");
-		    int e = errno;
-		    (void) unlink(tmp_fn);
-		    errno = e;
-		} else
-		    (void) unlink(bak_fn);
-	    }
-
-	    if (txok) {
-		fprintf_logfile("Saved backup of \"%s\" to %s", level_name, hst_fn);
-	    } else {
-		printf_chat("@&SSaving of backup for level \"%s\" failed", level_name);
-	    }
-	}
-    } else
+    if (access(bak_fn, F_OK) == 0)
+	move_file_to_backups(bak_fn, level_fname, level_name);
+    else
 	level_prop->last_backup = backup_sav;
-
     return 0;
+}
+
+void
+move_file_to_backups(char * bak_fn, char * level_fname, char * level_name)
+{
+    if (access(bak_fn, F_OK) != 0) return;
+
+    char hst_fn[256];
+    next_backup_filename(hst_fn, sizeof(hst_fn), level_fname);
+
+    // rename or copy/del bak_fn to hst_fn
+    if (rename(bak_fn, hst_fn) < 0) {
+	int txok = 1;
+	if (errno != EXDEV) {
+	    perror("Rename of bak file to history failed");
+	    txok = 0;
+	} else {
+	    char tmp_fn[256];
+	    saprintf(tmp_fn, "%s/%s.tmp", LEVEL_BACKUP_DIR_NAME, level_fname);
+
+	    FILE *ifd, *ofd;
+	    ifd = fopen(bak_fn, "r");
+	    if (ifd) {
+		ofd = fopen(tmp_fn, "w");
+		if (!ofd) txok = 0;
+		else {
+		    char buf[4096];
+		    int c;
+		    while(txok && (c=fread(buf, 1, sizeof(buf), ifd)) > 0)
+			txok = (fwrite(buf, 1, c, ofd) == c);
+		    fclose(ofd);
+		}
+		fclose(ifd);
+	    } else
+		txok = 0;
+
+	    if (txok && rename(tmp_fn, hst_fn) < 0) {
+		txok = 0;
+	    }
+	    if (!txok) {
+		perror("Backup copy and rename failed");
+		int e = errno;
+		(void) unlink(tmp_fn);
+		errno = e;
+	    } else
+		(void) unlink(bak_fn);
+	}
+
+	if (txok) {
+	    fprintf_logfile("Copied backup of \"%s\" to %s", level_name, hst_fn);
+	} else {
+	    printf_chat("@&SSaving of backup for level \"%s\" failed", level_name);
+	}
+    }
 }
 
 void
@@ -175,6 +183,8 @@ scan_and_save_levels(int unlink_only)
     int trigger_full_run = 0;
     int level_deleted = 0;
     nbtstr_t deleted_level = {0};
+    int level_saved = 0;
+    nbtstr_t saved_level = {0};
 
     // fprintf(stderr, "Trace scan_and_save_levels(%d)\n", unlink_only);
 
@@ -194,6 +204,9 @@ scan_and_save_levels(int unlink_only)
 		(shdat.client->levels[lvid].backup_id == 0) &&
 		(strcmp(shdat.client->levels[lvid].level.c, main_level()) == 0)
 	    );
+
+	if (unlink_only && shdat.client->levels[lvid].force_backup)
+	    trigger_full_run = 1;
 
 	int user_count = 0;
 	for(int uid=0; uid<MAX_USER; uid++)
@@ -231,11 +244,19 @@ scan_and_save_levels(int unlink_only)
 		continue;
 	    }
 
-	    int force_backup = 0;
+	    int force_backup = 0; // And delete
 	    if (shdat.client->levels[lvid].delete_on_unload) {
 		level_prop->dirty_save = 1;
 		level_prop->no_unload = 0;
 		force_backup = 1;
+	    }
+
+	    int preserve_current = 0;
+	    if (shdat.client->levels[lvid].force_backup) {
+		shdat.client->levels[lvid].force_backup = 0;
+		level_prop->force_save = 1;
+		level_prop->dirty_save = 1;
+		preserve_current = 1;
 	    }
 
 	    if (level_prop->readonly && !level_prop->force_save)
@@ -262,6 +283,18 @@ scan_and_save_levels(int unlink_only)
 		    int rv = save_level(fixedname, level_name, do_bkp);
 		    if (rv < 0)
 			printf_chat("@&WSave of level \"%s\" failed", level_name);
+		}
+	    }
+
+	    if (preserve_current) {
+		char map_fn[256], bak_fn[256];
+		saprintf(map_fn, LEVEL_CW_NAME, fixedname);
+		saprintf(bak_fn, LEVEL_BAK_NAME, fixedname);
+		if (link(map_fn, bak_fn) >= 0) {
+		    fprintf_logfile("Saving additional backup of \"%s\"", level_name);
+		    move_file_to_backups(bak_fn, fixedname, level_name);
+		    level_saved = 1;
+		    saved_level = lv;
 		}
 	    }
 
@@ -347,6 +380,13 @@ scan_and_save_levels(int unlink_only)
 	// Waiting til we're outside the system lock means that we only
 	// display the last one deleted; that's probably fine.
 	printf_chat("@Level %s deleted", deleted_level.c);
+	stop_chat_queue();
+    }
+
+    if (level_saved) {
+	// Waiting til we're outside the system lock means that we only
+	// display the last one saved; that's probably fine.
+	printf_chat("@Level %s backed up", saved_level.c);
 	stop_chat_queue();
     }
 

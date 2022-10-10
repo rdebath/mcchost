@@ -24,7 +24,6 @@ struct server_t {
 
     int op_flag;
     int cpe_disabled;
-    int private;
     int disable_web_server;
 
     int max_players;
@@ -77,6 +76,7 @@ struct server_ini_t {
     char heartbeat_url[1024];
     char user_id_suffix[NB_SLEN];
     int use_http_post;
+    int private;
 
     int disallow_ip_verify;
     int allow_pass_verify;
@@ -256,12 +256,12 @@ process_args(int argc, char **argv)
 		}
 
 		if (strcmp(argv[ar], "-private") == 0) {
-		    server->private = 1;
+		    ini_settings->private = 1;
 		    break;
 		}
 
 		if (strcmp(argv[ar], "-public") == 0) {
-		    server->private = 0;
+		    ini_settings->private = 0;
 		    break;
 		}
 

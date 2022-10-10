@@ -8,25 +8,23 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) Support for downloading the texture file to clients
-    -- Internal server or generic external inetd server?
-    -- Only IPs in client list will work.
-    -- Other peers would receive "Upgrade" as now.
-    -- Only http://server:port/~texture/*.{zip,png} would work.
-    -- NB: Just "current map" doesn't work because in different process.
-    -- Moderatly agressive timing restrictions.
-    -- Remember CORS and Content-Type
+ +) Divide maps into collections "fcraft", "junk", etc
+    -- /main to change set ?
 
  +) Allow main= to be an absolute path? (Unconverted '/' characters)
     -- level dir contains name "main.lvl.blocks" with real dot?
 
- +) /backup, /restore and /undo
-    -- Add "backup now" command.
-        -- Save and *copy* to backup.
-        -- Save with no last backup date? Or just a "manual backup" flag.
+ +) /restore and /undo
 
  +) Add max sessions from IP
  +) Add connect delay/fail for IPs recently seen.
+
+ +) Run external command ...
+    -- stdin == /dev/null
+    -- stdout to '/place', '/cuboid' command interpreter.
+    -- stderr sent to client
+    -- Map gen? Import? Other scripting?
+    -- Theme --> Script file.
 
  +) BulkBlockUpdate -- Hmmm.
     -- 8bit:  2048 --> 1282     8,  Min 161, pk 187
@@ -91,20 +89,6 @@ See "/help todo" for notes.
     -- Permissions for /goto
 
  +) NAME: (*) MCCHost
-
- +) Run external command with stdout/err sent to client (</dev/null)
-    -- Map gen? Import?
-    -- Sent to level chat ? -- Physics?
-
- +) Scripting language interface
-    -- Lua ?
-    -- Python ?
-    -- https://github.com/tweag/nickel ?
-
-    -- External command that sends commands and queries as if it's
-       the user? Map access ?
-
-    -- External command that acts like a client?
 
  +) INI file: Better way to preserve comments?
  +) lmdb appears with Debian jessie, do I want a fallback ?
