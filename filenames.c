@@ -35,9 +35,11 @@
 #define SYS_CONF_NAME "system/system.dat"
 #define SYS_STAT_NAME "system/userlevels.dat"
 #define CHAT_QUEUE_NAME "system/chat.queue"
+#define CMD_QUEUE_NAME "system/cmd.queue"
 
 #define SYS_LOCK_NAME "system/system.lock"
 #define CHAT_LOCK_NAME "system/chat.lock"
+#define CMD_LOCK_NAME "system/cmd.lock"
 #define LEVEL_LOCK_NAME "level/%s.lock"
 #endif
 

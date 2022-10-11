@@ -27,9 +27,10 @@
 #define SHMID_BLOCKS	1
 #define SHMID_BLOCKQ	2
 #define SHMID_CHAT	3
-#define SHMID_CLIENTS	4
-#define SHMID_SYSCONF	5
-#define SHMID_COUNT	6
+#define SHMID_CMD	4
+#define SHMID_CLIENTS	5
+#define SHMID_SYSCONF	6
+#define SHMID_COUNT	7
 
 typedef struct shmem_t shmem_t;
 struct shmem_t {
@@ -43,7 +44,6 @@ struct shared_data_t {
     map_info_t *prop;
     block_t *blocks;
     block_queue_t* blockq;
-    chat_queue_t *chat;
     client_data_t *client;
 
     uint32_t block_queue_mmap_count;
@@ -55,15 +55,17 @@ struct shared_data_t {
 #define level_prop shdat.prop
 #define level_blocks shdat.blocks
 #define level_block_queue shdat.blockq
-#define level_chat_queue shdat.chat
 #endif
 
+chat_queue_t * level_chat_queue = 0;
+cmd_queue_t * level_cmd_queue = 0;
+
 #define level_block_queue_len shdat.dat[SHMID_BLOCKQ].len
-#define level_chat_queue_len shdat.dat[SHMID_CHAT].len
 
 struct shared_data_t shdat;
 
 filelock_t chat_queue_lock[1] = {{.name = CHAT_LOCK_NAME}};
+filelock_t cmd_queue_lock[1] = {{.name = CMD_LOCK_NAME}};
 filelock_t level_lock[1];
 
 /*****************************************************************************
@@ -450,9 +452,7 @@ void
 create_chat_queue()
 {
     char sharename[256];
-    int queue_count = 0;
-    if (queue_count < 128) queue_count = 128;
-    if (queue_count > 65536) queue_count = 65536;
+    int cqlen = CHAT_QUEUE_LEN;
 
     stop_chat_queue();
     wipe_last_chat_queue_id();
@@ -461,17 +461,17 @@ create_chat_queue()
     lock_fn(chat_queue_lock);
 
     sprintf(sharename, CHAT_QUEUE_NAME);
-    level_chat_queue_len = sizeof(*level_chat_queue) + queue_count * sizeof(chat_entry_t);
-    allocate_shared(sharename, level_chat_queue_len, shdat.dat+SHMID_CHAT);
+    shdat.dat[SHMID_CHAT].len = sizeof(*level_chat_queue);
+    allocate_shared(sharename, shdat.dat[SHMID_CHAT].len, shdat.dat+SHMID_CHAT);
     level_chat_queue = shdat.dat[SHMID_CHAT].ptr;
 
     if (    level_chat_queue->generation == 0 ||
 	    level_chat_queue->generation > 0x0FFFFFFF ||
-	    level_chat_queue->queue_len != queue_count ||
-	    level_chat_queue->curr_offset >= queue_count) {
+	    level_chat_queue->queue_len != cqlen ||
+	    level_chat_queue->curr_offset >= cqlen) {
 	level_chat_queue->generation = 2;
 	level_chat_queue->curr_offset = 0;
-	level_chat_queue->queue_len = queue_count;
+	level_chat_queue->queue_len = cqlen;
     }
     unlock_fn(chat_queue_lock);
 
@@ -486,6 +486,47 @@ stop_chat_queue()
 	level_chat_queue = 0;
 	wipe_last_chat_queue_id();
 	lock_stop(chat_queue_lock);
+    }
+}
+
+void
+create_cmd_queue()
+{
+    char sharename[256];
+    int cqlen = CMD_QUEUE_LEN;
+
+    stop_cmd_queue();
+    wipe_last_cmd_queue_id();
+
+    lock_start(cmd_queue_lock);
+    lock_fn(cmd_queue_lock);
+
+    sprintf(sharename, CMD_QUEUE_NAME);
+    shdat.dat[SHMID_CMD].len = sizeof(*level_cmd_queue);
+    allocate_shared(sharename, shdat.dat[SHMID_CMD].len, shdat.dat+SHMID_CMD);
+    level_cmd_queue = shdat.dat[SHMID_CMD].ptr;
+
+    if (    level_cmd_queue->generation == 0 ||
+	    level_cmd_queue->generation > 0x0FFFFFFF ||
+	    level_cmd_queue->queue_len != cqlen ||
+	    level_cmd_queue->curr_offset >= cqlen) {
+	level_cmd_queue->generation = 2;
+	level_cmd_queue->curr_offset = 0;
+	level_cmd_queue->queue_len = cqlen;
+    }
+    unlock_fn(cmd_queue_lock);
+
+    set_last_cmd_queue_id();
+}
+
+void
+stop_cmd_queue()
+{
+    if (level_cmd_queue) {
+	deallocate_shared(SHMID_CMD);
+	level_cmd_queue = 0;
+	wipe_last_cmd_queue_id();
+	lock_stop(cmd_queue_lock);
     }
 }
 

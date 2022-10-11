@@ -43,6 +43,7 @@ struct client_entry_t {
     pid_t session_id;
 };
 
+typedef struct client_level_t client_level_t;
 struct client_level_t {
     int backup_id;
     nbtstr_t level;

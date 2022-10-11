@@ -9,15 +9,28 @@ See "/help todo" for notes.
 
 /*HELP todo
  +) Divide maps into collections "fcraft", "junk", etc
-    -- /main to change set ?
+    -- Command to change set ?
 
  +) Allow main= to be an absolute path? (Unconverted '/' characters)
     -- level dir contains name "main.lvl.blocks" with real dot?
 
- +) /restore and /undo
-
  +) Add max sessions from IP
  +) Add connect delay/fail for IPs recently seen.
+
+ +) Improve the /set command, more help, option lists.
+
+ +) /restore and /undo
+ +) /resizelvl, /copylvl
+ +) /sendcmd command
+ +) /summon command
+ +) /kick command
+ +) /clones command
+
+ +) /newlvl, more "nice" levels?
+    -- Perlin based nature, with caves.
+    -- Sub-themes, fcraft?
+
+ +) More /cuboid variants ? /fill ?
 
  +) Run external command ...
     -- stdin == /dev/null
@@ -48,28 +61,12 @@ See "/help todo" for notes.
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
- +) Improve the /set command, more help, option lists.
-
- +) /sendcmd command
- +) /summon command
- +) /kick command
- +) /clones command
-
- +) More /cuboid variants ? /fill ?
-
  +) Level limited chat -- primitive chatroom.
  +) Team chat, less primitive chatroom.
-
- +) /resizelvl, /copylvl, /savelvl (to mapdir)
-    -- Should resizelvl backup on shrink?
 
  +) /import -- download *.cw file from web.
     -- Rename file to strict name form, don't overwrite.
     -- Output of curl import command to user ?
-
- +) /newlvl, more "nice" levels?
-    -- Perlin based nature, with caves.
-    -- Sub-themes, fcraft?
 
  +) Block/User history records.
     -- Stored in a ${level} file normally.
@@ -149,14 +146,11 @@ Other components
     -- physics process does non-trivial physics.
     -- crash catcher restarts server process without dropping connection.
     -- physics save to *.cw -- locking modes ?
-    -- No Tickless physics ? Users make events.
-
-Make sure text anti-spam is in place.
-    (Only echo duplicates back to self?)
-    Ghost the player? (for a short time?)
+    -- Tickless physics ? Users make events.
 
 On Block queue, if user count < 2 && no-physics don't use queue ?
     --> *256 blocks packet need queue?
+
 */
 
 /*

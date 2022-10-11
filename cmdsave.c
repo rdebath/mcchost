@@ -20,7 +20,9 @@ cmd_save(char * UNUSED(cmd), char * UNUSED(arg))
     lock_fn(system_lock);
     int my_level = shdat.client->user[my_user_no].on_level;
 
-    if (my_level < 0 || my_level >= MAX_LEVEL || !shdat.client->levels[my_level].loaded) {
+    if (my_level < 0 || my_level >= MAX_LEVEL ||
+	    shdat.client->levels[my_level].backup_id < 0 ||
+	    !shdat.client->levels[my_level].loaded) {
 	unlock_fn(system_lock);
 	printf_chat("&WYou are currently lost in the void, backup failed.");
 	return;

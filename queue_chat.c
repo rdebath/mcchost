@@ -3,6 +3,7 @@
 #include "queue_chat.h"
 
 #if INTERFACE
+#define CHAT_QUEUE_LEN	256
 
 typedef chat_queue_t chat_queue_t;
 struct chat_queue_t {
@@ -10,7 +11,7 @@ struct chat_queue_t {
     uint32_t curr_offset;
     uint32_t queue_len;
 
-    chat_entry_t updates[1];
+    chat_entry_t updates[CHAT_QUEUE_LEN];
 };
 
 typedef chat_entry_t chat_entry_t;
