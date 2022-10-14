@@ -50,6 +50,7 @@
 #define PKID_ADDCUBOID	0x1a
 #define PKID_RMCUBOID	0x1b
 #define PKID_BLOCKPERM	0x1c
+#define PKID_CHANGEMDL	0x1d
 #define PKID_MAPAPPEAR	0x1e
 #define PKID_WEATHER	0x1f
 #define PKID_HACKCTL	0x20

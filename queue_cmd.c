@@ -1,12 +1,14 @@
 
-
 #include "queue_cmd.h"
 
 #if INTERFACE
 #define CMD_QUEUE_LEN	256
+enum cmd_token_e {cmd_token_kick = 1};
 
 typedef cmd_payload_t cmd_payload_t;
 struct cmd_payload_t {
+    enum cmd_token_e cmd_token;
+    nbtstr_t arg;
 };
 
 typedef cmd_queue_t cmd_queue_t;
@@ -33,26 +35,26 @@ static uint32_t last_generation;
 
 /* Send a single cmd message */
 void
-update_cmd(int to_where, int to_id, cmd_payload_t *pkt)
+send_ipc_cmd(int to_where, int to_id, cmd_payload_t *pkt)
 {
-    if (!level_cmd_queue || level_cmd_queue->curr_offset >= level_cmd_queue->queue_len)
+    if (!shared_cmd_queue || shared_cmd_queue->curr_offset >= shared_cmd_queue->queue_len)
 	create_cmd_queue();
 
     lock_fn(cmd_queue_lock);
-    int id = level_cmd_queue->curr_offset;
-    level_cmd_queue->updates[id].to_player_id = -1;
-    level_cmd_queue->updates[id].to_level_id = -1;
-    level_cmd_queue->updates[id].to_team_id = -1;
-    level_cmd_queue->updates[id].not_player_id = -1;
+    int id = shared_cmd_queue->curr_offset;
+    shared_cmd_queue->updates[id].to_player_id = -1;
+    shared_cmd_queue->updates[id].to_level_id = -1;
+    shared_cmd_queue->updates[id].to_team_id = -1;
+    shared_cmd_queue->updates[id].not_player_id = -1;
     switch (to_where) {
-    case 1: level_cmd_queue->updates[id].to_player_id = to_id; break;
-    case 2: level_cmd_queue->updates[id].to_level_id = to_id; break;
-    case 3: level_cmd_queue->updates[id].to_team_id = to_id; break;
+    case 1: shared_cmd_queue->updates[id].to_player_id = to_id; break;
+    case 2: shared_cmd_queue->updates[id].to_level_id = to_id; break;
+    case 3: shared_cmd_queue->updates[id].to_team_id = to_id; break;
     }
-    level_cmd_queue->updates[id].msg[0] = *pkt;
-    if (++level_cmd_queue->curr_offset >= level_cmd_queue->queue_len) {
-	level_cmd_queue->curr_offset = 0;
-	level_cmd_queue->generation ++;
+    shared_cmd_queue->updates[id].msg[0] = *pkt;
+    if (++shared_cmd_queue->curr_offset >= shared_cmd_queue->queue_len) {
+	shared_cmd_queue->curr_offset = 0;
+	shared_cmd_queue->generation ++;
     }
     unlock_fn(cmd_queue_lock);
 }
@@ -60,11 +62,11 @@ update_cmd(int to_where, int to_id, cmd_payload_t *pkt)
 void
 set_last_cmd_queue_id()
 {
-    if (!level_cmd_queue) create_cmd_queue();
+    if (!shared_cmd_queue) create_cmd_queue();
 
     lock_fn(cmd_queue_lock);
-    last_id = level_cmd_queue->curr_offset;
-    last_generation = level_cmd_queue->generation;
+    last_id = shared_cmd_queue->curr_offset;
+    last_generation = shared_cmd_queue->generation;
     unlock_fn(cmd_queue_lock);
 }
 
@@ -76,7 +78,7 @@ wipe_last_cmd_queue_id()
 }
 
 void
-send_queued_cmds()
+process_queued_cmds()
 {
     if (last_id < 0) return; // Hmmm.
 
@@ -84,11 +86,11 @@ send_queued_cmds()
     {
 	cmd_entry_t upd;
 	lock_fn(cmd_queue_lock);
-	if (last_generation != level_cmd_queue->generation)
+	if (last_generation != shared_cmd_queue->generation)
 	{
 	    int isok = 0;
-	    if (last_generation == level_cmd_queue->generation-1) {
-		if (level_cmd_queue->curr_offset < last_id)
+	    if (last_generation == shared_cmd_queue->generation-1) {
+		if (shared_cmd_queue->curr_offset < last_id)
 		    isok = 1;
 	    }
 	    if (!isok) {
@@ -99,13 +101,13 @@ send_queued_cmds()
 		break;
 	    }
 	}
-	if (last_id == level_cmd_queue->curr_offset) {
+	if (last_id == shared_cmd_queue->curr_offset) {
 	    // Nothing more to send.
 	    unlock_fn(cmd_queue_lock);
 	    break;
 	}
-	upd = level_cmd_queue->updates[last_id++];
-	if (last_id == level_cmd_queue->queue_len) {
+	upd = shared_cmd_queue->updates[last_id++];
+	if (last_id == shared_cmd_queue->queue_len) {
 	    last_generation ++;
 	    last_id = 0;
 	}
@@ -134,6 +136,10 @@ send_queued_cmds()
 }
 
 void
-process_ipc_cmd(cmd_payload_t *UNUSED(msg))
+process_ipc_cmd(cmd_payload_t *msg)
 {
+    switch(msg->cmd_token) {
+    case cmd_token_kick:
+	kicked(msg->arg.c);
+    }
 }

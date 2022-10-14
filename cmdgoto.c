@@ -115,7 +115,6 @@ cmd_main(char * UNUSED(cmd), char * UNUSED(arg))
     send_map_file();
 
     if (level_prop) {
-	send_addentity_pkt(255, user_id, user_id, level_prop->spawn);
 	printf_chat("@&S%s went to &7%s", user_id, main_level());
     } else {
 	printf_chat("@&S%s was sucked into the void.", user_id);
@@ -210,7 +209,6 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
     }
 
     send_map_file();
-    send_addentity_pkt(255, user_id, user_id, level_prop->spawn);
 
     if (backup_id)
 	printf_chat("@&S%s went to museum %d of &7%s", user_id, backup_id, levelname);

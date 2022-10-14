@@ -8,11 +8,8 @@
 
 /*
  * User details.
- * This converts the userrec_t structure into a portable format and writes it
- * to an lmbd file. Note, this is used in a very simple manner and could
- * in theory just use lots of tiny files or one large CSV.
- *
  */
+
 #if INTERFACE
 enum csv_type {FLD_I32, FLD_I64, FLD_SKIP, FLD_STR=16};
 
@@ -38,13 +35,14 @@ struct userrec_t
     int32_t click_distance;
     char nick[NB_SLEN];
     char title[NB_SLEN];
+    char skin[NB_SLEN];
+    char model[NB_SLEN];
     char colour[NB_SLEN];
     char title_colour[NB_SLEN];
     char timezone[NB_SLEN];
 
     // Not saved
     int dirty;
-    int ini_valid;
     int user_logged_in;
     int64_t time_of_last_save;
 }
@@ -66,7 +64,341 @@ MDB_dbi dbi_rec;
 MDB_dbi dbi_ind1;
 #define env mcc_mdb_env
 
-static inline void
+void
+copy_user_key(char *p, char * user_id)
+{
+    for(char * s = user_id; *s; s++)
+    {
+	char *hex = "0123456789ABCDEF";
+	int ch = *s & 0xFF;
+	if ((ch >= '0' && ch <= '9') || ch == '_' || ch == '.' || (ch >= 'a' && ch <= 'z'))
+	    *p++ = ch;
+	else if (ch >= 'A' && ch <= 'Z')
+	    *p++ = ch - 'Z' + 'z';
+	else {
+	    *p++ = '%';
+	    *p++ = hex[(ch>>4) & 0xF];
+	    *p++ = hex[ch & 0xF];
+	}
+    }
+    *p = 0;
+}
+
+/*
+    (when == 0) => Tick
+    (when == 1) => At logon
+    (when == 2) => At logoff / config change
+ */
+void
+write_current_user(int when)
+{
+    time_t now = time(0);
+    if (when == 0 && now - my_user.time_of_last_save >= 300)
+	my_user.dirty = 1;
+
+    if (when == 0 && !my_user.dirty) return;
+    if (when == 2 && !my_user.user_logged_in) return;
+
+    if (my_user.user_no == 0) {
+	if (*user_id == 0) return;
+	if (read_userrec(&my_user, user_id, 1) < 0)
+	    my_user.user_no = 0;
+    }
+
+    if (!userdb_open) open_userdb();
+
+    if (when == 1) {
+	if (!my_user.first_logon) my_user.first_logon = time(0);
+	my_user.last_logon = now;
+	my_user.time_of_last_save = now;
+	my_user.logon_count++;
+	my_user.user_logged_in = 1;
+
+	// Datafix. Expires: Tue 14 Nov 22:13:20 GMT 2023
+	if (now < 1700000000)
+	    if (my_user.time_online_secs > 1500000000) my_user.time_online_secs = 0;
+
+	if (*client_ipv4_str) {
+	    snprintf(my_user.last_ip, sizeof(my_user.last_ip), "%s", client_ipv4_str);
+	    char *p = strrchr(my_user.last_ip, ':');
+	    if (p) *p = 0;
+	}
+    }
+
+    if (now > my_user.time_of_last_save && my_user.user_logged_in) {
+	if (my_user.time_of_last_save == 0) my_user.time_of_last_save = now;
+	int64_t d = now - my_user.time_of_last_save;
+	my_user.time_online_secs += d;
+	my_user.time_of_last_save += d;
+    }
+
+    strcpy(my_user.user_id, user_id);
+
+    write_userrec(&my_user, (when==2));
+
+    my_user.dirty = 0;
+}
+
+void
+read_ini_file_fields(userrec_t * userrec)
+{
+    uint8_t user_key[NB_SLEN*4];
+    copy_user_key(user_key, userrec->user_id);
+
+    char userini[PATH_MAX];
+    saprintf(userini, USER_INI_NAME, user_key);
+
+    userrec_t tmp = *userrec;
+    user_ini_tgt = userrec;
+    load_ini_file(user_ini_fields, userini, 1, 1);
+    user_ini_tgt = 0;
+
+    // Preserve the fields that are in the lmdb database.
+    userrec->user_no = tmp.user_no;
+    memcpy(userrec->user_id, tmp.user_id, NB_SLEN);
+    userrec->blocks_placed = tmp.blocks_placed;
+    userrec->blocks_deleted = tmp.blocks_deleted;
+    userrec->blocks_drawn = tmp.blocks_drawn;
+    userrec->first_logon = tmp.first_logon;
+    userrec->last_logon = tmp.last_logon;
+    userrec->logon_count = tmp.logon_count;
+    userrec->kick_count = tmp.kick_count;
+    userrec->death_count = tmp.death_count;
+    userrec->message_count = tmp.message_count;
+    memcpy(userrec->last_ip, tmp.last_ip, NB_SLEN);
+    userrec->time_online_secs = tmp.time_online_secs;
+}
+
+void
+write_userrec(userrec_t * userrec, int ini_too)
+{
+    uint8_t user_key[NB_SLEN*4];
+    copy_user_key(user_key, userrec->user_id);
+
+    if (ini_too) {
+	read_ini_file_fields(userrec);
+
+	char userini[PATH_MAX];
+	saprintf(userini, USER_INI_NAME, user_key);
+
+	user_ini_tgt = userrec;
+	save_ini_file(user_ini_fields, userini, 0);
+	user_ini_tgt = 0;
+    }
+
+    if (!userdb_open) open_userdb();
+
+    MDB_txn *txn;
+    E(mdb_txn_begin(env, NULL, 0, &txn));
+
+    if (userrec->user_no == 0)
+	init_userrec(txn, userrec);
+
+    uint8_t recbuf[sizeof(userrec_t) * 4];
+    uint8_t * p = recbuf;
+
+    write_fld(&p, &userrec->user_no, FLD_I32);
+    write_fld(&p, userrec->user_id, FLD_STR);
+    write_fld(&p, &userrec->blocks_placed, FLD_I64);
+    write_fld(&p, &userrec->blocks_deleted, FLD_I64);
+    write_fld(&p, &userrec->blocks_drawn, FLD_I64);
+    write_fld(&p, &userrec->first_logon, FLD_I64);
+    write_fld(&p, &userrec->last_logon, FLD_I64);
+    write_fld(&p, &userrec->logon_count, FLD_I64);
+    write_fld(&p, &userrec->kick_count, FLD_I64);
+    write_fld(&p, &userrec->death_count, FLD_I64);
+    write_fld(&p, &userrec->message_count, FLD_I64);
+    write_fld(&p, userrec->last_ip, FLD_STR);
+    write_fld(&p, &userrec->time_online_secs, FLD_I64);
+
+    uint8_t idbuf[4];
+    {
+	uint8_t * p2 = idbuf;
+	write_int32(&p2, userrec->user_no);
+    }
+
+    MDB_val key, data;
+    key.mv_size = sizeof(idbuf);
+    key.mv_data = idbuf;
+    data.mv_size = p-recbuf;
+    data.mv_data = recbuf;
+    E(mdb_put(txn, dbi_rec, &key, &data, 0) );
+
+    key.mv_size = strlen(user_key);
+    key.mv_data = user_key;
+    data.mv_size = sizeof(idbuf);
+    data.mv_data = idbuf;
+    E(mdb_put(txn, dbi_ind1, &key, &data, 0) );
+
+    E(mdb_txn_commit(txn));
+}
+
+// If user_id arg is zero we use the user_no field so we can load the
+// DB data (specifically the full name) for translation of id to name.
+int
+read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
+{
+    if (user_id && *user_id == 0) return -1;
+    if (user_id == 0 && rec_buf->user_no == 0) return -1;
+
+    uint8_t user_key[NB_SLEN*4];
+    if (user_id)
+	copy_user_key(user_key, user_id);
+
+    // INI file loaded first, overridden by DB
+    if (user_id && load_ini) {
+	char userini[PATH_MAX];
+	rec_buf->click_distance = -1;  // Map default
+	user_ini_tgt = rec_buf;
+	saprintf(userini, USER_INI_NAME, user_key);
+	load_ini_file(user_ini_fields, userini, 1, 0);
+	user_ini_tgt = 0;
+    }
+
+    if (!userdb_open) open_userdb();
+
+    MDB_txn *txn;
+    E(mdb_txn_begin(env, NULL, MDB_RDONLY, &txn));
+
+    int rv;
+    MDB_val key2, data;
+    uint8_t idbuf[4];
+
+    if (user_id == 0) {
+	uint8_t *p2 = idbuf;
+	write_int32(&p2, rec_buf->user_no);
+	key2.mv_size = sizeof(idbuf);
+	key2.mv_data = idbuf;
+
+    } else {
+	MDB_val key;
+
+	key.mv_size = strlen(user_key);
+	key.mv_data = user_key;
+
+	rv = E(mdb_get(txn, dbi_ind1, &key, &key2));
+	if (rv == MDB_NOTFOUND) {
+	    mdb_txn_abort(txn);
+	    return -1;
+	}
+    }
+
+    rv = E(mdb_get(txn, dbi_rec, &key2, &data));
+    if (rv == MDB_NOTFOUND) {
+	mdb_txn_abort(txn);
+	return -1;
+    }
+
+    // Copy data to the dest before we leave the txn.
+    uint8_t *p = data.mv_data;
+    int bytes = data.mv_size;
+
+#ifndef DELETE_OLDBIN
+    // Old binary records.
+    if (bytes >= 16 && *p == 0) {
+	memset(rec_buf, 0, sizeof(*rec_buf));
+	read_bin_userrec(rec_buf, p, bytes);
+	E(mdb_txn_commit(txn));
+	return 0;
+    }
+#endif
+
+    read_fld(&p, &bytes, &rec_buf->user_no, FLD_I32, 0);
+    read_fld(&p, &bytes, rec_buf->user_id, FLD_STR, sizeof(rec_buf->user_id));
+    read_fld(&p, &bytes, &rec_buf->blocks_placed, FLD_I64, 0);
+    read_fld(&p, &bytes, &rec_buf->blocks_deleted, FLD_I64, 0);
+    read_fld(&p, &bytes, &rec_buf->blocks_drawn, FLD_I64, 0);
+    if (rec_buf->first_logon == 0) // Set once.
+	read_fld(&p, &bytes, &rec_buf->first_logon, FLD_I64, 0);
+    else
+	read_fld(&p, &bytes, 0, FLD_SKIP, 0);
+    read_fld(&p, &bytes, &rec_buf->last_logon, FLD_I64, 0);
+    read_fld(&p, &bytes, &rec_buf->logon_count, FLD_I64, 0);
+    read_fld(&p, &bytes, &rec_buf->kick_count, FLD_I64, 0);
+    read_fld(&p, &bytes, &rec_buf->death_count, FLD_I64, 0);
+    read_fld(&p, &bytes, &rec_buf->message_count, FLD_I64, 0);
+    read_fld(&p, &bytes, 0, FLD_SKIP, 0);
+    read_fld(&p, &bytes, &rec_buf->time_online_secs, FLD_I64, 0);
+
+    E(mdb_txn_commit(txn));
+
+    return 0;
+}
+
+void
+init_userrec(MDB_txn * txn, userrec_t * rec_buf)
+{
+    // fetch next id
+    //if (!userdb_open) open_userdb();
+    uint8_t buf[16], *p = buf;
+    int idno = 0;
+    write_int32(&p, idno);
+
+    MDB_val key, data;
+    key.mv_size = sizeof(uint32_t);
+    key.mv_data = buf;
+
+    int rv = E(mdb_get(txn, dbi_rec, &key, &data));
+    if (rv != MDB_NOTFOUND) {
+	uint8_t *p = data.mv_data;
+	if (data.mv_size >= 4)
+	    idno = IntBE32(p);
+    }
+    idno ++;
+    uint8_t buf2[16];
+    p = buf2;
+    write_int32(&p, idno);
+
+    data.mv_size = sizeof(uint32_t);
+    data.mv_data = buf2;
+    E(mdb_put(txn, dbi_rec, &key, &data, 0) );
+
+    rec_buf->user_no = idno;
+}
+
+LOCAL void
+open_userdb()
+{
+    if (env) { userdb_open = 1; return; }
+
+    E(mdb_env_create(&env));
+    // Maximum size of DB, MUST lock if done after mdb_env_open
+    // E(mdb_env_set_mapsize(env, 10485760));
+    E(mdb_env_set_maxdbs(env, 8));
+    E(mdb_env_set_maxreaders(env, MAX_USER+4));
+
+#ifdef __SIZE_WIDTH__
+    char buf[256]; // lmdb files are not portable
+    sprintf(buf, USERDBXX_DIR, __SIZE_WIDTH__);
+    E(mdb_env_open(env, buf, 0/*MDB_RDWR*/, 0664));
+#else
+    E(mdb_env_open(env, USERDB_DIR, 0/*MDB_RDWR*/, 0664));
+#endif
+
+    // Should I set the FD_CLOEXEC flag on this fd?
+    // E(mdb_env_get_fd(env, ...
+
+    // Make sure the "tables" and "indexes" exist
+    MDB_txn *txn;
+    E(mdb_txn_begin(env, NULL, 0, &txn));
+
+    E(mdb_dbi_open(txn, "user_rec", MDB_CREATE, &dbi_rec));
+    E(mdb_dbi_open(txn, "user_id", MDB_CREATE, &dbi_ind1));
+
+    E(mdb_txn_commit(txn));
+}
+
+void
+close_userdb()
+{
+    if (!userdb_open || env == 0) return;
+    mdb_env_close(env);
+    userdb_open = 0;
+    env = 0;
+}
+
+#if INTERFACE
+inline static void
 write_int32(uint8_t **pp, int32_t val)
 {
     uint8_t *p = *pp;
@@ -76,6 +408,7 @@ write_int32(uint8_t **pp, int32_t val)
     *p++ = (val&0xFF);
     *pp = p;
 }
+#endif
 
 LOCAL void
 write_fld(uint8_t **pp, void * data, enum csv_type type)
@@ -189,307 +522,7 @@ read_fld(uint8_t **pp, int * bytes, void * data, enum csv_type type, int len)
     }
 }
 
-void
-copy_user_key(char *p, char * user_id)
-{
-    for(char * s = user_id; *s; s++)
-    {
-	char *hex = "0123456789ABCDEF";
-	int ch = *s & 0xFF;
-	if ((ch >= '0' && ch <= '9') || ch == '_' || ch == '.' || (ch >= 'a' && ch <= 'z'))
-	    *p++ = ch;
-	else if (ch >= 'A' && ch <= 'Z')
-	    *p++ = ch - 'Z' + 'z';
-	else {
-	    *p++ = '%';
-	    *p++ = hex[(ch>>4) & 0xF];
-	    *p++ = hex[ch & 0xF];
-	}
-    }
-    *p = 0;
-}
-
-/*
-    (when == 0) => Tick
-    (when == 1) => At logon
-    (when == 2) => At logoff or config change
- */
-void
-write_current_user(int when)
-{
-    time_t now = time(0);
-    if (when == 0 && now - my_user.time_of_last_save >= 300)
-	my_user.dirty = 1;
-
-    if (when == 0 && !my_user.dirty) return;
-    if (when == 2 && !my_user.user_logged_in) return;
-
-    if (my_user.user_no == 0) {
-	if (*user_id == 0) return;
-	if (read_userrec(&my_user, user_id, 1) < 0)
-	    my_user.user_no = 0;
-    }
-
-    if (!userdb_open) open_userdb();
-
-    if (when == 1) {
-	if (!my_user.first_logon) my_user.first_logon = time(0);
-	my_user.last_logon = now;
-	my_user.time_of_last_save = now;
-	my_user.logon_count++;
-	my_user.user_logged_in = 1;
-
-	// Datafix. Expires: Tue 14 Nov 22:13:20 GMT 2023
-	if (now < 1700000000)
-	    if (my_user.time_online_secs > 1500000000) my_user.time_online_secs = 0;
-
-	if (*client_ipv4_str) {
-	    snprintf(my_user.last_ip, sizeof(my_user.last_ip), "%s", client_ipv4_str);
-	    char *p = strrchr(my_user.last_ip, ':');
-	    if (p) *p = 0;
-	}
-    }
-
-    if (now > my_user.time_of_last_save && my_user.user_logged_in) {
-	if (my_user.time_of_last_save == 0) my_user.time_of_last_save = now;
-	int64_t d = now - my_user.time_of_last_save;
-	my_user.time_online_secs += d;
-	my_user.time_of_last_save += d;
-    }
-
-    strcpy(my_user.user_id, user_id);
-
-    write_userrec(&my_user, (when==2));
-
-    my_user.dirty = 0;
-}
-
-void
-write_userrec(userrec_t * userrec, int ini_too)
-{
-    uint8_t user_key[NB_SLEN*4];
-    copy_user_key(user_key, userrec->user_id);
-
-    if (ini_too && userrec->ini_valid) {
-	char userini[PATH_MAX];
-	user_ini_tgt = userrec;
-	saprintf(userini, USER_INI_NAME, user_key);
-	save_ini_file(user_ini_fields, userini, 0);
-	user_ini_tgt = 0;
-    }
-
-    if (!userdb_open) open_userdb();
-
-    MDB_txn *txn;
-    E(mdb_txn_begin(env, NULL, 0, &txn));
-
-    if (userrec->user_no == 0)
-	init_userrec(txn, userrec);
-
-    uint8_t recbuf[sizeof(userrec_t) * 4];
-    uint8_t * p = recbuf;
-
-    write_fld(&p, &userrec->user_no, FLD_I32);
-    write_fld(&p, userrec->user_id, FLD_STR);
-    write_fld(&p, &userrec->blocks_placed, FLD_I64);
-    write_fld(&p, &userrec->blocks_deleted, FLD_I64);
-    write_fld(&p, &userrec->blocks_drawn, FLD_I64);
-    write_fld(&p, &userrec->first_logon, FLD_I64);
-    write_fld(&p, &userrec->last_logon, FLD_I64);
-    write_fld(&p, &userrec->logon_count, FLD_I64);
-    write_fld(&p, &userrec->kick_count, FLD_I64);
-    write_fld(&p, &userrec->death_count, FLD_I64);
-    write_fld(&p, &userrec->message_count, FLD_I64);
-    write_fld(&p, userrec->last_ip, FLD_STR);
-    write_fld(&p, &userrec->time_online_secs, FLD_I64);
-
-    uint8_t idbuf[4];
-    {
-	uint8_t * p2 = idbuf;
-	write_int32(&p2, userrec->user_no);
-    }
-
-    MDB_val key, data;
-    key.mv_size = sizeof(idbuf);
-    key.mv_data = idbuf;
-    data.mv_size = p-recbuf;
-    data.mv_data = recbuf;
-    E(mdb_put(txn, dbi_rec, &key, &data, 0) );
-
-    key.mv_size = strlen(user_key);
-    key.mv_data = user_key;
-    data.mv_size = sizeof(idbuf);
-    data.mv_data = idbuf;
-    E(mdb_put(txn, dbi_ind1, &key, &data, 0) );
-
-    E(mdb_txn_commit(txn));
-}
-
-// If user_id arg is zero we use the user_no field so we can load the
-// DB data (specifically the full name) for translation of id to name.
-int
-read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
-{
-    if (user_id && *user_id == 0) return -1;
-    if (user_id == 0 && rec_buf->user_no == 0) return -1;
-
-    rec_buf->ini_valid = load_ini;
-
-    uint8_t user_key[NB_SLEN*4];
-    if (user_id) {
-	copy_user_key(user_key, user_id);
-
-	// INI file loaded first, overridden by DB
-	if (load_ini) {
-	    char userini[PATH_MAX];
-	    rec_buf->click_distance = -1;  // Map default
-	    user_ini_tgt = rec_buf;
-	    saprintf(userini, USER_INI_NAME, user_key);
-	    load_ini_file(user_ini_fields, userini, 1, 0);
-	    user_ini_tgt = 0;
-	}
-    }
-
-    if (!userdb_open) open_userdb();
-
-    MDB_txn *txn;
-    E(mdb_txn_begin(env, NULL, MDB_RDONLY, &txn));
-
-    int rv;
-    MDB_val key2, data;
-    uint8_t idbuf[4];
-
-    if (user_id == 0) {
-	uint8_t *p2 = idbuf;
-	write_int32(&p2, rec_buf->user_no);
-	key2.mv_size = sizeof(idbuf);
-	key2.mv_data = idbuf;
-
-    } else {
-	MDB_val key;
-
-	key.mv_size = strlen(user_key);
-	key.mv_data = user_key;
-
-	rv = E(mdb_get(txn, dbi_ind1, &key, &key2));
-	if (rv == MDB_NOTFOUND) {
-	    mdb_txn_abort(txn);
-	    return -1;
-	}
-    }
-
-    rv = E(mdb_get(txn, dbi_rec, &key2, &data));
-    if (rv == MDB_NOTFOUND) {
-	mdb_txn_abort(txn);
-	return -1;
-    }
-
-    // Copy data to the dest before we leave the txn.
-    uint8_t *p = data.mv_data;
-    int bytes = data.mv_size;
-
-    // Old binary records.
-    if (bytes >= 16 && *p == 0) {
-	memset(rec_buf, 0, sizeof(*rec_buf));
-	read_bin_userrec(rec_buf, p, bytes);
-	E(mdb_txn_commit(txn));
-	return 0;
-    }
-
-    read_fld(&p, &bytes, &rec_buf->user_no, FLD_I32, 0);
-    read_fld(&p, &bytes, rec_buf->user_id, FLD_STR, sizeof(rec_buf->user_id));
-    read_fld(&p, &bytes, &rec_buf->blocks_placed, FLD_I64, 0);
-    read_fld(&p, &bytes, &rec_buf->blocks_deleted, FLD_I64, 0);
-    read_fld(&p, &bytes, &rec_buf->blocks_drawn, FLD_I64, 0);
-    if (rec_buf->first_logon == 0)
-	read_fld(&p, &bytes, &rec_buf->first_logon, FLD_I64, 0);
-    else
-	read_fld(&p, &bytes, 0, FLD_SKIP, 0);
-    read_fld(&p, &bytes, &rec_buf->last_logon, FLD_I64, 0);
-    read_fld(&p, &bytes, &rec_buf->logon_count, FLD_I64, 0);
-    read_fld(&p, &bytes, &rec_buf->kick_count, FLD_I64, 0);
-    read_fld(&p, &bytes, &rec_buf->death_count, FLD_I64, 0);
-    read_fld(&p, &bytes, &rec_buf->message_count, FLD_I64, 0);
-    read_fld(&p, &bytes, 0, FLD_SKIP, 0);
-    read_fld(&p, &bytes, &rec_buf->time_online_secs, FLD_I64, 0);
-
-    E(mdb_txn_commit(txn));
-
-    return 0;
-}
-
-void
-init_userrec(MDB_txn * txn, userrec_t * rec_buf)
-{
-    // fetch next id
-    //if (!userdb_open) open_userdb();
-    uint8_t buf[16], *p = buf;
-    int idno = 0;
-    write_int32(&p, idno);
-
-    MDB_val key, data;
-    key.mv_size = sizeof(uint32_t);
-    key.mv_data = buf;
-
-    int rv = E(mdb_get(txn, dbi_rec, &key, &data));
-    if (rv != MDB_NOTFOUND) {
-	uint8_t *p = data.mv_data;
-	if (data.mv_size >= 4)
-	    idno = IntBE32(p);
-    }
-    idno ++;
-    uint8_t buf2[16];
-    p = buf2;
-    write_int32(&p, idno);
-
-    data.mv_size = sizeof(uint32_t);
-    data.mv_data = buf2;
-    E(mdb_put(txn, dbi_rec, &key, &data, 0) );
-
-    rec_buf->user_no = idno;
-}
-
-LOCAL void
-open_userdb()
-{
-    if (env) { userdb_open = 1; return; }
-
-    E(mdb_env_create(&env));
-    // Maximum size of DB, MUST lock if done after mdb_env_open
-    // E(mdb_env_set_mapsize(env, 10485760));
-    E(mdb_env_set_maxdbs(env, 8));
-    E(mdb_env_set_maxreaders(env, MAX_USER+4));
-
-#ifdef __SIZE_WIDTH__
-    char buf[256]; // lmdb files are not portable
-    sprintf(buf, USERDBXX_DIR, __SIZE_WIDTH__);
-    E(mdb_env_open(env, buf, 0/*MDB_RDWR*/, 0664));
-#else
-    E(mdb_env_open(env, USERDB_DIR, 0/*MDB_RDWR*/, 0664));
-#endif
-
-    // Should I set the FD_CLOEXEC flag on this fd?
-    // E(mdb_env_get_fd(env, ...
-
-    // Make sure the "tables" and "indexes" exist
-    MDB_txn *txn;
-    E(mdb_txn_begin(env, NULL, 0, &txn));
-
-    E(mdb_dbi_open(txn, "user_rec", MDB_CREATE, &dbi_rec));
-    E(mdb_dbi_open(txn, "user_id", MDB_CREATE, &dbi_ind1));
-
-    E(mdb_txn_commit(txn));
-}
-
-void
-close_userdb()
-{
-    if (!userdb_open || env == 0) return;
-    mdb_env_close(env);
-    userdb_open = 0;
-    env = 0;
-}
-
+#ifndef DELETE_OLDBIN
 static inline void
 read_bin_fld(uint8_t **pp, int * bytes, void * data, int type)
 {
@@ -545,3 +578,4 @@ read_bin_userrec(userrec_t * rec_buf, uint8_t *p, int bytes)
     // No more fields ever written to bin format.
     rec_buf->dirty = 1;
 }
+#endif

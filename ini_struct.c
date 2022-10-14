@@ -11,11 +11,11 @@ struct ini_state_t {
     FILE * fd;
     char * filename;
 
-    int all;	// Process all fields
-    int write;	// Set to write fields
-    int quiet;	// Don't comment to the remote (use stderr)
-    int no_unsafe;
     char * curr_section;
+    uint8_t all;	// Process all fields
+    uint8_t write;	// Set to write fields
+    uint8_t quiet;	// Don't comment to the remote (use stderr)
+    uint8_t no_unsafe;	// Disable protected fields
 };
 
 #endif
@@ -385,9 +385,9 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTMAXVAL("UserNo", user_ini_tgt->user_no);
 	INI_STRARRAYCP437("UserId", user_ini_tgt->user_id);
 	INI_STRARRAYCP437("Nick", user_ini_tgt->nick);
-	INI_STRARRAYCP437("Title", user_ini_tgt->title);
 	INI_STRARRAYCP437("Colour", user_ini_tgt->colour);
-	INI_STRARRAYCP437("TitleColour", user_ini_tgt->title_colour);
+	INI_STRARRAYCP437("Skin", user_ini_tgt->skin);
+	INI_STRARRAYCP437("Model", user_ini_tgt->model);
 	INI_INTMAXVAL("BlocksPlaced", user_ini_tgt->blocks_placed);
 	INI_INTMAXVAL("BlocksDeleted", user_ini_tgt->blocks_deleted);
 	INI_INTMAXVAL("BlocksDrawn", user_ini_tgt->blocks_drawn);
@@ -403,6 +403,9 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_DURATION("TimeOnline", user_ini_tgt->time_online_secs);
 	INI_STRARRAY("LastIP", user_ini_tgt->last_ip);
 	INI_STRARRAY("Timezone", user_ini_tgt->timezone);
+
+	INI_STRARRAYCP437("Title", user_ini_tgt->title);
+	INI_STRARRAYCP437("TitleColour", user_ini_tgt->title_colour);
     }
     return found;
 }

@@ -31,24 +31,24 @@ static uint32_t last_generation;
 void
 update_chat(int to_where, int to_id, pkt_message *pkt)
 {
-    if (!level_chat_queue || level_chat_queue->curr_offset >= level_chat_queue->queue_len)
+    if (!shared_chat_queue || shared_chat_queue->curr_offset >= shared_chat_queue->queue_len)
 	create_chat_queue();
 
     lock_fn(chat_queue_lock);
-    int id = level_chat_queue->curr_offset;
-    level_chat_queue->updates[id].to_player_id = -1;
-    level_chat_queue->updates[id].to_level_id = -1;
-    level_chat_queue->updates[id].to_team_id = -1;
-    level_chat_queue->updates[id].not_player_id = -1;
+    int id = shared_chat_queue->curr_offset;
+    shared_chat_queue->updates[id].to_player_id = -1;
+    shared_chat_queue->updates[id].to_level_id = -1;
+    shared_chat_queue->updates[id].to_team_id = -1;
+    shared_chat_queue->updates[id].not_player_id = -1;
     switch (to_where) {
-    case 1: level_chat_queue->updates[id].to_player_id = to_id; break;
-    case 2: level_chat_queue->updates[id].to_level_id = to_id; break;
-    case 3: level_chat_queue->updates[id].to_team_id = to_id; break;
+    case 1: shared_chat_queue->updates[id].to_player_id = to_id; break;
+    case 2: shared_chat_queue->updates[id].to_level_id = to_id; break;
+    case 3: shared_chat_queue->updates[id].to_team_id = to_id; break;
     }
-    level_chat_queue->updates[id].msg = *pkt;
-    if (++level_chat_queue->curr_offset >= level_chat_queue->queue_len) {
-	level_chat_queue->curr_offset = 0;
-	level_chat_queue->generation ++;
+    shared_chat_queue->updates[id].msg = *pkt;
+    if (++shared_chat_queue->curr_offset >= shared_chat_queue->queue_len) {
+	shared_chat_queue->curr_offset = 0;
+	shared_chat_queue->generation ++;
     }
     unlock_fn(chat_queue_lock);
 }
@@ -56,11 +56,11 @@ update_chat(int to_where, int to_id, pkt_message *pkt)
 void
 set_last_chat_queue_id()
 {
-    if (!level_chat_queue) create_chat_queue();
+    if (!shared_chat_queue) create_chat_queue();
 
     lock_fn(chat_queue_lock);
-    last_id = level_chat_queue->curr_offset;
-    last_generation = level_chat_queue->generation;
+    last_id = shared_chat_queue->curr_offset;
+    last_generation = shared_chat_queue->generation;
     unlock_fn(chat_queue_lock);
 }
 
@@ -80,11 +80,11 @@ send_queued_chats(int flush)
     {
 	chat_entry_t upd;
 	lock_fn(chat_queue_lock);
-	if (last_generation != level_chat_queue->generation)
+	if (last_generation != shared_chat_queue->generation)
 	{
 	    int isok = 0;
-	    if (last_generation == level_chat_queue->generation-1) {
-		if (level_chat_queue->curr_offset < last_id)
+	    if (last_generation == shared_chat_queue->generation-1) {
+		if (shared_chat_queue->curr_offset < last_id)
 		    isok = 1;
 	    }
 	    if (!isok) {
@@ -95,13 +95,13 @@ send_queued_chats(int flush)
 		break;
 	    }
 	}
-	if (last_id == level_chat_queue->curr_offset) {
+	if (last_id == shared_chat_queue->curr_offset) {
 	    // Nothing more to send.
 	    unlock_fn(chat_queue_lock);
 	    break;
 	}
-	upd = level_chat_queue->updates[last_id++];
-	if (last_id == level_chat_queue->queue_len) {
+	upd = shared_chat_queue->updates[last_id++];
+	if (last_id == shared_chat_queue->queue_len) {
 	    last_generation ++;
 	    last_id = 0;
 	}

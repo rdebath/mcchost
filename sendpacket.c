@@ -35,23 +35,46 @@ nb_short_dflt(uint8_t **ptr, int v, int def)
 static inline int
 nb_string_write(uint8_t *pkt, char * str)
 {
-    int l;
-    if (!extn_fullcp437) {
+    if (!extn_alltext) { // Usually all of the fixes will be ok.
+	int l;
 	int lns = 0;
 	for(l=0; l<MB_STRLEN; l++) {
 	    if(str[l] == 0) break;
-	    if(str[l]&0x80)
+	    if(!extn_fullcp437 && (str[l]&0x80))
 		pkt[l] = cp437_ascii[str[l] & 0x7f];
 	    else
 		pkt[l] = str[l];
 	    if (pkt[l] != ' ') lns = l;
 	}
+	for(; l<MB_STRLEN; l++) pkt[l] = ' ';
+
 	// CP437->ASCII translation creates spaces.
 	while (lns > 0 && pkt[lns-1] == '&') {
 	    pkt[lns] = ' '; pkt[lns-1] = ' ';
 	    while(lns > 0 && pkt[lns] == ' ') lns--;
 	}
-	// Emotes
+
+	// Wipe extra colours.
+	if (!extn_textcolours) {
+	    for(l=0; l<MB_STRLEN; l++) {
+		if (pkt[l] == '&') {
+		    int ch = (uint8_t)pkt[l+1];
+		    if (textcolour[ch].defined)
+			pkt[l+1] = textcolour[ch].fallback;
+		    if ((ch >= '0' && ch <= '9') ||
+		        (ch >= 'a' && ch <= 'f') ||
+		        (ch >= 'A' && ch <= 'F')) {
+			l++;
+		    } else {
+			pkt[l] = '%';
+			pkt[l+1] = ' ';
+			l++;
+		    }
+		}
+	    }
+	}
+
+	// Workaround problems with Emotes
 	if (!extn_emotefix && pkt[lns] < ' ') {
 	    if (lns < MB_STRLEN-1)
 		pkt[lns+1] = '`';
@@ -59,13 +82,14 @@ nb_string_write(uint8_t *pkt, char * str)
 		pkt[lns] = '*';
 	}
     } else {
+	int l;
 	for(l=0; l<MB_STRLEN; l++) {
 	    if(str[l] == 0) break;
 	    pkt[l] = str[l];
 	}
+	for(; l<MB_STRLEN; l++)
+	    pkt[l] = ' ';
     }
-    for(; l<MB_STRLEN; l++)
-	pkt[l] = ' ';
 
     return MB_STRLEN;
 }
@@ -577,9 +601,9 @@ send_addplayername_pkt(int player_id, char * playername, char * listname, char *
     uint8_t *p = packetbuf;
     *p++ = PKID_PLAYERNAME;
     nb_short(&p, player_id);
-    p += nb_string_write(p, playername);
-    p += nb_string_write(p, listname);
-    p += nb_string_write(p, groupname);
+    p += nb_string_write(p, playername);	// Plain alpha only name for auto-complete
+    p += nb_string_write(p, listname);		// Nickname including colours and title (append AFK)
+    p += nb_string_write(p, groupname);		// Location or other group.
     *p++ = sortid;
     write_to_remote(packetbuf, p-packetbuf);
 }
@@ -608,8 +632,8 @@ send_addentity_pkt(int player_id, char * ingamename, char * skinname, xyzhv_t po
     uint8_t *p = packetbuf;
     *p++ = PKID_ADDENT;
     *p++ = player_id;
-    p += nb_string_write(p, ingamename);
-    p += nb_string_write(p, skinname);
+    p += nb_string_write(p, ingamename);	// Hover name, including prefix colour
+    p += nb_string_write(p, skinname);		// Skin, may be URL
     // if(!extn_extplayerlistv1) {
     nb_entcoord(&p, posn.x);
     nb_entcoord(&p, posn.y+51);	// TODO: Is this +51 right?
@@ -617,6 +641,20 @@ send_addentity_pkt(int player_id, char * ingamename, char * skinname, xyzhv_t po
     *p++ = posn.h;
     *p++ = posn.v;
     // }
+    write_to_remote(packetbuf, p-packetbuf);
+}
+
+void
+send_changemodel_pkt(int player_id, char * modelname)
+{
+    if (!extn_changemodel) return;
+    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+
+    uint8_t packetbuf[1024];
+    uint8_t *p = packetbuf;
+    *p++ = PKID_CHANGEMDL;
+    *p++ = player_id;
+    p += nb_string_write(p, modelname);
     write_to_remote(packetbuf, p-packetbuf);
 }
 

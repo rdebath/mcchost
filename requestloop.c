@@ -214,6 +214,7 @@ on_select_timeout()
 
     check_user();
     check_metadata_update();
+    process_queued_cmds();
     send_queued_chats(0);
     send_queued_blocks();
 

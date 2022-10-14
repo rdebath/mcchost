@@ -1,5 +1,4 @@
 
-
 #include "cmddeletelvl.h"
 
 /*HELP deletelvl H_CMD

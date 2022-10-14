@@ -138,9 +138,13 @@ complete_connection()
 
     // List of users
     start_user();
+    update_player_look();
 
     // Chat to users
     create_chat_queue();
+
+    // Chat to users
+    create_cmd_queue();
 
     // Open level mmap files.
     char fixname[MAXLEVELNAMELEN*4];
@@ -195,7 +199,7 @@ fatal(char * emsg)
 
     fprintf(stderr, "FATAL(%d): %s\n", getpid(), emsg);
 
-    if (level_chat_queue)
+    if (shared_chat_queue)
 	printf_chat("@&W- &7%s &WCrashed: &S%s", user_id, emsg);
 
     if (line_ofd > 0)
@@ -218,11 +222,22 @@ logout(char * emsg)
     disconnect(0, emsg);
 }
 
+void
+kicked(char * emsg)
+{
+    printf_chat("@&W- &7%s &Skicked %s", user_id, emsg);
+    char kbuf[256], *s, *d;
+    saprintf(kbuf, "Kicked %s", emsg);
+    for(s=d=kbuf; *s; s++)
+	if (*s != '&') *d++ = *s;
+	else if (s[1]) s++;
+    *d = 0;
+    disconnect(0, kbuf);
+}
+
 LOCAL void
 disconnect(int rv, char * emsg)
 {
-    if (line_ofd < 0) return;
-
     if (client_ipv4_port > 0 && *user_id)
 	printlog("Disconnect %s, user '%s', %s", client_ipv4_str, user_id, emsg);
     else if (client_ipv4_port > 0)
@@ -233,14 +248,17 @@ disconnect(int rv, char * emsg)
 	printlog("Disconnect %s", emsg);
 
     stop_user();
-    send_discon_msg_pkt(emsg);
-    flush_to_remote();
 
-    if (inetd_mode && user_authenticated) {
-	socket_shutdown(1);
-	scan_and_save_levels(0);
-    } else
-	socket_shutdown(0);
+    if (line_ofd > 0) {
+	send_discon_msg_pkt(emsg);
+	flush_to_remote();
+
+	if (inetd_mode && user_authenticated) {
+	    socket_shutdown(1);
+	    scan_and_save_levels(0);
+	} else
+	    socket_shutdown(0);
+    }
     exit(rv);
 }
 

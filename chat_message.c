@@ -135,30 +135,24 @@ convert_inbound_chat(int to_user, char * msg)
     free(buf);
 }
 
+/* The '&' character is used for colours but Classicube changes
+ * all '&' to '%'. So I change '%' back to '&' but check if it's
+ * part of a valid colour combination; if not I change to '%'.
+ */
 void
 revert_amp_to_perc(char * msg)
 {
-    if (!extn_textcolours) {
-	for(char * p = msg; *p; p++) {
-	    if (*p == '%' || *p == '&') {
-		uint8_t c = p[1];
-		if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
-		    *p++ = '&';
-		} else
-		    *p = '%';
-	    }
-	}
-    } else {
-	for(char * p = msg; *p; p++) {
-	    if (*p == '%' || *p == '&') {
-		uint8_t c = p[1];
-		if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
-		    *p++ = '&';
-		} else if (c && textcolour[c].defined) {
-		    *p++ = '&';
-		} else
-		    *p = '%';
-	    }
+    for(char * p = msg; *p; p++) {
+	if (*p == '%' || *p == '&') {
+	    uint8_t c = p[1];
+	    if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+		*p++ = '&';
+	    } else if (c && textcolour[c].defined) {
+		*p++ = '&';
+		if (textcolour[c].colour < 0)
+		    *p = textcolour[c].fallback;
+	    } else
+		*p = '%';
 	}
     }
 }
@@ -187,12 +181,11 @@ post_chat(int where, int to_id, int type, char * chat, int chat_len)
 	if (c == '&') {
 	    uint8_t col = chat[s+1];
 
-	    if (textcolour[col].defined) {
-		if (!extn_textcolours || textcolour[col].colour < 0)
+	    // No while loop here, user could make a fallback loop.
+	    if (textcolour[col].defined && textcolour[col].colour < 0)
 		    col = textcolour[col].fallback;
-	    }
 
-	    if ((extn_textcolours && textcolour[col].defined) ||
+	    if (textcolour[col].defined ||
 		    (col >= '0' && col <= '9') || (col >= 'a' && col <= 'f')) {
 		ncolour = col;
 		s++;

@@ -303,11 +303,6 @@ do_restart()
 {
     printlog("Restarting %s ...", program_args[0]);
 
-    (void)signal(SIGHUP, SIG_IGN);
-    (void)signal(SIGCHLD, SIG_IGN);
-    (void)signal(SIGALRM, SIG_IGN);
-    (void)signal(SIGTERM, SIG_IGN);
-
     close_userdb();
     signal_available = 0;
     if (listen_socket>=0) close(listen_socket);
@@ -319,10 +314,11 @@ do_restart()
     // This might be something we want to do ...
     //for(int i=3; i<100; i++) (void)close(i);
 
-    (void)signal(SIGHUP, SIG_DFL);
-    (void)signal(SIGCHLD, SIG_DFL);
-    (void)signal(SIGALRM, SIG_DFL);
-    (void)signal(SIGTERM, SIG_DFL);
+    // Exec clears function call configs, make sure we don't get killed.
+    (void)signal(SIGHUP, SIG_IGN);
+    (void)signal(SIGCHLD, SIG_IGN);
+    (void)signal(SIGALRM, SIG_IGN);
+    (void)signal(SIGTERM, SIG_DFL); // Or do.
 
     // Note execvp never returns as it starts the shell on error.
     if (program_args[0][0] == '/')

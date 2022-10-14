@@ -115,6 +115,7 @@ int extn_setspawnpoint = 0;
 int extn_textcolours = 0;
 int extn_texthotkey = 0;
 int extn_weathertype = 0;
+int extn_alltext = 0;
 
 int customblock_pkt_sent = 0;
 int customblock_enabled = 0;
@@ -299,6 +300,8 @@ process_extentry(pkt_extentry * pkt)
 	    msglen[PKID_BLOCKDEF2] = 88 + 6;
 	}
     }
+
+    extn_alltext = (extn_fullcp437 && extn_emotefix && extn_textcolours);
 
     if (cpe_pending && cpe_extn_remaining <= 0) {
         cpe_pending |= 1;

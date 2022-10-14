@@ -57,10 +57,10 @@ struct shared_data_t {
 #define level_block_queue shdat.blockq
 #endif
 
-chat_queue_t * level_chat_queue = 0;
-cmd_queue_t * level_cmd_queue = 0;
-
 #define level_block_queue_len shdat.dat[SHMID_BLOCKQ].len
+
+chat_queue_t * shared_chat_queue = 0;
+cmd_queue_t * shared_cmd_queue = 0;
 
 struct shared_data_t shdat;
 
@@ -79,7 +79,7 @@ filelock_t level_lock[1];
 	chat_queue -- chat messages broadcast
 
 	user_chat_queue -- chat messages for one user
-	level_chat_queue -- chat messages for one level broadcast
+	shared_chat_queue -- chat messages for one level broadcast
 	team_chat_queue -- chat messages for one team broadcast
 	    --> Are these all in same queue, just filtered?
 
@@ -461,17 +461,17 @@ create_chat_queue()
     lock_fn(chat_queue_lock);
 
     sprintf(sharename, CHAT_QUEUE_NAME);
-    shdat.dat[SHMID_CHAT].len = sizeof(*level_chat_queue);
+    shdat.dat[SHMID_CHAT].len = sizeof(*shared_chat_queue);
     allocate_shared(sharename, shdat.dat[SHMID_CHAT].len, shdat.dat+SHMID_CHAT);
-    level_chat_queue = shdat.dat[SHMID_CHAT].ptr;
+    shared_chat_queue = shdat.dat[SHMID_CHAT].ptr;
 
-    if (    level_chat_queue->generation == 0 ||
-	    level_chat_queue->generation > 0x0FFFFFFF ||
-	    level_chat_queue->queue_len != cqlen ||
-	    level_chat_queue->curr_offset >= cqlen) {
-	level_chat_queue->generation = 2;
-	level_chat_queue->curr_offset = 0;
-	level_chat_queue->queue_len = cqlen;
+    if (    shared_chat_queue->generation == 0 ||
+	    shared_chat_queue->generation > 0x0FFFFFFF ||
+	    shared_chat_queue->queue_len != cqlen ||
+	    shared_chat_queue->curr_offset >= cqlen) {
+	shared_chat_queue->generation = 2;
+	shared_chat_queue->curr_offset = 0;
+	shared_chat_queue->queue_len = cqlen;
     }
     unlock_fn(chat_queue_lock);
 
@@ -481,9 +481,9 @@ create_chat_queue()
 void
 stop_chat_queue()
 {
-    if (level_chat_queue) {
+    if (shared_chat_queue) {
 	deallocate_shared(SHMID_CHAT);
-	level_chat_queue = 0;
+	shared_chat_queue = 0;
 	wipe_last_chat_queue_id();
 	lock_stop(chat_queue_lock);
     }
@@ -502,17 +502,17 @@ create_cmd_queue()
     lock_fn(cmd_queue_lock);
 
     sprintf(sharename, CMD_QUEUE_NAME);
-    shdat.dat[SHMID_CMD].len = sizeof(*level_cmd_queue);
+    shdat.dat[SHMID_CMD].len = sizeof(*shared_cmd_queue);
     allocate_shared(sharename, shdat.dat[SHMID_CMD].len, shdat.dat+SHMID_CMD);
-    level_cmd_queue = shdat.dat[SHMID_CMD].ptr;
+    shared_cmd_queue = shdat.dat[SHMID_CMD].ptr;
 
-    if (    level_cmd_queue->generation == 0 ||
-	    level_cmd_queue->generation > 0x0FFFFFFF ||
-	    level_cmd_queue->queue_len != cqlen ||
-	    level_cmd_queue->curr_offset >= cqlen) {
-	level_cmd_queue->generation = 2;
-	level_cmd_queue->curr_offset = 0;
-	level_cmd_queue->queue_len = cqlen;
+    if (    shared_cmd_queue->generation == 0 ||
+	    shared_cmd_queue->generation > 0x0FFFFFFF ||
+	    shared_cmd_queue->queue_len != cqlen ||
+	    shared_cmd_queue->curr_offset >= cqlen) {
+	shared_cmd_queue->generation = 2;
+	shared_cmd_queue->curr_offset = 0;
+	shared_cmd_queue->queue_len = cqlen;
     }
     unlock_fn(cmd_queue_lock);
 
@@ -522,9 +522,9 @@ create_cmd_queue()
 void
 stop_cmd_queue()
 {
-    if (level_cmd_queue) {
+    if (shared_cmd_queue) {
 	deallocate_shared(SHMID_CMD);
-	level_cmd_queue = 0;
+	shared_cmd_queue = 0;
 	wipe_last_cmd_queue_id();
 	lock_stop(cmd_queue_lock);
     }

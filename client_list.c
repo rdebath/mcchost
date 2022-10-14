@@ -26,11 +26,16 @@ typedef struct client_entry_t client_entry_t;
 struct client_entry_t {
     nbtstr_t name;
     nbtstr_t client_software;
+    nbtstr_t listname;
+    nbtstr_t skinname;
+    nbtstr_t modelname;
+    char name_colour;
     int on_level;
     int level_bkp_id;
     xyzhv_t posn;
     uint8_t active;
     uint8_t visible;
+    uint8_t look_update_counter;
     uint8_t ip_dup;
     uint32_t ip_address;
     time_t last_move;
@@ -119,38 +124,43 @@ check_user()
 		c.on_level == my_level && c.level_bkp_id >= 0);
 
 	if (extn_extplayerlist) {
-	    if (c.active && (!myuser[i].active ||
+	    if (!c.active && myuser[i].active) {
+		if (i>=0 && i<255)
+		    send_removeplayername_pkt(i);
+		myuser[i].active = 0;
+	    } else if (c.active &&
+		    (!myuser[i].active ||
+		    myuser[i].look_update_counter != c.look_update_counter ||
 		    myuser[i].on_level != c.on_level ||
 		    myuser[i].is_afk != c.is_afk) ) {
-		char buf[256] = "";
-		char buf2[256] = "";
+		char listname[256] = "";
+		saprintf(listname, "%s%s", c.listname.c, c.is_afk?" &7(AFK)":"");
+		char groupname[256] = "Nowhere";
 		if (c.on_level >= 0 && c.on_level < MAX_LEVEL) {
 		    int l = c.on_level;
 		    nbtstr_t n = shdat.client->levels[l].level;
 		    if (shdat.client->levels[l].loaded) {
 			if (shdat.client->levels[l].backup_id == 0)
-			    saprintf(buf, "On %s", n.c);
+			    saprintf(groupname, "On %s", n.c);
 			else if (shdat.client->levels[l].backup_id > 0)
-			    saprintf(buf, "Museum %d %s", shdat.client->levels[l].backup_id, n.c);
-			else
-			    saprintf(buf, "Nowhere");
+			    saprintf(groupname, "Museum %d %s", shdat.client->levels[l].backup_id, n.c);
 		    }
 		}
-		saprintf(buf2, "&e%s%s", c.name.c, c.is_afk?" &7(AFK)":"");
 		if (i>=0 && i<255)
-		    send_addplayername_pkt(i, c.name.c, buf2, buf, 0);
+		    send_addplayername_pkt(i, c.name.c, listname, groupname, 0);
 
-		if (c.visible == myuser[i].visible)
+		if (c.visible == myuser[i].visible && c.look_update_counter == myuser[i].look_update_counter)
 		    myuser[i] = c;
-	    } else if (!c.active && myuser[i].active) {
-		if (i>=0 && i<255)
-		    send_removeplayername_pkt(i);
-		myuser[i].active = 0;
 	    }
 	}
 	if (c.visible && !myuser[i].visible) {
 	    // New user.
-	    send_addentity_pkt(i, c.name.c, c.name.c, c.posn);
+	    char * skin = c.name.c;
+	    if (c.skinname.c[0]) skin = c.skinname.c;
+	    char namebuf[256];
+	    if (c.name_colour) saprintf(namebuf, "&%c%s", c.name_colour, c.name.c);
+	    else strcpy(namebuf, c.name.c);
+	    send_addentity_pkt(i, namebuf, skin, c.posn);
 	    myuser[i] = c;
 	} else
 	if (!c.visible && myuser[i].visible) {
@@ -160,6 +170,11 @@ check_user()
 	} else if (c.visible) {
 	    // Update user
 	    send_posn_pkt(i, &myuser[i].posn, c.posn);
+	}
+	if (c.look_update_counter == myuser[i].look_update_counter) {
+	    if ((c.modelname.c[0] != 0) || (myuser[i].modelname.c[0] != 0))
+		send_changemodel_pkt(i, c.modelname.c);
+	    myuser[i] = c;
 	}
     }
 
@@ -217,9 +232,22 @@ reset_player_list()
 	myuser[i].visible = myuser[i].active = 0;
     }
 
-    if (level_prop) {
-	send_addentity_pkt(255, user_id, user_id, level_prop->spawn);
+    {
+	char * skin = user_id;
+	if (my_user.skin[0]) skin = my_user.skin;
+	char namebuf[256];
+
+	if (my_user.colour[0]) saprintf(namebuf, "&%c%s", my_user.colour[0], user_id);
+	else strcpy(namebuf, user_id);
+
+	if (level_prop)
+	    send_addentity_pkt(255, namebuf, skin, level_prop->spawn);
+	else
+	    send_addentity_pkt(255, namebuf, skin, player_posn);
+
+	send_changemodel_pkt(255, my_user.model);
     }
+
     if (player_posn.valid)
 	send_posn_pkt(255, 0, player_posn);
     else {
@@ -298,6 +326,41 @@ update_player_software(char * sw)
 }
 
 void
+update_player_look()
+{
+    if (!shdat.client || my_user_no < 0 || my_user_no >= MAX_USER) return;
+    client_entry_t *t = &shdat.client->user[my_user_no];
+
+    nbtstr_t namebuf;
+    if (my_user.nick[0]) {
+	saprintf(namebuf.c, "%s", my_user.nick);
+    } else if (my_user.colour[0]) {
+	int c = (uint8_t)my_user.colour[0];
+	saprintf(namebuf.c, "%c%s", c, user_id);
+    } else
+	saprintf(namebuf.c, "&7%s", user_id);
+
+    if (strcmp(namebuf.c, t->listname.c) != 0) {
+	t->listname = namebuf;
+	t->look_update_counter ++;
+    }
+
+    saprintf(namebuf.c, "%s", my_user.skin);
+    if (strcmp(namebuf.c, t->skinname.c) != 0) {
+	t->skinname = namebuf;
+	t->look_update_counter ++;
+    }
+
+    saprintf(namebuf.c, "%s", my_user.model);
+    if (strcmp(namebuf.c, t->modelname.c) != 0) {
+	t->modelname = namebuf;
+	t->look_update_counter ++;
+    }
+
+    t->name_colour = my_user.colour[0];
+}
+
+void
 start_user()
 {
     int new_one = -1, kicked = 0;
@@ -351,6 +414,7 @@ start_user()
     client_entry_t t = {0};
     strcpy(t.name.c, user_id);
     t.active = 1;
+    t.look_update_counter = 1;
     t.session_id = getpid();
     t.client_software = client_software;
     t.client_proto_ver = protocol_base_version;
@@ -360,6 +424,10 @@ start_user()
     t.ip_address = client_ipv4_addr;
     t.authenticated = user_authenticated;
     t.trusted = 0;
+    strcpy(t.listname.c, user_id);
+    strcpy(t.skinname.c, user_id);
+    strcpy(t.modelname.c, "");
+    t.name_colour = 0;
     connected_sessions++;
 
     if (t.client_software.c[0] == 0) {
@@ -433,14 +501,16 @@ start_level(char * levelname, char * levelfile, int backup_id)
     unlock_fn(system_lock);
 
     if (extn_extplayerlist) {
-	char buf[256] = "";
+	char groupname[256] = "";
+	char listname[256] = "";
 	if (current_level_backup_id == 0)
-	    saprintf(buf, "On %s", current_level_name);
+	    saprintf(groupname, "On %s", current_level_name);
 	else if (current_level_backup_id > 0)
-	    saprintf(buf, "Museum %d %s", current_level_backup_id, current_level_name);
+	    saprintf(groupname, "Museum %d %s", current_level_backup_id, current_level_name);
 	else
-	    strcpy(buf, "Nowhere");
-	send_addplayername_pkt(255, user_id, user_id, buf, 0);
+	    strcpy(groupname, "Nowhere");
+	strcpy(listname, user_id);
+	send_addplayername_pkt(255, user_id, user_id, groupname, 0);
     }
 }
 

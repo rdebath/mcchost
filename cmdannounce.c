@@ -15,7 +15,7 @@ Alias &T/an
 void
 cmd_announce(char * UNUSED(cmd), char * arg)
 {
-    // TODO Permissions ? Attribution ?
+    // TODO Permissions ?
+    printf_chat("@~(102)&8from %s", user_id);
     printf_chat("@~(100)%s", arg);
 }
-

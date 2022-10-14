@@ -68,7 +68,11 @@ f_block_convert(block_t in)
 void
 send_map_file()
 {
+    if (extn_instantmotd)
+	send_system_ident();
+
     if (!level_prop || !level_blocks) {
+
 	send_void_map();
 	fprintf_logfile("Level \"%s\" no mmap so void map sent.", current_level_name);
 	return;
@@ -76,8 +80,6 @@ send_map_file()
 
     uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
 
-    if (extn_instantmotd)
-	send_system_ident();
     send_hack_control();
 
     send_lvlinit_pkt(level_len);
@@ -97,6 +99,9 @@ send_map_file()
 void
 send_void_map()
 {
+    if (extn_hackcontrol)
+	send_hackcontrol_pkt(0xFF, -1);
+
     char empty_zlib[] = {0xe3, 0x64, 0x00, 0x00};
     char empty_gzip[] = {
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -113,10 +118,12 @@ send_void_map()
 	for(int i = 0; i<6; i++)
 	    send_envsetcolour_pkt(i, 0);
     }
-    send_inventory_order();
     player_posn.x = player_posn.z = 16; player_posn.y = 256;
-    player_posn.v = player_posn.h = 0;
-    send_addentity_pkt(255, user_id, user_id, player_posn);
+    player_posn.v = player_posn.h = 0; player_posn.valid = 1;
+
+    send_block_definitions(); // Clear any previous.
+    send_inventory_order();
+    reset_player_list();
 }
 
 void
@@ -405,7 +412,7 @@ send_block_definitions()
 	if (client_block_limit > Block_CP && !customblock_enabled)
 	    level_block_limit = Block_CP;
 	for(block_t b = 0; b<level_block_limit; b++)
-	    if (level_prop->blockdef[b].defined) {
+	    if (level_prop && level_prop->blockdef[b].defined) {
 		level_block_limit = b;
 		break;
 	    }
@@ -416,7 +423,7 @@ send_block_definitions()
     if (!extn_extendtexno) {
 	for(block_t b = 0; b<client_block_limit; b++) {
 	    tex16_def[b] = 0;
-	    if (!level_prop->blockdef[b].defined) continue;
+	    if (!level_prop || !level_prop->blockdef[b].defined) continue;
 	    for(int t = 0; t<6; t++)
 		if (level_prop->blockdef[b].textures[t] > 255)
 		    tex16_def[b] = 1;
@@ -428,7 +435,7 @@ send_block_definitions()
     block_t newmax = 0;
     for(block_t b = 0; b<client_block_limit; b++)
     {
-	if (!level_prop->blockdef[b].defined) {
+	if (!level_prop || !level_prop->blockdef[b].defined) {
 	    if (b<max_defined_block)
 		send_removeblockdef_pkt(b);
 	} else {
