@@ -10,20 +10,19 @@ See "/help todo" for notes.
 /*HELP todo
  +) Divide maps into collections "fcraft", "junk", etc
     -- Command to change set ?
-
- +) Allow main= to be an absolute path? (Unconverted '/' characters)
-    -- level dir contains name "main.lvl.blocks" with real dot?
+    -- Allow main= to be an absolute path? (Unconverted '/' characters)
+    --    level dir contains name "main.lvl.blocks" with real dot?
 
  +) Add max sessions from IP
  +) Add connect delay/fail for IPs recently seen.
 
  +) Improve the /set command, more help, option lists.
+    -- /set user ?
 
  +) /restore and /undo
  +) /resizelvl, /copylvl
  +) /sendcmd command
  +) /summon command
- +) /kick command
  +) /clones command
 
  +) /newlvl, more "nice" levels?

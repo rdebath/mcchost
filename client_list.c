@@ -120,7 +120,7 @@ check_user()
 	client_entry_t c = shdat.client->user[i];
 
 	// Is this user visible.
-	c.visible = (c.active && c.authenticated &&
+	c.visible = (c.active && c.authenticated && c.posn.valid &&
 		c.on_level == my_level && c.level_bkp_id >= 0);
 
 	if (extn_extplayerlist) {
@@ -153,7 +153,13 @@ check_user()
 		    myuser[i] = c;
 	    }
 	}
-	if (c.visible && !myuser[i].visible) {
+
+	int upd_flg = (c.look_update_counter != myuser[i].look_update_counter);
+	if (upd_flg || (!c.visible && myuser[i].visible)) {
+	    // User gone.
+	    send_despawn_pkt(i);
+	}
+	if ((upd_flg && c.visible) || (c.visible && !myuser[i].visible)) {
 	    // New user.
 	    char * skin = c.name.c;
 	    if (c.skinname.c[0]) skin = c.skinname.c;
@@ -161,21 +167,17 @@ check_user()
 	    if (c.name_colour) saprintf(namebuf, "&%c%s", c.name_colour, c.name.c);
 	    else strcpy(namebuf, c.name.c);
 	    send_addentity_pkt(i, namebuf, skin, c.posn);
-	    myuser[i] = c;
-	} else
-	if (!c.visible && myuser[i].visible) {
-	    // User gone.
-	    send_despawn_pkt(i);
-	    myuser[i].visible = 0;
-	} else if (c.visible) {
+	}
+	if (c.visible) {
 	    // Update user
 	    send_posn_pkt(i, &myuser[i].posn, c.posn);
 	}
-	if (c.look_update_counter == myuser[i].look_update_counter) {
+	if (upd_flg) {
 	    if ((c.modelname.c[0] != 0) || (myuser[i].modelname.c[0] != 0))
 		send_changemodel_pkt(i, c.modelname.c);
-	    myuser[i] = c;
 	}
+	if (c.visible || myuser[i].visible)
+	    myuser[i] = c;
     }
 
     if (server->afk_kick_interval > 60)
@@ -232,21 +234,8 @@ reset_player_list()
 	myuser[i].visible = myuser[i].active = 0;
     }
 
-    {
-	char * skin = user_id;
-	if (my_user.skin[0]) skin = my_user.skin;
-	char namebuf[256];
-
-	if (my_user.colour[0]) saprintf(namebuf, "&%c%s", my_user.colour[0], user_id);
-	else strcpy(namebuf, user_id);
-
-	if (level_prop)
-	    send_addentity_pkt(255, namebuf, skin, level_prop->spawn);
-	else
-	    send_addentity_pkt(255, namebuf, skin, player_posn);
-
-	send_changemodel_pkt(255, my_user.model);
-    }
+    reset_player_skinname();
+    send_changemodel_pkt(255, my_user.model);
 
     if (player_posn.valid)
 	send_posn_pkt(255, 0, player_posn);
@@ -259,6 +248,22 @@ reset_player_list()
 
     last_check.tv_sec = 1;
     player_on_new_level = 0;
+}
+
+void
+reset_player_skinname()
+{
+    char * skin = user_id;
+    if (my_user.skin[0]) skin = my_user.skin;
+    char namebuf[256];
+
+    if (my_user.colour[0]) saprintf(namebuf, "&%c%s", my_user.colour[0], user_id);
+    else strcpy(namebuf, user_id);
+
+    if (level_prop)
+	send_addentity_pkt(255, namebuf, skin, level_prop->spawn);
+    else
+	send_addentity_pkt(255, namebuf, skin, player_posn);
 }
 
 void
@@ -466,7 +471,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
     strcpy(current_level_name, levelname);
     strcpy(current_level_fname, levelfile);
     current_level_backup_id = backup_id;
-    player_posn.valid = 0;
+    player_posn = (xyzhv_t){0};
     player_on_new_level = 1;
 
     lock_fn(system_lock);
@@ -496,6 +501,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
 
     shdat.client->user[my_user_no].on_level = level_id;
     shdat.client->user[my_user_no].level_bkp_id = backup_id;
+    shdat.client->user[my_user_no].posn = (xyzhv_t){0};
     shdat.client->generation++;
 
     unlock_fn(system_lock);

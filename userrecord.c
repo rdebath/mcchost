@@ -43,6 +43,7 @@ struct userrec_t
 
     // Not saved
     int dirty;
+    int ini_dirty;
     int user_logged_in;
     int64_t time_of_last_save;
 }
@@ -87,7 +88,8 @@ copy_user_key(char *p, char * user_id)
 /*
     (when == 0) => Tick
     (when == 1) => At logon
-    (when == 2) => At logoff / config change
+    (when == 2) => At logoff
+    (when == 3) => At config change
  */
 void
 write_current_user(int when)
@@ -97,7 +99,7 @@ write_current_user(int when)
 	my_user.dirty = 1;
 
     if (when == 0 && !my_user.dirty) return;
-    if (when == 2 && !my_user.user_logged_in) return;
+    if (when >= 2 && !my_user.user_logged_in) return;
 
     if (my_user.user_no == 0) {
 	if (*user_id == 0) return;
@@ -134,7 +136,8 @@ write_current_user(int when)
 
     strcpy(my_user.user_id, user_id);
 
-    write_userrec(&my_user, (when==2));
+    if (when == 3) my_user.ini_dirty = 1;
+    write_userrec(&my_user, (when>=2));
 
     my_user.dirty = 0;
 }
@@ -167,6 +170,7 @@ read_ini_file_fields(userrec_t * userrec)
     userrec->message_count = tmp.message_count;
     memcpy(userrec->last_ip, tmp.last_ip, NB_SLEN);
     userrec->time_online_secs = tmp.time_online_secs;
+    userrec->ini_dirty = 0;
 }
 
 void
@@ -176,7 +180,8 @@ write_userrec(userrec_t * userrec, int ini_too)
     copy_user_key(user_key, userrec->user_id);
 
     if (ini_too) {
-	read_ini_file_fields(userrec);
+	if (!userrec->ini_dirty)
+	    read_ini_file_fields(userrec);
 
 	char userini[PATH_MAX];
 	saprintf(userini, USER_INI_NAME, user_key);
@@ -184,6 +189,7 @@ write_userrec(userrec_t * userrec, int ini_too)
 	user_ini_tgt = userrec;
 	save_ini_file(user_ini_fields, userini, 0);
 	user_ini_tgt = 0;
+	userrec->ini_dirty = 0;
     }
 
     if (!userdb_open) open_userdb();

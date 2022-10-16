@@ -301,7 +301,7 @@ logger_process()
 LOCAL void
 do_restart()
 {
-    printlog("Restarting %s ...", program_args[0]);
+    printlog("Restarting %s (pid:%d) ...", program_args[0], getpid());
 
     close_userdb();
     signal_available = 0;

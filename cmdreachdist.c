@@ -26,7 +26,9 @@ cmd_reachdist(char * cmd, char *arg)
     if (rd < -1) rd = -1;
     printf_chat("Set your reach distance to %d blocks.", rd);
 
+    read_ini_file_fields(&my_user);
     my_user.click_distance = rd * 32767 / 1023;
-    my_user.dirty = 1;
+    write_current_user(3);
+
     send_clickdistance();
 }

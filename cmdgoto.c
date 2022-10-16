@@ -202,6 +202,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
         cmd_main(0,0);
         return 0;
     }
+    player_posn = level_prop->spawn;
 
     if (backup_id) {
 	level_prop->readonly = 1;

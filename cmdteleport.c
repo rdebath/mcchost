@@ -26,6 +26,15 @@ Teleports you to the spawn location of the level.
 */
 
 void
+cmd_spawn(char * UNUSED(cmd), char *UNUSED(arg))
+{
+    if (!level_prop) return;
+
+    send_posn_pkt(255, &player_posn, level_prop->spawn);
+    player_posn = level_prop->spawn;
+}
+
+void
 cmd_tp(char * cmd, char *arg)
 {
     char * str1 = strtok(arg, " ");
@@ -35,60 +44,39 @@ cmd_tp(char * cmd, char *arg)
     char * str5 = strtok(0, " ");
 
     if (str1 != 0 && str2 == 0) {
+	int uid = find_online_player(str1);
+	if (uid < 0) return;
+
 	int my_level = shdat.client->user[my_user_no].on_level;
+	client_entry_t c = shdat.client->user[uid];
 
-	int ucount = 0;
-	for(int mode = 0; mode < 3; mode++) {
-	    for(int i = 0; i < MAX_USER; i++)
-	    {
-		if (i == my_user_no) continue; // Me
-		client_entry_t c = shdat.client->user[i];
-
-		c.visible = (c.active && c.on_level == my_level);
-		if (!c.active) continue;
-
-		if (mode == 0) {
-		    // Exact match
-		    if (strcmp(str1, c.name.c) != 0) continue; // Not them.
-		} else if (mode == 1) {
-		    // How many partial matches
-		    if (my_strcasestr(c.name.c, str1) != 0)
-			ucount++;
-		    continue;
-		} else // Partial match
-		    if (my_strcasestr(c.name.c, str1) == 0)
-			continue;
-
-		if (c.on_level == my_level) {
-		    send_posn_pkt(255, &player_posn, c.posn);
-		    player_posn = c.posn;
-		    return;
-		}
-		client_level_t lvl = {0};
-		if (c.on_level >= 0 && c.on_level < MAX_LEVEL)
-		    lvl = shdat.client->levels[c.on_level];
-
-		if (!lvl.loaded || lvl.backup_id < 0) {
-		    printf_chat("&WUser %s is lost in the void", c.name.c);
-		    return;
-		}
-
-		if (!direct_teleport(lvl.level.c, lvl.backup_id, &c.posn)) {
-		    if (lvl.backup_id == 0)
-			printf_chat("&WCannot teleport to user %s on %s", c.name.c, lvl.level.c);
-		    else
-			printf_chat("&WCannot teleport to user %s on museum of %s", c.name.c, lvl.level.c);
-		}
-		return;
-	    }
-	    if (mode == 1 && ucount == 0) break;
-	    if (mode == 1 && ucount > 1) {
-		printf_chat("&WCan't tp to \"%s\" it matches %d users", str1, ucount);
-		return;
-	    }
+	if (!c.active) return;
+	if (c.on_level == my_level) {
+	    send_posn_pkt(255, &player_posn, c.posn);
+	    player_posn = c.posn;
+	    return;
 	}
-	printf_chat("&WCannot find user %s", str1);
+
+	client_level_t lvl = {0};
+	if (c.on_level >= 0 && c.on_level < MAX_LEVEL)
+	    lvl = shdat.client->levels[c.on_level];
+
+	if (!lvl.loaded || lvl.backup_id < 0) {
+	    printf_chat("&WUser %s is lost in the void", c.name.c);
+	    return;
+	}
+
+	xyzhv_t *ppos = 0;
+	if (c.posn.valid) ppos = &c.posn;
+
+	if (!direct_teleport(lvl.level.c, lvl.backup_id, ppos)) {
+	    if (lvl.backup_id == 0)
+		printf_chat("&WCannot teleport to user %s on %s", c.name.c, lvl.level.c);
+	    else
+		printf_chat("&WCannot teleport to user %s on museum of %s", c.name.c, lvl.level.c);
+	}
 	return;
+
     } else if (str3 != 0) {
 	int x = conv_ord(str1, player_posn.x, 16);
 	int y = conv_ord(str2, player_posn.y, 51);
@@ -117,11 +105,38 @@ conv_ord(char * s, int ref, int ioff)
     return (int)(f*32) + ref + ioff;
 }
 
-void
-cmd_spawn(char * UNUSED(cmd), char *UNUSED(arg))
+int
+find_online_player(char * user_txt)
 {
-    if (!level_prop) return;
+    int ucount = 0;
+    for(int mode = 0; mode < 3; mode++) {
+	for(int i = 0; i < MAX_USER; i++)
+	{
+	    if (i == my_user_no) continue; // Me
+	    client_entry_t c = shdat.client->user[i];
 
-    send_posn_pkt(255, &player_posn, level_prop->spawn);
-    player_posn = level_prop->spawn;
+	    if (!c.active) continue;
+
+	    if (mode == 0) {
+		// Exact match
+		if (strcmp(user_txt, c.name.c) != 0) continue; // Not them.
+	    } else if (mode == 1) {
+		// How many partial matches
+		if (my_strcasestr(c.name.c, user_txt) != 0)
+		    ucount++;
+		continue;
+	    } else // Partial match
+		if (my_strcasestr(c.name.c, user_txt) == 0)
+		    continue;
+
+	    return i;
+	}
+	if (mode == 1 && ucount == 0) break;
+	if (mode == 1 && ucount > 1) {
+	    printf_chat("&WCan't identify user \"%s\" that matches %d users", user_txt, ucount);
+	    return -1;
+	}
+    }
+    printf_chat("&WCannot find user %s", user_txt);
+    return -1;
 }
