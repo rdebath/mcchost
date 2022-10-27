@@ -37,17 +37,18 @@ update_block(pkt_setblock pkt)
     if (b >= BLOCKMAX) b = BLOCKMAX-1;
 
     // No update needed.
-    if (level_blocks[index] == b && pkt.mode != 2) return;
+    block_t old_block = level_blocks[index];
+    if (old_block == b && pkt.mode != 2) return;
 
     // User counters
     if (b == 0) my_user.blocks_deleted++; else my_user.blocks_placed++;
     my_user.dirty = 1;
 
     // Physics Like updates ... these are trivial instant updates that allow
-    // the classic client to enter blocks not in it's menu.
+    // the classic 0.30 client to enter blocks not in it's menu.
 
     // Stack blocks.
-    if (pkt.coord.y > 0 && level_prop->blockdef[b].stack_block != 0)
+    if (pkt.coord.y > 0 && level_prop->blockdef[b].stack_block != 0 && old_block == Block_Air)
     {
         block_t newblock = level_prop->blockdef[b].stack_block;
         uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
@@ -70,9 +71,11 @@ update_block(pkt_setblock pkt)
 	}
 	if (above >= BLOCKMAX) above = BLOCKMAX-1;
 	int transmits_light = level_prop->blockdef[above].transmits_light;
-	if (!transmits_light && level_prop->blockdef[b].dirt_block != 0)
+	if (!transmits_light && level_prop->blockdef[b].dirt_block != 0 &&
+		level_prop->blockdef[b].dirt_block != old_block)
 	    b = level_prop->blockdef[b].dirt_block;
-	else if (transmits_light && level_prop->blockdef[b].grass_block != 0) {
+	else if (transmits_light && level_prop->blockdef[b].grass_block != 0 &&
+		level_prop->blockdef[b].grass_block != old_block) {
 	    b = grow_dirt_block(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
 	}
     }

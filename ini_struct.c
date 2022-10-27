@@ -69,6 +69,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("OPFlag", server->op_flag);
 	INI_BOOLVAL("NoCPE", server->cpe_disabled);
 	INI_BOOLVAL("DisableWebServer", server->disable_web_server);
+	INI_BOOLVAL("CheckWebClientIP", server->check_web_client_ip);
 
 	if (st->write) fprintf(st->fd, "\n");
 

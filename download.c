@@ -60,7 +60,7 @@ http_download(uint8_t * buf, int buflen)
     *e = '\0';
 
     if (fn[0] == '.' || strchr(fn, '/') != 0) http_error(403);
-    if (!check_download_ip()) {
+    if (server->check_web_client_ip && !check_download_ip()) {
 	log_message("Text received was", buf, buflen);
 	return http_error(403);
     }
