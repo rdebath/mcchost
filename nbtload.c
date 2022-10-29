@@ -305,6 +305,7 @@ LOCAL int
 read_blockarray(gzFile ifd, uint32_t len)
 {
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
+    if (len>level_prop->total_blocks) level_prop->total_blocks = len;
     if (open_blocks(current_level_fname) < 0)
 	return 0;
 
@@ -327,7 +328,6 @@ read_blockarray(gzFile ifd, uint32_t len)
 LOCAL int
 read_blockarray2(gzFile ifd, uint32_t len)
 {
-
     if (level_blocks == 0 || level_prop->total_blocks < len) {
 	printlog("Incorrect BlockArray2 found");
 	return 0;
@@ -344,7 +344,6 @@ read_blockarray2(gzFile ifd, uint32_t len)
 LOCAL int
 read_blockarray3(gzFile ifd, uint32_t len)
 {
-
     if (level_blocks == 0 || level_prop->total_blocks < len) {
 	printlog("Incorrect BlockArray3 found");
 	return 0;
@@ -729,7 +728,8 @@ change_str_value(char * section, char * item, char * value)
 	if (strcmp(item, "Name") == 0) {
 	    cpy_nstr(level_prop->name, MB_STRLEN*2, value);
 	}
-    } else if (strcmp(section, "EnvMapAppearance") == 0) {
+    } else if (strcmp(section, "EnvMapAppearance") == 0 ||
+	       strcmp(section, "EnvMapAspect") == 0) {
 	if (strcmp(item, "TextureURL") == 0) {
 	    cpy_nstr(level_prop->texname.c, MB_STRLEN, value);
 	}

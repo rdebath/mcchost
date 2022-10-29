@@ -267,6 +267,8 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("DisallowChange", level_prop->disallowchange);
 	INI_BOOLVAL("ReadOnly", level_prop->readonly);
 	INI_BOOLVAL("NoUnload", level_prop->no_unload);
+	if (!st->write)
+	    INI_BOOLVAL("DirtySave", level_prop->dirty_save);
     }
 
     int bn = 0;

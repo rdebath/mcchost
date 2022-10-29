@@ -8,6 +8,9 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Allow more commands to be run without /pass set?
+    -- /goto ?
+
  +) Divide maps into collections "fcraft", "junk", etc
     -- Command to change set ?
     -- Allow main= to be an absolute path? (Unconverted '/' characters)
@@ -16,8 +19,8 @@ See "/help todo" for notes.
  +) Add max sessions from IP
  +) Add connect delay/fail for IPs recently seen.
 
- +) Improve the /set command, more help, option lists.
-    -- /set user ?
+ +) Improve the /setvar command, more help, option lists.
+    -- /setvar user ?
 
  +) /restore and /undo
  +) /resizelvl, /copylvl
