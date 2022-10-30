@@ -442,7 +442,8 @@ bc_ent_bytes(gzFile ofd, char * name, char * bstr, uint32_t len)
 LOCAL void
 bc_ent_int(gzFile ofd, char * name, int val)
 {
-    if (val >= -128 && val <= 127) {
+    // Supposed to be a signed byte; but CC gets it wrong.
+    if (val >= 0 && val <= 127) {
 	gzputc(ofd, NBT_I8);
 	bc_ent_label(ofd, name);
 	gzputc(ofd, val & 0xFF);

@@ -13,6 +13,16 @@ block_t cpe_conversion[] = {
     0x1d, 0x1c, 0x14, 0x2a, 0x31, 0x24, 0x05, 0x01
 };
 
+// Random translations for protocols 5 and 6
+block_t proto_conversion[] = {
+    Block_Sand, Block_Sand, Block_Sand, Block_Sand, Block_Sand,
+    Block_Sand, Block_Sand, Block_Sand, Block_Sand, Block_Sand,
+    Block_Sand, Block_Sand, Block_Sand, Block_Sand, Block_Sand,
+    Block_Sand, Block_Sapling, Block_Sapling, Block_Sapling,
+    Block_Sapling, Block_GoldOre, Block_Stone, Block_Stone, Block_Stone,
+    Block_Cobble, Block_Sand, Block_Wood, Block_Cobble, Block_Cobble
+};
+
 static uint32_t metadata_generation = 0;
 static block_t max_defined_block = 0;
 
@@ -59,8 +69,8 @@ f_block_convert(block_t in)
     }
 
     if (in < client_block_limit) return in;
-    if (in >= Block_Dandelion && in <= Block_RedMushroom) in = Block_Sapling;
-    if (in == Block_Slab) in = Block_Air;
+    if (in >= Block_Red && in <= Block_Obsidian)
+	in = proto_conversion[in-Block_Red];
     if (in < client_block_limit) return in;
     return Block_Bedrock;
 }

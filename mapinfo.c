@@ -192,6 +192,8 @@ struct blockdef_t {
 #define Block_StillLava 11
 #define Block_Sand 12
 #define Block_Gravel 13
+#define Block_GoldOre 14
+#define Block_IronOre 15
 #define Block_CoalOre 16
 #define Block_Log 17
 #define Block_Leaves 18

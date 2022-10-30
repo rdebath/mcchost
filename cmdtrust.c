@@ -7,7 +7,7 @@
 #endif
 
 /*HELP trust H_CMD
-&T/TRUST [player]
+&T/Trust [player]
 Turns off anti-grief for player.
 */
 
@@ -18,7 +18,7 @@ cmd_trust(char * cmd, char *arg)
 
     if (!str1) return cmd_help(0, cmd);
 
-    int uid = find_online_player(str1);
+    int uid = find_online_player(str1, 1);
     if (uid < 0) return;
 
     client_entry_t c = shdat.client->user[uid];

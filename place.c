@@ -39,7 +39,8 @@ Alias: &T/z
                    {N"mode", &cmd_mode}, \
                    {N"abort", &cmd_mode, .dup=1, .nodup=1}, {N"a", &cmd_mode, .dup=1}, \
 		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, .dup=1}, \
-		   {N"ma", &cmd_mark, .dup=1, .nodup=1}, \
+		   {N"markall", &cmd_mark, .dup=1, .nodup=1}, \
+		   {N"ma", &cmd_mark, .dup=1}, \
                    {N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, .dup=1}, \
                    {N"about", &cmd_about}, {N"b", &cmd_about, .dup=1} \
 
@@ -325,7 +326,7 @@ cmd_mark(char * cmd, char * arg)
     int has_offset[3] = {0};
     int cnt = 0;
     char * ar = arg?arg:"";
-    if (strcasecmp(cmd, "ma") == 0 || strcasecmp(ar, "all") == 0) {
+    if (strcasecmp(cmd, "markall") == 0 || strcasecmp(ar, "all") == 0) {
 	char buf[] = "0";
 	cmd_mark("m", buf);
 	ar = 0; cnt = 3;

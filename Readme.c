@@ -8,8 +8,6 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
- +) Allow more commands to be run without /pass set?
-    -- /goto ?
 
  +) Divide maps into collections "fcraft", "junk", etc
     -- Command to change set ?
@@ -158,6 +156,8 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
 /*
  Rejects ...
 
+ +) Allow more commands to be run without /pass set?
+    -- /goto ?
  +) inetd-tcp-wait mode; passes listening socket to process when there
     is a connection. The process must do an "accept()" on the socket
     to get the actual inetd style socket file descriptor. The process

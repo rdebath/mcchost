@@ -44,7 +44,7 @@ cmd_tp(char * cmd, char *arg)
     char * str5 = strtok(0, " ");
 
     if (str1 != 0 && str2 == 0) {
-	int uid = find_online_player(str1);
+	int uid = find_online_player(str1, 0);
 	if (uid < 0) return;
 
 	int my_level = shdat.client->user[my_user_no].on_level;
@@ -106,13 +106,13 @@ conv_ord(char * s, int ref, int ioff)
 }
 
 int
-find_online_player(char * user_txt)
+find_online_player(char * user_txt, int allow_self)
 {
     int ucount = 0;
     for(int mode = 0; mode < 3; mode++) {
 	for(int i = 0; i < MAX_USER; i++)
 	{
-	    if (i == my_user_no) continue; // Me
+	    if (!allow_self && i == my_user_no) continue; // Me
 	    client_entry_t c = shdat.client->user[i];
 
 	    if (!c.active) continue;

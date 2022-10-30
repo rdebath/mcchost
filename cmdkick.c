@@ -20,7 +20,7 @@ cmd_kick(char * cmd, char *arg)
 
     if (!str1) return cmd_help(0, cmd);
 
-    int uid = find_online_player(str1);
+    int uid = find_online_player(str1, 0);
     if (uid < 0) return;
 
     cmd_payload_t msg = {0};
