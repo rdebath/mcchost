@@ -2,7 +2,7 @@
 
 #include "sendpacket.h"
 
-static inline void
+inline static void
 nb_short(uint8_t **ptr, int v)
 {
     uint8_t *p = *ptr;
@@ -11,7 +11,7 @@ nb_short(uint8_t **ptr, int v)
     *ptr = p;
 }
 
-static inline void
+inline static void
 nb_short_clamp(uint8_t **ptr, int v)
 {
     if (v>32767) v = 32767;
@@ -22,7 +22,7 @@ nb_short_clamp(uint8_t **ptr, int v)
     *ptr = p;
 }
 
-static inline void
+inline static void
 nb_short_dflt(uint8_t **ptr, int v, int def)
 {
     if (v>32767 || v<-32768) v = def;
@@ -32,7 +32,7 @@ nb_short_dflt(uint8_t **ptr, int v, int def)
     *ptr = p;
 }
 
-static inline int
+inline static int
 nb_string_write(uint8_t *pkt, char * str)
 {
     if (!extn_alltext) { // Usually all of the fixes will be ok.
@@ -94,7 +94,7 @@ nb_string_write(uint8_t *pkt, char * str)
     return MB_STRLEN;
 }
 
-static inline void
+inline static void
 nb_int(uint8_t **ptr, int v)
 {
     uint8_t *p = *ptr;
@@ -105,7 +105,7 @@ nb_int(uint8_t **ptr, int v)
     *ptr = p;
 }
 
-static inline void
+inline static void
 nb_block_t(uint8_t **ptr, block_t block)
 {
     if (!extn_extendblockno)
@@ -114,7 +114,7 @@ nb_block_t(uint8_t **ptr, block_t block)
         nb_short(ptr, block);
 }
 
-static inline void
+inline static void
 nb_texid(uint8_t **ptr, int texid)
 {
     if (!extn_extendtexno)
@@ -123,7 +123,7 @@ nb_texid(uint8_t **ptr, int texid)
         nb_short(ptr, texid);
 }
 
-static inline void
+inline static void
 nb_entcoord(uint8_t **ptr, int vec)
 {
     if (!extn_extentityposn)
