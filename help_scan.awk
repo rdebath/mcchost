@@ -51,16 +51,20 @@ function save_text() {
     gsub("\t", "        ", text); # Don't use tabs!!
 
     if (!files) {
-	gsub("\\\\", "\\\\\\\\", text); # Seriously!?
-	gsub("\"", "\\\"", text);
-
-	gsub("\n", "\",\n    \"", text);
-	sub("$", "\",\n    0\n};\n", text);
-	if (text == "") text = "\",0};\n";
-
 	t1 = textname; sub(",.*", "", t1);
 	t1 = "static char *lines_" t1 "[] = {"
-	text = t1 "\n    \"" text
+
+	if (text != "") {
+	    gsub("\\\\", "\\\\\\\\", text); # Seriously!?
+	    gsub("\"", "\\\"", text);
+
+	    gsub("\n", "\",\n    \"", text);
+	    sub("$", "\",\n    0\n};\n", text);
+
+	    text = t1 "\n    \"" text
+	}
+
+	if (text == "") text = t1 "0};\n";
 
 	print "/* Help for "textname" */"
 	print text

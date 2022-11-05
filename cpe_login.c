@@ -58,6 +58,7 @@ static struct ext_list_t extensions[] = {
     { N"CustomParticles",     1, .disabled=1 },
     { N"CustomModels",        2, .disabled=1 },
     { N"PluginMessages",      1, .disabled=1 },
+    { N"ExtEntityTeleport",   1, .disabled=1 },
 
     { N"EvilBastard" ,        1, &extn_evilbastard },
     {0}
@@ -74,7 +75,7 @@ char *classicube[] = {
     "EnvMapAspect", "EntityProperty", "ExtEntityPositions",
     "TwoWayPing", "InventoryOrder", "InstantMOTD", "FastMap", "SetHotbar",
     "SetSpawnpoint", "VelocityControl", "CustomParticles", "CustomModels",
-    "PluginMessages",
+    "PluginMessages", "ExtEntityTeleport",
 
     0,
 };

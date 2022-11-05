@@ -140,11 +140,11 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
 
     heightmap[cx+cz*level_prop->cells_x] = 0x7FFF;
 
-    int first_e = 2, s_div = 0;
-	first_e += bounded_random_r(srng, 6);
-	s_div = 1 + bounded_random_r(srng, 8);
-    if (!flattened) {
-    }
+    int first_e, s_div;
+    first_e = 2 + bounded_random_r(srng, 6);
+    if (first_e>8) first_e = 8;
+    s_div = 1 + bounded_random_r(srng, 8);
+
     for(int e = first_e; e>0; e--) {
 
 	// Use a derived RNG so that different size maps keep similar centres.

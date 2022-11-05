@@ -9,7 +9,7 @@ struct help_text_t {
     char ** lines;
 };
 
-/*HELP Welcome 0 */
+/*HELP welcome 0 */
 
 /*HELP license H_CMD
 This software is licensed under the AFGPL and other licenses.

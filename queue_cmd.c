@@ -143,10 +143,14 @@ process_ipc_cmd(cmd_payload_t *msg)
 	kicked(msg->arg.c);
 	break;
     case cmd_token_changemodel:
+#ifdef CMD_MODEL
 	do_cmd_model(msg->arg.c);
+#endif
 	break;
     case cmd_token_changeskin:
+#ifdef CMD_SKIN
 	do_cmd_skin(msg->arg.c);
+#endif
 	break;
     }
 }

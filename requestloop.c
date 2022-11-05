@@ -73,6 +73,7 @@ void write_to_remote(uint8_t * str, int len)
 void
 flush_to_remote()
 {
+    if (line_ofd < 0) return;
     int tosend = ttl_end-ttl_start;
     int rv = write(line_ofd, ttl_buf+ttl_start, tosend);
 
@@ -80,8 +81,15 @@ flush_to_remote()
     {
 	if( rv != ttl_end-ttl_start ) ttl_start += rv;
 	else ttl_start = ttl_end = 0;
-    } else if (rv < 0 && errno != EWOULDBLOCK)
-	fatal("write line_fd syscall");
+    } else if (rv < 0 && errno != EWOULDBLOCK) {
+	if (errno == ECONNRESET && user_logged_in) {
+	    // Common, just gone.
+	    close(line_ofd); if(line_ofd!=line_ifd) close(line_ifd);
+	    line_ifd = line_ofd = -1;
+	    logout("Left the game.");
+	}
+	fatal("Error on write line_ofd");
+    }
 }
 
 int
@@ -168,7 +176,9 @@ do_select()
 	    }
 	    remote_received(line_inp_buf, rv);
 	} else if (rv < 0) {
-	    perror("Error reading line_fd");
+	    if (errno == ECONNRESET && user_logged_in)
+		return -1;
+	    perror("Error reading line_ifd");
 	    return -1;
 	} else if (rv == 0)
 	    return -1;

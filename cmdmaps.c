@@ -17,8 +17,6 @@ and &T/maps backup pattern&S to show backups matching pattern.
     {N"maps", &cmd_maps}, {N"levels", &cmd_maps, .dup=1}, \
     {N"worlds", &cmd_maps, .dup=1}
 
-#define MAXLEVELNAMELEN 32
-
 typedef struct maplist_entry_t maplist_entry_t;
 struct maplist_entry_t {
     char * name;

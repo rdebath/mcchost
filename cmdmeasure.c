@@ -30,7 +30,7 @@ cmd_measure(char * cmd, char * arg)
 
     block_t bllist[256];
     int blcount = 0;
-    for(char * ar = strtok(arg, " ");ar;ar=strtok(0," ")) {
+    for(char * ar = arg?strtok(arg, " "):0;ar;ar=strtok(0," ")) {
 	block_t b = block_id(ar);
 	if (b == BLOCKNIL) {
 	    printf_chat("&WUnknown block '%s'", ar?ar:"");

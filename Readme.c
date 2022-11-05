@@ -8,6 +8,7 @@ See "/help todo" for notes.
 */
 
 /*HELP todo
+ +) Don't save a clean loaded map on delete.
 
  +) Divide maps into collections "fcraft", "junk", etc
     -- Command to change set ?
@@ -166,7 +167,6 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
     -- Options --inetd and --tcp at same time?
     -- No advantage over --net --> Runs register every 30 seconds.
     -- No advantage over normal inetd mode --> connections are rare.
- +) Don't update backup time on delete of loaded map?
  +) Slow map loads; do I need to poll client chat?
     -- Background _load_ of maps as well as saves?
  +) Merge ini and nbt processing ?
@@ -190,8 +190,6 @@ mcchost-server -net [-detach]
 mcchost-server -inetd
     Run from inetd; stdin & stdout are socket (Also used for systemd)
     On disconnect will usually unload maps.
-
-    -- Should -inetd imply (force?) -no-detach ?
 
     eg: socat TCP-LISTEN:25565,fork EXEC:'mcchost-server -inetd',nofork
 

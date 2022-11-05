@@ -118,6 +118,7 @@ check_user()
 	// Note: slurp it so a torn struct is unlikely.
 	// But don't lock as we're not too worried.
 	client_entry_t c = shdat.client->user[i];
+	int is_dirty = 0;
 
 	// Is this user visible.
 	c.visible = (c.active && c.authenticated && c.posn.valid &&
@@ -128,6 +129,7 @@ check_user()
 		if (i>=0 && i<255)
 		    send_removeplayername_pkt(i);
 		myuser[i].active = 0;
+		is_dirty = 1;
 	    } else if (c.active &&
 		    (!myuser[i].active ||
 		    myuser[i].look_update_counter != c.look_update_counter ||
@@ -149,8 +151,7 @@ check_user()
 		if (i>=0 && i<255)
 		    send_addplayername_pkt(i, c.name.c, listname, groupname, 0);
 
-		if (c.visible == myuser[i].visible && c.look_update_counter == myuser[i].look_update_counter)
-		    myuser[i] = c;
+		is_dirty = 1;
 	    }
 	}
 
@@ -158,6 +159,7 @@ check_user()
 	if (upd_flg || (!c.visible && myuser[i].visible)) {
 	    // User gone.
 	    send_despawn_pkt(i);
+	    is_dirty = 1;
 	}
 	if ((upd_flg && c.visible) || (c.visible && !myuser[i].visible)) {
 	    // New user.
@@ -167,16 +169,19 @@ check_user()
 	    if (c.name_colour) saprintf(namebuf, "&%c%s", c.name_colour, c.name.c);
 	    else strcpy(namebuf, c.name.c);
 	    send_addentity_pkt(i, namebuf, skin, c.posn);
-	}
-	if (c.visible) {
+	    is_dirty = 1;
+	} else if (c.visible) {
 	    // Update user
 	    send_posn_pkt(i, &myuser[i].posn, c.posn);
+	    is_dirty = 1;
 	}
 	if (upd_flg) {
-	    if ((c.modelname.c[0] != 0) || (myuser[i].modelname.c[0] != 0))
+	    if ((c.modelname.c[0] != 0) || (myuser[i].modelname.c[0] != 0)) {
 		send_changemodel_pkt(i, c.modelname.c);
+		is_dirty = 1;
+	    }
 	}
-	if (c.visible || myuser[i].visible)
+	if (is_dirty)
 	    myuser[i] = c;
     }
 
@@ -202,11 +207,15 @@ check_user()
 	else if (shdat.client->levels[my_level].force_unload) go_main = 1;
 
 	if (go_main) {
+#ifdef CMD_GOTOMAIN
 	    printf_chat("You are being moved to main as %s was unloaded",
 		shdat.client->levels[my_level].level.c);
 	    cmd_main(0,0);
 	    if (alarm_handler_pid != 0)
 		kill(alarm_handler_pid, SIGALRM);
+#else
+	    fatal("kicked due to level unload");
+#endif
 	}
     }
 }
@@ -231,7 +240,7 @@ reset_player_list()
     for(int i=0; i<MAX_USER; i++) {
 	if (myuser[i].visible)
 	    send_despawn_pkt(i);
-	myuser[i].visible = myuser[i].active = 0;
+	myuser[i].visible = 0;
     }
 
     reset_player_skinname();

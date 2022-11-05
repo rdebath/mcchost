@@ -265,14 +265,33 @@ disconnect(int rv, char * emsg)
 void
 socket_shutdown(int do_close)
 {
-    shutdown(line_ofd, SHUT_RDWR);
-    if (line_ofd != line_ifd)
-	shutdown(line_ifd, SHUT_RDWR);
+    if (line_ifd < 0 && line_ofd < 0) return;
+    if (line_ifd >= 0 && line_ofd >= 0) {
+	if (shutdown(line_ofd, SHUT_WR) < 0)
+	    perror("shutdown(line_ofd,SHUT_WR)");
+	else if (line_ifd >= 0) {
+	    fcntl(line_ifd, F_SETFL, (int)O_NONBLOCK);
+	    char buf[4096];
+	    int cc, max_loop = 120;
+	    while((cc = read(line_ifd, buf, sizeof(buf))) != 0) {
+		if (cc>0) continue;
+		if (errno != EWOULDBLOCK) {
+		    if (errno != ECONNRESET)
+			perror("Read after shutdown");
+		    break;
+		}
+		if (--max_loop <= 0) break;
+		msleep(500);
+	    }
+	    fcntl(line_ifd, F_SETFL, 0);
+	}
+    }
 
     if (do_close) {
 	close(line_ofd);
 	if (line_ofd != line_ifd)
 	    close(line_ifd);
+	line_ofd = line_ifd = -1;
     }
 }
 
@@ -390,8 +409,6 @@ login()
 		    insize = 0; // Clean
 #ifdef MAXHTTPDOWNLOAD
 		} else if(http_download(inbuf, insize)) {
-		    flush_to_remote();
-		    socket_shutdown(1);
 		    exit(0);
 #endif
 		} else {

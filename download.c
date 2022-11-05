@@ -13,7 +13,7 @@ http_download(uint8_t * buf, int buflen)
 {
     if (server->disable_web_server) return 0;
 
-    enum { has_host=1, has_accept=2 } has_stuff = 0;
+    enum { has_host=1, has_accept=2, has_upgrade=4 } has_stuff = 0;
 
     char *fn = 0;
     int head_only = 0;
@@ -44,6 +44,7 @@ http_download(uint8_t * buf, int buflen)
 
 	if (strncasecmp(p+1, "Host", 4) == 0) has_stuff |= has_host;
 	if (strncasecmp(p+1, "Accept", 6) == 0) has_stuff |= has_accept;
+	if (strncasecmp(p+1, "Upgrade", 7) == 0) has_stuff |= has_upgrade;
 	if (strncasecmp(p+1, "If-Modified-Since: ", 19) == 0) {
 	    struct tm tm[1];
 	    char * e = strptime(p+20, "%a, %d %b %Y %T GMT", tm);
@@ -52,7 +53,7 @@ http_download(uint8_t * buf, int buflen)
 	}
     }
     // Does it have everything?
-    if (has_stuff != 3) return http_error(400);
+    if ((has_stuff & (has_host+has_upgrade)) != has_host) return http_error(400);
 
     char * e = strchr(fn, ' ');
     if (!e) e = strchr(fn, '\r');
@@ -64,6 +65,9 @@ http_download(uint8_t * buf, int buflen)
 	log_message("Text received was", buf, buflen);
 	return http_error(403);
     }
+
+    memset(proc_args_mem, 0, proc_args_len);
+    snprintf(proc_args_mem, proc_args_len, "%s http download", SWNAME);
 
     char filename[256];
     saprintf(filename, "texture/%s", fn);
@@ -124,18 +128,23 @@ http_download(uint8_t * buf, int buflen)
 		write_to_remote(obuf, cc);
 	    }
 	}
+	close(fd);
 
 	printlog("Sending %s \"%s\" to client %s", head_only?"HEAD":"file", fn, client_ipv4_str);
-
-	fcntl(line_ifd, F_SETFL, 0);
-	flush_to_remote();
-	while(bytes_queued_to_send()) {
-	    msleep(500);
-	    flush_to_remote();
-	}
     }
-    close(fd);
-    return 1;
+
+    if (fcntl(line_ifd, F_SETFL, 0) < 0)
+	perror("fcntl(line_ifd, F_SETFL, 0)");
+    // SO_LINGER by default.
+
+    flush_to_remote();
+    int max_loop = 120;
+    while(bytes_queued_to_send()) {
+	msleep(500);	// just a little bodge.
+	flush_to_remote();
+	if (--max_loop <=0) break;
+    }
+    exit(0);
 }
 
 LOCAL int

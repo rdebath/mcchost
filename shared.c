@@ -23,6 +23,8 @@
 
 #if INTERFACE
 
+#define MAXLEVELNAMELEN 32
+
 #define SHMID_PROP	0
 #define SHMID_BLOCKS	1
 #define SHMID_BLOCKQ	2
