@@ -78,6 +78,7 @@ xyzhv_t player_posn = {0};
 block_t player_held_block = -1;
 time_t player_last_move;
 int player_on_new_level = 1;
+int player_is_afk = 0;
 aspam_t player_block_spam[1];
 aspam_t player_cmd_spam[1];
 aspam_t player_chat_spam[1];
@@ -169,6 +170,7 @@ check_user()
 	    if (c.name_colour) saprintf(namebuf, "&%c%s", c.name_colour, c.name.c);
 	    else strcpy(namebuf, c.name.c);
 	    send_addentity_pkt(i, namebuf, skin, c.posn);
+	    send_posn_pkt(i, 0, c.posn);
 	    is_dirty = 1;
 	} else if (c.visible) {
 	    // Update user
@@ -192,9 +194,9 @@ check_user()
 	    logout("Auto-kick, AFK");
 	}
 
-    if (!myuser[my_user_no].is_afk && server->afk_interval >= 60) {
+    if (!player_is_afk && server->afk_interval >= 60) {
 	if (player_last_move + server->afk_interval < now.tv_sec) {
-	    myuser[my_user_no].is_afk = 1;
+	    player_is_afk = 1;
 	    shdat.client->user[my_user_no].is_afk = 1;
 
 	    printf_chat("@&S-&7%s&S- &Sis AFK auto", user_id);
@@ -241,6 +243,7 @@ reset_player_list()
 	if (myuser[i].visible)
 	    send_despawn_pkt(i);
 	myuser[i].visible = 0;
+	myuser[i].posn.valid = 0;
     }
 
     reset_player_skinname();
@@ -250,9 +253,11 @@ reset_player_list()
 	send_posn_pkt(255, 0, player_posn);
     else {
 	player_posn = level_prop->spawn;
-	myuser[my_user_no].posn = level_prop->spawn;
+	player_posn.v = 128; // Bots start with flip-head.
+	player_posn.valid = 1;
+	myuser[my_user_no].posn = player_posn;
 	if (shdat.client)
-	    shdat.client->user[my_user_no].posn = level_prop->spawn;
+	    shdat.client->user[my_user_no].posn = player_posn;
     }
 
     last_check.tv_sec = 1;
@@ -283,9 +288,8 @@ update_player_pos(pkt_player_posn pkt)
 
 #if 0
     if (!user_authenticated) {
-	xyzhv_t nil = {0}, pos = level_prop->spawn;
 	pos.y = -1023*32;
-	send_posn_pkt(255, &nil, pos);
+	send_posn_pkt(255, 0, pos);
 	return;
     }
 #endif
@@ -323,9 +327,9 @@ update_player_move_time()
     shdat.client->user[my_user_no].last_move = player_last_move;
     shdat.client->user[my_user_no].is_afk = 0;
 
-    if (myuser[my_user_no].is_afk) {
+    if (player_is_afk) {
 	printf_chat("@&a-&7%s&a- &Sis no longer AFK", user_id);
-	myuser[my_user_no].is_afk = 0;
+	player_is_afk = 0;
     }
 }
 

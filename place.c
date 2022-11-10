@@ -27,6 +27,11 @@ Use ~ before a coordinate to mark relative to current position
 If no coordinates are given, marks at where you are standing
 If only x coordinate is given, it is used for y and z too
 */
+/*HELP abort,a H_CMD
+&T/Abort
+Turns off modes, toggles and pending operations.
+Alias: &T/a
+*/
 /*HELP cuboid,z H_CMD
 &T/cuboid [block]
 Draws a cuboid between two points
@@ -37,7 +42,7 @@ Alias: &T/z
 #define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}, \
                    {N"paint", &cmd_paint}, {N"p", &cmd_paint, .dup=1}, \
                    {N"mode", &cmd_mode}, \
-                   {N"abort", &cmd_mode, .dup=1, .nodup=1}, {N"a", &cmd_mode, .dup=1}, \
+                   {N"abort", &cmd_abort}, {N"a", &cmd_abort, .dup=1}, \
 		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, .dup=1}, \
 		   {N"markall", &cmd_mark, .dup=1, .nodup=1}, \
 		   {N"ma", &cmd_mark, .dup=1}, \
@@ -140,6 +145,15 @@ cmd_place(char * cmd, char * arg)
 }
 
 void
+cmd_abort(char * UNUSED(cmd), char * UNUSED(arg))
+{
+    printf_chat("&SToggles and pending actions cleared.");
+    player_mode_mode = -1;
+    player_mode_paint = 0;
+    clear_pending_marks();
+}
+
+void
 cmd_paint(char * UNUSED(cmd), char * UNUSED(arg))
 {
     player_mode_paint = !player_mode_paint;
@@ -193,6 +207,7 @@ cmd_mode(char * cmd, char * arg)
     if (cmd && (strcasecmp(cmd, "abort") == 0 || strcasecmp(cmd, "a") == 0)) {
 	printf_chat("&SToggles and pending actions cleared.");
 	player_mode_mode = -1;
+	player_mode_paint = 0;
 	clear_pending_marks();
 	return;
     }

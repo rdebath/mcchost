@@ -79,7 +79,7 @@ cmd_tp(char * cmd, char *arg)
 
     } else if (str3 != 0) {
 	int x = conv_ord(str1, player_posn.x, 16);
-	int y = conv_ord(str2, player_posn.y, 51);
+	int y = conv_ord(str2, player_posn.y, 0);
 	int z = conv_ord(str3, player_posn.z, 16);
 	int h = str4?atoi(str4)*256/360:player_posn.h;
 	int v = str5?atoi(str5)*256/360:player_posn.v;

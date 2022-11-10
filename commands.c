@@ -75,7 +75,8 @@ run_command(char * msg)
 		else
 		    fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
 	    }
-	    update_player_move_time();
+	    if (strcasecmp(cmd, "afk") != 0)
+		update_player_move_time();
 	    command_list[c].function(cmd, arg);
 	    return;
 	}
