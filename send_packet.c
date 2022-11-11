@@ -1,136 +1,6 @@
 #include <math.h>
 
-#include "sendpacket.h"
-
-inline static void
-nb_short(uint8_t **ptr, int v)
-{
-    uint8_t *p = *ptr;
-    *p++ = (v>>8);
-    *p++ = (v&0xFF);
-    *ptr = p;
-}
-
-inline static void
-nb_short_clamp(uint8_t **ptr, int v)
-{
-    if (v>32767) v = 32767;
-    if (v<-32768) v = -32768;
-    uint8_t *p = *ptr;
-    *p++ = (v>>8);
-    *p++ = (v&0xFF);
-    *ptr = p;
-}
-
-inline static void
-nb_short_dflt(uint8_t **ptr, int v, int def)
-{
-    if (v>32767 || v<-32768) v = def;
-    uint8_t *p = *ptr;
-    *p++ = (v>>8);
-    *p++ = (v&0xFF);
-    *ptr = p;
-}
-
-inline static int
-nb_string_write(uint8_t *pkt, char * str)
-{
-    if (!extn_alltext) { // Usually all of the fixes will be ok.
-	int l;
-	int lns = 0;
-	for(l=0; l<MB_STRLEN; l++) {
-	    if(str[l] == 0) break;
-	    if(!extn_fullcp437 && (str[l]&0x80))
-		pkt[l] = cp437_ascii[str[l] & 0x7f];
-	    else
-		pkt[l] = str[l];
-	    if (pkt[l] != ' ') lns = l;
-	}
-	for(; l<MB_STRLEN; l++) pkt[l] = ' ';
-
-	// CP437->ASCII translation creates spaces.
-	while (lns > 0 && pkt[lns-1] == '&') {
-	    pkt[lns] = ' '; pkt[lns-1] = ' ';
-	    while(lns > 0 && pkt[lns] == ' ') lns--;
-	}
-
-	// Wipe extra colours.
-	if (!extn_textcolours) {
-	    for(l=0; l<MB_STRLEN; l++) {
-		if (pkt[l] == '&') {
-		    int ch = (uint8_t)pkt[l+1];
-		    if (textcolour[ch].defined)
-			pkt[l+1] = textcolour[ch].fallback;
-		    if ((ch >= '0' && ch <= '9') ||
-		        (ch >= 'a' && ch <= 'f') ||
-		        (ch >= 'A' && ch <= 'F')) {
-			l++;
-		    } else {
-			pkt[l] = '%';
-			pkt[l+1] = ' ';
-			l++;
-		    }
-		}
-	    }
-	}
-
-	// Workaround problems with Emotes
-	if (!extn_emotefix && pkt[lns] < ' ') {
-	    if (lns < MB_STRLEN-1)
-		pkt[lns+1] = '`';
-	    else
-		pkt[lns] = '*';
-	}
-    } else {
-	int l;
-	for(l=0; l<MB_STRLEN; l++) {
-	    if(str[l] == 0) break;
-	    pkt[l] = str[l];
-	}
-	for(; l<MB_STRLEN; l++)
-	    pkt[l] = ' ';
-    }
-
-    return MB_STRLEN;
-}
-
-inline static void
-nb_int(uint8_t **ptr, int v)
-{
-    uint8_t *p = *ptr;
-    *p++ = (v>>24);
-    *p++ = (v>>16);
-    *p++ = (v>>8);
-    *p++ = (v&0xFF);
-    *ptr = p;
-}
-
-inline static void
-nb_block_t(uint8_t **ptr, block_t block)
-{
-    if (!extn_extendblockno)
-	*(*ptr)++ = (block < CPELIMITLO) ? block:0;
-    else
-        nb_short(ptr, block);
-}
-
-inline static void
-nb_texid(uint8_t **ptr, int texid)
-{
-    if (!extn_extendtexno)
-	*(*ptr)++ = texid;	// MOD256 by dfn
-    else
-        nb_short(ptr, texid);
-}
-
-inline static void
-nb_entcoord(uint8_t **ptr, int vec)
-{
-    if (!extn_extentityposn)
-        nb_short_clamp(ptr, vec);
-    else
-        nb_int(ptr, vec);
-}
+#include "send_packet.h"
 
 void
 send_server_id_pkt(char * servername, char * servermotd, int user_type)
@@ -750,3 +620,135 @@ send_rm_selection_cuboid_pkt(int id)
     *p++ = id;
     write_to_remote(packetbuf, p-packetbuf);
 }
+
+#if INTERFACE
+inline static void
+nb_short(uint8_t **ptr, int v)
+{
+    uint8_t *p = *ptr;
+    *p++ = (v>>8);
+    *p++ = (v&0xFF);
+    *ptr = p;
+}
+
+inline static void
+nb_short_clamp(uint8_t **ptr, int v)
+{
+    if (v>32767) v = 32767;
+    if (v<-32768) v = -32768;
+    uint8_t *p = *ptr;
+    *p++ = (v>>8);
+    *p++ = (v&0xFF);
+    *ptr = p;
+}
+
+inline static void
+nb_short_dflt(uint8_t **ptr, int v, int def)
+{
+    if (v>32767 || v<-32768) v = def;
+    uint8_t *p = *ptr;
+    *p++ = (v>>8);
+    *p++ = (v&0xFF);
+    *ptr = p;
+}
+
+inline static int
+nb_string_write(uint8_t *pkt, char * str)
+{
+    if (!extn_alltext) { // Usually all of the fixes will be ok.
+	int l;
+	int lns = 0;
+	for(l=0; l<MB_STRLEN; l++) {
+	    if(str[l] == 0) break;
+	    if(!extn_fullcp437 && (str[l]&0x80))
+		pkt[l] = cp437_ascii[str[l] & 0x7f];
+	    else
+		pkt[l] = str[l];
+	    if (pkt[l] != ' ') lns = l;
+	}
+	for(; l<MB_STRLEN; l++) pkt[l] = ' ';
+
+	// CP437->ASCII translation creates spaces.
+	while (lns > 0 && pkt[lns-1] == '&') {
+	    pkt[lns] = ' '; pkt[lns-1] = ' ';
+	    while(lns > 0 && pkt[lns] == ' ') lns--;
+	}
+
+	// Wipe extra colours.
+	if (!extn_textcolours) {
+	    for(l=0; l<MB_STRLEN; l++) {
+		if (pkt[l] == '&') {
+		    int ch = (uint8_t)pkt[l+1];
+		    if (textcolour[ch].defined)
+			pkt[l+1] = textcolour[ch].fallback;
+		    if ((ch >= '0' && ch <= '9') ||
+		        (ch >= 'a' && ch <= 'f') ||
+		        (ch >= 'A' && ch <= 'F')) {
+			l++;
+		    } else {
+			pkt[l] = '%';
+			pkt[l+1] = ' ';
+			l++;
+		    }
+		}
+	    }
+	}
+
+	// Workaround problems with Emotes
+	if (!extn_emotefix && pkt[lns] < ' ') {
+	    if (lns < MB_STRLEN-1)
+		pkt[lns+1] = '`';
+	    else
+		pkt[lns] = '*';
+	}
+    } else {
+	int l;
+	for(l=0; l<MB_STRLEN; l++) {
+	    if(str[l] == 0) break;
+	    pkt[l] = str[l];
+	}
+	for(; l<MB_STRLEN; l++)
+	    pkt[l] = ' ';
+    }
+
+    return MB_STRLEN;
+}
+
+inline static void
+nb_int(uint8_t **ptr, int v)
+{
+    uint8_t *p = *ptr;
+    *p++ = (v>>24);
+    *p++ = (v>>16);
+    *p++ = (v>>8);
+    *p++ = (v&0xFF);
+    *ptr = p;
+}
+
+inline static void
+nb_block_t(uint8_t **ptr, block_t block)
+{
+    if (!extn_extendblockno)
+	*(*ptr)++ = (block < CPELIMITLO) ? block:0;
+    else
+        nb_short(ptr, block);
+}
+
+inline static void
+nb_texid(uint8_t **ptr, int texid)
+{
+    if (!extn_extendtexno)
+	*(*ptr)++ = texid;	// MOD256 by dfn
+    else
+        nb_short(ptr, texid);
+}
+
+inline static void
+nb_entcoord(uint8_t **ptr, int vec)
+{
+    if (!extn_extentityposn)
+        nb_short_clamp(ptr, vec);
+    else
+        nb_int(ptr, vec);
+}
+#endif

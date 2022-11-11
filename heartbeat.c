@@ -213,7 +213,7 @@ log_heartbeat_response()
 	fclose(fd);
     }
 
-    if (rdlen == 0) strcpy(readbuf, "\\<Nothing>");
+    if (rdlen == 0) strcpy(readbuf, "\\0");
     if (strcmp(readbuf, curlbuf) != 0) {
 	printlog("Port %d heartbeat response: %s", tcp_port_no, readbuf);
     }
