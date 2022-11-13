@@ -39,11 +39,12 @@ cmd_measure(char * cmd, char * arg)
 	bllist[blcount++] = b;
     }
 
-    measure_blocks(bllist, blcount,
-	marks[0].x, marks[0].y, marks[0].z,
-	marks[1].x, marks[1].y, marks[1].z);
+    xyzhv_t smarks[3];
+    fetch_pending_marks(smarks);
 
-    clear_pending_marks();
+    measure_blocks(bllist, blcount,
+	smarks[0].x, smarks[0].y, smarks[0].z,
+	smarks[1].x, smarks[1].y, smarks[1].z);
 }
 
 void

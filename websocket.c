@@ -198,8 +198,9 @@ websocket_translate(char * inbuf, int * insize)
 		if (packet_len > 0) {
 		    int ws_code = 0x1005;
 		    if (packet_len >= 2) {
-			ws_code = (((uint8_t)inbuf[0] << 8) +
-				    (uint8_t)inbuf[1]);
+			ws_code = (((uint8_t)inbuf[0]) ^ mask_value[mask_id]);
+			ws_code <<= 8;
+			ws_code += (((uint8_t)inbuf[1]) ^ mask_value[((mask_id+1)&3)]);
 		    }
 		    printlog("Websocket disconnect received. (%d)", ws_code);
 		    if (packet_len != 2) {

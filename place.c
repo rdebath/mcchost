@@ -1,9 +1,6 @@
 
 #include "place.h"
 
-int player_mode_paint = 0;
-int player_mode_mode = -1;
-
 /*HELP place,pl H_CMD
 &T/place b [x y z] [X Y Z]
 Places the Block &Tb&S at your feet or at &T[x y z]&S
@@ -50,6 +47,9 @@ Alias: &T/z
                    {N"about", &cmd_about}, {N"b", &cmd_about, .dup=1} \
 
 #endif
+
+int player_mode_paint = 0;
+int player_mode_mode = -1;
 
 xyzhv_t marks[3] = {0};
 uint8_t player_mark_mode = 0;
@@ -172,6 +172,21 @@ clear_pending_marks() {
     *marking_for = 0;
     player_mark_mode = 0;
     show_marks_message();
+}
+
+void
+fetch_pending_marks(xyzhv_t smarks[3]) {
+    memcpy(smarks, marks, sizeof(marks));
+    memset(marks, 0, sizeof(marks));
+    if (mark_cmd_cmd) free(mark_cmd_cmd);
+    mark_cmd_cmd = 0;
+    if (mark_cmd_arg) free(mark_cmd_arg);
+    mark_cmd_arg = 0;
+    mark_for_cmd = 0;
+    *marking_for = 0;
+    player_mark_mode = 0;
+    show_marks_message();
+    flush_to_remote();
 }
 
 void show_marks_message()
@@ -529,12 +544,12 @@ cmd_cuboid(char * cmd, char * arg)
     }
 
     //TODO: Other cuboids.
+    xyzhv_t smarks[3];
+    fetch_pending_marks(smarks);
 
     plain_cuboid(b,
-	marks[0].x, marks[0].y, marks[0].z,
-	marks[1].x, marks[1].y, marks[1].z);
-
-    clear_pending_marks();
+	smarks[0].x, smarks[0].y, smarks[0].z,
+	smarks[1].x, smarks[1].y, smarks[1].z);
 }
 
 void

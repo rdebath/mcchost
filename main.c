@@ -22,7 +22,7 @@ int current_level_backup_id = 0;
 
 char logfile_pattern[1024] = "";
 
-int op_enabled = 0;	// Op flag was set for this session
+int op_enabled = 0;	// The set-op packet can be sent
 int cpe_enabled = 0;	// Set if this session is using CPE
 int cpe_requested = 0;	// Set if cpe was requested, even if rejected.
 int cpe_pending = 0;	// Currently running ExtInfo process.
@@ -133,7 +133,7 @@ complete_connection()
     if (extn_evilbastard)
 	fatal("Server is incompatible with Evil bastard extension");
 
-    send_server_id_pkt(server->name, server->motd, op_enabled);
+    send_server_id_pkt(server->name, server->motd, server->op_flag);
     cpe_pending = 0;
 
     // List of users

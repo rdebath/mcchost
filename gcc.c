@@ -25,7 +25,7 @@
 #define STDATOMIC
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && __GNUC__ > 5
 // How can I concisely tell this compiler that truncation is the whole damn point!
 #define saprintf(array, ...) (void)(snprintf(array, sizeof(array), __VA_ARGS__)?({asm("");}):0)
 #else

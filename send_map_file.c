@@ -322,11 +322,11 @@ send_system_ident()
     if (level_prop && level_prop->motd[0]) {
 	// Nasty hack for longer MOTD string.
 	if (strlen(level_prop->motd) > MB_STRLEN)
-	    send_server_id_pkt(level_prop->motd, level_prop->motd+MB_STRLEN, op_enabled);
+	    send_server_id_pkt(level_prop->motd, level_prop->motd+MB_STRLEN, server->op_flag);
 	else
-	    send_server_id_pkt(server->name, level_prop->motd, op_enabled);
+	    send_server_id_pkt(server->name, level_prop->motd, server->op_flag);
     } else
-	send_server_id_pkt(server->name, server->motd, op_enabled);
+	send_server_id_pkt(server->name, server->motd, server->op_flag);
 }
 
 void

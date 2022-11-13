@@ -54,11 +54,11 @@ static struct ext_list_t extensions[] = {
     { N"SetHotbar",           1, &extn_sethotbar },
     { N"SetSpawnpoint",       1, &extn_setspawnpoint },
 
-    { N"VelocityControl",     1, .disabled=1 },
-    { N"CustomParticles",     1, .disabled=1 },
-    { N"CustomModels",        2, .disabled=1 },
-    { N"PluginMessages",      1, .disabled=1 },
-    { N"ExtEntityTeleport",   1, .disabled=1 },
+    { N"VelocityControl",     1 },
+    { N"CustomParticles",     1 },
+    { N"CustomModels",        2 },
+    { N"PluginMessages",      1 },
+    { N"ExtEntityTeleport",   1 },
 
     { N"EvilBastard" ,        1, &extn_evilbastard },
     {0}

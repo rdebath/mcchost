@@ -140,5 +140,7 @@ zip:
 	cd tmp.d ; make -j$$(nproc) -s TARGET_ARCH=-m32 ODIR=obj32 PROG=obj32/server
 	-rm -rf tmp.d
 	@:
-	mv tmp.tgz mcchost.tgz
-	mv tmp.zip mcchost.zip
+	mkdir -p zip
+	echo \* > zip/.gitignore
+	mv tmp.tgz zip/mcchost.tgz
+	mv tmp.zip zip/mcchost.zip

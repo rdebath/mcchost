@@ -66,6 +66,7 @@
 #define PKID_INVORDER	0x2c
 #define PKID_HOTBAR     0x2d
 #define PKID_SETSPAWN	0x2e
+#define PKID_PLUGINMSG  0x35
 
 /* These are the structures for received packets after conversion from
  * the line format.
@@ -222,9 +223,22 @@ int msglen[256] = {
     /* 0x2d */ 3,
 #define PKID_SETSPAWN	0x2e
     /* 0x2e */ 9,
+#define PKID_VELOCITY   0x2f
     /* 0x2f */ 16,
+#define PKID_DEFEFFECT  0x30
     /* 0x30 */ 36,
+#define PKID_USEEFFECT  0x31
     /* 0x31 */ 26,
+#define PKID_DEFMODEL   0x32
+    /* 0x32 */ 116,
+#define PKID_DEFMODELPART 0x33
+    /* 0x33 */ 167,
+#define PKID_RMMODEL    0x34
+    /* 0x34 */ 2,
+#define PKID_PLUGINMSG  0x35
+    /* 0x35 */ 66,
+#define PKID_TELEPORT   0x36
+    /* 0x36 */ 12,
 
     0
 };

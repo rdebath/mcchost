@@ -29,6 +29,10 @@ void
 cmd_spawn(char * UNUSED(cmd), char *UNUSED(arg))
 {
     if (!level_prop) return;
+    if (level_prop->hacks_flags & 8) {
+	printf_chat("&cRespawning is currently disabled");
+	return;
+    }
 
     send_posn_pkt(255, &player_posn, level_prop->spawn);
     player_posn = level_prop->spawn;
@@ -37,6 +41,11 @@ cmd_spawn(char * UNUSED(cmd), char *UNUSED(arg))
 void
 cmd_tp(char * cmd, char *arg)
 {
+    if (level_prop->hacks_flags & 8) {
+	printf_chat("&cTeleport is currently disabled");
+	return;
+    }
+
     char * str1 = strtok(arg, " ");
     char * str2 = strtok(0, " ");
     char * str3 = strtok(0, " ");

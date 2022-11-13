@@ -522,6 +522,16 @@ process_client_message(int cmd, char * pktbuf)
 	}
 	break;
 
+    case PKID_PLUGINMSG:
+	{
+	    char * p = pktbuf+1;
+	    pkt_message pkt;
+	    pkt.message_type = *p++;
+	    pkt.player_id = 0xFF;
+	    sanitise_nbstring(pkt.message, p, 0);
+	    fprintf_logfile("Plugin msg ch%d \"%s\"", pkt.message_type, pkt.message);
+	}
+	break;
     }
 }
 
