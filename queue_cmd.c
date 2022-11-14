@@ -3,7 +3,9 @@
 
 #if INTERFACE
 #define CMD_QUEUE_LEN	256
-enum cmd_token_e {cmd_token_kick = 1, cmd_token_changemodel, cmd_token_changeskin};
+enum cmd_token_e {
+    cmd_token_kick = 1, cmd_token_ban,
+    cmd_token_changemodel, cmd_token_changeskin};
 
 typedef cmd_payload_t cmd_payload_t;
 struct cmd_payload_t {
@@ -141,6 +143,9 @@ process_ipc_cmd(cmd_payload_t *msg)
     switch(msg->cmd_token) {
     case cmd_token_kick:
 	kicked(msg->arg.c);
+	break;
+    case cmd_token_ban:
+	banned(msg->arg.c);
 	break;
     case cmd_token_changemodel:
 #ifdef CMD_MODEL

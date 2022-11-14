@@ -79,6 +79,7 @@ struct server_ini_t {
     int use_http_post;
     int private;
 
+    int disallow_ip_admin;
     int disallow_ip_verify;
     int allow_pass_verify;
 

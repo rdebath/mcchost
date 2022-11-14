@@ -4,10 +4,25 @@
 
 /*HELP readme
 This is a Minecraft classic server with CPE (Classic Protocol Extensions)
-See "/help todo" for notes.
+
+See /cmds for a command list and /help <cmd> for each command.
+
+See "/help todo" for build notes.
+TODO: /help install
+Other notes
+    /help usecases
+    /help todo cmds
 */
 
 /*HELP todo
+ +) Compact rc syntax for blockdefs.
+    -- Needs both define and alter modes for 64 char limit
+    -- /defblk [id] [cf] "Name" flag1=x,flagn=y
+    -- /defblk [id] - flag1=x,flagn=y,name=""
+    -- Short flag names
+
+ +) Message blocks don't need physics.
+
  +) Don't save a clean loaded map on delete.
 
  +) Divide maps into collections "fcraft", "junk", etc
@@ -210,6 +225,111 @@ mcchost-server -pipe
 
     eg: socat TCP-LISTEN:25565,reuseaddr EXEC:'mcchost-server -pipe',pipes
 
+*/
+
+/*HELP todo_cmds
+Blocks      : Yes -- Special help pages (Dynamic ?)
+Delete      : Yes -- Delete mode
+DoNotMark   : Yes -- Click to mark toggle (/dm)
+Ignore      : Yes -- Remove chat's from some users
+Loaded      : Yes -- Listing levels
+Map         : Yes -- Map creation etc
+Me          : Yes -- Chat hacks
+MessageBlock: Yes
+Nick        : Likely
+Title       : Likely
+Top         : Likely
+ViewRanks   : Likely
+WhoNick     : Likely
+
+8ball       : Maybe -- Random ***
+AdminChat   : Maybe -- Talk only to "Admin" aka SuperOP
+Back        : Maybe -- Reverse last teleport
+BanInfo     : Maybe -- Kick and ban records.
+Calculate   : Maybe -- Very primitive calculator.
+Center      : Maybe -- Drawing
+Clones      : Maybe -- List on same IP
+Color       : Maybe -- Sets Nick colour of player
+Eat         : Maybe -- Random ***
+Emote       : Maybe -- "Enables or disables emoticon parsing"
+Fly         : Maybe -- server side fly hack
+High5       : Maybe -- Chat hacks
+Hug         : Maybe -- Chat hacks
+Inbox       : Maybe -- Email like thing
+LastCmd     : Maybe -- Userstats
+Location    : Maybe -- http://ipinfo.io/" + ip + "/geo  -- Returns json
+LoginMessage: Maybe -- Chat hacks
+MyNotes     : Maybe -- Kick and ban records.
+OpChat      : Maybe -- Talk only to "Operator"
+OpRules     : Maybe -- Text rules for "Operator"
+OpStats     : Maybe -- Stats on bans/kicks
+Redo        : Maybe -- BlockDB
+Report      : Maybe -- Kick/ban request mesg
+Roll        : Maybe -- Random ***
+Seen        : Maybe -- Player records 1st/last seen
+Send        : Maybe -- Email like thing
+TPA         : Maybe -- Teleport
+Undo        : Maybe -- BlockDB
+Warp        : Maybe -- Named TP locations
+Whisper     : Maybe -- Chat hacks
+ZoneList    : Maybe -- Permission zones
+ZoneMark    : Maybe -- Permission zones
+ZoneTest    : Maybe -- Permission zones
+
+AFK         : Done
+Abort       : Done
+About       : Done
+Clear       : Done
+Commands    : Done
+CrashServer : Done
+FAQ         : Done
+Goto        : Done -- Need fuzzy (strcase437str()) match
+Hacks       : Done
+Help        : Done
+Levels      : Done -- Listing levels
+Main        : Done -- need change main level
+MapInfo     : Done -- Map creation etc
+Mark        : Done -- For extra drawing etc.
+Measure     : Done -- Nice stats
+Mode        : Done -- Non-selectable blocks
+Model       : Done -- CPE Extension control
+Museum      : Done
+News        : Done
+PClients    : Done -- User stats.
+Paint       : Done
+Ping        : Done
+Place       : Done (Needs block names)
+Players     : Done -- Server side user list "/who"
+Quit        : Done
+RageQuit    : Done
+Reload      : Done
+Rules       : Done
+ServerInfo  : Done
+SetSpawn    : Done -- Levels
+Skin        : Done -- CPE Extension control
+Spawn       : Done -- Levels
+TP          : Done -- Teleport
+Time        : Done -- Random ***
+View        : Done -- Add auto list??
+WhoIs       : Done -- /Info
+
+AKA         : No -- Zombie Game
+Awards      : No -- Games
+Balance     : No -- Money system
+Buy         : No -- Money system
+CTF         : No -- CTF Game
+CountDown   : No -- Countdown Game
+Delay       : No -- Runs in message box only.
+Economy     : No -- Money system
+HasIRC      : No -- IRC Bridge
+LavaSurvival: No -- Lava Game
+Pay         : No -- Money system
+Ride        : No -- Physics block
+Store       : No -- Money system
+Team        : No -- Games
+TntWars     : No -- TNT Game
+Vote        : No -- Lava Game (&Zombie?)
+ZombieSurvi : No -- Zombie Game
 */
 
 // vim:set syntax=none: */

@@ -38,10 +38,7 @@ cmd_textcolour(char * cmd, char *arg)
 
     if (!subcmd) return cmd_help("", cmd);
 
-    if (!perm_is_admin()) {
-	printf_chat("&WPermission denied, need to be admin.");
-	return;
-    }
+    if (!admin_command(cmd)) return;
 
     if (strcasecmp(subcmd, "remove") == 0 || strcasecmp(subcmd, "rm") == 0 ||
 	    strcasecmp(subcmd, "del") == 0) {

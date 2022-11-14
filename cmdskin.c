@@ -51,7 +51,7 @@ cmd_skin(char * cmd, char *arg)
 	return;
     }
 
-    int uid = find_online_player(str1, 1);
+    int uid = find_online_player(str1, 1, 0);
     if (uid < 0) return;
 
     client_entry_t c = shdat.client->user[uid];

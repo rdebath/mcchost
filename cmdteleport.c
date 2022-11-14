@@ -53,7 +53,7 @@ cmd_tp(char * cmd, char *arg)
     char * str5 = strtok(0, " ");
 
     if (str1 != 0 && str2 == 0) {
-	int uid = find_online_player(str1, 0);
+	int uid = find_online_player(str1, 0, 0);
 	if (uid < 0) return;
 
 	int my_level = shdat.client->user[my_user_no].on_level;
@@ -115,7 +115,7 @@ conv_ord(char * s, int ref, int ioff)
 }
 
 int
-find_online_player(char * user_txt, int allow_self)
+find_online_player(char * user_txt, int allow_self, int quiet)
 {
     int ucount = 0;
     for(int mode = 0; mode < 3; mode++) {
@@ -142,10 +142,12 @@ find_online_player(char * user_txt, int allow_self)
 	}
 	if (mode == 1 && ucount == 0) break;
 	if (mode == 1 && ucount > 1) {
-	    printf_chat("&WCan't identify user \"%s\" that matches %d users", user_txt, ucount);
+	    if (!quiet)
+		printf_chat("&WCan't identify user \"%s\" that matches %d users", user_txt, ucount);
 	    return -1;
 	}
     }
-    printf_chat("&WCannot find user %s", user_txt);
+    if (!quiet)
+	printf_chat("&WCannot find user %s", user_txt);
     return -1;
 }

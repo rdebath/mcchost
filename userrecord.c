@@ -40,6 +40,8 @@ struct userrec_t
     char colour[NB_SLEN];
     char title_colour[NB_SLEN];
     char timezone[NB_SLEN];
+    int32_t user_perm;
+    char ban_message[NB_SLEN];
 
     // Not saved
     int dirty;

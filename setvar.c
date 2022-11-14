@@ -87,7 +87,9 @@ The dimensions of a cubic block (usually 0..16)
 &TSoftware&S Software name
 &TOPFlag&S Okay to send OP flag on client startup
 &TNoCPE&S Disable negotiation of CPE
-&TLocalNet&S IP address CIDR range of trusted clients
+&TLocalnet&S IP address CIDR range of trusted clients
+&TDisallowIPAdmin&S Set if Localhost is not an admin
+&TDisallowIPVerify&S Set if Localhost must verify
 &TSaveInterval&S Time between level save checks
 &TBackupInterval&S Time between level backups
 &TFlagLogCommands&S Copy user commands to log
@@ -141,17 +143,21 @@ cmd_setvar(char * cmd, char * arg)
 
     if (strcasecmp(section, "server") == 0 || strcasecmp(section, "system") == 0 ||
 	    strncmp(section, "textcolour", 10) == 0) {
-	if (!perm_is_admin())
-	    return printf_chat("&WPermission denied, need to be admin.");
+	if (!admin_command("setvar in server section")) return;
 
 	// Alias
 	if (strcasecmp(section, "system") == 0) st->curr_section = "server";
 
 	if (!system_ini_fields(st, varname, &value)) {
-
 	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s&S] %s&S = %s", section, varname, value);
 	    return;
+	}
+
+	if (ini_settings->use_port_specific_file) {
+	    server_ini_tgt = &server_ini_settings;
+	    (void)system_x_ini_fields(st, varname, &value);
+	    server_ini_tgt = 0;
 	}
 
 	save_system_ini_file();
@@ -192,10 +198,9 @@ Restarts the server listener process.
 */
 
 void
-cmd_restart(char * UNUSED(cmd), char * UNUSED(arg))
+cmd_restart(char * cmd, char * UNUSED(arg))
 {
-    if (!perm_is_admin())
-	return printf_chat("&WPermission denied, need to be admin.");
+    if (!admin_command(cmd)) return;
 
     if (alarm_handler_pid) {
 	if (kill(alarm_handler_pid, SIGHUP) < 0) {

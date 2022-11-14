@@ -172,6 +172,7 @@ system_x_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("UseHttpPost", server_ini_tgt->use_http_post);
 	INI_BOOLVAL("Private", server_ini_tgt->private);
 	INI_STRARRAY("UserSuffix", server_ini_tgt->user_id_suffix);
+	INI_BOOLVAL("DisallowIPAdmin", server_ini_tgt->disallow_ip_admin);
 	INI_BOOLVAL("DisallowIPVerify", server_ini_tgt->disallow_ip_verify);
 	INI_BOOLVAL("AllowPassVerify", server_ini_tgt->allow_pass_verify);
 
@@ -387,6 +388,9 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     {
 	INI_INTMAXVAL("UserNo", user_ini_tgt->user_no);
 	INI_STRARRAYCP437("UserId", user_ini_tgt->user_id);
+	INI_INTVAL("UserPerm", user_ini_tgt->user_perm);
+	if (user_ini_tgt->user_perm < 0 || !st->write)
+	    INI_STRARRAYCP437("BanMessage", user_ini_tgt->ban_message);
 	INI_STRARRAYCP437("Nick", user_ini_tgt->nick);
 	INI_STRARRAYCP437("Colour", user_ini_tgt->colour);
 	INI_STRARRAYCP437("Skin", user_ini_tgt->skin);

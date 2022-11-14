@@ -107,6 +107,13 @@ process_connection()
 
     write_current_user(1);
 
+    if (my_user.user_perm < 0) {
+	if (my_user.ban_message[0])
+	    disconnect(0, my_user.ban_message);
+	else
+	    disconnect(0, "Banned on this server");
+    }
+
     memset(proc_args_mem, 0, proc_args_len);
     snprintf(proc_args_mem, proc_args_len, "%s (%s)", SWNAME, user_id);
 
@@ -232,6 +239,25 @@ kicked(char * emsg)
 	if (*s != '&') *d++ = *s;
 	else if (s[1]) s++;
     *d = 0;
+    my_user.kick_count++;
+    disconnect(0, kbuf);
+}
+
+void
+banned(char * emsg)
+{
+    printf_chat("@&W- &7%s &Sbanned %s", user_id, emsg);
+    char kbuf[256], *s, *d;
+    saprintf(kbuf, "Banned %s", emsg);
+    for(s=d=kbuf; *s; s++)
+	if (*s != '&') *d++ = *s;
+	else if (s[1]) s++;
+    *d = 0;
+    my_user.kick_count++;
+    my_user.dirty = 1;
+    my_user.user_perm = -1;
+    strncpy(my_user.ban_message, kbuf, MB_STRLEN);
+    my_user.ini_dirty = 1;
     disconnect(0, kbuf);
 }
 
