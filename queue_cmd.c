@@ -4,7 +4,7 @@
 #if INTERFACE
 #define CMD_QUEUE_LEN	256
 enum cmd_token_e {
-    cmd_token_kick = 1, cmd_token_ban,
+    cmd_token_loaduser = 1, cmd_token_kick, cmd_token_ban,
     cmd_token_changemodel, cmd_token_changeskin};
 
 typedef cmd_payload_t cmd_payload_t;
@@ -141,6 +141,9 @@ void
 process_ipc_cmd(cmd_payload_t *msg)
 {
     switch(msg->cmd_token) {
+    case cmd_token_loaduser:
+	read_ini_file_fields(&my_user);
+	break;
     case cmd_token_kick:
 	kicked(msg->arg.c);
 	break;

@@ -60,7 +60,7 @@ cmd_ban(char * cmd, char *arg)
 	// Set ban data
 	userrec_t user_rec;
 	if (read_userrec(&user_rec, str1, 1) == 0) {
-	    user_rec.dirty = 1;
+	    user_rec.ini_dirty = 1;
 	    user_rec.user_perm = -1;
 	    saprintf(user_rec.ban_message, "Banned %s", msg.arg.c);
 	    write_userrec(&user_rec, 1);
@@ -87,7 +87,7 @@ cmd_unban(char * cmd, char *arg)
 	    printf_chat("User '%s' is not banned", str1);
 	    return;
 	}
-	user_rec.dirty = 1;
+	user_rec.ini_dirty = 1;
 	user_rec.user_perm = 0;
 	user_rec.ban_message[0] = 0;
 	write_userrec(&user_rec, 1);
