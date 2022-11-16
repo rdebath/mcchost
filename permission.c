@@ -9,12 +9,6 @@ perm_is_admin()
 }
 
 inline static int
-perm_can_run(char * UNUSED(cmd), int UNUSED(cmd_id))
-{
-    return 1;
-}
-
-inline static int
 admin_command(char * cmd)
 {
     if (perm_is_admin()) return 1;

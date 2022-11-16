@@ -3,7 +3,8 @@
 
 #if INTERFACE
 #define CMD_KICK \
-    {N"kick", &cmd_kick}, {N"ban", &cmd_ban}, {N"unban", &cmd_unban}
+    {N"kick", &cmd_kick, CMD_PERM_ADMIN}, \
+    {N"ban", &cmd_ban, CMD_PERM_ADMIN}, {N"unban", &cmd_unban, CMD_PERM_ADMIN}
 #endif
 
 /*HELP kick H_CMD
@@ -17,8 +18,6 @@ cmd_kick(char * cmd, char *arg)
 {
     char * str1 = strtok(arg, " ");
     char * str2 = strtok(0, "");
-
-    if (!admin_command(cmd)) return;
 
     if (!str1) return cmd_help(0, cmd);
 
@@ -44,8 +43,6 @@ cmd_ban(char * cmd, char *arg)
 {
     char * str1 = strtok(arg, " ");
     char * str2 = strtok(0, "");
-
-    if (!admin_command(cmd)) return;
 
     if (!str1) return cmd_help(0, cmd);
 
@@ -74,8 +71,6 @@ void
 cmd_unban(char * cmd, char *arg)
 {
     char * str1 = strtok(arg, " ");
-
-    if (!admin_command(cmd)) return;
 
     if (!str1) return cmd_help(0, cmd);
 

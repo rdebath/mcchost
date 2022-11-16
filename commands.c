@@ -2,12 +2,17 @@
 #include "commands.h"
 
 #if INTERFACE
+enum perm_token { perm_token_none, perm_token_admin, perm_token_level };
+
+#define CMD_PERM_ADMIN  .perm_okay=perm_token_admin		/* System admin */
+#define CMD_PERM_LEVEL  .perm_okay=perm_token_level		/* Level owner */
+
 typedef void (*cmd_func_t)(char * cmd, char * arg);
 typedef struct command_t command_t;
 struct command_t {
     char * name;
     cmd_func_t function;
-    int min_rank;
+    enum perm_token perm_okay;
     int dup;		// Don't show on /cmds (usually a duplicate)
     int nodup;		// No a dup, don't use previous.
 };
@@ -29,6 +34,7 @@ run_command(char * msg)
 
     char * cmd = strtok(msg+1, " ");
     if (cmd == 0) return;
+
     if (strcasecmp(cmd, "womid") == 0) { player_last_move = time(0); return; }
     if (!user_authenticated) {
 	if (strcasecmp(cmd, "pass") != 0 && strcasecmp(cmd, "setpass") != 0 &&
@@ -54,32 +60,45 @@ run_command(char * msg)
     }
 
     for(int i = 0; command_list[i].name; i++) {
-	if (strcasecmp(cmd, command_list[i].name) == 0) {
-	    int c = i;
-	    while(c>0 && command_list[c].dup && !command_list[c].nodup &&
-		command_list[c].function == command_list[c-1].function)
-		c--;
+	if (strcasecmp(cmd, command_list[i].name) != 0) continue;
 
-	    cmd = command_list[c].name;
-	    char * arg = strtok(0, "");
-	    if (!perm_can_run(cmd, c)) return;
+	int c = i;
+	while(c>0 && command_list[c].dup && !command_list[c].nodup &&
+	    command_list[c].function == command_list[c-1].function)
+	    c--;
 
-	    if (server->flag_log_commands) {
-		int redact_args = (!strcasecmp(cmd, "pass") ||
-				   !strcasecmp(cmd, "setpass"));
-		if (!server->flag_log_place_commands &&
-			strcasecmp(cmd, "place") == 0)
-		    ;
-		else if (redact_args)
-		    fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?"<redacted>":"");
-		else
-		    fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
+	cmd = command_list[c].name;
+	char * arg = strtok(0, "");
+
+	if (command_list[c].perm_okay != perm_token_none) {
+	    if (command_list[c].perm_okay == perm_token_admin) {
+		if (!perm_is_admin()) {
+		    printf_chat("&WPermission denied, only admin can run /%s", cmd);
+		    return;
+		}
+	    } else if (command_list[c].perm_okay == perm_token_level) {
+		if (!perm_level_check(0,0))
+		    return;
 	    }
-	    if (strcasecmp(cmd, "afk") != 0)
-		update_player_move_time();
-	    command_list[c].function(cmd, arg);
-	    return;
 	}
+
+	if (server->flag_log_commands) {
+	    int redact_args = (!strcasecmp(cmd, "pass") ||
+			       !strcasecmp(cmd, "setpass"));
+	    if (!server->flag_log_place_commands &&
+		    strcasecmp(cmd, "place") == 0)
+		;
+	    else if (redact_args)
+		fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?"<redacted>":"");
+	    else
+		fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
+	}
+
+	if (strcasecmp(cmd, "afk") != 0)
+	    update_player_move_time();
+
+	command_list[c].function(cmd, arg);
+	return;
     }
 
     printf_chat("&SUnknown command \"%s&S\" -- see &T/cmds", cmd);
@@ -138,6 +157,9 @@ cmd_commands(char * UNUSED(cmd), char * UNUSED(arg))
 
     for(int i = 0; command_list[i].name; i++) {
 	if (command_list[i].dup)
+	    continue;
+	if (command_list[i].perm_okay == perm_token_admin &&
+	    !perm_is_admin())
 	    continue;
 
 	int l = strlen(command_list[i].name);

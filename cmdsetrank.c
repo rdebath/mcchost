@@ -3,7 +3,7 @@
 
 #if INTERFACE
 #define CMD_SETRANK \
-    {N"setrank", &cmd_setrank}, {N"rank", &cmd_setrank, .dup=1}
+    {N"setrank", &cmd_setrank, CMD_PERM_ADMIN}, {N"rank", &cmd_setrank, .dup=1}
 #endif
 
 /*HELP setrank,rank H_CMD
@@ -18,8 +18,6 @@ cmd_setrank(char * cmd, char *arg)
 {
     char * str1 = strtok(arg, " ");
     char * str2 = strtok(0, " ");
-
-    if (!admin_command(cmd)) return;
 
     if (!str1) return cmd_help(0, cmd);
 

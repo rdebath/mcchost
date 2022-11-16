@@ -22,7 +22,7 @@ Aliases: &T/inishow
 
 #if INTERFACE
 #define CMD_INILOAD \
-    {N"iniload", &cmd_iload}, {N"iload", &cmd_iload, .dup=1}, \
+    {N"iniload", &cmd_iload, CMD_PERM_LEVEL}, {N"iload", &cmd_iload, .dup=1}, \
     {N"inisave", &cmd_isave}, {N"isave", &cmd_isave, .dup=1}, \
     {N"inishow", &cmd_ishow}, {N"ishow", &cmd_ishow, .dup=1}
 #endif
@@ -32,8 +32,6 @@ cmd_iload(char * cmd, char * arg)
 {
     if (!arg || !*arg)
 	return printf_chat("&WUsage: /%s filename", cmd);
-
-    if (!perm_level_check(0, 0)) return;
 
     int ro = level_prop->readonly;
     char fixedname[200], buf[256];

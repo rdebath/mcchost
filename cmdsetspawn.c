@@ -2,7 +2,7 @@
 #include "cmdsetspawn.h"
 
 #if INTERFACE
-#define CMD_SETSPAWN {N"setspawn", &cmd_setspawn}
+#define CMD_SETSPAWN {N"setspawn", &cmd_setspawn, CMD_PERM_LEVEL}
 #endif
 
 /*HELP setspawn H_CMD
@@ -13,8 +13,6 @@ Sets spawn location set to your current location and orientation
 void
 cmd_setspawn(char * UNUSED(cmd),char * UNUSED(arg))
 {
-    if (!perm_level_check(0, 0)) return;
-
     level_prop->spawn.x = player_posn.x;
     level_prop->spawn.y = player_posn.y;	// TODO? Make this exact?
     level_prop->spawn.z = player_posn.z;

@@ -12,7 +12,7 @@ struct textcolour_t {
 };
 
 #define CMD_TEXTCOLOUR \
-    {N"ccols", &cmd_textcolour}, \
+    {N"ccols", &cmd_textcolour, CMD_PERM_ADMIN}, \
     {N"CustomColors", &cmd_textcolour, .dup=1}, \
     {N"CustomColours", &cmd_textcolour, .dup=1}
 
@@ -37,8 +37,6 @@ cmd_textcolour(char * cmd, char *arg)
     char * txcolour = strtok(0, " ");
 
     if (!subcmd) return cmd_help("", cmd);
-
-    if (!admin_command(cmd)) return;
 
     if (strcasecmp(subcmd, "remove") == 0 || strcasecmp(subcmd, "rm") == 0 ||
 	    strcasecmp(subcmd, "del") == 0) {

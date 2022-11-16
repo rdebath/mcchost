@@ -4,8 +4,9 @@
 #include "setvar.h"
 
 #if INTERFACE
-#define CMD_SETVAR {N"set", &cmd_setvar}, {N"setvar", &cmd_setvar, .dup=1}, \
-    {N"restart", &cmd_restart}
+#define CMD_SETVAR \
+    {N"set", &cmd_setvar}, {N"setvar", &cmd_setvar, .dup=1}, \
+    {N"restart", &cmd_restart, CMD_PERM_ADMIN}
 #endif
 
 /*HELP setvar,set H_CMD
@@ -198,10 +199,8 @@ Restarts the server listener process.
 */
 
 void
-cmd_restart(char * cmd, char * UNUSED(arg))
+cmd_restart(char * UNUSED(cmd), char * UNUSED(arg))
 {
-    if (!admin_command(cmd)) return;
-
     if (alarm_handler_pid) {
 	if (kill(alarm_handler_pid, SIGHUP) < 0) {
 	    perror("kill(alarm_handler,SIGHUP)");

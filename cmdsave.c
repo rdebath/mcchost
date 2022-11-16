@@ -9,7 +9,7 @@ Save the current level and back it up.
 */
 
 #if INTERFACE
-#define CMD_SAVELVL {N"save", &cmd_save}
+#define CMD_SAVELVL {N"save", &cmd_save, CMD_PERM_LEVEL}
 #endif
 
 void
