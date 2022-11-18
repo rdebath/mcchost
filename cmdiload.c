@@ -42,12 +42,15 @@ cmd_iload(char * cmd, char * arg)
     int rv = load_ini_file(level_ini_fields, buf, 0, 1);
     unlock_fn(level_lock);
 
-    if (rv == 0) {
-	level_prop->readonly = ro;	// Use /set command
+    level_prop->readonly = ro;	// Don't allow from a file.
 
+    if (rv >= 0) {
 	printf_chat("&SFile loaded%s%s",
 	    level_prop->readonly?" to readonly level":"",
 	    level_prop->force_save&&level_prop->readonly?", but will save anyway":"");
+
+	if (rv > 0)
+	    printf_chat("&WThere were %d issues", rv);
 
 	level_prop->dirty_save = 1;
 	level_prop->metadata_generation++;

@@ -39,7 +39,7 @@ try_asciimode(gzFile ifd, char * levelfile, uint64_t fallback_seed)
 	    apply_ini_command(p+1);
 	    continue;
 	}
-        if (load_ini_line(&st, level_ini_fields, ibuf) == 0) {
+        if (load_ini_line(&st, level_ini_fields, ibuf) != 0) {
 	    level_prop->version_no = level_prop->magic_no = 0;
 	    return 0;
 	}

@@ -295,6 +295,9 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 		break;
 	}
 
+	int tf = found;
+	found = 0;
+
 	if (level_prop->blockdef[bn].defined || !st->write) {
 	    INI_BOOLVAL(WC("Defined"), level_prop->blockdef[bn].defined);
 	    INI_BOOLVAL(WC("NoSave"), level_prop->blockdef[bn].no_save);
@@ -329,6 +332,9 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_BLKVAL("DirtBlock", level_prop->blockdef[bn].dirt_block);
 	    INI_BLKVAL("Order", level_prop->blockdef[bn].inventory_order);
 	}
+	if (found && !st->write) level_prop->blockdef_generation++;
+	found |= tf;
+
 	if (level_prop->blockdef[bn].block_perm || !st->write) {
 	    INI_BLKVAL("Permission", level_prop->blockdef[bn].block_perm);
 	    if (!level_prop->blockdef[bn].defined && st->write)
@@ -485,7 +491,11 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet, int no_unsafe)
 
     char ibuf[BUFSIZ];
     while(fgets(ibuf, sizeof(ibuf), ifd)) {
-	if (load_ini_line(&st, filetype, ibuf) == 0) { rv = -1; if(!quiet) break; }
+	int v;
+	if ((v=load_ini_line(&st, filetype, ibuf)) != 0) {
+	    if(v == 2) { rv = -1; break; }
+	    rv++;
+	}
     }
 
     fclose(ifd);
@@ -493,6 +503,8 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet, int no_unsafe)
     return rv;
 }
 
+// Load one ini line
+// RV 0=> Line okay, 1=> Unknown option, 2=> Bad line.
 int
 load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
 {
@@ -500,12 +512,12 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
     for(;p>ibuf && (p[-1] == '\n' || p[-1] == '\r' || p[-1] == ' ' || p[-1] == '\t');p--) p[-1] = 0;
 
     for(p=ibuf; *p == ' ' || *p == '\t'; p++);
-    if (*p == '#' || *p == ';' || *p == 0) return 1;
+    if (*p == '#' || *p == ';' || *p == 0) return 0;
     if (*p == '[') {
 	p = ini_extract_section(st, p);
 	if (p) for(; *p == ' ' || *p == '\t'; p++);
 	if (!p || *p == 0)
-	    return 1;
+	    return 0;
     }
     char label[64];
     int rv = ini_decode_lable(&p, label, sizeof(label));
@@ -514,7 +526,7 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
 	    printlog("Invalid label %s in %s section %s", ibuf, st->filename, st->curr_section?:"-");
 	else
 	    printf_chat("&WInvalid label &S%s&W in &S%s&W section &S%s&W", ibuf, st->filename, st->curr_section?:"-");
-	return 0;
+	return 2;
     }
     if (!st->curr_section || !filetype(st, label, &p)) {
 	if (st->quiet) {
@@ -522,9 +534,10 @@ load_ini_line(ini_state_t *st, ini_func_t filetype, char *ibuf)
 		ibuf, st->filename, st->curr_section?:"-", label, p);
 	} else
 	    printf_chat("#&WUnknown item&S \"%s\" section \"%s\"", ibuf, st->curr_section?:"-");
-	return 0;
+	if (!st->curr_section) return 2;
+	return 1;
     }
-    return 1;
+    return 0;
 }
 
 LOCAL char *

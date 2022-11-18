@@ -24,6 +24,7 @@ block_t proto_conversion[] = {
 };
 
 static uint32_t metadata_generation = 0;
+static uint32_t blockdef_generation = 0;
 static block_t max_defined_block = 0;
 
 int reset_hotbar_on_mapload = 0;
@@ -140,10 +141,16 @@ void
 check_metadata_update()
 {
     if (!level_prop || !level_blocks) return;
-    if (metadata_generation == level_prop->metadata_generation) return;
+    if (metadata_generation == level_prop->metadata_generation &&
+        blockdef_generation == level_prop->blockdef_generation) return;
 
     if(extn_instantmotd)
 	send_system_ident();
+
+    if (blockdef_generation != level_prop->blockdef_generation) {
+	send_block_definitions(); // Causes a screen redraw
+	send_inventory_order();
+    }
 
     send_metadata();
 }
@@ -417,6 +424,8 @@ send_clickdistance()
 void
 send_block_definitions()
 {
+    blockdef_generation = level_prop->blockdef_generation;
+
     if (!extn_blockdefn || !customblock_enabled) {
 	level_block_limit = client_block_limit;
 	if (client_block_limit > Block_CP && !customblock_enabled)

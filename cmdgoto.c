@@ -14,6 +14,8 @@ Go to a random level.
 /*HELP main H_CMD
 &T/main
 Return to the system main level
+&T/main [Level]
+Set the system main level to "level"
 */
 
 #if INTERFACE
@@ -88,8 +90,14 @@ cmd_goto(char * cmd, char * arg)
 }
 
 void
-cmd_main(char * UNUSED(cmd), char * UNUSED(arg))
+cmd_main(char * UNUSED(cmd), char * arg)
 {
+    if (arg && *arg) {
+	char buf[128];
+	saprintf(buf, "/set server main %s", arg);
+	return run_command(buf);
+    }
+
     if (current_level_backup_id == 0 && strcmp(main_level(), current_level_name) == 0) {
 	printf_chat("&SYou're already on &7%s", current_level_name);
 	return;

@@ -15,8 +15,7 @@ Other notes
 */
 
 /*HELP todo
- +) Ini load should continue after complaining about unknown lines.
-    -- Limit max complaints though?
+ +) /nick and maybe /title
 
  +) Add walkthrough for default server setup.
     -- Including setting user to Admin with remote GUI.

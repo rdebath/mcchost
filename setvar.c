@@ -74,12 +74,32 @@ The dimensions of a cubic block (usually 0..16)
 &TAFKKickInterval&S Time til player kicked for AFK
 &TPlayerUpdateMS&S Minumum period between updates of player positions
 
-&TPrivate&S Set &TTrue&S to hide registration
+&TPrivate&S Set &TTrue&S to hide registration &W**
 &THeartbeat&S URL of heartbeat server. &W**
 &TPollHeartbeat&S Enable polling of heartbeat server &W**
 &TUserSuffix&S Added to end of users on this port &W**
+&TDisallowIPAdmin&S Set if Localhost is not an admin &W**
+&TDisallowIPVerify&S Set if Localhost must verify &W**
+&TAllowPassVerify&S Set to allow password for verification &W**
 
-&W**&S Per port configuration.
+&W**&S Per port configuration. (&T/help per port&S)
+See &T/help betacraft&S to configure for that.
+*/
+
+/*HELP per_port
+Create an empty file "server.[portno].ini" for each port you wish to configure and start a server for each one. You'll probably want to configure the options with a text editor in each before starting the service.
+*/
+
+/*HELP betacraft
+The following options need to be set for a Betacraft port.
+
+Heartbeat = http://betacraft.uk/heartbeat.jsp
+UseHttpPost = true
+Private = true
+UserSuffix = +
+AllowPassVerify = true
+
+Use &T/set server [varname] [value]&S for each item or alter the server.ini or server.[portno].ini file to include these.
 */
 
 /*HELP set_system
@@ -89,8 +109,6 @@ The dimensions of a cubic block (usually 0..16)
 &TOPFlag&S Okay to send OP flag on client startup
 &TNoCPE&S Disable negotiation of CPE
 &TLocalnet&S IP address CIDR range of trusted clients
-&TDisallowIPAdmin&S Set if Localhost is not an admin
-&TDisallowIPVerify&S Set if Localhost must verify
 &TSaveInterval&S Time between level save checks
 &TBackupInterval&S Time between level backups
 &TFlagLogCommands&S Copy user commands to log
