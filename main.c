@@ -166,6 +166,8 @@ complete_connection()
 	    level_prop->disallowchange = 0;
 	}
     }
+    if (level_prop)
+	level_prop->no_unload = server->no_unload_main;
 
     send_textcolours();
     send_map_file();

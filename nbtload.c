@@ -570,7 +570,6 @@ change_int_value(char * section, char * item, int64_t value)
 	if (strcmp(item, "AllowChange") == 0) level_prop->disallowchange = !value;
 	if (strcmp(item, "DisallowChange") == 0) level_prop->disallowchange = value;
 	if (strcmp(item, "ReadOnly") == 0) level_prop->readonly = value;
-	if (strcmp(item, "NoUnload") == 0) level_prop->no_unload = value;
 	if (strcmp(item, "ResetHotbar") == 0) level_prop->reset_hotbar = value;
 
     } else if (strncmp(section, "Block", 5) == 0) {

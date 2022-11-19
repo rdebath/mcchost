@@ -21,6 +21,7 @@ struct server_t {
 
     time_t save_interval;
     time_t backup_interval;
+    uint8_t no_unload_main;
 
     int op_flag;
     int cpe_disabled;

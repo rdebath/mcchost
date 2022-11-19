@@ -84,6 +84,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_DURATION("SaveInterval", server->save_interval);
 	INI_DURATION("BackupInterval", server->backup_interval);
+	INI_BOOLVAL("NoUnloadMain", server->no_unload_main);
 
 	if (st->write) fprintf(st->fd, "\n");
 
@@ -267,7 +268,6 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("ResetHotbar", level_prop->reset_hotbar);
 	INI_BOOLVAL("DisallowChange", level_prop->disallowchange);
 	INI_BOOLVAL("ReadOnly", level_prop->readonly);
-	INI_BOOLVAL("NoUnload", level_prop->no_unload);
 	if (!st->write)
 	    INI_BOOLVAL("DirtySave", level_prop->dirty_save);
     }
