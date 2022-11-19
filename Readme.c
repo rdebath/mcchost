@@ -15,8 +15,6 @@ Other notes
 */
 
 /*HELP todo
- +) /nick and maybe /title
-
  +) Add walkthrough for default server setup.
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat ?

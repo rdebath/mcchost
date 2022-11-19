@@ -32,10 +32,12 @@ cmd_model(char * cmd, char *arg)
     } else {
 	str1 = strtok(arg, " ");
 	str2 = strtok(0, "");
-	if (str2 == 0) {str2 = str1; str1 = 0;}
+	if (str1 && strcasecmp(str1, "-own") == 0)
+	    ;
+	else if (str2 == 0) {str2 = str1; str1 = 0;}
     }
 
-    if (str1 == 0 || strcmp(str1, "") == 0 || strcmp(str1, "-own") == 0) {
+    if (str1 == 0 || strcmp(str1, "") == 0 || strcasecmp(str1, "-own") == 0) {
 	printf_chat("Changed your model to a %s", str2?str2:"humanoid");
 	do_cmd_model(str2);
 	return;

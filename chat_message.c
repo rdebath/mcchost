@@ -103,9 +103,9 @@ convert_inbound_chat(int to_user, char * msg)
     char * buf = malloc(strlen(msg) + 256);
     char * p;
     if (to_user < 0)
-	p = buf + sprintf(buf, "&e%s&e:&f ", user_id);
+	p = buf + sprintf(buf, "&e%s&e:&f ", player_title_name.c);
     else
-	p = buf + sprintf(buf, "&9[>] &e%s&e: &f", user_id);
+	p = buf + sprintf(buf, "&9[>] &e%s&e: &f", player_list_name.c);
 
     for(char *s = msg; *s; s++) {
 	if (!extn_textcolours && (*s == '%' || *s == '&')) {

@@ -26,14 +26,14 @@ cmd_setrank(char * cmd, char *arg)
 
     int perm = -1;
     for(int i = 0; i<USER_PERM_CNT; i++) {
-	if (strcasecmp(user_perms[i], str2) == 0) {
+	if (str2 && strcasecmp(user_perms[i], str2) == 0) {
 	    perm = i;
 	    break;
 	}
     }
     if (perm < 0) {
 	char pbuf[256];
-	sprintf(pbuf, "&WPermission '%s' is unknown, valid are: ", str2);
+	sprintf(pbuf, "&WPermission '%s' is unknown, valid are: ", str2?str2:"");
 	for(int i = 0; i<USER_PERM_CNT; i++) {
 	    if(i) strcat(pbuf, ", ");
 	    strcat(pbuf, user_perms[i]);

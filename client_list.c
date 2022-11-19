@@ -83,6 +83,10 @@ aspam_t player_block_spam[1];
 aspam_t player_cmd_spam[1];
 aspam_t player_chat_spam[1];
 
+nbtstr_t player_title_name;
+nbtstr_t player_list_name;
+nbtstr_t player_group_name;
+
 void
 check_user()
 {
@@ -136,8 +140,7 @@ check_user()
 		    myuser[i].look_update_counter != c.look_update_counter ||
 		    myuser[i].on_level != c.on_level ||
 		    myuser[i].is_afk != c.is_afk) ) {
-		char listname[256] = "";
-		saprintf(listname, "%s%s", c.listname.c, c.is_afk?" &7(AFK)":"");
+
 		char groupname[256] = "Nowhere";
 		if (c.on_level >= 0 && c.on_level < MAX_LEVEL) {
 		    int l = c.on_level;
@@ -149,6 +152,10 @@ check_user()
 			    saprintf(groupname, "Museum %d %s", shdat.client->levels[l].backup_id, n.c);
 		    }
 		}
+
+		char listname[256] = "";
+		saprintf(listname, "%s%s", c.listname.c, c.is_afk?" &7(AFK)":"");
+
 		if (i>=0 && i<255)
 		    send_addplayername_pkt(i, c.name.c, listname, groupname, 0);
 
@@ -168,7 +175,8 @@ check_user()
 	    if (c.skinname.c[0]) skin = c.skinname.c;
 	    char namebuf[256];
 	    if (c.name_colour) saprintf(namebuf, "&%c%s", c.name_colour, c.name.c);
-	    else strcpy(namebuf, c.name.c);
+	    else saprintf(namebuf, "&7%s", c.name.c);
+	    revert_amp_to_perc(namebuf);
 	    send_addentity_pkt(i, namebuf, skin, c.posn);
 	    send_posn_pkt(i, 0, c.posn);
 	    is_dirty = 1;
@@ -272,7 +280,8 @@ reset_player_skinname()
     char namebuf[256];
 
     if (my_user.colour[0]) saprintf(namebuf, "&%c%s", my_user.colour[0], user_id);
-    else strcpy(namebuf, user_id);
+    else saprintf(namebuf, "&7%s", user_id);
+    revert_amp_to_perc(namebuf);
 
     if (level_prop)
 	send_addentity_pkt(255, namebuf, skin, level_prop->spawn);
@@ -349,14 +358,37 @@ update_player_look()
     if (!shdat.client || my_user_no < 0 || my_user_no >= MAX_USER) return;
     client_entry_t *t = &shdat.client->user[my_user_no];
 
+    int oc = t->name_colour;
+    t->name_colour = my_user.colour[0];
+    if (t->name_colour == 0) {
+	if (perm_is_admin())
+	    t->name_colour = 'S';
+	else
+	    t->name_colour = '2';
+    }
+    if (oc != t->name_colour)
+	t->look_update_counter ++;
+
+    int c = t->name_colour;
     nbtstr_t namebuf;
-    if (my_user.nick[0]) {
-	saprintf(namebuf.c, "%s", my_user.nick);
-    } else if (my_user.colour[0]) {
-	int c = (uint8_t)my_user.colour[0];
-	saprintf(namebuf.c, "%c%s", c, user_id);
-    } else
-	saprintf(namebuf.c, "&7%s", user_id);
+    if (my_user.nick[0])
+	saprintf(namebuf.c, "&%c%s", c, my_user.nick);
+    else
+	saprintf(namebuf.c, "&%c%s", c, user_id);
+
+    if (my_user.title[0])
+	saprintf(player_title_name.c, "&%c[%s&%c] %s", c, my_user.title, c, namebuf.c);
+    else
+	saprintf(player_title_name.c, "%s", namebuf.c);
+
+    revert_amp_to_perc(namebuf.c);
+    revert_amp_to_perc(player_title_name.c);
+
+    if (strcmp(player_list_name.c, namebuf.c) != 0) {
+	player_list_name = namebuf;
+	if (extn_extplayerlist)
+	    send_addplayername_pkt(255, user_id, player_list_name.c, player_group_name.c, 0);
+    }
 
     if (strcmp(namebuf.c, t->listname.c) != 0) {
 	t->listname = namebuf;
@@ -375,7 +407,6 @@ update_player_look()
 	t->look_update_counter ++;
     }
 
-    t->name_colour = my_user.colour[0];
 }
 
 void
@@ -521,15 +552,22 @@ start_level(char * levelname, char * levelfile, int backup_id)
 
     if (extn_extplayerlist) {
 	char groupname[256] = "";
-	char listname[256] = "";
 	if (current_level_backup_id == 0)
 	    saprintf(groupname, "On %s", current_level_name);
 	else if (current_level_backup_id > 0)
 	    saprintf(groupname, "Museum %d %s", current_level_backup_id, current_level_name);
 	else
 	    strcpy(groupname, "Nowhere");
-	strcpy(listname, user_id);
-	send_addplayername_pkt(255, user_id, user_id, groupname, 0);
+	saprintf(player_group_name.c, "%s", groupname);
+
+	char listname[256] = "";
+	if (shdat.client && my_user_no >= 0 && my_user_no < MAX_USER) {
+	    client_entry_t *t = &shdat.client->user[my_user_no];
+	    strcpy(listname, t->listname.c);
+	} else
+	    strcpy(listname, user_id);
+	saprintf(player_list_name.c, "%s", listname);
+	send_addplayername_pkt(255, user_id, listname, groupname, 0);
     }
 }
 

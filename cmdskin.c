@@ -27,7 +27,9 @@ cmd_skin(char * cmd, char *arg)
     } else {
 	str1 = strtok(arg, " ");
 	str2 = strtok(0, "");
-	if (str2 == 0) {str2 = str1; str1 = 0;}
+	if (str1 && strcasecmp(str1, "-own") == 0)
+	    ;
+	else if (str2 == 0) {str2 = str1; str1 = 0;}
     }
 
     if (str2) {
@@ -45,7 +47,7 @@ cmd_skin(char * cmd, char *arg)
 	}
     }
 
-    if (str1 == 0 || strcmp(str1, "") == 0 || strcmp(str1, "-own") == 0) {
+    if (str1 == 0 || strcmp(str1, "") == 0 || strcasecmp(str1, "-own") == 0) {
 	printf_chat("Changed your skin to %s", str2?str2:user_id);
 	do_cmd_skin(str2?str2:user_id);
 	return;
