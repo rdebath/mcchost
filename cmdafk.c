@@ -21,7 +21,7 @@ cmd_afk(char * UNUSED(cmd), char * arg)
     if (!player_is_afk) {
 	player_is_afk = 1;
 	shdat.client->user[my_user_no].is_afk = 1;
-	printf_chat("@&S-&7%s&S- &Sis AFK %s", user_id, arg?arg:"");
+	printf_chat("@&S-%s&S- &Sis AFK %s", player_list_name.c, arg?arg:"");
     } else
 	update_player_move_time();
 }

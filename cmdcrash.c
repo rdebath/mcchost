@@ -62,7 +62,7 @@ cmd_crash(char * UNUSED(cmd), char * arg)
 	emsg = "kicked by panic with exit status 1";
     }
     if (emsg) {
-	printf_chat("@&W- &7%s &W%s", user_id, emsg);
+	printf_chat("@&W- %s &W%s", player_list_name.c, emsg);
 	stop_user();
 	exit(0);
     }

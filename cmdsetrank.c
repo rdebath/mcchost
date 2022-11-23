@@ -48,7 +48,7 @@ cmd_setrank(char * cmd, char *arg)
 	user_rec.user_group = group;
 	user_rec.ban_message[0] = 0;
 	write_userrec(&user_rec, 1);
-	printf_chat("&7%s &Sset rank of %s", user_id, str1);
+	printf_chat("%s&S set rank of %s", player_list_name.c, str1);
     } else {
 	printf_chat("User '%s' not found, use fullname", str1);
 	return;

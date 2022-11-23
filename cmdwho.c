@@ -25,7 +25,7 @@ cmd_who(char * UNUSED(cmd), char * UNUSED(arg))
 	users++;
 
 	char nbuf[256];
-	saprintf(nbuf, "%s%s", c.name.c, c.is_afk?" (AFK)":"");
+	saprintf(nbuf, "%s&S%s", c.listname.c, c.is_afk?" (AFK)":"");
 
 	int level_id = c.on_level;
 	if (level_id<0)

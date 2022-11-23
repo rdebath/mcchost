@@ -172,8 +172,8 @@ complete_connection()
     send_textcolours();
     send_map_file();
 
-    printf_chat("&SWelcome &7%s", user_id);
-    printf_chat("@&a+ &7%s &Sconnected", user_id);
+    printf_chat("&SWelcome %s", player_list_name.c);
+    printf_chat("@&a+ %s &Sconnected", player_list_name.c);
 
     read_only_message();
 
@@ -195,7 +195,7 @@ read_only_message()
 void
 send_disconnect_message()
 {
-    printf_chat("@&c- &7%s &Sdisconnected", user_id);
+    printf_chat("@&c- %s &Sdisconnected", player_list_name.c);
     printlog("Connection dropped for %s", user_id);
 }
 
@@ -209,7 +209,7 @@ fatal(char * emsg)
     fprintf(stderr, "FATAL(%d): %s\n", getpid(), emsg);
 
     if (shared_chat_queue)
-	printf_chat("@&W- &7%s &WCrashed: &S%s", user_id, emsg);
+	printf_chat("@&W- %s &WCrashed: &S%s", player_list_name.c, emsg);
 
     if (line_ofd > 0)
 	disconnect(1, emsg);
@@ -220,21 +220,21 @@ fatal(char * emsg)
 void
 crashed(char * emsg)
 {
-    printf_chat("@&W- &7%s &WCrashed: &S%s", user_id, emsg);
+    printf_chat("@&W- %s &WCrashed: &S%s", player_list_name.c, emsg);
     disconnect(0, emsg);
 }
 
 void
 logout(char * emsg)
 {
-    printf_chat("@&W- &7%s &S%s", user_id, emsg);
+    printf_chat("@&W- %s &S%s", player_list_name.c, emsg);
     disconnect(0, emsg);
 }
 
 void
 kicked(char * emsg)
 {
-    printf_chat("@&W- &7%s &Skicked %s", user_id, emsg);
+    printf_chat("@&W- %s &Skicked %s", player_list_name.c, emsg);
     char kbuf[256], *s, *d;
     saprintf(kbuf, "Kicked %s", emsg);
     for(s=d=kbuf; *s; s++)
@@ -248,7 +248,7 @@ kicked(char * emsg)
 void
 banned(char * emsg)
 {
-    printf_chat("@&W- &7%s &Sbanned %s", user_id, emsg);
+    printf_chat("@&W- %s &Sbanned %s", player_list_name.c, emsg);
     char kbuf[256], *s, *d;
     saprintf(kbuf, "Banned %s", emsg);
     for(s=d=kbuf; *s; s++)
@@ -469,6 +469,7 @@ login()
 
     convert_logon_packet(inbuf, &player);
     saprintf(user_id, "%s%s", player.user_id, ini_settings->user_id_suffix);
+    saprintf(player_list_name.c, "&f%s", user_id);
     protocol_base_version = player.protocol;
 
     if (player.protocol > 7 || player.protocol < 5)

@@ -83,8 +83,8 @@ aspam_t player_block_spam[1];
 aspam_t player_cmd_spam[1];
 aspam_t player_chat_spam[1];
 
-nbtstr_t player_title_name;
-nbtstr_t player_list_name;
+nbtstr_t player_title_name;	// Name including colour and title
+nbtstr_t player_list_name;	// Name with &Colour
 nbtstr_t player_group_name;
 
 void
@@ -207,7 +207,7 @@ check_user()
 	    player_is_afk = 1;
 	    shdat.client->user[my_user_no].is_afk = 1;
 
-	    printf_chat("@&S-&7%s&S- &Sis AFK auto", user_id);
+	    printf_chat("@&S-%s&S- &Sis AFK auto", player_list_name.c);
 	}
     }
 

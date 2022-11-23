@@ -123,9 +123,9 @@ cmd_main(char * UNUSED(cmd), char * arg)
     send_map_file();
 
     if (level_prop) {
-	printf_chat("@&S%s went to &7%s", user_id, main_level());
+	printf_chat("@%s&S went to %s", player_list_name.c, main_level());
     } else {
-	printf_chat("@&S%s was sucked into the void.", user_id);
+	printf_chat("@%s&S was sucked into the void.", player_list_name.c);
         printf_chat("&WMain level failed to load, you are nowhere.");
     }
 
@@ -149,7 +149,7 @@ cmd_void(char * UNUSED(cmd), char * UNUSED(arg))
     if (level_prop) player_posn = level_prop->spawn;
     send_map_file();
 
-    printf_chat("@&S%s was sucked into the void.", user_id);
+    printf_chat("@%s&S was sucked into the void.", player_list_name.c);
     printf_chat("&SYou jumped into the void");
 }
 
@@ -220,9 +220,9 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
     send_map_file();
 
     if (backup_id)
-	printf_chat("@&S%s went to museum %d of &7%s", user_id, backup_id, levelname);
+	printf_chat("@%s&S went to museum %d of &7%s", player_list_name.c, backup_id, levelname);
     else {
-	printf_chat("@&S%s went to &7%s", user_id, levelname);
+	printf_chat("@%s&S went to &7%s", player_list_name.c, levelname);
 	read_only_message();
     }
 

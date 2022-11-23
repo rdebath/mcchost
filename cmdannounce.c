@@ -16,6 +16,6 @@ void
 cmd_announce(char * UNUSED(cmd), char * arg)
 {
     // TODO Permissions ?
-    printf_chat("@~(102)&8from %s", user_id);
+    printf_chat("@~(102)&8from %s", player_list_name.c);
     printf_chat("@~(100)%s", arg);
 }
