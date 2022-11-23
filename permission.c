@@ -5,15 +5,8 @@
 inline static int
 perm_is_admin()
 {
-    return (client_trusted && !ini_settings->disallow_ip_admin) || my_user.user_perm>0;
-}
-
-inline static int
-admin_command(char * cmd)
-{
-    if (perm_is_admin()) return 1;
-    printf_chat("&WPermission denied, need to be admin to run /%s", cmd);
-    return 0;
+    return my_user.user_group == 0 ||
+	(client_trusted && !ini_settings->disallow_ip_admin);
 }
 #endif
 

@@ -11,7 +11,7 @@
 */
 
 #define USER_PERM_CNT 2
-static char * user_perms[USER_PERM_CNT] = { "user", "admin" };
+static char * user_perms[USER_PERM_CNT] = { "admin", "user" };
 
 void
 cmd_setrank(char * cmd, char *arg)
@@ -24,14 +24,14 @@ cmd_setrank(char * cmd, char *arg)
     cmd_payload_t msg = {0};
     msg.cmd_token = cmd_token_loaduser;
 
-    int perm = -1;
+    int group = INT_MIN;
     for(int i = 0; i<USER_PERM_CNT; i++) {
 	if (str2 && strcasecmp(user_perms[i], str2) == 0) {
-	    perm = i;
+	    group = i;
 	    break;
 	}
     }
-    if (perm < 0) {
+    if (group < 0) {
 	char pbuf[256];
 	sprintf(pbuf, "&WPermission '%s' is unknown, valid are: ", str2?str2:"");
 	for(int i = 0; i<USER_PERM_CNT; i++) {
@@ -45,7 +45,7 @@ cmd_setrank(char * cmd, char *arg)
     userrec_t user_rec;
     if (read_userrec(&user_rec, str1, 1) == 0) {
 	user_rec.ini_dirty = 1;
-	user_rec.user_perm = perm;
+	user_rec.user_group = group;
 	user_rec.ban_message[0] = 0;
 	write_userrec(&user_rec, 1);
 	printf_chat("&7%s &Sset rank of %s", user_id, str1);

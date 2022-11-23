@@ -162,7 +162,11 @@ cmd_setvar(char * cmd, char * arg)
 
     if (strcasecmp(section, "server") == 0 || strcasecmp(section, "system") == 0 ||
 	    strncmp(section, "textcolour", 10) == 0) {
-	if (!admin_command("setvar in server section")) return;
+
+	if (!perm_is_admin()) {
+	    printf_chat("&WPermission denied, need to be admin to update system variables");
+	    return;
+	}
 
 	// Alias
 	if (strcasecmp(section, "system") == 0) st->curr_section = "server";

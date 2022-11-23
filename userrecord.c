@@ -40,7 +40,7 @@ struct userrec_t
     char colour[NB_SLEN];
     char title_colour[NB_SLEN];
     char timezone[NB_SLEN];
-    int32_t user_perm;
+    int32_t user_group;
     char ban_message[NB_SLEN];
 
     // Not saved
@@ -59,7 +59,7 @@ static inline int ERR_MDB(int n, char * tn, char *fn, int ln)
     abort();
 }
 
-userrec_t my_user = {.user_no = 0};
+userrec_t my_user = {.user_no = 0, .user_group=1};
 static int userdb_open = 0;
 
 MDB_env *mcc_mdb_env = 0;

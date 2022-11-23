@@ -15,6 +15,8 @@ Other notes
 */
 
 /*HELP todo
+ +) Permissions: /cmdset
+
  +) Add walkthrough for default server setup.
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat ?
@@ -38,13 +40,14 @@ Other notes
  +) Add connect delay/fail for IPs recently seen.
 
  +) Improve the /setvar command, more help, option lists.
-    -- /setvar user ?
+    -- /setvar user username var value ?
 
- +) /restore and /undo
+ +) /restore
  +) /resizelvl, /copylvl
- +) /sendcmd command
- +) /summon command
- +) /clones command
+ +) /sendcmd
+ +) /summon
+ +) /clones
+ +) /undo, /redo
 
  +) /newlvl, more "nice" levels?
     -- Perlin based nature, with caves.
@@ -78,20 +81,17 @@ Other notes
 
  +) Delete player.
  +) Regenerate userDB from ini files. (Due to flaky format of lmdb files)
+    -- Preserve id number IFF it's not already used.
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
  +) Level limited chat -- primitive chatroom.
  +) Team chat, less primitive chatroom.
 
- +) /import -- download *.cw file from web.
-    -- Rename file to strict name form, don't overwrite.
-    -- Output of curl import command to user ?
-
  +) Block/User history records.
     -- Stored in a ${level} file normally.
     -- Only saved into a compressed file on level unload
-	-- NoUnload ? -- Or no users on level ?
+       -- NoUnload ? -- Or no users on level ?
 
  +) Permissions
     -- Need enum of permit flags.
@@ -110,9 +110,8 @@ Other notes
  +) INI file: Better way to preserve comments?
  +) lmdb appears with Debian jessie, do I want a fallback ?
 
-Features:
-    -- CW file also contains pending physics operations.
-    -- edlin ? to edit help files and blockdef ini files?
+ +) Crash catcher restarts server process without dropping connection.
+    -- Don't work with web client.
 
 All files in subdirectories.
     system.ini  --> move?
@@ -131,12 +130,16 @@ All files in subdirectories.
     level/${level}.${id}.* -- backup unpack
     blockdb/levelname.bdb
 
+Features:
+    -- CW file also contains pending physics operations.
+    -- edlin ? to edit help files and blockdef ini files?
+
 Physics:
 
 Physics queue is a level/${level}.physics file.
 
 Basic
-    Grass, Slabs
+    Grass ✓, Slabs ✓
     Falling sand/gravel
     Finite? Water/Lava
     Sponge (Lava Sponge?)
@@ -160,17 +163,13 @@ Physics with no users.
     Only run for a limited time even if level stays loaded?
     Multiple levels take turns?
 
-Implementation:
-
-Other components
+Other possible components
     -- physics process does non-trivial physics.
-    -- crash catcher restarts server process without dropping connection.
     -- physics save to *.cw -- locking modes ?
     -- Tickless physics ? Users make events.
 
 On Block queue, if user count < 2 && no-physics don't use queue ?
     --> *256 blocks packet need queue?
-
 */
 
 /*
@@ -195,6 +194,10 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
  +) Tinybox mode (proxy?)
     Create a map on a small VPS and send logs, backups etc to external storage.
     -- Use symlinks and sshfs.
+ +) /import -- download *.cw file from web.
+    -- Rename file to strict name form, don't overwrite.
+    -- Output of curl import command to user ?
+ +) First user is admin -- no, public server could be anyone.
 */
 
 /*HELP usecases

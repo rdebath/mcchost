@@ -394,8 +394,16 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     {
 	INI_INTMAXVAL("UserNo", user_ini_tgt->user_no);
 	INI_STRARRAYCP437("UserId", user_ini_tgt->user_id);
-	INI_INTVAL("UserPerm", user_ini_tgt->user_perm);
-	if (user_ini_tgt->user_perm < 0 || !st->write)
+	if (!st->write) {
+	    int user_perm = INT_MIN;
+	    INI_INTVAL("UserPerm", user_perm);
+	    if (user_perm != INT_MIN) {
+		user_ini_tgt->user_group = !user_perm;
+		user_ini_tgt->ini_dirty = 1;
+	    }
+	}
+	INI_INTVAL("UserGroup", user_ini_tgt->user_group);
+	if (user_ini_tgt->user_group < 0 || !st->write)
 	    INI_STRARRAYCP437("BanMessage", user_ini_tgt->ban_message);
 	INI_STRARRAYCP437("Nick", user_ini_tgt->nick);
 	INI_STRARRAYCP437("Colour", user_ini_tgt->colour);

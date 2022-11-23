@@ -46,7 +46,7 @@ ifeq ($(findstring s,$(MFLAGS)),)
 endif
 	@$(CC) -o ${PROG} $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) ${OBJ} ${OBJGEN} $(LDFLAGS)
 
-.PHONY: install clean makeheaders lib_text
+.PHONY: install clean makeheaders lib_text zip
 
 install: ${PROG}
 	${INSTALLER} ${PROG} "${INSTDIR}/${INAME}"
