@@ -543,12 +543,15 @@ start_level(char * levelname, char * levelfile, int backup_id)
 	shdat.client->levels[level_id] = t;
     }
 
+    if (my_user_no < 0 || my_user_no >= MAX_USER) {
+	unlock_fn(system_lock);
+	return;
+    }
+
     shdat.client->user[my_user_no].on_level = level_id;
     shdat.client->user[my_user_no].level_bkp_id = backup_id;
     shdat.client->user[my_user_no].posn = (xyzhv_t){0};
     shdat.client->generation++;
-
-    unlock_fn(system_lock);
 
     if (extn_extplayerlist) {
 	char groupname[256] = "";
@@ -567,8 +570,12 @@ start_level(char * levelname, char * levelfile, int backup_id)
 	} else
 	    strcpy(listname, user_id);
 	saprintf(player_list_name.c, "%s", listname);
+
+	unlock_fn(system_lock);
+
 	send_addplayername_pkt(255, user_id, listname, groupname, 0);
-    }
+    } else
+	unlock_fn(system_lock);
 }
 
 void

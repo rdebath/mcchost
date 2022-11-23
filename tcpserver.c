@@ -137,6 +137,9 @@ tcpserver()
     printf_chat("@Listener process started for port %d", tcp_port_no);
     stop_chat_queue();
 
+    if (server->no_unload_main)
+	auto_load_main();
+
     while(!term_sig)
     {
 	int max_sock = listen_socket;
@@ -750,4 +753,35 @@ check_new_exe()
 	restart_needed = 1;
 
     unlock_fn(system_lock);
+}
+
+void
+auto_load_main()
+{
+    int autoload_pid = E(fork(),"fork() for backup");
+    if (autoload_pid != 0) return;
+
+#if defined(HAS_CORELIMIT) && defined(WCOREDUMP)
+    if (access("/usr/bin/gdb", X_OK) == 0)
+	enable_coredump();
+#endif
+
+    if (listen_socket>=0) close(listen_socket);
+
+    msleep(2000);
+
+    open_client_list();
+
+    // Open level mmap files.
+    char fixname[MAXLEVELNAMELEN*4];
+    fix_fname(fixname, sizeof(fixname), main_level());
+    start_level(main_level(), fixname, 0);
+    open_level_files(main_level(), 0, fixname, 0);
+
+    if (level_prop)
+        level_prop->no_unload = server->no_unload_main;
+
+    stop_client_list();
+
+    exit(0);
 }
