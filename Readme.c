@@ -21,12 +21,6 @@ Other notes
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat ?
 
- +) Compact rc syntax for blockdefs.
-    -- Needs both define and alter modes for 64 char limit
-    -- /defblk [id] [cf] "Name" flag1=x,flagn=y
-    -- /defblk [id] - flag1=x,flagn=y,name=""
-    -- Short flag names
-
  +) Message blocks don't need physics.
 
  +) Don't save a clean loaded map on delete.

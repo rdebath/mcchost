@@ -306,7 +306,9 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_BOOLVAL("TransmitsLight", level_prop->blockdef[bn].transmits_light);
 	    INI_INTVAL("WalkSound", level_prop->blockdef[bn].walksound);
 	    INI_BOOLVAL("FullBright", level_prop->blockdef[bn].fullbright);
-	    INI_INTVAL("Shape", level_prop->blockdef[bn].shape);
+	    int shape = !level_prop->blockdef[bn].shape;
+	    INI_BOOLVAL("Shape", shape);
+	    level_prop->blockdef[bn].shape = shape?0:16;
 	    INI_INTVAL("Draw", level_prop->blockdef[bn].draw);
 	    INI_FIXEDP("Speed", level_prop->blockdef[bn].speed, 1024);
 	    INI_BLKVAL("Fallback", level_prop->blockdef[bn].fallback);
@@ -720,7 +722,7 @@ ini_write_bool(ini_state_t *st, char * section, char *fieldname, int value)
 	fprintf(st->fd, "%s = %s\n", fieldname, value?"true":"false");
 }
 
-LOCAL int
+int
 ini_read_bool(char * value)
 {
     int rv = 0;

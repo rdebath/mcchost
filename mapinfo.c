@@ -141,7 +141,7 @@ struct blockdef_t {
     uint8_t fullbright;
     uint8_t shape;
     uint8_t draw;
-    float speed;
+    int speed;
     uint16_t textures[BLK_NUM_TEX];
     // CW File: Top, Bottom, Left, Right, Front, Back
     // Packet:  Top, Left, Right, Front, Back, Bottom
