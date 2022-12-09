@@ -4,6 +4,9 @@
 #if INTERFACE
 
 #define SWNAME "MCCHost"
+#define TY_MAGIC     0x1A7FFF00
+#define TY_MAGIC2    0x557FFF00
+#define TY_SYSVER    0x00000100
 
 // These settings are shared between the servers, they cannot be
 // different for different ports. But they get set immediatly they
@@ -60,6 +63,7 @@ struct server_t {
 
     struct server_ini_t shared_ini_settings;
     int magic2;
+    int version;
 };
 
 // These settings are per port or per process settings, however,
@@ -331,9 +335,9 @@ process_args(int argc, char **argv)
 	    server = 0;
 	    open_system_conf();
 
-	    if (server->magic != MAP_MAGIC || server->magic2 != MAP_MAGIC2)
+	    if (server->magic != TY_MAGIC || server->magic2 != TY_MAGIC2 || server->version != TY_SYSVER)
 		*server = (server_t){
-		    .magic = MAP_MAGIC, .magic2 = MAP_MAGIC2,
+		    .magic = TY_MAGIC, .magic2 = TY_MAGIC2, .version = TY_SYSVER,
 		    .software = SWNAME,
 		    .name = SWNAME " Server",
 		    .main_level = "main",

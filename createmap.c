@@ -11,13 +11,13 @@ void
 createmap(char * levelname)
 {
     // Don't recreate a map that seems okay.
-    if (level_prop->version_no == MAP_VERSION)
+    if (level_prop->version_no == TY_MAPVER)
 	if (level_prop->cells_x != 0 && level_prop->cells_y != 0 && level_prop->cells_z != 0)
 	    return;
 
     // Save away the old size.
     xyzhv_t oldsize = {0};
-    if (level_prop->magic_no == MAP_MAGIC) {
+    if (level_prop->magic_no == TY_MAGIC) {
 	if (level_prop->cells_x != 0 && level_prop->cells_y != 0 && level_prop->cells_z != 0)
 	    if (level_prop->total_blocks == (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z)
 	    {
@@ -46,8 +46,8 @@ void
 init_map_null()
 {
     *level_prop = (map_info_t){
-	    .magic_no = MAP_MAGIC, .magic_no2 = MAP_MAGIC2,
-	    .version_no = MAP_VERSION,
+	    .magic_no = TY_MAGIC, .magic_no2 = TY_MAGIC2,
+	    .version_no = TY_MAPVER,
 	    .cells_x = 0, .cells_y = 0, .cells_z = 0,
 	    .total_blocks = 0,
 	    .weather = 0, -1, -1, -1, -1, -1, -1,
@@ -121,7 +121,7 @@ init_block_file(uint64_t fallback_seed)
 	    sizeof(map_len_t));
 
     int blocks_valid = 1;
-    if (test_map.magic_no != MAP_MAGIC) blocks_valid = 0;
+    if (test_map.magic_no != TY_MAGIC) blocks_valid = 0;
     if (test_map.cells_x != level_prop->cells_x) blocks_valid = 0;
     if (test_map.cells_y != level_prop->cells_y) blocks_valid = 0;
     if (test_map.cells_z != level_prop->cells_z) blocks_valid = 0;
@@ -129,7 +129,7 @@ init_block_file(uint64_t fallback_seed)
     if (blocks_valid)
 	level_prop->dirty_save = 1;
     else {
-	test_map.magic_no = MAP_MAGIC;
+	test_map.magic_no = TY_MAGIC;
 	test_map.cells_x = level_prop->cells_x;
 	test_map.cells_y = level_prop->cells_y;
 	test_map.cells_z = level_prop->cells_z;
@@ -176,7 +176,7 @@ read_blockfile_size(char * levelname, xyzhv_t * oldsize)
     } b;
     for(int i=0; i<sz-sizeof(map_len_t); i++) {
 	memcpy(b.buf, buf+i, sizeof(map_len_t));
-	if (b.size.magic_no == MAP_MAGIC) {
+	if (b.size.magic_no == TY_MAGIC) {
 	    unsigned x = b.size.cells_x;
 	    unsigned y = b.size.cells_y;
 	    unsigned z = b.size.cells_z;
@@ -335,6 +335,8 @@ init_level_blocks(uint64_t fallback_seed)
 			level_blocks[World_Pack(x,y,z)] = Block_Dirt;
 		}
     }
+
+    saprintf(level_prop->software, "%s %s", SWNAME, VERSION);
 
     if (!quiet) {
 	struct timeval now;

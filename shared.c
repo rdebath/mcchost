@@ -134,8 +134,8 @@ open_level_files(char * level_name, int backup_id, char * fixname, int to_unload
 
     level_prop = shdat.dat[SHMID_PROP].ptr;
 
-    if (level_prop->magic_no2 != MAP_MAGIC2 || level_prop->magic_no != MAP_MAGIC ||
-	    level_prop->version_no != MAP_VERSION ||
+    if (level_prop->magic_no2 != TY_MAGIC2 || level_prop->magic_no != TY_MAGIC ||
+	    level_prop->version_no != TY_MAPVER ||
 	    level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
 	try_cw_file = 1;
     else
@@ -174,8 +174,8 @@ open_level_files(char * level_name, int backup_id, char * fixname, int to_unload
     }
 
     // If level we still haven't got a level -- make a flat.
-    if (level_prop->magic_no2 != MAP_MAGIC2 || level_prop->magic_no != MAP_MAGIC ||
-	level_prop->version_no != MAP_VERSION ||
+    if (level_prop->magic_no2 != TY_MAGIC2 || level_prop->magic_no != TY_MAGIC ||
+	level_prop->version_no != TY_MAPVER ||
 	level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
     {
 	fprintf_logfile("Level \"%s\" does not have valid file, creating map", level_name);
@@ -437,8 +437,8 @@ open_client_list()
     shdat.client = shdat.dat[SHMID_CLIENTS].ptr;
     if (!shdat.client) return;
 
-    if (shdat.client->magic1 != MAGIC_USR || shdat.client->magic2 != MAGIC_USR) {
-	client_data_t d = { .magic1 = MAGIC_USR, .magic2 = MAGIC_USR };
+    if (shdat.client->magic1 != TY_MAGIC || shdat.client->magic2 != TY_MAGIC2 || shdat.client->version != TY_USRVER) {
+	client_data_t d = { .magic1 = TY_MAGIC, .magic2 = TY_MAGIC2, .version = TY_USRVER };
 	*shdat.client = d;
     }
 }

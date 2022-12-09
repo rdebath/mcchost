@@ -310,7 +310,7 @@ read_blockarray(gzFile ifd, uint32_t len)
 	return 0;
 
     map_len_t test_map;
-    test_map.magic_no = MAP_MAGIC;
+    test_map.magic_no = TY_MAGIC;
     test_map.cells_x = level_prop->cells_x;
     test_map.cells_y = level_prop->cells_y;
     test_map.cells_z = level_prop->cells_z;

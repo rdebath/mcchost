@@ -20,7 +20,7 @@
 
 #define MAX_USER	255
 #define MAX_LEVEL	255
-#define MAGIC_USR	0x0021FF7C
+#define TY_USRVER	0x00000100
 
 typedef struct client_entry_t client_entry_t;
 struct client_entry_t {
@@ -67,6 +67,7 @@ struct client_data_t {
     client_entry_t user[MAX_USER];
     client_level_t levels[MAX_LEVEL];
     int magic2;
+    int version;
 };
 #endif
 
@@ -93,7 +94,7 @@ check_user()
     if (my_user_no < 0 || my_user_no >= MAX_USER || !shdat.client) return;
 
     //TODO: Attempt a session upgrade -- call exec().
-    if (shdat.client->magic1 != MAGIC_USR || shdat.client->magic2 != MAGIC_USR)
+    if (shdat.client->magic1 != TY_MAGIC || shdat.client->magic2 != TY_MAGIC2 || shdat.client->version != TY_USRVER)
 	fatal("Session upgrade failure, please reconnect");
 
     if (!shdat.client->user[my_user_no].active) {
