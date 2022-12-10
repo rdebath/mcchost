@@ -41,6 +41,8 @@
 #define CHAT_LOCK_NAME "system/chat.lock"
 #define CMD_LOCK_NAME "system/cmd.lock"
 #define LEVEL_LOCK_NAME "level/%s.lock"
+
+#define CMDSET_CONF_NAME "cmdset.ini"
 #endif
 
 static char * dirlist[] = {

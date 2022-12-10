@@ -15,7 +15,6 @@ Other notes
 */
 
 /*HELP todo
- +) Permissions: /cmdset
 
  +) Add walkthrough for default server setup.
     -- Including setting user to Admin with remote GUI.
@@ -98,6 +97,14 @@ Other notes
     -- Permissions for levels with multiple owners.
     -- Permissions for user with any level access (but not server)
     -- Permissions for /goto
+    -- Permissions for level readonly for "user" but modifiable for "level"
+
+ +) Command expansion/aliases
+    Which way?
+      /cuboid-walls <-- /cuboid walls
+        -- perms can be done on each subcommand
+      /os map --> /map
+        -- os is a grouper like "cuboid" above with some short subcmds
 
  +) NAME: (*) MCCHost
 

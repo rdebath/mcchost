@@ -153,6 +153,9 @@ complete_connection()
     // Chat to users
     create_cmd_queue();
 
+    // Permissions.
+    load_ini_file(cmdset_ini_fields, CMDSET_CONF_NAME, 1, 0);
+
     // Open level mmap files.
     char fixname[MAXLEVELNAMELEN*4];
     fix_fname(fixname, sizeof(fixname), main_level());

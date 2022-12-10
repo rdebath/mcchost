@@ -3,6 +3,7 @@
 
 #if INTERFACE
 enum perm_token { perm_token_none, perm_token_admin, perm_token_level };
+#define CMD_PERM_CNT 3
 
 #define CMD_PERM_ADMIN  .perm_okay=perm_token_admin		/* System admin */
 #define CMD_PERM_LEVEL  .perm_okay=perm_token_level		/* Level owner */
@@ -18,14 +19,7 @@ struct command_t {
 };
 #endif
 
-// TODO:
-// Commands.
-// Command expansion/aliases
-//   Which way?
-//      /cuboid-walls <-- /cuboid walls
-//        -- perms can be done on each subcommand
-//      /os map --> /map
-//        -- os is a grouper like "cuboid" above with some short subcmds
+char * cmd_perms[CMD_PERM_CNT] = { "user", "admin", "level" };
 
 void
 run_command(char * msg)
@@ -74,6 +68,7 @@ run_command(char * msg)
 	    if (command_list[c].perm_okay == perm_token_admin) {
 		if (!perm_is_admin()) {
 		    printf_chat("&WPermission denied, only admin can run /%s", cmd);
+		    fprintf_logfile("%s denied cmd /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
 		    return;
 		}
 	    } else if (command_list[c].perm_okay == perm_token_level) {
@@ -115,7 +110,7 @@ Aliases: /rq
 Logout with RAGEQUIT!!
 */
 /*HELP hax H_CMD
-&T/hax [Reason]
+&T/hax
 Perform various server hacks, OPERATORS ONLY!
 Aliases: /hacks
 */

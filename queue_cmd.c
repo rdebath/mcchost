@@ -4,7 +4,8 @@
 #if INTERFACE
 #define CMD_QUEUE_LEN	256
 enum cmd_token_e {
-    cmd_token_loaduser = 1, cmd_token_kick, cmd_token_ban,
+    cmd_token_loaduser = 1, cmd_token_loadperm,
+    cmd_token_kick, cmd_token_ban,
     cmd_token_changemodel, cmd_token_changeskin,
     cmd_token_changenick, cmd_token_changetitle};
 
@@ -145,6 +146,9 @@ process_ipc_cmd(cmd_payload_t *msg)
     case cmd_token_loaduser:
 	read_ini_file_fields(&my_user);
 	update_player_look();
+	break;
+    case cmd_token_loadperm:
+	load_ini_file(cmdset_ini_fields, CMDSET_CONF_NAME, 1, 0);
 	break;
     case cmd_token_kick:
 	kicked(msg->arg.c);

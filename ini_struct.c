@@ -434,6 +434,29 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 }
 
 int
+cmdset_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
+{
+    char *section = "", *fld;
+    int found = 0;
+
+    section = "cmdset";
+    if (st->all || strcmp(section, st->curr_section) == 0)
+    {
+	for(int i = 0; command_list[i].name; i++) {
+	    int c = i;
+	    while(c>0 && command_list[c].dup && !command_list[c].nodup &&
+		command_list[c].function == command_list[c-1].function)
+		c--;
+	    if (c != i) continue;
+
+	    INI_INTVAL(command_list[c].name, command_list[c].perm_okay);
+	}
+    }
+
+    return found;
+}
+
+int
 save_ini_file(ini_func_t filetype, char * filename, char * oldfilename)
 {
     ini_state_t st = (ini_state_t){.all=1, .write=1};

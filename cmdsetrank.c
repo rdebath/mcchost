@@ -10,8 +10,10 @@
 &T/Setrank [player] [rank]
 */
 
+#if INTERFACE
 #define USER_PERM_CNT 2
-static char * user_perms[USER_PERM_CNT] = { "admin", "user" };
+#endif
+char * user_perms[USER_PERM_CNT] = { "admin", "user" };
 
 void
 cmd_setrank(char * cmd, char *arg)
