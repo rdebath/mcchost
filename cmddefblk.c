@@ -7,6 +7,66 @@
 &TCopyFrom&S is the block to use as the pattern.
 If &TCopyFrom&S is &T-&S the block is not copied or is copied from &TAir&S
 The &T"Name"&S must be enclosed in quotes or skipped.
+See: &T/help defblk flags&S for list of flags.
+*/
+
+/*HELP defblk_flags H_CMD
+&Tshape&S Set to true to make a "sprite"
+&Tcollide&S Set the collision type &T/help defblk collide
+&Tspeed&S Relative speed (0.05..3.95) that player moves over block.
+&Talltex&S, &Tsidetex&S, &Ttoptex&S, &Tbottomtex&S, &Tlefttex&S, &Trighttex&S, &Tfronttex&S, &Tbacktex&S Set the textures for a block.
+&Tblockslight&S True if casts shadow
+&Tsound&S Set the sounds played for this block &T/defblk defblk sound
+&Tfullbright&S Block emits light (brighter)
+Continued &T/help defblk flags2
+*/
+
+/*HELP defblk_flags2 H_CMD
+&Tdraw&S Set how the block is drawn for transparency. &T/help defblk draw
+&Tfogcolour&S Colour for fog or adjustment colour for blocks with a '#' in the name. The colour is in hex (#RRGGBB)
+&Tfogdensity&S Alpha component of fog colour
+&Tmin&S, &Tmax&S Minimum and maximum X,Y,Z ordinates for block edges, normally 0..16 but can be negative or larger.
+Continued &T/help defblk flags3
+*/
+
+/*HELP defblk_flags3 H_CMD
+&Tfallback&S Block number to be used if client can't display this one
+&Torder&S Position of block in inventory (0 = not present)
+&Tstackblock&S Double slab block like this slab (0 - none)
+&Tgrass&S Grass block for this block
+&Tdirt&S Dirt block for this block
+*/
+
+/*HELP defblk_collide H_CMD
+Use a number between '0' and '7' for collision type.
+0 - block is walk-through (e.g. air).
+1 - block is swim-through/climbable (e.g. rope). (No selection)
+2 - block is solid (e.g. dirt).
+3 - block is solid, but slippery like ice
+4 - block is solid, but even slipperier than ice
+5 - block is swim-through like water (No selection)
+6 - block is swim-through like lava (No selection, moved down)
+7 - block is climbable like rope
+
+If Block 7 is made nonsolid (0,1,5..7) you fall off the edge
+*/
+
+/*HELP defblk_sound,defblk_sounds H_CMD
+Sounds
+0 = None, 1 = Wood, 2 = Gravel, 3 = Grass, 4 = Stone
+5 = Metal, 6 = Glass, 7 = Cloth, 8 = Sand, 9 = Snow
+*/
+
+/*HELP defblk_draw H_CMD
+Draw methods
+0 = Opaque, Texture 100% Opaque or it X-ray's
+1 = Transparent (Like glass), Only edges of a cuboid drawn
+2 = Transparent (Like leaves), Internal faces drawn
+3 = Translucent (Like ice), PNG alpha channel used for level.
+4 = Gas (Like air), Texture ignored. (No selection)
+5 = Renders as X sprite
+6 = Sprite large size horizontal offset
+7 = Sprite large size horizontal and vertical offset
 */
 
 #if INTERFACE
