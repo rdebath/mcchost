@@ -102,8 +102,13 @@ replace_blocks(block_t rpl, block_t*bllist, int blcount, int x0, int y0, int z0,
 {
     int args[7] = {0, x0, y0, z0, x1, y1, z1};
 
-    if (clamp_cuboid(args) == 0 || blcount < 1)
+    int64_t blk_count;
+    if (blcount < 1 || clamp_cuboid(args, &blk_count) == 0)
 	return;
+    if (!perm_block_check(blk_count)) {
+        printf_chat("&WToo many blocks %jd>%jd", (intmax_t)blk_count, (intmax_t)command_limits.max_user_blocks);
+        return;
+    }
 
     if (rpl >= BLOCKMAX) rpl = BLOCKMAX-1;
 

@@ -52,7 +52,7 @@ measure_blocks(block_t*bllist, int blcount, int x0, int y0, int z0, int x1, int 
 {
     int args[7] = {0, x0, y0, z0, x1, y1, z1};
 
-    if (clamp_cuboid(args) == 0)
+    if (clamp_cuboid(args, 0) == 0)
 	return;
 
     int nocount = 5;

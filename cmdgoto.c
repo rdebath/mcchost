@@ -3,7 +3,7 @@
 
 #include "cmdgoto.h"
 
-/*HELP goto,g,gr H_CMD
+/*HELP goto,g,gr,gotorandom H_CMD
 &T/goto [levelname]
 Switch your current level, level name may be a partial match
 to the full name and &T/goto +&S takes you to a personal level.
@@ -20,8 +20,8 @@ Set the system main level to "level"
 
 #if INTERFACE
 #define CMD_GOTOMAIN \
-    {N"goto", &cmd_goto}, \
-    {N"g", &cmd_goto, .dup=1}, {N"gr", &cmd_goto, .dup=1, .nodup=1}, \
+    {N"goto", &cmd_goto}, {N"g", &cmd_goto, .dup=1}, \
+    {N"gotorandom", &cmd_goto, .dup=1, .nodup=1}, {N"gr", &cmd_goto, .dup=1}, \
     {N"main", &cmd_main}, {N"void", &cmd_void, .dup=1}
 #endif
 
@@ -29,8 +29,11 @@ void
 cmd_goto(char * cmd, char * arg)
 {
     char fixedname[MAXLEVELNAMELEN*4], buf2[256], levelname[MAXLEVELNAMELEN+1];
-    if (!arg && strcmp(cmd, "gr") != 0) { cmd_help(0,"goto"); return; }
+    if (!arg && strcmp(cmd, "gotorandom") != 0) { cmd_help(0,"goto"); return; }
     if (!arg) arg = "";
+
+    if (strcasecmp(arg, "-random") == 0)
+	return run_command("/gotorandom");
 
     while (*arg == ' ') arg++;
     int l = strlen(arg);
@@ -44,7 +47,7 @@ cmd_goto(char * cmd, char * arg)
 	    printf_chat("&SLevel \"%s\" does not exist", arg);
 	    return;
 	}
-    } else if (strcmp(cmd, "gr") == 0 || strcasecmp(arg, "-random") == 0) {
+    } else if (strcmp(cmd, "gotorandom") == 0) {
 	choose_random_level(fixedname, sizeof(fixedname));
     } else if (strcasecmp(arg, "+") == 0 || strcasecmp(arg, "-") == 0) {
 	char userlevel[256];

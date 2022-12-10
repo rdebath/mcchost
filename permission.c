@@ -46,3 +46,20 @@ perm_level_check(char * levelname, int expand_plus)
     }
     return 1;
 }
+
+int
+perm_block_check(uint64_t est_block_count)
+{
+    if (command_limits.max_user_blocks == 0) return 1;
+    if (est_block_count <= command_limits.max_user_blocks) return 1;
+    if (perm_is_admin()) return 1;
+
+    if (server->allow_user_levels) {
+	char userlevel[256] = "";
+	saprintf(userlevel, "%s+", user_id);
+	if (strcmp(current_level_name, userlevel) == 0)
+	    return 1;
+    }
+
+    return 0;
+}

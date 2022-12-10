@@ -453,7 +453,7 @@ request_pending_marks(char * why, cmd_func_t cmd_fn, char * cmd, char * arg)
 }
 
 int
-clamp_cuboid(int * args)
+clamp_cuboid(int * args, uint64_t * block_count)
 {
     int i;
     int max[3] = { level_prop->cells_x-1, level_prop->cells_y-1, level_prop->cells_z-1};
@@ -479,6 +479,12 @@ clamp_cuboid(int * args)
     for(i=0; i<3; i++) {
 	if (args[i+4] < args[i+1])
 	    {int t=args[i+1]; args[i+1]=args[i+4]; args[i+4]=t; }
+    }
+    if (block_count) {
+	uint64_t c = 1;
+	for(i=0; i<3; i++)
+	    c *= (args[i+4]-args[i+1]+1);
+	*block_count = c;
     }
     return 1;
 }
@@ -557,7 +563,12 @@ plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
 {
     int args[7] = {0, x0, y0, z0, x1, y1, z1};
 
-    if (clamp_cuboid(args) == 0) return;
+    int64_t blk_count;
+    if (clamp_cuboid(args, &blk_count) == 0) return;
+    if (!perm_block_check(blk_count)) {
+	printf_chat("&WToo many blocks %jd>%jd", (intmax_t)blk_count, (intmax_t)command_limits.max_user_blocks);
+	return;
+    }
 
     // Cuboid does not "adjust" blocks so call
     // send_update(), not update_block().

@@ -439,6 +439,9 @@ cmdset_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     char *section = "", *fld;
     int found = 0;
 
+    section = "cmdlimits";
+    INI_INTMAXVAL("MaxUserBlock", command_limits.max_user_blocks);
+
     section = "cmdset";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {

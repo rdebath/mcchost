@@ -17,7 +17,14 @@ struct command_t {
     int dup;		// Don't show on /cmds (usually a duplicate)
     int nodup;		// No a dup, don't use previous.
 };
+
+typedef struct command_limit_t command_limit_t;
+struct command_limit_t {
+    int max_user_blocks;
+};
 #endif
+
+command_limit_t command_limits;
 
 char * cmd_perms[CMD_PERM_CNT] = { "user", "admin", "level" };
 
@@ -26,8 +33,18 @@ run_command(char * msg)
 {
     if (msg[1] == 0) return; //TODO: Repeat command.
 
-    char * cmd = strtok(msg+1, " ");
-    if (cmd == 0) return;
+    char cmd[NB_SLEN];
+    int l = strcspn(msg+1, " ");
+    if (l>=MB_STRLEN) {
+	printf_chat("&SUnknown command; see &T/cmds");
+	return;
+    }
+    memcpy(cmd, msg+1, l);
+    cmd[l] = 0;
+
+    char * arg = msg+2+l;
+    while (*arg == ' ') arg++;
+    if (*arg == 0) arg = 0;
 
     if (strcasecmp(cmd, "womid") == 0) { player_last_move = time(0); return; }
     if (!user_authenticated) {
@@ -61,14 +78,13 @@ run_command(char * msg)
 	    command_list[c].function == command_list[c-1].function)
 	    c--;
 
-	cmd = command_list[c].name;
-	char * arg = strtok(0, "");
+	char * ncmd = command_list[c].name;
 
 	if (command_list[c].perm_okay != perm_token_none) {
 	    if (command_list[c].perm_okay == perm_token_admin) {
 		if (!perm_is_admin()) {
-		    printf_chat("&WPermission denied, only admin can run /%s", cmd);
-		    fprintf_logfile("%s denied cmd /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
+		    printf_chat("&WPermission denied, only admin can run /%s", ncmd);
+		    fprintf_logfile("%s denied cmd /%s%s%s", user_id, ncmd, arg?" ":"",arg?arg:"");
 		    return;
 		}
 	    } else if (command_list[c].perm_okay == perm_token_level) {
@@ -78,21 +94,21 @@ run_command(char * msg)
 	}
 
 	if (server->flag_log_commands) {
-	    int redact_args = (!strcasecmp(cmd, "pass") ||
-			       !strcasecmp(cmd, "setpass"));
+	    int redact_args = (!strcasecmp(ncmd, "pass") ||
+			       !strcasecmp(ncmd, "setpass"));
 	    if (!server->flag_log_place_commands &&
-		    strcasecmp(cmd, "place") == 0)
+		    strcasecmp(ncmd, "place") == 0)
 		;
 	    else if (redact_args)
-		fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?"<redacted>":"");
+		fprintf_logfile("%s used /%s%s%s", user_id, ncmd, arg?" ":"",arg?"<redacted>":"");
 	    else
-		fprintf_logfile("%s used /%s%s%s", user_id, cmd, arg?" ":"",arg?arg:"");
+		fprintf_logfile("%s used /%s%s%s", user_id, ncmd, arg?" ":"",arg?arg:"");
 	}
 
-	if (strcasecmp(cmd, "afk") != 0)
+	if (strcasecmp(ncmd, "afk") != 0)
 	    update_player_move_time();
 
-	command_list[c].function(cmd, arg);
+	command_list[c].function(ncmd, arg);
 	return;
     }
 
