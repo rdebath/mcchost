@@ -24,7 +24,7 @@ struct command_limit_t {
 };
 #endif
 
-command_limit_t command_limits;
+command_limit_t command_limits = {400};
 
 char * cmd_perms[CMD_PERM_CNT] = { "user", "admin", "level" };
 

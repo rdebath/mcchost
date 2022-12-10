@@ -44,7 +44,7 @@ Alias: &T/z
 		   {N"markall", &cmd_mark, .dup=1, .nodup=1}, \
 		   {N"ma", &cmd_mark, .dup=1}, \
                    {N"about", &cmd_about}, {N"b", &cmd_about, .dup=1}, \
-                   {N"cuboid", &cmd_cuboid, CMD_PERM_LEVEL}, \
+                   {N"cuboid", &cmd_cuboid}, \
 		   {N"z", &cmd_cuboid, .dup=1}
 #endif
 

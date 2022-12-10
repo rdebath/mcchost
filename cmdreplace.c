@@ -19,7 +19,7 @@ Aliases: /ra
 
 #if INTERFACE
 #define CMD_REPLACE \
-    {N"replace", &cmd_replace, CMD_PERM_LEVEL}, {N"r", &cmd_replace, .dup=1}, \
+    {N"replace", &cmd_replace}, {N"r", &cmd_replace, .dup=1}, \
     {N"replaceall", &cmd_replaceall, CMD_PERM_LEVEL}, {N"ra", &cmd_replaceall, .dup=1}
 #endif
 

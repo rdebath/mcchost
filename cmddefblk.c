@@ -70,7 +70,7 @@ Draw methods
 */
 
 #if INTERFACE
-#define CMD_DEFBLK  {N"defblk", &cmd_defblk}
+#define CMD_DEFBLK  {N"defblk", &cmd_defblk, CMD_PERM_LEVEL}
 #endif
 
 void
