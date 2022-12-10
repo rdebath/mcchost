@@ -11,7 +11,7 @@ struct help_text_t {
 
 /*HELP welcome 0 */
 
-/*HELP license H_CMD
+/*HELP license
 This software is licensed under the AFGPL and other licenses.
 Details and original source available at
     &Thttps://github.com/rdebath/mcchost

@@ -10,7 +10,7 @@ The &T"Name"&S must be enclosed in quotes or skipped.
 See: &T/help defblk flags&S for list of flags.
 */
 
-/*HELP defblk_flags H_CMD
+/*HELP defblk_flags
 &Tshape&S Set to true to make a "sprite"
 &Tcollide&S Set the collision type &T/help defblk collide
 &Tspeed&S Relative speed (0.05..3.95) that player moves over block.
@@ -21,7 +21,7 @@ See: &T/help defblk flags&S for list of flags.
 Continued &T/help defblk flags2
 */
 
-/*HELP defblk_flags2 H_CMD
+/*HELP defblk_flags2
 &Tdraw&S Set how the block is drawn for transparency. &T/help defblk draw
 &Tfogcolour&S Colour for fog or adjustment colour for blocks with a '#' in the name. The colour is in hex (#RRGGBB)
 &Tfogdensity&S Alpha component of fog colour
@@ -29,7 +29,7 @@ Continued &T/help defblk flags2
 Continued &T/help defblk flags3
 */
 
-/*HELP defblk_flags3 H_CMD
+/*HELP defblk_flags3
 &Tfallback&S Block number to be used if client can't display this one
 &Torder&S Position of block in inventory (0 = not present)
 &Tstackblock&S Double slab block like this slab (0 - none)
@@ -37,7 +37,7 @@ Continued &T/help defblk flags3
 &Tdirt&S Dirt block for this block
 */
 
-/*HELP defblk_collide H_CMD
+/*HELP defblk_collide
 Use a number between '0' and '7' for collision type.
 0 - block is walk-through (e.g. air).
 1 - block is swim-through/climbable (e.g. rope). (No selection)
@@ -51,13 +51,13 @@ Use a number between '0' and '7' for collision type.
 If Block 7 is made nonsolid (0,1,5..7) you fall off the edge
 */
 
-/*HELP defblk_sound,defblk_sounds H_CMD
+/*HELP defblk_sound,defblk_sounds
 Sounds
 0 = None, 1 = Wood, 2 = Gravel, 3 = Grass, 4 = Stone
 5 = Metal, 6 = Glass, 7 = Cloth, 8 = Sand, 9 = Snow
 */
 
-/*HELP defblk_draw H_CMD
+/*HELP defblk_draw
 Draw methods
 0 = Opaque, Texture 100% Opaque or it X-ray's
 1 = Transparent (Like glass), Only edges of a cuboid drawn
