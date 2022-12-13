@@ -82,7 +82,7 @@ send_setblock_pkt(int x, int y, int z, int block)
 void
 send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 {
-    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -100,7 +100,7 @@ send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 void
 send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 {
-    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -168,7 +168,7 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 void
 send_despawn_pkt(int player_id)
 {
-    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -494,7 +494,7 @@ send_addentity_pkt(int player_id, char * ingamename, char * skinname, xyzhv_t po
     if (!extn_extplayerlist)
 	return send_spawn_pkt(player_id, ingamename, posn);
 
-    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -519,7 +519,7 @@ void
 send_changemodel_pkt(int player_id, char * modelname)
 {
     if (!extn_changemodel) return;
-    if ((player_id < 0 || player_id > 127) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;

@@ -85,6 +85,8 @@ char *classicube_lasttwo[] = { "ExtendedTextures", "ExtendedBlocks", 0};
 int classicube_match_len = 0;
 int classicube_lastmatch = 0;
 
+int max_proto_player_id = 127;
+
 int extn_blockdefn = 0;
 int extn_clickdistance = 0;
 int extn_customblocks = 0;
@@ -231,6 +233,12 @@ process_extentry(pkt_extentry * pkt)
 		client_block_limit = CPELIMIT;
 
 	    level_block_limit = client_block_limit;
+	}
+
+	// Classicube treats the Player ID as an unsigned char.
+	// Let's assume others do this too if the extensions are active.
+	if (extn_extplayerlist && extn_extentityposn) {
+	    max_proto_player_id = 254;
 	}
     }
 
