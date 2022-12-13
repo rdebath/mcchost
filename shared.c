@@ -306,8 +306,8 @@ unlink_level(char * levelname, int silent)
 
 LOCAL void check_level_name(char * levelname)
 {
-    if (strchr(levelname, '/') != 0 || levelname[0] == '.'
-	|| strlen(levelname) > MAXLEVELNAMELEN*4) {
+    if (strchr(levelname, '/') != 0 || levelname[0] == '.' || levelname[0] == 0
+	|| strlen(levelname) >= MAXLEVELNAMELEN*4) {
 	char buf[256];
 	saprintf(buf, "Illegal level file name \"%.66s\"", levelname);
 	fatal(buf);
