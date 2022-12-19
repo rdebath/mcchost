@@ -87,7 +87,7 @@ makeheaders: lib/makeheaders
 	lib/makeheaders lib_md5.c:include/lib_md5.h
 	lib/makeheaders -H >include/md5.h lib_md5.c
 ifeq ($(findstring s,$(MFLAGS)),)
-	@echo "lib/makeheaders \$${FILES} include/md5.h"
+	@echo "lib/makeheaders \$${FILES} include/md5.h include/version.h"
 endif
 	@lib/makeheaders ${MKHDRARG} include/md5.h include/version.h
 

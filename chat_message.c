@@ -40,7 +40,7 @@ process_chat_message(int message_type, char * msg)
     // Note that Classicube will have converted '&' to '%'.
     int to_user = -1;
 
-    if (!user_authenticated && msg[0] != '/') {
+    if (!user_authenticated && (msg[0] != '/' || msg[1] == '/')) {
 	printf_chat("You must verify using &T/pass [pass]&S first");
 	log_chat_message(msg, strlen(msg), 0, 0, -1);
 	return;

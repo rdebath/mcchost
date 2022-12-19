@@ -165,32 +165,36 @@ tcpserver()
 	    if (FD_ISSET(listen_socket, &read_fds))
 	    {
 		int socket = accept_new_connection();
+		if (!allow_connection()) {
+		    printlog("Too many connections from %s", client_ipv4_str);
+		} else {
 
-		int pid = 0;
-		if (!server_runonce) {
-		    close_userdb();
-		    pid = E(fork(), "Forking failure");
-		}
-		if (pid == 0)
-		{
-		    if (!detach_tcp_server)
-			setsid();
-#if defined(HAS_CORELIMIT) && defined(WCOREDUMP)
-		    if (access("/usr/bin/gdb", X_OK) == 0)
-			enable_coredump();
-#endif
-		    (void)signal(SIGHUP, SIG_DFL);
-		    (void)signal(SIGCHLD, SIG_DFL);
-		    (void)signal(SIGALRM, SIG_DFL);
-		    (void)signal(SIGTERM, SIG_DFL);
-		    signal_available = 0;
-		    E(close(listen_socket), "close(listen)");
-		    line_ofd = 1; line_ifd = 0;
-		    E(dup2(socket, line_ifd), "dup2(S,0)");
-		    E(dup2(socket, line_ofd), "dup2(S,1)");
-		    // It's connected to stdin/out so don't need the socket fd
-		    E(close(socket), "close(socket)");
-		    return; // Only the child returns.
+		    int pid = 0;
+		    if (!server_runonce) {
+			close_userdb();
+			pid = E(fork(), "Forking failure");
+		    }
+		    if (pid == 0)
+		    {
+			if (!detach_tcp_server)
+			    setsid();
+    #if defined(HAS_CORELIMIT) && defined(WCOREDUMP)
+			if (access("/usr/bin/gdb", X_OK) == 0)
+			    enable_coredump();
+    #endif
+			(void)signal(SIGHUP, SIG_DFL);
+			(void)signal(SIGCHLD, SIG_DFL);
+			(void)signal(SIGALRM, SIG_DFL);
+			(void)signal(SIGTERM, SIG_DFL);
+			signal_available = 0;
+			E(close(listen_socket), "close(listen)");
+			line_ofd = 1; line_ifd = 0;
+			E(dup2(socket, line_ifd), "dup2(S,0)");
+			E(dup2(socket, line_ofd), "dup2(S,1)");
+			// It's connected to stdin/out so don't need the socket fd
+			E(close(socket), "close(socket)");
+			return; // Only the child returns.
+		    }
 		}
 		close(socket);
 	    }

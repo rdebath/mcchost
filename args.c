@@ -61,6 +61,8 @@ struct server_t {
     int chat_spam_interval;
     int chat_spam_ban;
 
+    int ip_connect_delay;
+
     struct server_ini_t shared_ini_settings;
     int magic2;
     int version;
@@ -360,6 +362,7 @@ process_args(int argc, char **argv)
 		    .chat_spam_count = 8,
 		    .chat_spam_interval = 5,
 		    .chat_spam_ban = 10,
+		    .ip_connect_delay = 5,
 		};
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);
