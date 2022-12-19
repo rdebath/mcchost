@@ -34,7 +34,7 @@ cmd_spawn(char * UNUSED(cmd), char *UNUSED(arg))
 	return;
     }
 
-    send_posn_pkt(255, &player_posn, level_prop->spawn);
+    send_posn_pkt(-1, &player_posn, level_prop->spawn);
     player_posn = level_prop->spawn;
 }
 
@@ -61,7 +61,7 @@ cmd_tp(char * cmd, char *arg)
 
 	if (!c.active) return;
 	if (c.on_level == my_level) {
-	    send_posn_pkt(255, &player_posn, c.posn);
+	    send_posn_pkt(-1, &player_posn, c.posn);
 	    player_posn = c.posn;
 	    return;
 	}
@@ -95,7 +95,7 @@ cmd_tp(char * cmd, char *arg)
 
 	xyzhv_t newposn = {x,y,z,h,v,1};
 
-	send_posn_pkt(255, &player_posn, newposn);
+	send_posn_pkt(-1, &player_posn, newposn);
 	player_posn = newposn;
 
     } else

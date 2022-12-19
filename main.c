@@ -235,6 +235,12 @@ logout(char * emsg)
 }
 
 void
+quiet_logout(char * emsg)
+{
+    disconnect(0, emsg);
+}
+
+void
 kicked(char * emsg)
 {
     printf_chat("@&W- %s &Skicked %s", player_list_name.c, emsg);

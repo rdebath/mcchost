@@ -8,8 +8,9 @@
 /* Note: I've made the choice to have one table for all users, not one
  * per level. That sets the maximum allowed number of users to 127/255.
  *
- * The first 127 will be visible on a level.
+ * The first 128 will be visible on a level.
  * The first 255 will be shown in the player list
+ * If the client looks like ClassiCube visible players are first 255
  *
  * For a reasonable display if this increased, the list sent to the client
  * will have to be renumbered.
@@ -18,7 +19,7 @@
 #if INTERFACE
 #include <sys/types.h>
 
-#define MAX_USER	255
+#define MAX_USER	1024
 #define MAX_LEVEL	255
 #define TY_USRVER	0x00000100
 
@@ -157,8 +158,7 @@ check_user()
 		char listname[256] = "";
 		saprintf(listname, "%s%s", c.listname.c, c.is_afk?" &7(AFK)":"");
 
-		if (i>=0 && i<255)
-		    send_addplayername_pkt(i, c.name.c, listname, groupname, 0);
+		send_addplayername_pkt(i, c.name.c, listname, groupname, 0);
 
 		is_dirty = 1;
 	    }
@@ -256,10 +256,10 @@ reset_player_list()
     }
 
     reset_player_skinname();
-    send_changemodel_pkt(255, my_user.model);
+    send_changemodel_pkt(-1, my_user.model);
 
     if (player_posn.valid)
-	send_posn_pkt(255, 0, player_posn);
+	send_posn_pkt(-1, 0, player_posn);
     else {
 	player_posn = level_prop->spawn;
 	player_posn.v = 128; // Bots start with flip-head.
@@ -285,9 +285,9 @@ reset_player_skinname()
     revert_amp_to_perc(namebuf);
 
     if (level_prop)
-	send_addentity_pkt(255, namebuf, skin, level_prop->spawn);
+	send_addentity_pkt(-1, namebuf, skin, level_prop->spawn);
     else
-	send_addentity_pkt(255, namebuf, skin, player_posn);
+	send_addentity_pkt(-1, namebuf, skin, player_posn);
 }
 
 void
@@ -299,7 +299,7 @@ update_player_pos(pkt_player_posn pkt)
 #if 0
     if (!user_authenticated) {
 	pos.y = -1023*32;
-	send_posn_pkt(255, 0, pos);
+	send_posn_pkt(-1, 0, pos);
 	return;
     }
 #endif
@@ -388,7 +388,7 @@ update_player_look()
     if (strcmp(player_list_name.c, namebuf.c) != 0) {
 	player_list_name = namebuf;
 	if (extn_extplayerlist)
-	    send_addplayername_pkt(255, user_id, player_list_name.c, player_group_name.c, 0);
+	    send_addplayername_pkt(-1, user_id, player_list_name.c, player_group_name.c, 0);
     }
 
     if (strcmp(namebuf.c, t->listname.c) != 0) {
@@ -442,7 +442,7 @@ start_user()
 		continue;
 	    }
 	    if (!user_authenticated)
-		fatal("Already logged in!");
+		quiet_logout("Already logged in!");
 	    shdat.client->user[i].active = 0;
 	    kicked++;
 	}
@@ -450,14 +450,15 @@ start_user()
 
     if (server->max_players < 1) server->max_players = 1;
     if (server->max_players > MAX_USER) server->max_players = MAX_USER;
-    if (server->max_players <= connected_sessions) new_one = -1;
+    if (server->max_players <= connected_sessions && !perm_is_admin())
+	new_one = -1;
 
     if (new_one < 0 || new_one >= MAX_USER) {
 	unlock_fn(system_lock);
 	if (kicked)
-	    fatal("Too many sessions, please try again");
+	    quiet_logout("Too many sessions, please try again");
 	else
-	    fatal("Too many sessions already connected");
+	    quiet_logout("Too many sessions already connected");
     }
 
     my_user_no = new_one;
@@ -574,7 +575,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
 
 	unlock_fn(system_lock);
 
-	send_addplayername_pkt(255, user_id, listname, groupname, 0);
+	send_addplayername_pkt(-1, user_id, listname, groupname, 0);
     } else
 	unlock_fn(system_lock);
 }

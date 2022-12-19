@@ -74,5 +74,5 @@ do_cmd_title(char * newtitle)
     update_player_look();
     reset_player_skinname();
     // Fix current posn as previous resets Spawn and current pos
-    send_posn_pkt(255, 0, player_posn);
+    send_posn_pkt(-1, 0, player_posn);
 }

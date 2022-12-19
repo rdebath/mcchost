@@ -66,5 +66,5 @@ do_cmd_model(char * newmodel)
     write_current_user(3);
 
     update_player_look();
-    send_changemodel_pkt(255, my_user.model);
+    send_changemodel_pkt(-1, my_user.model);
 }

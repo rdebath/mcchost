@@ -82,7 +82,7 @@ send_setblock_pkt(int x, int y, int z, int block)
 void
 send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 {
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -100,7 +100,7 @@ send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 void
 send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 {
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -130,7 +130,7 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 	*p++ = PKID_POSN;
 	*p++ = player_id;
 	nb_entcoord(&p, posn.x);
-	if (player_id == 255)
+	if (player_id == -1)
 	    nb_entcoord(&p, posn.y+29);
 	else
 	    nb_entcoord(&p, posn.y+51);
@@ -168,7 +168,7 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 void
 send_despawn_pkt(int player_id)
 {
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -187,7 +187,10 @@ send_message_pkt(int player_id, int type, char * message)
 	if (type != 0 && type != 100) return;
 	/* 0..127 prefix line with &f */
 	/* 128..255 prefix line with &e */
-	*p++ = player_id;
+	if (player_id >= -1 && player_id < 128)
+	    *p++ = player_id;
+	else
+	    *p++ = 127;
     } else
 	*p++ = type;
     p += nb_string_write(p, message);
@@ -465,10 +468,17 @@ send_blockperm_pkt(block_t block, int placeok, int delok)
 void
 send_addplayername_pkt(int player_id, char * playername, char * listname, char * groupname, int sortid)
 {
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
+
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_PLAYERNAME;
-    nb_short(&p, player_id);
+    if (player_id == -1 )
+	nb_short(&p, 255);
+    else if (player_id < 255)
+	nb_short(&p, player_id);
+    else
+	nb_short(&p, player_id+1);
     p += nb_string_write(p, playername);	// Plain alpha only name for auto-complete
     p += nb_string_write(p, listname);		// Nickname including colours and title (append AFK)
     p += nb_string_write(p, groupname);		// Location or other group.
@@ -479,12 +489,17 @@ send_addplayername_pkt(int player_id, char * playername, char * listname, char *
 void
 send_removeplayername_pkt(int player_id)
 {
-    if (player_id < 0 || player_id > 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_RMPLAYER;
-    nb_short(&p, player_id);
+    if (player_id == -1 )
+	nb_short(&p, 255);
+    else if (player_id < 255)
+	nb_short(&p, player_id);
+    else
+	nb_short(&p, player_id+1);
     write_to_remote(packetbuf, p-packetbuf);
 }
 
@@ -494,7 +509,7 @@ send_addentity_pkt(int player_id, char * ingamename, char * skinname, xyzhv_t po
     if (!extn_extplayerlist)
 	return send_spawn_pkt(player_id, ingamename, posn);
 
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -519,7 +534,7 @@ void
 send_changemodel_pkt(int player_id, char * modelname)
 {
     if (!extn_changemodel) return;
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != 255) return;
+    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;

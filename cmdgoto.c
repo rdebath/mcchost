@@ -230,7 +230,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
     }
 
     if (npos) {
-	send_posn_pkt(255, &player_posn, *npos);
+	send_posn_pkt(-1, &player_posn, *npos);
 	player_posn = *npos;
     }
 

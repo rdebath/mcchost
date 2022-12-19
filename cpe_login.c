@@ -246,7 +246,7 @@ process_extentry(pkt_extentry * pkt)
     // functions define the size based on contents.
 
     // The important ones are the ones we _receive_ from the client,
-    // for which we must know the size of before be actually decode them.
+    // for which we must know the size of before we actually decode them.
 
     // Also for some combinations the PKID_POSN packet has different
     // sizes depending on the direction. This is because the "PlayerID"

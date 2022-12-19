@@ -56,6 +56,8 @@ cmd_who(char * UNUSED(cmd), char * UNUSED(arg))
 
     if (users == 0)
 	printf_chat("There are currently no other users");
+    else
+	printf_chat("There are a total of %d users", users+1);
 }
 
 void

@@ -52,7 +52,7 @@ cmd_pass(char * cmd, char * arg)
 	printf_chat("You are now logged on");
 
     if (!user_authenticated) {
-	send_posn_pkt(255, &player_posn, level_prop->spawn);
+	send_posn_pkt(-1, &player_posn, level_prop->spawn);
 	player_posn = level_prop->spawn;
     }
 
