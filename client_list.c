@@ -19,9 +19,13 @@
 #if INTERFACE
 #include <sys/types.h>
 
-#define MAX_USER	1024
+#define MAX_USER	256
 #define MAX_LEVEL	255
-#define TY_USRVER	0x00000100
+
+#define TY_MAGIC     0x1A7FFF00
+#define TY_MAGIC2    0x557FFF00
+#define TY_MAGIC3    (0x1A7FFF00 ^ (MAX_USER*33+MAX_LEVEL))
+#define TY_VERSION   0x00000100
 
 typedef struct client_entry_t client_entry_t;
 struct client_entry_t {
@@ -62,7 +66,7 @@ struct client_level_t {
 
 typedef struct client_data_t client_data_t;
 struct client_data_t {
-    int magic1;
+    int magic3;
     uint32_t generation;
     uint32_t cleanup_generation;
     client_entry_t user[MAX_USER];
@@ -95,7 +99,7 @@ check_user()
     if (my_user_no < 0 || my_user_no >= MAX_USER || !shdat.client) return;
 
     //TODO: Attempt a session upgrade -- call exec().
-    if (shdat.client->magic1 != TY_MAGIC || shdat.client->magic2 != TY_MAGIC2 || shdat.client->version != TY_USRVER)
+    if (shdat.client->magic3 != TY_MAGIC3 || shdat.client->magic2 != TY_MAGIC2 || shdat.client->version != TY_VERSION)
 	fatal("Session upgrade failure, please reconnect");
 
     if (!shdat.client->user[my_user_no].active) {

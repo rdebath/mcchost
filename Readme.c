@@ -29,9 +29,6 @@ Other notes
     -- Allow main= to be an absolute path? (Unconverted '/' characters)
     --    level dir contains name "main.lvl.blocks" with real dot?
 
- +) Add max sessions from IP
- +) Add connect delay/fail for IPs recently seen.
-
  +) Improve the /setvar command, more help, option lists.
     -- /setvar user username var value ?
 

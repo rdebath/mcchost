@@ -3,7 +3,6 @@
 
 #define BLOCKMAX 1024
 #define BLOCKNIL ((block_t)-1)
-#define TY_MAPVER	0x00000100
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
 
 typedef uint16_t block_t;
