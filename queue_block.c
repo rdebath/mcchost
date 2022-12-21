@@ -46,6 +46,7 @@ update_block(pkt_setblock pkt)
 
     // Physics Like updates ... these are trivial instant updates that allow
     // the classic 0.30 client to enter blocks not in it's menu.
+    block_t new_below = (block_t)-1;
 
     // Stack blocks.
     if (pkt.coord.y > 0 && level_prop->blockdef[b].stack_block != 0 && old_block == Block_Air)
@@ -53,11 +54,9 @@ update_block(pkt_setblock pkt)
         block_t newblock = level_prop->blockdef[b].stack_block;
         uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
 	if (b == level_blocks[ind2]) {
-	    level_blocks[ind2] = newblock;
-	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, newblock);
+	    new_below = newblock;
 	    b = 0;
-	    if (level_blocks[index] == b && pkt.mode != 3)
-		send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
+	    pkt.mode = 2;
 	}
     }
 
@@ -89,22 +88,30 @@ update_block(pkt_setblock pkt)
 
 	if (transmits_light && level_prop->blockdef[blk].grass_block != 0) {
 	    int t = grow_dirt_block(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
-	    if (t != level_blocks[ind2]) {
-		level_blocks[ind2] = t;
-		send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
-	    }
+	    if (t != level_blocks[ind2])
+		new_below = t;
 	}
-	if (!transmits_light && level_prop->blockdef[blk].dirt_block != 0) {
-	    level_blocks[ind2] = level_prop->blockdef[blk].dirt_block;
-	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
-	}
+	if (!transmits_light && level_prop->blockdef[blk].dirt_block != 0)
+	    new_below = level_prop->blockdef[blk].dirt_block;
     }
 
-    if (b != level_blocks[index]) {
-	level_blocks[index] = b;
-	send_update(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
-    } else if (pkt.mode == 2) {
-	send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
+    // Make sure the updates are in the right order and try to minimise the
+    // number of updates sent.
+    if (b != (block_t)-1) {
+	if (b != level_blocks[index]) {
+	    level_blocks[index] = b;
+	    send_update(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
+	} else if (pkt.mode == 2) {
+	    send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
+	}
+    }
+    if (new_below != (block_t)-1 && pkt.coord.y > 0) {
+	uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
+
+	if (new_below != level_blocks[ind2]) {
+	    level_blocks[ind2] = new_below;
+	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, new_below);
+	}
     }
 }
 
