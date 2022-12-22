@@ -1,6 +1,10 @@
 #define _XOPEN_SOURCE
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
+#if _POSIX_VERSION >= 200112L
+#include <sys/select.h>
+#endif
 
 #include "download.h"
 
@@ -122,28 +126,48 @@ http_download(uint8_t * buf, int buflen)
 	// log_message("Text sent was", obuf, strlen(obuf));
 	write_to_remote(obuf, strlen(obuf));
 
+	int tot = 0;
 	if (!head_only) {
 	    int cc;
 	    while ((cc= read(fd, obuf, sizeof(obuf))) > 0) {
 		write_to_remote(obuf, cc);
+		tot += cc;
 	    }
 	}
 	close(fd);
 
-	printlog("Sending %s \"%s\" to client %s", head_only?"HEAD":"file", fn, client_ipv4_str);
+	printlog("Sending %s \"%s\" (%d) to client %s", head_only?"HEAD":"file", fn, tot, client_ipv4_str);
     }
+
+#if 0 // Leave NONBLOCK on so the timeout below works.
 
     if (fcntl(line_ifd, F_SETFL, 0) < 0)
 	perror("fcntl(line_ifd, F_SETFL, 0)");
-    // SO_LINGER by default.
+#endif
 
     flush_to_remote();
-    int max_loop = 120;
+    time_t t_end = time(0) + 15;
     while(bytes_queued_to_send()) {
 	msleep(500);	// just a little bodge.
 	flush_to_remote();
-	if (--max_loop <=0) break;
+	if (time(0) > t_end) break;
     }
+
+    // AIUI this shouldn't be needed, but when I exit before everything has
+    // been sent the other end might not get the data. (Even with NONBLOCK off)
+    char ibuf[256];
+    do {
+	int cc = read(line_ifd, ibuf, sizeof(ibuf));
+	if (time(0) > t_end) break;
+	if (cc>0) continue;
+	if (cc<0 && errno == EWOULDBLOCK) {
+	    msleep(500);
+	    continue;
+	}
+	break;
+    } while(1);
+
+    // SO_LINGER on by default for exit().
     exit(0);
 }
 
