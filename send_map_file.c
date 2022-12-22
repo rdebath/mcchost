@@ -424,7 +424,8 @@ send_clickdistance()
 void
 send_block_definitions()
 {
-    blockdef_generation = level_prop->blockdef_generation;
+    if (level_prop)
+	blockdef_generation = level_prop->blockdef_generation;
 
     if (!extn_blockdefn || !customblock_enabled) {
 	level_block_limit = client_block_limit;
