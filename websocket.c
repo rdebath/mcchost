@@ -27,11 +27,13 @@ websocket_startup(uint8_t * buf, int buflen)
 {
     enum {
 	has_host=1, has_upgrade=2, has_connect=4, has_key=8, has_proto=16,
-	has_ver=32, has_origin=64
+	has_ver=32, has_origin=64, has_proxy=128
     } has_stuff = 0;
 
     uint8_t *key_ptr = 0;
     int key_len = 0;
+    uint8_t *proxy_ip_ptr = 0;
+    int proxy_ip_len = 0;
 
     // Basic check that the HTTP request looks websocketish.
     if (memcmp(buf, "GET ", 4) != 0) return 0;
@@ -69,11 +71,45 @@ websocket_startup(uint8_t * buf, int buflen)
 	}
 	if (strncasecmp(p+1, "Sec-WebSocket-Protocol", 22) == 0)
 	    has_stuff |= has_proto;
+	if (strncasecmp(p+1, "X-Real-IP", 9) == 0) {
+	    proxy_ip_ptr = p+11;
+	    while (*proxy_ip_ptr == ' ' || *proxy_ip_ptr == ':') proxy_ip_ptr++;
+	    uint8_t *p2 = proxy_ip_ptr;
+	    while (*p2 > ' ') p2++;
+	    proxy_ip_len = p2-proxy_ip_ptr;
+	    has_stuff |= has_proxy;
+	}
     }
-    // Does it have everything?
-    if (has_stuff != 0x7f) return 0;
+    // Does it have everything required?
+    if ((has_stuff&0x7f) != 0x7f) return 0;
 
-    printlog("Sending websocket response to %s", client_ipv4_str);
+    if ((has_stuff&0x80) == 0) {
+	printlog("Sending websocket response to %s", client_ipv4_str);
+    } else {
+	// We have an X-Real-IP: header.
+
+	// 34.223.5.250 -> static websocket proxy for classicube.net
+	// See SSL url like this: https://www.classicube.net/server/play/${MD5}/?canProxy=true
+	// Where ${MD5} is the md5 hash of server "ip:port"
+	if (proxy_ip_ptr && (client_ipv4_addr == 0x22DF05FA || client_ipv4_addr == 0x7F000001)) {
+	    char client_ipv4_sav[INET_ADDRSTRLEN+10];
+	    char real_ipv4[INET_ADDRSTRLEN+10];
+	    memcpy(client_ipv4_sav, client_ipv4_str, INET_ADDRSTRLEN+10);
+
+	    saprintf(real_ipv4, "%.*s", proxy_ip_len, proxy_ip_ptr);
+
+	    struct in_addr ipaddr;
+	    if (inet_pton(AF_INET, real_ipv4, &ipaddr) == 1) {
+		client_ipv4_addr = ntohl(ipaddr.s_addr);
+		inet_ntop(AF_INET, &ipaddr, client_ipv4_str, sizeof(client_ipv4_str));
+	    } else
+		printlog("WARNING: Malformed X-Real-IP: %s", real_ipv4);
+
+	    printlog("Sending websocket response to %s (proxy through %s)",
+		client_ipv4_str, client_ipv4_sav);
+	} else
+	    printlog("Sending websocket response to %s (ignoring X-Real-IP) ", client_ipv4_str);
+    }
 
     char obuf[2048], key_resp[64], sha1_buf[64];
 
