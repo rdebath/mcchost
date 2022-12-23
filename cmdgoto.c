@@ -106,6 +106,21 @@ cmd_main(char * UNUSED(cmd), char * arg)
 	return;
     }
 
+    open_main_level();
+
+    if (level_prop) {
+	printf_chat("@%s&S went to %s", player_list_name.c, main_level());
+    } else {
+	printf_chat("@%s&S was sucked into the void.", player_list_name.c);
+        printf_chat("&WMain level failed to load, you are nowhere.");
+    }
+
+    read_only_message();
+}
+
+void
+open_main_level()
+{
     char fixedname[NB_SLEN];
     fix_fname(fixedname, sizeof(fixedname), main_level());
 
@@ -124,15 +139,6 @@ cmd_main(char * UNUSED(cmd), char * arg)
 
     if (level_prop) player_posn = level_prop->spawn;
     send_map_file();
-
-    if (level_prop) {
-	printf_chat("@%s&S went to %s", player_list_name.c, main_level());
-    } else {
-	printf_chat("@%s&S was sucked into the void.", player_list_name.c);
-        printf_chat("&WMain level failed to load, you are nowhere.");
-    }
-
-    read_only_message();
 }
 
 void
@@ -210,7 +216,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
     open_level_files(levelname, backup_id, fixedname, 0);
     if (!level_prop) {
         printf_chat("&WLevel load failed, returning to main");
-        cmd_main(0,0);
+        open_main_level();
         return 0;
     }
     player_posn = level_prop->spawn;

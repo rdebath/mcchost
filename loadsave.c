@@ -186,7 +186,7 @@ scan_and_save_levels(int unlink_only)
     int level_saved = 0;
     nbtstr_t saved_level = {0};
 
-    // fprintf(stderr, "Trace scan_and_save_levels(%d)\n", unlink_only);
+    // printlog("scan_and_save_levels(%s)", unlink_only?"unlink":"backup");
 
     open_client_list();
     if (!shdat.client) return 0;

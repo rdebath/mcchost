@@ -39,7 +39,7 @@ volatile int term_sig = 0;
 static int signal_available = 0;
 int restart_on_unload = 0, restart_needed = 0;
 static time_t last_execheck = 0;
-int trigger_backup = 0, trigger_unload = 0;
+static int trigger_backup = 0, trigger_unload = 0;
 
 pid_t alarm_handler_pid = 0;
 
@@ -136,6 +136,7 @@ tcpserver()
 
     printf_chat("@Listener process started for port %d", tcp_port_no);
     stop_chat_queue();
+    close_logfile();
 
     if (server->no_unload_main)
 	auto_load_main();
@@ -679,38 +680,48 @@ start_backup_process()
 	shdat.client->generation++;
 
     if (alarm_sig == 0 && trigger_backup == 0 && start_backup_task == 0 && restart_on_unload == 0) {
-	if (shdat.client->generation == shdat.client->cleanup_generation)
+	if (shdat.client->generation == shdat.client->cleanup_generation &&
+	    server->loaded_levels == 0)
 	    return;
     }
 
-    if (!start_backup_task) {
-	time_t now;
-	time(&now);
-	if (server->last_backup == 0) server->last_backup = now;
+    time_t now = time(0);
+    if (start_backup_task) trigger_backup = 1;
+    if (alarm_sig) trigger_backup = 1;
+    if (server->last_backup == 0) server->last_backup = now;
 
-	if (alarm_sig == 0 && trigger_backup == 0) {
-	    if ((now-server->last_backup) < server->save_interval) {
-		if ((now-server->last_unload) >= 15 || trigger_unload) {
-		    trigger_unload = 0;
-		    trigger_backup =
-			scan_and_save_levels(1);
-		    server->last_unload = now;
-		}
-		if (!trigger_backup)
-		    return;
+    if (trigger_backup == 0) {
+	if ((now-server->last_backup) >= server->save_interval)
+	    trigger_backup = 1;
+	else {
+	    if ((now-server->last_unload) >= 15) {
+		if (server->loaded_levels != 0)
+		    trigger_unload = 1;
 	    }
 	}
+    }
+
+    if (trigger_backup) {
 	server->last_backup = now;
 	server->last_unload = now;
     }
+    if (trigger_unload) server->last_unload = now;
 
-    trigger_backup = trigger_unload = 0;
+    if (!trigger_backup && !trigger_unload) return;
+
+    lock_restart(system_lock);
+
     backup_pid = E(fork(),"fork() for backup");
-    if (backup_pid != 0) return;
+    if (backup_pid != 0) {
+	trigger_backup = trigger_unload = 0;
+	return;
+    }
 
     if (listen_socket>=0) close(listen_socket);
-
-    scan_and_save_levels(0);
+    if (trigger_unload)
+	trigger_backup |= scan_and_save_levels(1);
+    if (trigger_backup)
+	scan_and_save_levels(0);
     exit(0);
 }
 

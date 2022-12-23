@@ -50,17 +50,6 @@ main(int argc, char **argv)
 
     lock_start(system_lock);
 
-    {
-	// Check main level lock
-	char fixname[MAXLEVELNAMELEN*4];
-	char sharename[256];
-	fix_fname(fixname, sizeof(fixname), main_level());
-	saprintf(sharename, LEVEL_LOCK_NAME, fixname);
-	level_lock->name = strdup(sharename);
-	lock_start(level_lock);
-	lock_stop(level_lock);
-    }
-
     if (start_heartbeat_task || start_backup_task)
         run_timer_tasks();
 
@@ -79,6 +68,8 @@ main(int argc, char **argv)
 	    check_inetd_connection();
 	}
     }
+
+    lock_restart(system_lock);
 
     reinit_rand_gen();
     process_connection();
@@ -156,24 +147,9 @@ complete_connection()
     // Permissions.
     load_ini_file(cmdset_ini_fields, CMDSET_CONF_NAME, 1, 0);
 
-    // Open level mmap files.
-    char fixname[MAXLEVELNAMELEN*4];
-    fix_fname(fixname, sizeof(fixname), main_level());
-    start_level(main_level(), fixname, 0);
-    open_level_files(main_level(), 0, fixname, 0);
-
-    if (!level_prop) {
-	start_level(main_level(), fixname, -1);
-	if (level_prop) {
-	    level_prop->readonly = 1;
-	    level_prop->disallowchange = 0;
-	}
-    }
-    if (level_prop)
-	level_prop->no_unload = server->no_unload_main;
+    open_main_level();
 
     send_textcolours();
-    send_map_file();
 
     printf_chat("&SWelcome %s", player_list_name.c);
     printf_chat("@&a+ %s &Sconnected", player_list_name.c);

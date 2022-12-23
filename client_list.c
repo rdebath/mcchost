@@ -225,7 +225,7 @@ check_user()
 #ifdef CMD_GOTOMAIN
 	    printf_chat("You are being moved to main as %s was unloaded",
 		shdat.client->levels[my_level].level.c);
-	    cmd_main(0,0);
+	    open_main_level();
 	    if (alarm_handler_pid != 0)
 		kill(alarm_handler_pid, SIGALRM);
 #else
@@ -257,6 +257,8 @@ reset_player_list()
 	    send_despawn_pkt(i);
 	myuser[i].visible = 0;
 	myuser[i].posn.valid = 0;
+	if (shdat.client)
+	    myuser[i].look_update_counter = shdat.client->user[i].look_update_counter;
     }
 
     reset_player_skinname();
@@ -547,6 +549,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
 	t.loaded = 1;
 	t.backup_id = backup_id;
 	shdat.client->levels[level_id] = t;
+	server->loaded_levels++;
     }
 
     if (my_user_no < 0 || my_user_no >= MAX_USER) {

@@ -68,10 +68,41 @@ lock_start(filelock_t * ln)
 
     while(1)
     {
-	if (errno != 0 && ecount > 100) { perror(ln->name); return; }
+	if (errno != 0 && ecount > 100) { perror(ln->name); abort(); }
 
 	fd = open(ln->name, O_RDWR|O_CLOEXEC);
-	if (fd>=0) break;
+	if (fd>=0) {
+	    struct stat st = {0};
+	    if (fstat(fd, &st) < 0)
+		st.st_size = 0;
+
+	    if (st.st_size >= sizeof(pthread_mutex_t)) {
+		pthread_mutex_t * mutex;
+		mutex = mmap(NULL, getpagesize(), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+		close(fd);
+		ln->mutex = mutex;
+
+		// Try to lock the lock; bad errors mean we recreate it.
+		int n = pthread_mutex_trylock(ln->mutex);
+		if (n == EBUSY) return; // In use is fine.
+		if (n == EOWNERDEAD) n = pthread_mutex_consistent(ln->mutex);
+		if (n == 0) {
+		    pthread_mutex_unlock(ln->mutex);
+		    return;
+		}
+
+		lock_stop(ln);
+	    } else
+		close(fd);
+	    ecount++;
+	    fprintf(stderr, "ERROR: lock file '%s' requires recreation\n", ln->name);
+	    // This is dangerous, but should never happen unless someone has
+	    // corrupted the lock file.
+	    // Hopefully this delay is long enough for everyone to be happy.
+	    if (unlink(ln->name) == 0)
+		msleep(500);
+	    continue;
+	}
 
 	// ENOENT -> Need to make; other -> not good.
 	if (errno != ENOENT || ecount > 100) { perror(ln->name); return; }
@@ -122,12 +153,6 @@ lock_start(filelock_t * ln)
 
 	/* We go round again to actually map it. */
     }
-
-    pthread_mutex_t * mutex;
-    mutex = mmap(NULL, getpagesize(), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-    close(fd);
-
-    ln->mutex = mutex;
 }
 
 void
@@ -140,11 +165,23 @@ lock_stop(filelock_t * ln)
    ln->mutex = 0;
 }
 
+void
+lock_restart(filelock_t * ln)
+{
+    if (ln->mutex) {
+	if (ln->have_lock)
+	    unlock_fn(ln);
+	lock_stop(ln);
+    }
+    lock_start(ln);
+}
+
 #else
 void lock_fn(filelock_t * ln);
 void unlock_fn(filelock_t * ln);
 void lock_start(filelock_t * ln);
 void lock_stop(filelock_t * ln);
+void lock_restart(filelock_t * ln);
 #endif
 
 #ifdef TEST
