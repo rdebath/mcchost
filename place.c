@@ -140,6 +140,11 @@ cmd_place(char * cmd, char * arg)
 	return;
     }
 
+    if (add_antispam_event(player_block_spam, server->block_spam_count, server->block_spam_interval, 0)) {
+	printf_chat("&WToo many set-blocks received, suspected griefing.");
+	return;
+    }
+
     update_block(pkt);
     return;
 }

@@ -351,7 +351,7 @@ process_args(int argc, char **argv)
 		    .afk_kick_interval = 45*60,
 		    .allow_user_levels = 1,
 		    .player_update_ms = 100,
-		    .block_spam_count = 200,
+		    .block_spam_count = 250,
 		    .block_spam_interval = 5,
 		    .cmd_spam_count = 25,
 		    .cmd_spam_interval = 1,
