@@ -793,9 +793,6 @@ auto_load_main()
     start_level(main_level(), fixname, 0);
     open_level_files(main_level(), 0, fixname, 0);
 
-    if (level_prop)
-        level_prop->no_unload = server->no_unload_main;
-
     stop_client_list();
 
     exit(0);

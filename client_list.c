@@ -58,7 +58,7 @@ struct client_level_t {
     int backup_id;
     nbtstr_t level;
     uint8_t loaded;
-    uint8_t no_unload;
+    uint8_t in_use;
     uint8_t force_unload;
     uint8_t force_backup;
     uint8_t delete_on_unload;
@@ -134,6 +134,9 @@ check_user()
 	// Is this user visible.
 	c.visible = (c.active && c.authenticated && c.posn.valid &&
 		c.on_level == my_level && c.level_bkp_id >= 0);
+
+	if (c.visible && !myuser[i].visible)
+	    myuser[i].look_update_counter--;
 
 	if (extn_extplayerlist) {
 	    if (!c.active && myuser[i].active) {

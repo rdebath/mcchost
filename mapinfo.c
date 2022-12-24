@@ -38,7 +38,6 @@ struct map_info_t {
     // Do we want/need to backup/save/update ?
     int force_save;
     int readonly;
-    int no_unload;
     int disallowchange;	// even if readonly, you can change the working map.
     int reset_hotbar;
 

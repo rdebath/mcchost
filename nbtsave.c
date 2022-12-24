@@ -33,7 +33,6 @@ save_map_to_file(char * fn, int background)
     if (level_prop->total_blocks > 0x7FFFFFFF + (int64_t)1 ) {
 	printlog("Oversized map \"%s\" (%d,%d,%d) failed to save",
 	    fn, level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
-	level_prop->no_unload = 1;
 	return -1;
     }
 

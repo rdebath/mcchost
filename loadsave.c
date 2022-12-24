@@ -208,21 +208,26 @@ scan_and_save_levels(int unlink_only)
 	if (unlink_only && shdat.client->levels[lvid].force_backup)
 	    trigger_full_run = 1;
 
-	int user_count = 0;
+	int user_count = 0, level_in_use = 0;
+	if (this_is_main && server->no_unload_main && !restart_on_unload && !term_sig)
+	    level_in_use = 1;
 	for(int uid=0; uid<MAX_USER; uid++)
 	{
 	    if (shdat.client->user[uid].active != 1) continue;
 	    // NB: Only unload main when the _total_ user count hits zero.
-	    if (lvid == shdat.client->user[uid].on_level || this_is_main)
+	    if (lvid == shdat.client->user[uid].on_level || this_is_main) {
 		user_count++;
+		level_in_use = 1;
+	    }
 	}
+	shdat.client->levels[lvid].in_use = level_in_use;
 	if (user_count && unlink_only) continue;
 
 	if (unlink_only && shdat.client->levels[lvid].delete_on_unload)
 	    trigger_full_run = 1;
 
 	// We can only unlink unused maps.
-	if (unlink_only && shdat.client->levels[lvid].no_unload) continue;
+	if (unlink_only && shdat.client->levels[lvid].in_use) continue;
 
 	if (shdat.client->levels[lvid].backup_id == 0)
 	{
@@ -247,7 +252,6 @@ scan_and_save_levels(int unlink_only)
 	    int force_backup = 0; // And delete
 	    if (shdat.client->levels[lvid].delete_on_unload) {
 		level_prop->dirty_save = 1;
-		level_prop->no_unload = 0;
 		force_backup = 1;
 	    }
 
@@ -263,10 +267,7 @@ scan_and_save_levels(int unlink_only)
 		level_prop->dirty_save = 0;
 
 	    // Block unload unless we are restarting.
-	    int no_unload = (level_prop->no_unload && !restart_on_unload);
-
-	    if (shdat.client->levels[lvid].no_unload != no_unload)
-		shdat.client->levels[lvid].no_unload = no_unload;
+	    int no_unload = (shdat.client->levels[lvid].in_use && !restart_on_unload);
 
 	    if (level_prop->dirty_save) {
 		int do_save = !unlink_only;

@@ -23,10 +23,12 @@ cmd_skin(char * cmd, char *arg)
 
     if (strcasecmp(cmd, "xskin") == 0) {
 	str1 = "-own";
-	str2 = strtok(arg, "");
+	str2 = arg?strtok(arg, ""):"";
     } else {
-	str1 = strtok(arg, " ");
-	str2 = strtok(0, "");
+	if (arg) {
+	    str1 = strtok(arg, " ");
+	    str2 = strtok(0, "");
+	} else str1=str2=0;
 	if (str1 && strcasecmp(str1, "-own") == 0)
 	    ;
 	else if (str2 == 0) {str2 = str1; str1 = 0;}
