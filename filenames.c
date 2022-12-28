@@ -257,4 +257,8 @@ unfix_fname(char *buf, int len, char *s)
 #define USERDB_DIR "userbd"
 #endif
 
+#if !defined(__x86_64__) && !defined(__i386__) && (__BYTE_ORDER__ != __ORDER_BIG_ENDIAN__)
+#define USERDB_DIR "userdb"
+#endif
+
 #endif
