@@ -140,6 +140,9 @@ cmd_place(char * cmd, char * arg)
 	return;
     }
 
+    // Note: Specifically counting this as both a command and a "setblock" so
+    // that there's no advantage to the client sending /place commands as well
+    // as setblock packets.
     if (add_antispam_event(player_block_spam, server->block_spam_count, server->block_spam_interval, 0)) {
 	printf_chat("&WToo many set-blocks received, suspected griefing.");
 	return;

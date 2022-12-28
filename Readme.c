@@ -234,15 +234,13 @@ mcchost-server -pipe
 
 /*HELP todo_cmds
 Blocks      : Yes -- Special help pages (Dynamic ?)
-Delete      : Yes -- Delete mode
+Delete      : Yes -- Delete mode (physics blocks)
 DoNotMark   : Yes -- Click to mark toggle (/dm)
 Ignore      : Yes -- Remove chat's from some users
 Loaded      : Yes -- Listing levels
 Map         : Yes -- Map creation etc
 Me          : Yes -- Chat hacks
 MessageBlock: Yes
-Nick        : Likely
-Title       : Likely
 Top         : Likely
 ViewRanks   : Likely
 WhoNick     : Likely
@@ -300,6 +298,7 @@ Mode        : Done -- Non-selectable blocks
 Model       : Done -- CPE Extension control
 Museum      : Done
 News        : Done
+Nick        : Done
 PClients    : Done -- User stats.
 Paint       : Done
 Ping        : Done
@@ -315,6 +314,7 @@ Skin        : Done -- CPE Extension control
 Spawn       : Done -- Levels
 TP          : Done -- Teleport
 Time        : Done -- Random ***
+Title       : Done
 View        : Done -- Add auto list??
 WhoIs       : Done -- /Info
 

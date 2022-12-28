@@ -1,5 +1,3 @@
-# Note I'm not including gdb in the image because Alpine strips everything.
-
 FROM alpine:3.13
 # Manually create the mount path because Docker can't do it right.
 # It will copy these perms to a new volume, but not to a new host
@@ -10,6 +8,7 @@ ARG GID=1000
 ARG MPATH=/home/user
 
 # Add gdb here, if you want to make the image seven times larger.
+# Note: GDB seems to have a problem with the Alpine abort() functon.
 ARG EPACKS=
 
 RUN set -eu;_() { echo "$@";};(\
