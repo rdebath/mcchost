@@ -23,8 +23,6 @@
 #define LEVEL_BACKUP_DIR_NAME "backup"
 #define LEVEL_BACKUP_NAME LEVEL_BACKUP_DIR_NAME "/%s.%d.cw"
 
-#define USERDB_DIR "userdb"
-#define USERDBXX_DIR "userdb%d"
 #define USER_DIR "user"
 #define USER_INI_NAME "user/%s.ini"
 
@@ -50,6 +48,7 @@ static char * dirlist[] = {
     "level",
     LEVEL_MAP_DIR_NAME,
     LEVEL_BACKUP_DIR_NAME,
+    USERDB_DIR,
     USER_DIR,
     SECRET_DIR,
     "texture",
@@ -155,15 +154,6 @@ init_dirs()
 	    // Just complain as later processes will error.
 	}
     }
-
-#ifdef __SIZE_WIDTH__
-    char buf[256]; // lmdb files are not portable
-    sprintf(buf, USERDBXX_DIR, __SIZE_WIDTH__);
-#else
-    char * buf = USERDB_DIR;
-#endif
-    if (mkdir(buf, 0777) < 0 && errno != EEXIST)
-	perror("Failure creating userdb directory");
 }
 
 /*
@@ -248,3 +238,23 @@ unfix_fname(char *buf, int len, char *s)
     }
     *d = 0;
 }
+
+#if INTERFACE
+// lmdb has terrible compatibility
+#if defined(__LP64__) && defined(__x86_64__)
+#define USERDB_DIR "userdb64"
+#endif
+
+#if defined(__ILP32__) && defined(__x86_64__)
+#define USERDB_DIR "userdbx32"
+#endif
+
+#if defined(__i386__)
+#define USERDB_DIR "userdb32"
+#endif
+
+#if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#define USERDB_DIR "userbd"
+#endif
+
+#endif

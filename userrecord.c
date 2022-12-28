@@ -374,14 +374,7 @@ open_userdb()
     // E(mdb_env_set_mapsize(env, 10485760));
     E(mdb_env_set_maxdbs(env, 8));
     E(mdb_env_set_maxreaders(env, MAX_USER+4));
-
-#ifdef __SIZE_WIDTH__
-    char buf[256]; // lmdb files are not portable
-    sprintf(buf, USERDBXX_DIR, __SIZE_WIDTH__);
-    E(mdb_env_open(env, buf, 0/*MDB_RDWR*/, 0664));
-#else
     E(mdb_env_open(env, USERDB_DIR, 0/*MDB_RDWR*/, 0664));
-#endif
 
     // Should I set the FD_CLOEXEC flag on this fd?
     // E(mdb_env_get_fd(env, ...
