@@ -158,7 +158,9 @@ complete_connection()
 
     cmd_help("welcome", 0);
 
-    if (!level_prop)
+    if (!user_authenticated)
+	printf_chat("&WYou need to login with &T/pass");
+    else if (!level_prop)
 	printf_chat("&WMain level failed to load, you are nowhere.");
 }
 
@@ -521,4 +523,6 @@ login()
 	} else
 	    user_authenticated = 1;
     }
+    if (!user_authenticated && do_pass(player.mppass, 1))
+	user_authenticated = 1;
 }

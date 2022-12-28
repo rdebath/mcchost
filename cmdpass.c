@@ -43,7 +43,7 @@ cmd_pass(char * cmd, char * arg)
 {
     if (!arg || !*arg) return cmd_help(0, "pass");
     else if (strcmp(cmd, "setpass") == 0) return do_setpass(arg);
-    else if (!do_pass(arg)) return;
+    else if (!do_pass(arg, 0)) return;
 
     // Right pass.
     if (user_authenticated)
@@ -51,13 +51,20 @@ cmd_pass(char * cmd, char * arg)
     else
 	printf_chat("You are now logged on");
 
+    int reopen = 0;
     if (!user_authenticated) {
-	send_posn_pkt(-1, &player_posn, level_prop->spawn);
-	player_posn = level_prop->spawn;
+	if (ini_settings->void_for_login || !level_prop) {
+	    reopen = 1;
+	} else {
+	    send_posn_pkt(-1, &player_posn, level_prop->spawn);
+	    player_posn = level_prop->spawn;
+	}
     }
 
     testing_just_set_password = 0;
     user_authenticated = 1;
+
+    if (reopen) open_main_level();
 }
 
 void
@@ -118,12 +125,12 @@ static char base62[] =
 }
 
 int
-do_pass(char * passwd)
+do_pass(char * passwd, int quiet)
 {
     char salt[NB_SLEN], hashpw[NB_SLEN];
     readpw_file(user_id, salt, hashpw);
     if (!*salt || !*hashpw){
-	printf_chat("&WYou need to set a password first with &T/setpass 1234");
+	if (!quiet) printf_chat("&WYou need to set a password first with &T/setpass 1234");
 	return 0;
     }
 
@@ -134,6 +141,7 @@ do_pass(char * passwd)
 
     sha256digest(0, sha_buf, buf, strlen(buf));
     if (strcmp(hashpw, sha_buf) != 0) {
+	if (quiet) return 0;
 	printf_chat("&WWrong password&S Remember your password is case sensitive");
 	if (testing_just_set_password)
 	    printf_chat("Try again or you can try using /setpass again");

@@ -80,7 +80,7 @@ run_command(char * msg)
 
 	char * ncmd = command_list[c].name;
 
-	if (command_list[c].perm_okay != perm_token_none) {
+	if (command_list[c].perm_okay != perm_token_none && user_authenticated) {
 	    if (command_list[c].perm_okay == perm_token_admin) {
 		if (!perm_is_admin()) {
 		    printf_chat("&WPermission denied, only admin can run /%s", ncmd);

@@ -176,6 +176,7 @@ system_x_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("DisallowIPAdmin", server_ini_tgt->disallow_ip_admin);
 	INI_BOOLVAL("DisallowIPVerify", server_ini_tgt->disallow_ip_verify);
 	INI_BOOLVAL("AllowPassVerify", server_ini_tgt->allow_pass_verify);
+	INI_BOOLVAL("VoidForLogin", server_ini_tgt->void_for_login);
 
 	// Do not store in ini file
 	// INI_BOOLVAL("Runonce", server_ini_tgt->server_runonce);

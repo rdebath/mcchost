@@ -121,24 +121,29 @@ cmd_main(char * UNUSED(cmd), char * arg)
 void
 open_main_level()
 {
-    char fixedname[NB_SLEN];
-    fix_fname(fixedname, sizeof(fixedname), main_level());
-
     stop_shared();
 
-    start_level(main_level(), fixedname, 0);
-    open_level_files(main_level(), 0, fixedname, 0);
+    if (ini_settings->void_for_login && !user_authenticated) {
+	auto_load_main();
+	send_map_file();
+    } else {
+	char fixedname[NB_SLEN];
+	fix_fname(fixedname, sizeof(fixedname), main_level());
 
-    if (!level_prop) {
-        start_level(main_level(), fixedname, -1);
-        if (level_prop) {
-            level_prop->readonly = 1;
-            level_prop->disallowchange = 0;
-        }
+	start_level(main_level(), fixedname, 0);
+	open_level_files(main_level(), 0, fixedname, 0);
+
+	if (!level_prop) {
+	    start_level(main_level(), fixedname, -1);
+	    if (level_prop) {
+		level_prop->readonly = 1;
+		level_prop->disallowchange = 0;
+	    }
+	}
+
+	if (level_prop) player_posn = level_prop->spawn;
+	send_map_file();
     }
-
-    if (level_prop) player_posn = level_prop->spawn;
-    send_map_file();
 }
 
 void

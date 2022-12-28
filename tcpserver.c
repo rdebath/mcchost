@@ -773,7 +773,7 @@ check_new_exe()
 void
 auto_load_main()
 {
-    int autoload_pid = E(fork(),"fork() for backup");
+    int autoload_pid = E(fork(),"fork() for load of main");
     if (autoload_pid != 0) return;
 
 #if defined(HAS_CORELIMIT) && defined(WCOREDUMP)
