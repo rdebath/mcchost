@@ -28,6 +28,7 @@ static int current_block = -1;
 static int current_cuboid = -1;
 static int inventory_block = -1;
 static int permission_block = -1;
+static int curr_x, curr_y, curr_z;
 
 #if INTERFACE
 #define MCG_PHYSICS_0FFSET CPELIMIT	//768
@@ -434,6 +435,17 @@ change_int_value(char * section, char * item, int64_t value)
 	if (strcmp(item, "TimeCreated") == 0) level_prop->time_created = value;
 	if (strcmp(item, "LastModified") == 0) level_prop->last_modified = value;
 	if (strcmp(item, "LastBackup") == 0) level_prop->last_backup = value;
+
+    } else if (strcasecmp(section, "SetBlock") == 0) {
+	if (strcmp(item, "X") == 0) curr_x = value;
+	if (strcmp(item, "Y") == 0) curr_y = value;
+	if (strcmp(item, "Z") == 0) curr_z = value;
+	if (strcmp(item, "Blk") == 0) {
+	    if (curr_x >= 0 && curr_x < level_prop->cells_x &&
+	        curr_y >= 0 && curr_y < level_prop->cells_y &&
+	        curr_z >= 0 && curr_z < level_prop->cells_z)
+		level_blocks[World_Pack(curr_x, curr_y, curr_z)] = value;
+	}
 
     } else if (strcasecmp(section, "MapGenerator") == 0) {
 	if (strcasecmp(item, "Seed") == 0)

@@ -125,7 +125,7 @@ open_main_level()
 
     if (ini_settings->void_for_login && !user_authenticated) {
 	auto_load_main();
-	send_map_file();
+	cmd_void(0,0);
     } else {
 	char fixedname[NB_SLEN];
 	fix_fname(fixedname, sizeof(fixedname), main_level());
@@ -147,7 +147,7 @@ open_main_level()
 }
 
 void
-cmd_void(char * UNUSED(cmd), char * UNUSED(arg))
+cmd_void(char * cmd, char * UNUSED(arg))
 {
     char * voidname = "<void>";
 
@@ -163,8 +163,10 @@ cmd_void(char * UNUSED(cmd), char * UNUSED(arg))
     if (level_prop) player_posn = level_prop->spawn;
     send_map_file();
 
-    printf_chat("@%s&S was sucked into the void.", player_list_name.c);
-    printf_chat("&SYou jumped into the void");
+    if (cmd) {
+	printf_chat("@%s&S was sucked into the void.", player_list_name.c);
+	printf_chat("&SYou jumped into the void");
+    }
 }
 
 int

@@ -209,13 +209,17 @@ scan_and_save_levels(int unlink_only)
 	    trigger_full_run = 1;
 
 	int user_count = 0, level_in_use = 0;
-	if (this_is_main && server->no_unload_main && !restart_on_unload && !term_sig)
+	if (this_is_main && server->no_unload_main
+	    && !restart_on_unload && !term_sig
+	    && !shdat.client->levels[lvid].delete_on_unload)
 	    level_in_use = 1;
 	for(int uid=0; uid<MAX_USER; uid++)
 	{
 	    if (shdat.client->user[uid].active != 1) continue;
 	    // NB: Only unload main when the _total_ user count hits zero.
-	    if (lvid == shdat.client->user[uid].on_level || this_is_main) {
+	    if (this_is_main && !shdat.client->levels[lvid].delete_on_unload)
+		user_count++;
+	    else if (lvid == shdat.client->user[uid].on_level) {
 		user_count++;
 		level_in_use = 1;
 	    }
@@ -321,7 +325,9 @@ scan_and_save_levels(int unlink_only)
 	{
 	    if (shdat.client->user[uid].active != 1) continue;
 	    // NB: Only unload main when the _total_ user count hits zero.
-	    if (lvid == shdat.client->user[uid].on_level || this_is_main)
+	    if (this_is_main && !shdat.client->levels[lvid].delete_on_unload)
+		user_count++;
+	    else if (lvid == shdat.client->user[uid].on_level)
 		user_count++;
 	}
 

@@ -164,7 +164,7 @@ fix_fname(char *buf, int len, char *s)
 {
     char *d = buf;
     if (len<=0) return;
-    for(char *p=s;*p;p++) {
+    if (s) for(char *p=s;*p;p++) {
 	if (d>=buf+len-1) break;
 	if (*p >= ' ' && *p <= '~' && *p != '/' && *p != '\\' && *p != '.') {
 	    *d++ = *p;

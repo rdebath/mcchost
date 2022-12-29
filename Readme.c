@@ -22,8 +22,6 @@ Other notes
 
  +) Message blocks don't need physics.
 
- +) Don't save a clean loaded map on delete.
-
  +) Divide maps into collections "fcraft", "junk", etc
     -- Command to change set ?
     -- Allow main= to be an absolute path? (Unconverted '/' characters)
@@ -169,6 +167,7 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
 /*
  Rejects ...
 
+ +) Don't save a clean loaded map on delete.
  +) Allow more commands to be run without /pass set?
     -- /goto ?
  +) inetd-tcp-wait mode; passes listening socket to process when there
@@ -230,6 +229,8 @@ mcchost-server -pipe
 
 /*HELP todo_cmds
 Blocks      : Yes -- Special help pages (Dynamic ?)
+Center      : Likely -- Drawing
+Clones      : Yes -- List on same IP
 Delete      : Yes -- Delete mode (physics blocks)
 DoNotMark   : Yes -- Click to mark toggle (/dm)
 Ignore      : Yes -- Remove chat's from some users
@@ -241,36 +242,34 @@ Top         : Likely
 ViewRanks   : Likely
 WhoNick     : Likely
 
+Inbox       : Maybe -- Email like thing
+LastCmd     : Maybe -- Userstats
+Location    : Maybe -- http://ipinfo.io/" + ip + "/geo  -- Returns json
+Redo        : Maybe -- BlockDB
+Undo        : Maybe -- BlockDB
+Whisper     : Maybe -- Chat hacks; All chat is @user
+
 8ball       : Maybe -- Random ***
 AdminChat   : Maybe -- Talk only to "Admin" aka SuperOP
 Back        : Maybe -- Reverse last teleport
 BanInfo     : Maybe -- Kick and ban records.
 Calculate   : Maybe -- Very primitive calculator.
-Center      : Maybe -- Drawing
-Clones      : Maybe -- List on same IP
 Color       : Maybe -- Sets Nick colour of player
 Eat         : Maybe -- Random ***
 Emote       : Maybe -- "Enables or disables emoticon parsing"
-Fly         : Maybe -- server side fly hack
 High5       : Maybe -- Chat hacks
 Hug         : Maybe -- Chat hacks
-Inbox       : Maybe -- Email like thing
-LastCmd     : Maybe -- Userstats
-Location    : Maybe -- http://ipinfo.io/" + ip + "/geo  -- Returns json
 LoginMessage: Maybe -- Chat hacks
 MyNotes     : Maybe -- Kick and ban records.
 OpChat      : Maybe -- Talk only to "Operator"
 OpRules     : Maybe -- Text rules for "Operator"
 OpStats     : Maybe -- Stats on bans/kicks
-Redo        : Maybe -- BlockDB
 Report      : Maybe -- Kick/ban request mesg
 Roll        : Maybe -- Random ***
 Seen        : Maybe -- Player records 1st/last seen
 Send        : Maybe -- Email like thing
 TPA         : Maybe -- Teleport
-Undo        : Maybe -- BlockDB
 Warp        : Maybe -- Named TP locations
-Whisper     : Maybe -- Chat hacks
 ZoneList    : Maybe -- Permission zones
 ZoneMark    : Maybe -- Permission zones
 ZoneTest    : Maybe -- Permission zones
@@ -322,6 +321,7 @@ CTF         : No -- CTF Game
 CountDown   : No -- Countdown Game
 Delay       : No -- Runs in message box only.
 Economy     : No -- Money system
+Fly         : No -- server side fly hack
 HasIRC      : No -- IRC Bridge
 LavaSurvival: No -- Lava Game
 Pay         : No -- Money system
@@ -331,6 +331,7 @@ Team        : No -- Games
 TntWars     : No -- TNT Game
 Vote        : No -- Lava Game (&Zombie?)
 ZombieSurvi : No -- Zombie Game
+
 */
 
 // vim:set syntax=none: */

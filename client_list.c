@@ -226,14 +226,21 @@ check_user()
 
 	if (go_main) {
 #ifdef CMD_GOTOMAIN
-	    printf_chat("You are being moved to main as %s was unloaded",
-		shdat.client->levels[my_level].level.c);
-	    open_main_level();
+	    if (strcmp(shdat.client->levels[my_level].level.c, main_level()) != 0)
+	    {
+		printf_chat("You are being moved to main as %s was unloaded",
+		    shdat.client->levels[my_level].level.c);
+		open_main_level();
+	    }
+	    else
+#endif
+	    {
+		printf_chat("You have falled into the void as %s was unloaded",
+		    shdat.client->levels[my_level].level.c);
+		cmd_void(0,0);
+	    }
 	    if (alarm_handler_pid != 0)
 		kill(alarm_handler_pid, SIGALRM);
-#else
-	    fatal("kicked due to level unload");
-#endif
 	}
     }
 }
