@@ -165,10 +165,20 @@ tcpserver()
 	{
 	    if (FD_ISSET(listen_socket, &read_fds))
 	    {
+		static int concount = 0;
 		int socket = accept_new_connection();
 		if (!allow_connection()) {
-		    printlog("Too many connections from %s", client_ipv4_str);
+		    concount = (concount+1)%100;
+		    if (concount == 1)
+			printlog("Too many connections from %s", client_ipv4_str);
 		} else {
+		    concount = 0;
+		    if (server_runonce)
+			printlog("Connected, closing listen socket.");
+		    else
+			printlog("Incoming connection from %s%s on port %d.",
+			    client_trusted?"trusted host ":"",
+			    client_ipv4_str, tcp_port_no);
 
 		    int pid = 0;
 		    if (!server_runonce) {
@@ -401,13 +411,6 @@ accept_new_connection()
     }
 
     client_trusted = ip_is_local;
-
-    if (server_runonce)
-	printlog("Connected, closing listen socket.");
-    else
-	printlog("Incoming connection from %s%s on port %d.",
-	    ip_is_local?"trusted host ":"",
-	    client_ipv4_str, tcp_port_no);
 
     return new_client_sock;
 }

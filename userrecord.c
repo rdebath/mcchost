@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
 
 #include <lmdb.h>
 #include "userrecord.h"
@@ -202,6 +203,14 @@ write_userrec(userrec_t * userrec, int ini_too)
     if (userrec->user_no == 0)
 	init_userrec(txn, userrec);
 
+    put_userrec(txn, user_key, userrec);
+
+    E(mdb_txn_commit(txn));
+}
+
+void
+put_userrec(MDB_txn *txn, char * user_key, userrec_t * userrec)
+{
     uint8_t recbuf[sizeof(userrec_t) * 4];
     uint8_t * p = recbuf;
 
@@ -237,8 +246,6 @@ write_userrec(userrec_t * userrec, int ini_too)
     data.mv_size = sizeof(idbuf);
     data.mv_data = idbuf;
     E(mdb_put(txn, dbi_ind1, &key, &data, 0) );
-
-    E(mdb_txn_commit(txn));
 }
 
 // If user_id arg is zero we use the user_no field so we can load the
@@ -386,6 +393,8 @@ open_userdb()
     E(mdb_dbi_open(txn, "user_rec", MDB_CREATE, &dbi_rec));
     E(mdb_dbi_open(txn, "user_id", MDB_CREATE, &dbi_ind1));
 
+    check_userdb_exists(txn);
+
     E(mdb_txn_commit(txn));
 }
 
@@ -521,6 +530,75 @@ read_fld(uint8_t **pp, int * bytes, void * data, enum csv_type type, int len)
 	*pp += e+1;
 	return;
     }
+}
+
+void
+check_userdb_exists(MDB_txn *txn)
+{
+    if (userdb_open) return;
+
+    uint8_t buf[16], *p = buf;
+    int idno = 0;
+    write_int32(&p, idno);
+
+    MDB_val key, data;
+    key.mv_size = sizeof(uint32_t);
+    key.mv_data = buf;
+
+    int rv = E(mdb_get(txn, dbi_rec, &key, &data));
+    if (rv != MDB_NOTFOUND) {
+	uint8_t *p = data.mv_data;
+	if (data.mv_size >= 4) {
+	    idno = IntBE32(p);
+	    if (idno >= 0) return;
+	}
+    }
+
+    idno = rebuild_user_database(txn);
+
+    uint8_t buf2[16];
+    p = buf2;
+    write_int32(&p, idno);
+
+    data.mv_size = sizeof(uint32_t);
+    data.mv_data = buf2;
+    E(mdb_put(txn, dbi_rec, &key, &data, 0) );
+}
+
+int
+rebuild_user_database(MDB_txn *txn)
+{
+    struct dirent *entry;
+    DIR *directory = opendir(USER_DIR);
+    if (!directory) return 0;
+
+    printlog("Rebuilding user index");
+    int maxno = 0;
+
+    while( (entry=readdir(directory)) )
+    {
+	int l = strlen(entry->d_name);
+	if (l<=4 || strcmp(entry->d_name+l-4, ".ini") != 0) continue;
+	entry->d_name[l-4] = 0;
+
+	char nbuf[MAXLEVELNAMELEN*4];
+	saprintf(nbuf, USER_INI_NAME, entry->d_name);
+
+	userrec_t rec_buf[1] = {0};
+	user_ini_tgt = rec_buf;
+	load_ini_file(user_ini_fields, nbuf, 1, 0);
+	user_ini_tgt = 0;
+	if (rec_buf->user_no == 0) continue;
+	if (rec_buf->user_id[0] == 0) continue;
+
+	uint8_t user_key[NB_SLEN*4];
+	copy_user_key(user_key, rec_buf->user_id);
+	put_userrec(txn, user_key, rec_buf);
+
+	if (rec_buf->user_no > maxno) maxno = rec_buf->user_no;
+    }
+    closedir(directory);
+    return maxno;
 }
 
 #ifndef DELETE_OLDBIN

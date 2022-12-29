@@ -69,10 +69,6 @@ Other notes
 
  +) Record data rates for server bytes/s I/O
 
- +) Delete player.
- +) Regenerate userDB from ini files. (Due to flaky format of lmdb files)
-    -- Preserve id number IFF it's not already used.
-
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
  +) Level limited chat -- primitive chatroom.

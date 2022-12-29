@@ -2,8 +2,8 @@
 #include "tcpsyntimer.h"
 
 #if INTERFACE
-#define IPCOUNT 16
-#define TRYCOUNT 4
+#define IPCOUNT 16	// How many IPs do I record
+#define TRYCOUNT 4	// How many attempts per IP
 
 typedef struct ip_logger_t ip_logger_t;
 struct ip_logger_t {
@@ -13,6 +13,12 @@ struct ip_logger_t {
 };
 #endif
 
+/*
+ * If there have been more than TRYCOUNT attempts less than ip_connect_delay
+ * seconds apart from a specific IP I block this attempt.
+ * If more than IPCOUNT remote IPs are trying to connect they are
+ * treated as a single IP.
+ */
 ip_logger_t slow_connect[IPCOUNT] = {0};
 
 int

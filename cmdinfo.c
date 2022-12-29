@@ -52,7 +52,8 @@ show_user_info(userrec_t *user)
     if (strcmp(user->user_id, user_id) == 0) {
 	is_me = 1;
 	if (current_level_backup_id == 0)
-	    printf_chat("You on %s at &a(%d,%d,%d)", current_level_name,
+	    printf_chat("%s is on %s at &a(%d,%d,%d)",
+		user->user_id, current_level_name,
 		player_posn.x/32, player_posn.y/32, player_posn.z/32);
 	else if (current_level_backup_id>0)
 	    printf_chat("%s is on museum &a%d&S of %s at &a(%d,%d,%d)",

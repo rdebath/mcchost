@@ -6,7 +6,7 @@
 #include "client_list.h"
 
 /* Note: I've made the choice to have one table for all users, not one
- * per level. That sets the maximum allowed number of users to 127/255.
+ * per level. That sets the maximum allowed number of users to 128/255.
  *
  * The first 128 will be visible on a level.
  * The first 255 will be shown in the player list

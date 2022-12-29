@@ -518,11 +518,12 @@ login()
 	if (check_mppass(player.user_id, player.mppass) == 0) {
 	    if (!ini_settings->allow_pass_verify)
 		disconnect(0, "Login failed! Close the game and refresh the server list.");
-	    else
-		printlog("User %s failed with mppass \"%s\", try /pass", user_id, player.mppass);
 	} else
 	    user_authenticated = 1;
     }
     if (!user_authenticated && do_pass(player.mppass, 1))
 	user_authenticated = 1;
+
+    if (!user_authenticated)
+	printlog("User %s not authenticated with mppass \"%s\"", user_id, player.mppass);
 }
