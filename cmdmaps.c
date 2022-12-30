@@ -52,11 +52,11 @@ void
 cmd_maps(char * UNUSED(cmd), char * arg)
 {
     int start = 0, backups = 0;
-    char * ar1 = strtok(arg, " ");
-    char * ar2 = strtok(0, "");
+    char *ar1 = 0, *ar2 = 0;
 
     if (!arg || *arg == 0) start = 1;
     else {
+	ar1 = strtok(arg, " "); ar2 = strtok(0, "");
 	if (strcasecmp(ar1, "all") == 0) start = 0;
 	else if (strcasecmp(ar1, "backup") == 0) {
 	    backups = 1;

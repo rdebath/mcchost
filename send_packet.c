@@ -519,7 +519,7 @@ send_addentity_pkt(int player_id, char * ingamename, char * skinname, xyzhv_t po
     p += nb_string_write(p, skinname);		// Skin, may be URL
     // if(!extn_extplayerlistv1) {
     nb_entcoord(&p, posn.x);
-    if (player_id == 255)
+    if (player_id == -1)
 	nb_entcoord(&p, posn.y+29);	// TODO: Is this right?
     else
 	nb_entcoord(&p, posn.y+51);	// TODO: Is this right?

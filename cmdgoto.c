@@ -155,12 +155,6 @@ cmd_void(char * cmd, char * UNUSED(arg))
     fix_fname(fixedname, sizeof(fixedname), voidname);
     stop_shared();
     start_level(voidname, fixedname, -1);
-    // open_level_files(voidname, 0, fixedname, 0);
-    if (level_prop) {
-	level_prop->readonly = 1;
-	level_prop->disallowchange = 0;
-    }
-    if (level_prop) player_posn = level_prop->spawn;
     send_map_file();
 
     if (cmd) {
