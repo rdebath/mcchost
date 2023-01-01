@@ -20,7 +20,7 @@ cmd_title(char * cmd, char *arg)
 
     if (strcasecmp(cmd, "xtitle") == 0) {
 	str1 = "-own";
-	str2 = arg?strtok(arg, ""):0;
+	str2 = strtok(arg, "");
     } else {
 	if (arg) {
 	    str1 = strtok(arg, " ");

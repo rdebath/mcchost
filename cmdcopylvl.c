@@ -13,8 +13,8 @@ copy a level
 void
 cmd_copylvl(char * cmd, char * arg)
 {
-    char * lvlarg = arg?strtok(arg, " "):0;
-    char * newlvlarg = arg?strtok(0, " "):0;
+    char * lvlarg = strtok(arg, " ");
+    char * newlvlarg = strtok(0, " ");
     if (!lvlarg || !newlvlarg) return cmd_help(0, cmd);
 
     char fixedname[MAXLEVELNAMELEN*4], buf2[256], lvlname[MAXLEVELNAMELEN+1];

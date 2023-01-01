@@ -33,10 +33,7 @@ cmd_sethotbar(char * cmd, char * arg)
 
     char * arg1 = strtok(arg, " ");
     char * arg2 = strtok(0, " ");
-    if (arg1 == 0) {
-	cmd_help(0, cmd);
-	return;
-    }
+    if (arg1 == 0) { reset_hotbar(); return; }
     int slot = atoi(arg1);
     if (arg2)
 	block = block_id(arg2);

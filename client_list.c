@@ -235,7 +235,7 @@ check_user()
 	    else
 #endif
 	    {
-		printf_chat("You have falled into the void as %s was unloaded",
+		printf_chat("You have fallen into the void as %s was unloaded",
 		    shdat.client->levels[my_level].level.c);
 		cmd_void(0,0);
 	    }

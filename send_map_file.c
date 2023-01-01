@@ -487,17 +487,8 @@ send_inventory_order()
 	return;
     }
 
-    if (reset_hotbar_on_mapload) {
-	reset_hotbar_on_mapload = 0;
-	if (extn_sethotbar) {
-	    static block_t tbl[] = {
-		Block_Stone, Block_Cobble, Block_Brick, Block_Dirt, Block_Wood,
-		Block_Log, Block_Leaves, Block_Glass, Block_Slab, 0
-	    };
-	    for(int id = 0; id<9; id++)
-		send_sethotbar_pkt(id, tbl[id]);
-	}
-    }
+    if (reset_hotbar_on_mapload)
+	reset_hotbar();
 
     int inv_block[BLOCKMAX] = {0};
     block_t b;
@@ -531,6 +522,20 @@ send_inventory_order()
 	    send_inventory_order_pkt(inv, inv_block[inv]);
 
     client_inventory_custom = nondefault;
+}
+
+void
+reset_hotbar()
+{
+    reset_hotbar_on_mapload = 0;
+    if (!extn_sethotbar) return;
+
+    static block_t tbl[] = {
+	Block_Stone, Block_Cobble, Block_Brick, Block_Dirt, Block_Wood,
+	Block_Log, Block_Leaves, Block_Glass, Block_Slab, 0
+    };
+    for(int id = 0; id<9; id++)
+	send_sethotbar_pkt(id, tbl[id]);
 }
 
 void

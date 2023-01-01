@@ -44,7 +44,6 @@ run_command(char * msg)
 
     char * arg = msg+2+l;
     while (*arg == ' ') arg++;
-    if (*arg == 0) arg = 0;
 
     if (strcasecmp(cmd, "womid") == 0) { player_last_move = time(0); return; }
     if (!user_authenticated) {
@@ -84,7 +83,7 @@ run_command(char * msg)
 	    if (command_list[c].perm_okay == perm_token_admin) {
 		if (!perm_is_admin()) {
 		    printf_chat("&WPermission denied, only admin can run /%s", ncmd);
-		    fprintf_logfile("%s denied cmd /%s%s%s", user_id, ncmd, arg?" ":"",arg?arg:"");
+		    fprintf_logfile("%s denied cmd /%s%s%s", user_id, ncmd, *arg?" ":"",arg);
 		    return;
 		}
 	    } else if (command_list[c].perm_okay == perm_token_level) {
@@ -100,9 +99,9 @@ run_command(char * msg)
 		    strcasecmp(ncmd, "place") == 0)
 		;
 	    else if (redact_args)
-		fprintf_logfile("%s used /%s%s%s", user_id, ncmd, arg?" ":"",arg?"<redacted>":"");
+		fprintf_logfile("%s used /%s%s", user_id, ncmd, *arg?" <redacted>":"");
 	    else
-		fprintf_logfile("%s used /%s%s%s", user_id, ncmd, arg?" ":"",arg?arg:"");
+		fprintf_logfile("%s used /%s%s%s", user_id, ncmd, *arg?" ":"",arg);
 	}
 
 	if (strcasecmp(ncmd, "afk") != 0)
@@ -143,7 +142,7 @@ cmd_quit(char * cmd, char * arg)
     if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
 	logout("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
 
-    if (arg) {
+    if (arg&&*arg) {
 	char buf[256];
 	saprintf(buf, "Left the game: %s", arg);
 	logout(buf);

@@ -28,7 +28,7 @@ cmd_model(char * cmd, char *arg)
 
     if (strcasecmp(cmd, "xmodel") == 0) {
 	str1 = "-own";
-	str2 = arg?strtok(arg, ""):"";
+	str2 = strtok(arg, "");
     } else {
 	if (arg) {
 	    str1 = strtok(arg, " ");

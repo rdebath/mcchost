@@ -42,6 +42,7 @@ cmd_help(char * prefix, char *cmdargs)
     char helpbuf[BUFSIZ];
     char helptopic[128];
     if (prefix && (*prefix == 0 || strcasecmp(prefix, "help") == 0)) prefix = 0;
+    if (cmdargs && *cmdargs == 0) cmdargs = 0;
     if (!cmdargs && !prefix)
 	strcpy(helptopic, "help");
     else {

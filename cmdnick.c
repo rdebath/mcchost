@@ -21,7 +21,7 @@ cmd_nick(char * cmd, char *arg)
 
     if (strcasecmp(cmd, "xnick") == 0) {
 	str1 = "-own";
-	str2 = arg?strtok(arg, ""):0;
+	str2 = strtok(arg, "");
     } else {
 	if (arg) {
 	    str1 = strtok(arg, " ");
