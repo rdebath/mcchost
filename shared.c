@@ -339,7 +339,7 @@ create_block_queue(char * levelname)
 	(level_block_queue->queue_len > STD_QUEUE && level_block_queue->queue_len > level_prop->total_blocks))
     {
 	if (level_block_queue->queue_len != 0)
-	    printlog("(Re-)Init queue g=%d, q=%d, tb=%d",
+	    printlog("Corruption? (Re-)Init block queue g=%d, q=%d, tb=%d",
 		level_block_queue->generation,
 		level_block_queue->queue_len,
 		(int)level_prop->total_blocks);

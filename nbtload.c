@@ -305,6 +305,8 @@ read_element(gzFile ifd, int etype)
 LOCAL int
 read_blockarray(gzFile ifd, uint32_t len)
 {
+    // This must be before other block arrays to ensure that the shared
+    // memory is the correct size for others and correctly wiped.
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
     if (len>level_prop->total_blocks) level_prop->total_blocks = len;
     if (open_blocks(current_level_fname) < 0)
@@ -321,7 +323,7 @@ read_blockarray(gzFile ifd, uint32_t len)
     for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
-	level_blocks[i] = (level_blocks[i] & 0xFF00) + (ch&0xFF);
+	level_blocks[i] = (ch&0xFF);
     }
     return 1;
 }
