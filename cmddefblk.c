@@ -70,14 +70,12 @@ Draw methods
 */
 
 #if INTERFACE
-#define CMD_DEFBLK  {N"defblk", &cmd_defblk, CMD_PERM_LEVEL}
+#define CMD_DEFBLK  {N"defblk", &cmd_defblk, CMD_PERM_LEVEL,CMD_HELPARG}
 #endif
 
 void
-cmd_defblk(char * cmd, char * arg)
+cmd_defblk(char * UNUSED(cmd), char * arg)
 {
-    if (arg == 0) return cmd_help(0, cmd);
-
     if (!perm_level_check(0, 0))
 	return;
 

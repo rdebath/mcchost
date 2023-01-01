@@ -20,6 +20,8 @@
 #define WCOREDUMP_X(X) 0
 #endif
 
+#define FREQUENT_CHECK	15
+
 int listen_socket = -1;
 int logger_pid = 0;
 int heartbeat_pid = 0;
@@ -697,12 +699,15 @@ start_backup_process()
 	if ((now-server->last_backup) >= server->save_interval)
 	    trigger_backup = 1;
 	else {
-	    if ((now-server->last_unload) >= 15) {
+	    if ((now-server->last_unload) >= FREQUENT_CHECK) {
 		if (server->loaded_levels != 0)
 		    trigger_unload = 1;
 	    }
 	}
     }
+
+    if (!trigger_unload)
+	trigger_unload = scan_levels();
 
     if (trigger_backup) {
 	server->last_backup = now;
@@ -719,12 +724,14 @@ start_backup_process()
 	trigger_backup = trigger_unload = 0;
 	return;
     }
-
     if (listen_socket>=0) close(listen_socket);
+
     if (trigger_unload)
-	trigger_backup |= scan_and_save_levels(1);
+	trigger_backup |= scan_and_save_levels(0);
     if (trigger_backup)
-	scan_and_save_levels(0);
+	scan_and_save_levels(1);
+
+    msleep(1000);
     exit(0);
 }
 
@@ -733,10 +740,10 @@ check_new_exe()
 {
     if (!proc_self_exe_ok) return;
 
-    // Normally check 30 seconds
+    // Normally check FREQUENT_CHECK seconds
     time_t now;
     time(&now);
-    if (alarm_sig == 0 && now-last_execheck <= 30)
+    if (alarm_sig == 0 && now-last_execheck <= FREQUENT_CHECK)
 	return;
     last_execheck = now;
 

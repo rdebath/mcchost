@@ -20,7 +20,7 @@ Crash the server, default is a fatal() error.
 */
 #if INTERFACE
 #define CMD_CRASH \
-    {N"crash", &cmd_crash }, {N"servercrash", &cmd_quit, .dup=1}
+    {N"crash", &cmd_crash,CMD_HELPARG}, {N"servercrash", &cmd_quit, .dup=1}
 #endif
 
 int *crash_ptr = 0;
@@ -31,7 +31,6 @@ cmd_crash(char * UNUSED(cmd), char * arg)
     close_userdb();
 
     char * crash_type = arg;
-    if (!crash_type) return cmd_help(0, "crash");
 
     if (strcmp(crash_type, "646") == 0) {
 	if (cpe_enabled)

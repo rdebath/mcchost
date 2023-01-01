@@ -7,6 +7,7 @@ enum perm_token { perm_token_none, perm_token_admin, perm_token_level };
 
 #define CMD_PERM_ADMIN  .perm_okay=perm_token_admin		/* System admin */
 #define CMD_PERM_LEVEL  .perm_okay=perm_token_level		/* Level owner */
+#define CMD_HELPARG	.harg=1
 
 typedef void (*cmd_func_t)(char * cmd, char * arg);
 typedef struct command_t command_t;
@@ -16,6 +17,7 @@ struct command_t {
     enum perm_token perm_okay;
     int dup;		// Don't show on /cmds (usually a duplicate)
     int nodup;		// No a dup, don't use previous.
+    int harg;		// Help if no args
 };
 
 typedef struct command_limit_t command_limit_t;
@@ -107,7 +109,10 @@ run_command(char * msg)
 	if (strcasecmp(ncmd, "afk") != 0)
 	    update_player_move_time();
 
-	command_list[c].function(ncmd, arg);
+	if (command_list[c].harg && *arg == 0)
+	    cmd_help(0, ncmd);
+	else
+	    command_list[c].function(ncmd, arg);
 	return;
     }
 

@@ -83,7 +83,7 @@ main(int argc, char **argv)
 	if (line_ofd != line_ifd)
 	    close(line_ifd);
 	// Cleanup
-	scan_and_save_levels(0);
+	scan_and_save_levels(1);
     }
 
     return 0;
@@ -270,7 +270,7 @@ disconnect(int rv, char * emsg)
 
 	if (inetd_mode && user_authenticated) {
 	    socket_shutdown(1);
-	    scan_and_save_levels(0);
+	    scan_and_save_levels(1);
 	} else
 	    socket_shutdown(0);
     }

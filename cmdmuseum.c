@@ -8,14 +8,12 @@ Goto a backup of a level.
 
 #if INTERFACE
 #define CMD_MUSEUM \
-    {N"museum", &cmd_museum}
+    {N"museum", &cmd_museum, CMD_HELPARG}
 #endif
 
 void
 cmd_museum(char * UNUSED(cmd), char * arg)
 {
-    if (arg == 0 || *arg == 0) { cmd_help(0,"museum"); return; }
-
     char fixedname[MAXLEVELNAMELEN*4], buf2[256];
 
     char * lvl = 0, *levelid = 0;

@@ -1,3 +1,4 @@
+#include <signal.h>
 
 #include "cmdunload.h"
 
@@ -7,14 +8,13 @@ Save a level to it's compressed format and unload it.
 */
 
 #if INTERFACE
-#define CMD_UNLOADLVL {N"unload", &cmd_unload}
+#define CMD_UNLOADLVL {N"unload", &cmd_unload, CMD_HELPARG}
 #endif
 
 void
 cmd_unload(char * cmd, char * arg)
 {
     char * lvlarg = arg;
-    if (!lvlarg) return cmd_help(0, cmd);
 
     char levelname[256];
     saprintf(levelname, "%s", lvlarg);
@@ -48,6 +48,8 @@ cmd_unload(char * cmd, char * arg)
 		printf_chat("&SLevel '%s' is unloading", lvlname);
 		shdat.client->levels[lvid].force_unload = 1;
 		unlock_fn(system_lock);
+		if (alarm_handler_pid)
+		    kill(alarm_handler_pid, SIGALRM);
 		return;
 	    }
 	}

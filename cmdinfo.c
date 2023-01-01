@@ -26,7 +26,7 @@ Alias: &S/ServerInfo
 void
 cmd_info(char * UNUSED(cmd), char * arg)
 {
-    if (arg == 0)
+    if (*arg == 0)
 	return show_user_info(&my_user);
 
     userrec_t user_rec[1] = {0};

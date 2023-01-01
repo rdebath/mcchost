@@ -85,6 +85,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_DURATION("SaveInterval", server->save_interval);
 	INI_DURATION("BackupInterval", server->backup_interval);
 	INI_BOOLVAL("NoUnloadMain", server->no_unload_main);
+	INI_BOOLVAL("NoSaveInuse", server->no_save_inuse);
 
 	if (st->write) fprintf(st->fd, "\n");
 

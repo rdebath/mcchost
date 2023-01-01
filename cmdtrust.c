@@ -3,7 +3,7 @@
 
 #if INTERFACE
 #define CMD_TRUST \
-    {N"trust", &cmd_trust}
+    {N"trust", &cmd_trust,CMD_HELPARG}
 #endif
 
 /*HELP trust H_CMD
@@ -15,8 +15,6 @@ void
 cmd_trust(char * cmd, char *arg)
 {
     char * str1 = strtok(arg, " ");
-
-    if (!str1) return cmd_help(0, cmd);
 
     int uid = find_online_player(str1, 1, 0);
     if (uid < 0) return;

@@ -174,19 +174,18 @@ next_backup_filename(char * bk_name, int bk_len, char * fixedname)
 }
 
 int
-scan_and_save_levels(int unlink_only)
+scan_and_save_levels(int do_timed_save)
 {
     char * level_name = 0;
-    int this_is_main = 0;
     int loaded_levels = 0;
-    int check_again = unlink_only || restart_on_unload;
+    int check_again = 0;
     int trigger_full_run = 0;
     int level_deleted = 0;
     nbtstr_t deleted_level = {0};
     int level_saved = 0;
     nbtstr_t saved_level = {0};
 
-    // printlog("scan_and_save_levels(%s)", unlink_only?"unlink":"backup");
+    // printlog("scan_and_save_levels(%s)", !do_timed_save?"unlink":"backup");
 
     open_client_list();
     if (!shdat.client) return 0;
@@ -197,41 +196,26 @@ scan_and_save_levels(int unlink_only)
     *current_level_name = 0;
     *current_level_fname = 0;
 
+    shdat.client->cleanup_generation = shdat.client->generation;
+
     for(int lvid=0; lvid<MAX_LEVEL; lvid++) {
 	if (!shdat.client->levels[lvid].loaded) continue;
 	loaded_levels++;
-	this_is_main = (
-		(shdat.client->levels[lvid].backup_id == 0) &&
-		(strcmp(shdat.client->levels[lvid].level.c, main_level()) == 0)
-	    );
 
-	if (unlink_only && shdat.client->levels[lvid].force_backup)
-	    trigger_full_run = 1;
+	int user_count = 0;
+	set_level_in_use_flag(lvid, &user_count);
+	int level_in_use = shdat.client->levels[lvid].in_use;
 
-	int user_count = 0, level_in_use = 0;
-	if (this_is_main && server->no_unload_main
-	    && !restart_on_unload && !term_sig
-	    && !shdat.client->levels[lvid].delete_on_unload)
-	    level_in_use = 1;
-	for(int uid=0; uid<MAX_USER; uid++)
-	{
-	    if (shdat.client->user[uid].active != 1) continue;
-	    // NB: Only unload main when the _total_ user count hits zero.
-	    if (this_is_main && !shdat.client->levels[lvid].delete_on_unload)
-		user_count++;
-	    else if (lvid == shdat.client->user[uid].on_level) {
-		user_count++;
-		level_in_use = 1;
-	    }
+	if (!do_timed_save) {
+	    if (shdat.client->levels[lvid].force_backup)
+		trigger_full_run = 1;
+
+	    if (level_in_use && !shdat.client->levels[lvid].force_backup)
+		continue;
+
+	    if (shdat.client->levels[lvid].delete_on_unload)
+		trigger_full_run = 1;
 	}
-	shdat.client->levels[lvid].in_use = level_in_use;
-	if (user_count && unlink_only) continue;
-
-	if (unlink_only && shdat.client->levels[lvid].delete_on_unload)
-	    trigger_full_run = 1;
-
-	// We can only unlink unused maps.
-	if (unlink_only && shdat.client->levels[lvid].in_use) continue;
 
 	if (shdat.client->levels[lvid].backup_id == 0)
 	{
@@ -240,7 +224,6 @@ scan_and_save_levels(int unlink_only)
 
 	    nbtstr_t lv = shdat.client->levels[lvid].level;
 	    level_name = lv.c;
-	    this_is_main = (strcmp(level_name, main_level()) == 0);
 
 	    char fixedname[MAXLEVELNAMELEN*4];
 	    fix_fname(fixedname, sizeof(fixedname), level_name);
@@ -271,18 +254,19 @@ scan_and_save_levels(int unlink_only)
 		level_prop->dirty_save = 0;
 
 	    // Block unload unless we are restarting.
-	    int no_unload = shdat.client->levels[lvid].in_use;
+	    int no_unload = shdat.client->levels[lvid].in_use && !restart_on_unload;
 
 	    if (level_prop->dirty_save) {
-		int do_save = !unlink_only;
-		if (user_count && no_unload) do_save = 0; // Don't save while in use.
+		int do_save = do_timed_save;
+		if (server->no_save_inuse && user_count && no_unload)
+		    do_save = 0; // Don't save while players actually on level.
 
 		// Time to backup ?
 		time_t now = time(0), last_backup = level_prop->last_backup;
 		if (last_backup == 0) last_backup = level_prop->time_created;
 		int do_bkp = (now - server->backup_interval >= last_backup);
 		if (force_backup) do_bkp = 2; // NB: Saves delete time too.
-		if (do_bkp && !unlink_only) do_save = 1;
+		if (do_bkp && do_timed_save) do_save = 1;
 
 		if (do_save) {
 		    int rv = save_level(fixedname, level_name, do_bkp);
@@ -307,15 +291,18 @@ scan_and_save_levels(int unlink_only)
 
 	    stop_shared();
 
-	    // Don't unload a map that failed to save
-	    if (level_dirty) {
-		check_again = 1;
-		continue;
-	    }
+	    // Don't unload a map that's still dirty
+	    if (level_dirty) continue;
 
 	    // Don't unload if it's turned off
 	    if (no_unload) continue;
+	} else {
+	    if (shdat.client->levels[lvid].force_backup)
+		shdat.client->levels[lvid].force_backup = 0;
 	}
+
+	// We only want to unlink unused maps
+	if (level_in_use) continue;
 
 	lock_fn(system_lock);
 
@@ -324,14 +311,14 @@ scan_and_save_levels(int unlink_only)
 	for(int uid=0; uid<MAX_USER; uid++)
 	{
 	    if (shdat.client->user[uid].active != 1) continue;
-	    // NB: Only unload main when the _total_ user count hits zero.
-	    if (this_is_main && !shdat.client->levels[lvid].delete_on_unload)
-		user_count++;
-	    else if (lvid == shdat.client->user[uid].on_level)
+	    if (lvid == shdat.client->user[uid].on_level)
 		user_count++;
 	}
 
-	if (user_count == 0) {
+	// Don't try to unload a level if there are users on it.
+	if (user_count)
+	    check_again = 1;
+	else {
 	    // recheck as someone may have unloaded it.
 	    if (shdat.client->levels[lvid].loaded) {
 		// unload.
@@ -368,8 +355,7 @@ scan_and_save_levels(int unlink_only)
 		    fprintf_logfile("Unloaded level %s", level_name);
 	    }
 	    loaded_levels--;
-	} else
-	    check_again = 1;
+	}
 
 	unlock_fn(system_lock);
     }
@@ -377,22 +363,18 @@ scan_and_save_levels(int unlink_only)
     if (server->loaded_levels != loaded_levels)
 	server->loaded_levels = loaded_levels;
 
-    // Wait for login etc.
-    if (!check_again)
-	shdat.client->cleanup_generation = shdat.client->generation;
-    else
-	shdat.client->cleanup_generation = shdat.client->generation-1;
+    if (check_again) shdat.client->generation++;
 
     if (level_deleted) {
-	// Waiting til we're outside the system lock means that we only
-	// display the last one deleted; that's probably fine.
+	// Do this outside the system lock.
+	level_deleted = 0;
 	printf_chat("@Level %s deleted", deleted_level.c);
 	stop_chat_queue();
     }
 
     if (level_saved) {
-	// Waiting til we're outside the system lock means that we only
-	// display the last one saved; that's probably fine.
+	// Do this outside the system lock.
+	level_saved = 0;
 	printf_chat("@Level %s backed up", saved_level.c);
 	stop_chat_queue();
     }
@@ -421,4 +403,69 @@ ignore_broken_level(int lvid, int *loaded_levels)
     }
 
     unlock_fn(system_lock);
+}
+
+int
+scan_levels()
+{
+    int loaded_levels = 0;
+
+    open_client_list();
+    if (!shdat.client) return 0;
+
+    if (shdat.client->cleanup_generation != shdat.client->generation) {
+	shdat.client->cleanup_generation = shdat.client->generation;
+	return 1;
+    }
+
+    for(int lvid=0; lvid<MAX_LEVEL; lvid++) {
+	if (!shdat.client->levels[lvid].loaded) continue;
+	loaded_levels++;
+
+	if (shdat.client->levels[lvid].force_backup)
+	    return 1;
+
+	if (!set_level_in_use_flag(lvid,0))
+	    return 1;
+    }
+
+    if (server->loaded_levels != loaded_levels)
+	server->loaded_levels = loaded_levels;
+
+    return 0;
+}
+
+LOCAL int
+set_level_in_use_flag(int lvid, int * users_on_level)
+{
+    int this_is_main = (
+		(shdat.client->levels[lvid].backup_id == 0) &&
+		(strcmp(shdat.client->levels[lvid].level.c, main_level()) == 0)
+	    );
+
+    int user_count = 0, other_users = 0, level_in_use = 0;
+    for(int uid=0; uid<MAX_USER; uid++)
+    {
+	if (shdat.client->user[uid].active != 1) continue;
+	// NB: Only unload main when the _total_ user count hits zero.
+	if (lvid == shdat.client->user[uid].on_level) {
+	    user_count++;
+	    level_in_use = 1;
+	} else other_users++;
+    }
+    if (users_on_level) *users_on_level = user_count;
+    // Main is kept open more.
+    if (this_is_main
+	&& !restart_on_unload && !term_sig
+	&& !shdat.client->levels[lvid].force_unload
+	&& !shdat.client->levels[lvid].delete_on_unload)
+    {
+	if (server->no_unload_main) level_in_use = 1;
+	if (other_users>0) level_in_use = 1;
+	user_count += other_users;
+    }
+    if (shdat.client->levels[lvid].in_use == level_in_use)
+	return 1;
+    shdat.client->levels[lvid].in_use = level_in_use;
+    return 0;
 }

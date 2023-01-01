@@ -33,7 +33,7 @@ Try again or contact the OPs to reset it
 
 #if INTERFACE
 #define CMD_PASS \
-    {N"pass", &cmd_pass}, {N"setpass", &cmd_pass, .nodup=1, .dup=1}
+    {N"pass", &cmd_pass, CMD_HELPARG}, {N"setpass", &cmd_pass, .nodup=1, .dup=1}
 #endif
 
 static int testing_just_set_password = 0;
@@ -41,8 +41,7 @@ static int testing_just_set_password = 0;
 void
 cmd_pass(char * cmd, char * arg)
 {
-    if (!arg || !*arg) return cmd_help(0, "pass");
-    else if (strcmp(cmd, "setpass") == 0) return do_setpass(arg);
+    if (strcmp(cmd, "setpass") == 0) return do_setpass(arg);
     else if (!do_pass(arg, 0)) return;
 
     // Right pass.

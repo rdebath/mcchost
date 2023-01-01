@@ -22,17 +22,14 @@ Aliases: &T/inishow
 
 #if INTERFACE
 #define CMD_INILOAD \
-    {N"iniload", &cmd_iload, CMD_PERM_LEVEL}, {N"iload", &cmd_iload, .dup=1}, \
-    {N"inisave", &cmd_isave}, {N"isave", &cmd_isave, .dup=1}, \
-    {N"inishow", &cmd_ishow}, {N"ishow", &cmd_ishow, .dup=1}
+    {N"iniload", &cmd_iload, CMD_PERM_LEVEL,CMD_HELPARG}, {N"iload", &cmd_iload, .dup=1}, \
+    {N"inisave", &cmd_isave, CMD_HELPARG}, {N"isave", &cmd_isave, .dup=1}, \
+    {N"inishow", &cmd_ishow, CMD_HELPARG}, {N"ishow", &cmd_ishow, .dup=1}
 #endif
 
 void
-cmd_iload(char * cmd, char * arg)
+cmd_iload(char * UNUSED(cmd), char * arg)
 {
-    if (!arg || !*arg)
-	return printf_chat("&WUsage: /%s filename", cmd);
-
     int ro = level_prop->readonly;
     char fixedname[200], buf[256];
     fix_fname(fixedname, sizeof(fixedname), arg);
@@ -59,11 +56,8 @@ cmd_iload(char * cmd, char * arg)
 }
 
 void
-cmd_isave(char * cmd, char * arg)
+cmd_isave(char * UNUSED(cmd), char * arg)
 {
-    if (!arg || !*arg)
-	return printf_chat("&WUsage: /%s filename", cmd);
-
     char fixedname[200], buf2[256];
     fix_fname(fixedname, sizeof(fixedname), arg);
     saprintf(buf2, "ini/%s.ini", fixedname);
@@ -79,11 +73,8 @@ cmd_isave(char * cmd, char * arg)
 }
 
 void
-cmd_ishow(char * cmd, char * arg)
+cmd_ishow(char * UNUSED(cmd), char * arg)
 {
-    if (!arg || !*arg)
-	return printf_chat("&WUsage: /%s filename", cmd);
-
     char fixedname[200], buf2[256];
     fix_fname(fixedname, sizeof(fixedname), arg);
     saprintf(buf2, "ini/%s.ini", fixedname);

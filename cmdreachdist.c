@@ -3,7 +3,7 @@
 
 #if INTERFACE
 #define CMD_REACHDIST \
-    {N"reachdistance", &cmd_reachdist}, {N"reach", &cmd_reachdist, .dup=1}
+    {N"reachdistance", &cmd_reachdist,CMD_HELPARG}, {N"reach", &cmd_reachdist, .dup=1}
 #endif
 
 /*HELP reachdistance,reach H_CMD
@@ -14,12 +14,9 @@ Shortcuts: /Reach
 */
 
 void
-cmd_reachdist(char * cmd, char *arg)
+cmd_reachdist(char * UNUSED(cmd), char *arg)
 {
     char * str1 = strtok(arg, " ");
-
-    if (!str1)
-	return cmd_help(0, cmd);
 
     int rd = strtol(str1, 0, 0);
     if (rd > 1023) rd = 1023;

@@ -6,16 +6,14 @@
 */
 
 #if INTERFACE
-#define CMD_CMDSET  {N"cmdset", &cmd_cmdset, CMD_PERM_ADMIN}
+#define CMD_CMDSET  {N"cmdset", &cmd_cmdset, CMD_PERM_ADMIN,CMD_HELPARG}
 #endif
 
 void
-cmd_cmdset(char * cmd, char * arg)
+cmd_cmdset(char * UNUSED(cmd), char * arg)
 {
     char * str1 = strtok(arg, " ");
     char * str2 = strtok(0, "");
-
-    if (!str1) return cmd_help(0, cmd);
 
     int group = INT_MIN;
     for(int i = 0; i<USER_PERM_CNT; i++) {

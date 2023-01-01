@@ -7,14 +7,13 @@ delete a level
 */
 
 #if INTERFACE
-#define CMD_DELETELVL {N"deletelvl", &cmd_deletelvl}
+#define CMD_DELETELVL {N"deletelvl", &cmd_deletelvl,CMD_HELPARG}
 #endif
 
 void
-cmd_deletelvl(char * cmd, char * arg)
+cmd_deletelvl(char * UNUSED(cmd), char * arg)
 {
     char * lvlarg = arg;
-    if (!lvlarg) return cmd_help(0, cmd);
 
     char levelname[256];
     saprintf(levelname, "%s", lvlarg);

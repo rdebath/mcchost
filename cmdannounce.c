@@ -9,7 +9,7 @@ Alias &T/an
 
 #if INTERFACE
 #define CMD_ANNOUNCE \
-    {N"announce", &cmd_announce}, {N"an", &cmd_announce, .dup=1}
+    {N"announce", &cmd_announce, CMD_HELPARG}, {N"an", &cmd_announce, .dup=1}
 #endif
 
 void

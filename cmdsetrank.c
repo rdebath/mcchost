@@ -3,7 +3,7 @@
 
 #if INTERFACE
 #define CMD_SETRANK \
-    {N"setrank", &cmd_setrank, CMD_PERM_ADMIN}, {N"rank", &cmd_setrank, .dup=1}
+    {N"setrank", &cmd_setrank, CMD_PERM_ADMIN,CMD_HELPARG}, {N"rank", &cmd_setrank, .dup=1}
 #endif
 
 /*HELP setrank,rank H_CMD
@@ -20,8 +20,6 @@ cmd_setrank(char * cmd, char *arg)
 {
     char * str1 = strtok(arg, " ");
     char * str2 = strtok(0, " ");
-
-    if (!str1) return cmd_help(0, cmd);
 
     cmd_payload_t msg = {0};
     msg.cmd_token = cmd_token_loaduser;
