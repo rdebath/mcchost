@@ -12,7 +12,7 @@ Turns off anti-grief for player.
 */
 
 void
-cmd_trust(char * cmd, char *arg)
+cmd_trust(char * UNUSED(cmd), char *arg)
 {
     char * str1 = strtok(arg, " ");
 

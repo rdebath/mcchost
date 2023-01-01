@@ -12,7 +12,7 @@ Save a level to it's compressed format and unload it.
 #endif
 
 void
-cmd_unload(char * cmd, char * arg)
+cmd_unload(char * UNUSED(cmd), char * arg)
 {
     char * lvlarg = arg;
 

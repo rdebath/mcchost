@@ -16,7 +16,7 @@
 char * user_perms[USER_PERM_CNT] = { "admin", "user" };
 
 void
-cmd_setrank(char * cmd, char *arg)
+cmd_setrank(char * UNUSED(cmd), char *arg)
 {
     char * str1 = strtok(arg, " ");
     char * str2 = strtok(0, " ");
