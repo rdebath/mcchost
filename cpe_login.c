@@ -238,7 +238,7 @@ process_extentry(pkt_extentry * pkt)
 	// Classicube treats the Player ID as an unsigned char.
 	// Let's assume others do this too if the extensions are active.
 	if (extn_extplayerlist && extn_extentityposn) {
-	    max_proto_player_id = 254;
+	    max_proto_player_id = 255;
 	}
     }
 

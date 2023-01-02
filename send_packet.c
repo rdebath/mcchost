@@ -2,6 +2,16 @@
 
 #include "send_packet.h"
 
+static inline int
+fix_player_id(int * pplayer_id)
+{
+    if ((*pplayer_id < 0 || *pplayer_id > max_proto_player_id) && *pplayer_id != -1) return 0;
+
+    if (*pplayer_id == 255) *pplayer_id = my_user_no;
+
+    return 1;
+}
+
 void
 send_server_id_pkt(char * servername, char * servermotd, int user_type)
 {
@@ -82,7 +92,7 @@ send_setblock_pkt(int x, int y, int z, int block)
 void
 send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 {
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
+    if (!fix_player_id(&player_id)) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -100,7 +110,7 @@ send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
 void
 send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 {
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
+    if (!fix_player_id(&player_id)) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -168,7 +178,7 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
 void
 send_despawn_pkt(int player_id)
 {
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
+    if (!fix_player_id(&player_id)) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -468,7 +478,7 @@ send_blockperm_pkt(block_t block, int placeok, int delok)
 void
 send_addplayername_pkt(int player_id, char * playername, char * listname, char * groupname, int sortid)
 {
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
+    if (!fix_player_id(&player_id)) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -489,7 +499,7 @@ send_addplayername_pkt(int player_id, char * playername, char * listname, char *
 void
 send_removeplayername_pkt(int player_id)
 {
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
+    if (!fix_player_id(&player_id)) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -509,7 +519,7 @@ send_addentity_pkt(int player_id, char * ingamename, char * skinname, xyzhv_t po
     if (!extn_extplayerlist)
 	return send_spawn_pkt(player_id, ingamename, posn);
 
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
+    if (!fix_player_id(&player_id)) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
@@ -534,7 +544,7 @@ void
 send_changemodel_pkt(int player_id, char * modelname)
 {
     if (!extn_changemodel) return;
-    if ((player_id < 0 || player_id > max_proto_player_id) && player_id != -1) return;
+    if (!fix_player_id(&player_id)) return;
 
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
