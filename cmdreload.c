@@ -13,7 +13,7 @@
 void
 cmd_reload(char * UNUSED(cmd), char * arg)
 {
-    if (arg == 0) {
+    if (*arg == 0) {
 	if (classic_limit_blocks) {
 	    level_block_limit = client_block_limit;
 	    classic_limit_blocks = 0;

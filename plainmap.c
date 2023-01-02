@@ -179,7 +179,8 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
 	    {
 		int y1 = heightmap[x+z*level_prop->cells_x];
 		y1 -= 0x7FFF;
-		y1 /= (max_y-min_y)/8;
+		if ((max_y-min_y)/8 != 0)
+		    y1 /= (max_y-min_y)/8;
 		y1 += 0x7FFF;
 		heightmap[x+z*level_prop->cells_x] = y1;
 	    }
