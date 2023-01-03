@@ -58,6 +58,7 @@ handle_signal(int signo)
     if (signo == SIGCHLD) child_sig = 1;
     if (signo == SIGALRM) alarm_sig = 1;
     if (signo == SIGTERM) term_sig = 1;
+    if (signo == SIGINT) term_sig = 1;
 }
 
 void
@@ -116,6 +117,8 @@ tcpserver()
 	    perror("signal(SIGALRM,)");
 	if (signal(SIGTERM, handle_signal) == SIG_ERR)
 	    perror("signal(SIGTERM,)");
+	if (signal(SIGINT, handle_signal) == SIG_ERR)
+	    perror("signal(SIGINT,)");
 
 	alarm_handler_pid = getpid(); // For the children to signal us.
     } else {
@@ -199,6 +202,7 @@ tcpserver()
 			(void)signal(SIGCHLD, SIG_DFL);
 			(void)signal(SIGALRM, SIG_DFL);
 			(void)signal(SIGTERM, SIG_DFL);
+			(void)signal(SIGINT, SIG_DFL);
 			signal_available = 0;
 			E(close(listen_socket), "close(listen)");
 			line_ofd = 1; line_ifd = 0;
@@ -339,6 +343,7 @@ do_restart()
     (void)signal(SIGCHLD, SIG_IGN);
     (void)signal(SIGALRM, SIG_IGN);
     (void)signal(SIGTERM, SIG_DFL); // Or do.
+    (void)signal(SIGINT, SIG_DFL); // Or do.
 
     // Note execvp never returns as it starts the shell on error.
     if (program_args[0][0] == '/')
@@ -360,6 +365,8 @@ do_restart()
 	perror("signal(SIGALRM,)");
     if (signal(SIGTERM, handle_signal) == SIG_ERR)
 	perror("signal(SIGTERM,)");
+    if (signal(SIGINT, handle_signal) == SIG_ERR)
+	perror("signal(SIGINT,)");
 }
 
 /* Start listening socket listen_sock. */

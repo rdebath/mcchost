@@ -20,7 +20,7 @@
 #include <sys/types.h>
 
 #define MAX_USER	256
-#define MAX_LEVEL	255
+#define MAX_LEVEL	256
 
 #define TY_MAGIC     0x1A7FFF00
 #define TY_MAGIC2    0x557FFF00
