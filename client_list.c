@@ -655,6 +655,8 @@ delete_session_id(int pid, char * killed_user, int len)
 	    shdat.client->generation++;
 	    shdat.client->user[i].session_id = 0;
 	    shdat.client->user[i].active = 0;
+	    shdat.client->user[i].on_level = -1;
+	    if (server->connected_sessions>0) server->connected_sessions--;
 	    if (pid>0) break;
 	}
     }
