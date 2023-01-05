@@ -381,7 +381,7 @@ open_userdb()
     // E(mdb_env_set_mapsize(env, 10485760));
     E(mdb_env_set_maxdbs(env, 8));
     E(mdb_env_set_maxreaders(env, MAX_USER+4));
-    E(mdb_env_open(env, USERDB_DIR, 0/*MDB_RDWR*/, 0664));
+    E(mdb_env_open(env, USERDB_FILE, MDB_NOSUBDIR, 0664));
 
     // Should I set the FD_CLOEXEC flag on this fd?
     // E(mdb_env_get_fd(env, ...

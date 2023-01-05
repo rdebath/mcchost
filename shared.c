@@ -437,8 +437,11 @@ open_client_list()
     shdat.client = shdat.dat[SHMID_CLIENTS].ptr;
     if (!shdat.client) return;
 
-    if (shdat.client->magic3 != TY_MAGIC3 || shdat.client->magic2 != TY_MAGIC2 || shdat.client->version != TY_VERSION) {
-	client_data_t d = { .magic3 = TY_MAGIC3, .magic2 = TY_MAGIC2, .version = TY_VERSION };
+    if (shdat.client->magic_no != TY_MAGIC
+	|| shdat.client->magic_sz != TY_MAGIC3
+	|| shdat.client->magic2 != TY_MAGIC2
+	|| shdat.client->version != TY_VERSION) {
+	client_data_t d = { .magic_no = TY_MAGIC, .magic_sz = TY_MAGIC3, .magic2 = TY_MAGIC2, .version = TY_VERSION };
 	*shdat.client = d;
     }
 }

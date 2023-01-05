@@ -15,6 +15,12 @@ Other notes
 */
 
 /*HELP todo
+ +) For listen process, if system/system.dat becomes invalid force a slow
+    restart: disconnect everything sleep(3) restart.
+    -- On restart the file must be revalidated NOT recreated.
+
+ +) If userdb errors MDB_VERSION_MISMATCH or MDB_INVALID
+	-- Remove the DB file and recreate it from text files.
 
  +) Add walkthrough for default server setup.
     -- Including setting user to Admin with remote GUI.
@@ -31,7 +37,7 @@ Other notes
     -- /setvar user username var value ?
 
  +) /restore
- +) /resizelvl, /copylvl
+ +) /resizelvl
  +) /sendcmd
  +) /summon
  +) /clones
@@ -79,16 +85,16 @@ Other notes
 
  +) Permissions
     -- Need enum of permit flags.
-    -- Bitmap of allow/deny.
+    -- Bitmap of allow/deny commands and blocks.
     -- Routine to construct bitmap from "nice" permissions.
     -- Routine takes care of "if has_build_perm(level)"
     -- /newlvl; No create, create personal, create any.
-
- +) Permission for level modifiable by anyone (with /set etc).
+    -- Permission for level modifiable by anyone (with /set etc).
     -- Permissions for levels with multiple owners.
     -- Permissions for user with any level access (but not server)
     -- Permissions for /goto
     -- Permissions for level readonly for "user" but modifiable for "level"
+    -- Visit permission ... via *.ini file for EXTERNAL ONLY level props.
 
  +) Command expansion/aliases
     Which way?
@@ -157,7 +163,8 @@ Physics with no users.
 
 Other possible components
     -- physics process does non-trivial physics.
-    -- physics save to *.cw -- locking modes ?
+    -- physics save to *.cw ? -- locking modes ?
+    -- physics save to *.phy file beside *.cw file ?
     -- Tickless physics ? Users make events.
 
 On Block queue, if user count < 2 && no-physics don't use queue ?

@@ -10,7 +10,7 @@
 // are changed by the user.
 typedef struct server_t server_t;
 struct server_t {
-    int magic;
+    int64_t magic;
     char software[NB_SLEN];
     char name[NB_SLEN];
     char motd[MB_STRLEN*2+1];

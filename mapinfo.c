@@ -23,7 +23,7 @@ struct nbtstr_t { char c[NB_SLEN]; };
 
 typedef struct map_info_t map_info_t;
 struct map_info_t {
-    int magic_no;
+    int64_t magic_no;
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
@@ -100,7 +100,7 @@ struct map_info_t {
 
 typedef map_len_t map_len_t;
 struct map_len_t {
-    int magic_no;
+    int64_t magic_no;
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;

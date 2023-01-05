@@ -48,7 +48,6 @@ static char * dirlist[] = {
     "level",
     LEVEL_MAP_DIR_NAME,
     LEVEL_BACKUP_DIR_NAME,
-    USERDB_DIR,
     USER_DIR,
     SECRET_DIR,
     "texture",
@@ -242,23 +241,23 @@ unfix_fname(char *buf, int len, char *s)
 #if INTERFACE
 // lmdb has terrible compatibility
 #if defined(__LP64__) && defined(__x86_64__)
-#define USERDB_DIR "userdb64"
+#define USERDB_FILE "system/userdb64.mdb"
 #endif
 
 #if defined(__ILP32__) && defined(__x86_64__)
-#define USERDB_DIR "userdbx32"
+#define USERDB_FILE "system/userdbx32.mdb"
 #endif
 
 #if defined(__i386__)
-#define USERDB_DIR "userdb32"
+#define USERDB_FILE "system/userdb32.mdb"
 #endif
 
 #if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
-#define USERDB_DIR "userbd"
+#define USERDB_FILE "system/userbd.mdb"
 #endif
 
 #if !defined(__x86_64__) && !defined(__i386__) && (__BYTE_ORDER__ != __ORDER_BIG_ENDIAN__)
-#define USERDB_DIR "userdb"
+#define USERDB_FILE "system/userdb.mdb"
 #endif
 
 #endif
