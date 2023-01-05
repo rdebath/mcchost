@@ -747,6 +747,9 @@ check_new_exe()
 {
     if (!proc_self_exe_ok) return;
 
+    if (server->magic != TY_MAGIC)
+	restart_sig = 1;
+
     // Normally check FREQUENT_CHECK seconds
     time_t now;
     time(&now);

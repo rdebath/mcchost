@@ -15,10 +15,6 @@ Other notes
 */
 
 /*HELP todo
- +) For listen process, if system/system.dat becomes invalid force a slow
-    restart: disconnect everything sleep(3) restart.
-    -- On restart the file must be revalidated NOT recreated.
-
  +) If userdb errors MDB_VERSION_MISMATCH or MDB_INVALID
 	-- Remove the DB file and recreate it from text files.
 
