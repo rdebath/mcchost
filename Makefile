@@ -70,7 +70,7 @@ ifneq ($(MAKECMDGOALS),zip)
 ifneq ($(MAKECMDGOALS),clean)
 include $(shell \
     echo ${OBJ} | tr ' ' '\012' | sed 's@.*/@@' |\
-    sed 's/\(.*\)\.o/${ODIR}\/\1.o: \1.c include\/\1.h/' > tmp.mk ;\
+    sed 's@\(.*\)\.o@${ODIR}/\1.o: \1.c include/\1.h@' > tmp.mk ;\
     echo tmp.mk )
 endif
 endif
