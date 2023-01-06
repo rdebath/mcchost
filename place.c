@@ -262,7 +262,12 @@ process_player_setblock(pkt_setblock pkt)
 
     int do_revert = 0;
 
-    {
+    if (!do_revert && player_lockout>0) {
+	do_revert = 1;
+	player_lockout = 50;
+    }
+
+    if (!do_revert) {
 	uint64_t range = 0, r, ok_reach;
 	r = (pkt.coord.x*32 - player_posn.x); range += r*r;
 	r = (pkt.coord.y*32 - player_posn.y); range += r*r;

@@ -25,8 +25,8 @@ struct userrec_t
     int64_t first_logon;	// is time_t, time_t is sometimes 32bits.
     int64_t last_logon;		// is time_t, time_t is sometimes 32bits.
     int64_t logon_count;
-    int64_t kick_count;		// Currently unused
-    int64_t death_count;	// Currently unused
+    int64_t kick_count;
+    int64_t death_count;
     int64_t message_count;
     char last_ip[NB_SLEN];
     int64_t time_online_secs;

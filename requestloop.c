@@ -198,6 +198,8 @@ on_select_timeout()
     if (in_rcvd>0 && ++ticks_with_pending_bytes > 1500) // Should be 15 seconds
 	fatal("Broken packet received -- protocol failure");
 
+    if (player_lockout>0) player_lockout--;
+
     time(&now);
     int secs = ((now-last_ping) & 0xFF);
     if (secs > tc) {
