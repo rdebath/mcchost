@@ -376,12 +376,31 @@ open_userdb()
 {
     if (env) { userdb_open = 1; return; }
 
-    E(mdb_env_create(&env));
-    // Maximum size of DB, MUST lock if done after mdb_env_open
-    // E(mdb_env_set_mapsize(env, 10485760));
-    E(mdb_env_set_maxdbs(env, 8));
-    E(mdb_env_set_maxreaders(env, MAX_USER+4));
-    E(mdb_env_open(env, USERDB_FILE, MDB_NOSUBDIR, 0664));
+    for(int tries = 0; tries < 2; tries++) {
+	E(mdb_env_create(&env));
+	// Maximum size of DB, MUST lock if done after mdb_env_open
+	// E(mdb_env_set_mapsize(env, 10485760));
+	E(mdb_env_set_maxdbs(env, 8));
+	E(mdb_env_set_maxreaders(env, MAX_USER+4));
+	int rv = mdb_env_open(env, USERDB_FILE, MDB_NOSUBDIR, 0664);
+
+	if (rv != MDB_SUCCESS) {
+    #if USERDB_RECREATE
+	    if (tries == 0 && (rv == MDB_VERSION_MISMATCH || rv == MDB_INVALID)) {
+		printlog("Cannot open \"%s\": %s", USERDB_FILE, mdb_strerror(rv)),
+		unlink(USERDB_FILE);
+		char buf[256];
+		saprintf(buf, "%s-lock", USERDB_FILE);
+		unlink(buf);
+		mdb_env_close(env);
+		continue;
+	    }
+    #endif
+	    printlog("Cannot open \"%s\": %s", USERDB_FILE, mdb_strerror(rv)),
+	    exit(1);
+	}
+	break;
+    }
 
     // Should I set the FD_CLOEXEC flag on this fd?
     // E(mdb_env_get_fd(env, ...

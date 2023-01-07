@@ -24,6 +24,7 @@ process_chat_message(int message_type, char * msg)
 		return;
 	    }
 	    pending_chat_size *= 2;
+	    pending_chat = p;
 	}
 	memcpy(pending_chat+pending_chat_len, msg, MB_STRLEN);
 	pending_chat_len += MB_STRLEN;

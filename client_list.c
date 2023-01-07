@@ -100,7 +100,8 @@ check_user()
     if (my_user_no < 0 || my_user_no >= MAX_USER || !shdat.client) return;
 
     //TODO: Attempt a session upgrade -- call exec().
-    if (shdat.client->magic_no != TY_MAGIC
+    if (server->magic != TY_MAGIC
+        || shdat.client->magic_no != TY_MAGIC
 	|| shdat.client->magic_sz != TY_MAGIC3
 	|| shdat.client->magic2 != TY_MAGIC2
 	|| shdat.client->version != TY_VERSION)

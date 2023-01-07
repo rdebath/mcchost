@@ -110,7 +110,7 @@ find_dirs() {
 	if (id == 0 && vargames) (void) mkdir("/var/games", 0755);
 
 	// Try to create the directory.
-	E(mkdir(dirpath, 0700));
+	ERR(mkdir(dirpath, 0700), dirpath);
 	if (id == 0 && vargames) {
 	    if (grun_as) E(chmod(dirpath, 02770));
 	    if (run_as || grun_as)
@@ -124,7 +124,7 @@ find_dirs() {
 	if (vargames && grun_as) (void) umask(007);
     }
 
-    E(chdir(dirpath));
+    ERR(chdir(dirpath), dirpath);
 }
 
 void
@@ -242,22 +242,22 @@ unfix_fname(char *buf, int len, char *s)
 // lmdb has terrible compatibility
 #if defined(__LP64__) && defined(__x86_64__)
 #define USERDB_FILE "system/userdb64.mdb"
+#define USERDB_RECREATE	0
 #endif
 
 #if defined(__ILP32__) && defined(__x86_64__)
 #define USERDB_FILE "system/userdbx32.mdb"
+#define USERDB_RECREATE	0
 #endif
 
 #if defined(__i386__)
 #define USERDB_FILE "system/userdb32.mdb"
+#define USERDB_RECREATE	0
 #endif
 
-#if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
-#define USERDB_FILE "system/userbd.mdb"
-#endif
-
-#if !defined(__x86_64__) && !defined(__i386__) && (__BYTE_ORDER__ != __ORDER_BIG_ENDIAN__)
+#if !defined(__x86_64__) && !defined(__i386__)
 #define USERDB_FILE "system/userdb.mdb"
+#define USERDB_RECREATE	1
 #endif
 
 #endif
