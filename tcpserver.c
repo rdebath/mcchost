@@ -138,6 +138,9 @@ tcpserver()
     restart_sig = 0;
     last_execheck = time(0);
 
+    create_cmd_queue();
+    stop_cmd_queue();
+
     printf_chat("@Listener process started for port %d", tcp_port_no);
     stop_chat_queue();
     close_logfile();

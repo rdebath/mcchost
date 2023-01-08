@@ -8,16 +8,23 @@
 #if INTERFACE
 #include <pthread.h>
 
+typedef struct lock_shm_t lock_shm_t;
+struct lock_shm_t {
+    int64_t magic;
+    pthread_mutex_t mutex[1];
+};
+
 typedef struct filelock_t filelock_t;
 struct filelock_t {
     char * name;
     int have_lock; // Not allowed to "nest" pthread locks, but can't
 		   // portably configure PTHREAD_MUTEX_ERRORCHECK
-    pthread_mutex_t * mutex;
+    struct lock_shm_t * lock;
 };
 #endif
 
-#if _REENTRANT
+#if 1
+//_REENTRANT
 
 // This MUST be compiled with -pthread otherwise gcc makes dumb assumptions.
 
@@ -32,18 +39,18 @@ static inline int ERR_PT(int n, char * tn, char *fn, int ln)
 void
 lock_fn(filelock_t * ln)
 {
-    if (!ln->mutex || ln->have_lock) return;
+    if (!ln->lock || ln->have_lock) return;
 
-    if (E(pthread_mutex_lock(ln->mutex)))
-	E(pthread_mutex_consistent(ln->mutex));
+    if (E(pthread_mutex_lock(ln->lock->mutex)))
+	E(pthread_mutex_consistent(ln->lock->mutex));
     ln->have_lock = 1;
 }
 
 void
 unlock_fn(filelock_t * ln)
 {
-    if (!ln->mutex || !ln->have_lock) return;
-    E(pthread_mutex_unlock(ln->mutex));
+    if (!ln->lock || !ln->have_lock) return;
+    E(pthread_mutex_unlock(ln->lock->mutex));
     ln->have_lock = 0;
 }
 
@@ -62,7 +69,7 @@ lock_start(filelock_t * ln)
     // another process has created the file and we we discard our attempt.
 
     int ecount = 0;
-    ln->mutex = 0;
+    ln->lock = 0;
     if (!ln->name) return;
 
     while(1)
@@ -76,18 +83,20 @@ lock_start(filelock_t * ln)
 		st.st_size = 0;
 
 	    if (st.st_size >= sizeof(pthread_mutex_t)) {
-		pthread_mutex_t * mutex;
-		mutex = mmap(NULL, getpagesize(), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+		lock_shm_t * tmp_lock;
+		tmp_lock = mmap(NULL, getpagesize(), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 		close(fd);
-		ln->mutex = mutex;
+		ln->lock = tmp_lock;
 
-		// Try to lock the lock; bad errors mean we recreate it.
-		int n = pthread_mutex_trylock(ln->mutex);
-		if (n == EBUSY) return; // In use is fine.
-		if (n == EOWNERDEAD) n = pthread_mutex_consistent(ln->mutex);
-		if (n == 0) {
-		    pthread_mutex_unlock(ln->mutex);
-		    return;
+		if (ln->lock->magic == TY_MAGIC) {
+		    // Try to lock the lock; bad errors mean we recreate it.
+		    int n = pthread_mutex_trylock(ln->lock->mutex);
+		    if (n == EBUSY) return; // In use is fine.
+		    if (n == EOWNERDEAD) n = pthread_mutex_consistent(ln->lock->mutex);
+		    if (n == 0) {
+			pthread_mutex_unlock(ln->lock->mutex);
+			return;
+		    }
 		}
 
 		lock_stop(ln);
@@ -109,11 +118,11 @@ lock_start(filelock_t * ln)
 
 	// Create the mutex in local memory
 	pthread_mutexattr_t att;
-	pthread_mutex_t mutex0 = {0};
+	lock_shm_t lock0 = {.magic=TY_MAGIC};
 	E(pthread_mutexattr_init(&att));
 	E(pthread_mutexattr_setrobust(&att, PTHREAD_MUTEX_ROBUST));
 	E(pthread_mutexattr_setpshared(&att, PTHREAD_PROCESS_SHARED));
-	E(pthread_mutex_init(&mutex0, &att));
+	E(pthread_mutex_init(lock0.mutex, &att));
 
 	char tmpfile[PATH_MAX];
 	saprintf(tmpfile, "%s.%d.tmp", ln->name, getpid());
@@ -135,8 +144,8 @@ lock_start(filelock_t * ln)
 	int doclose = 1;
 
 	// Write the mutex to the file
-	int rv = write(fd, &mutex0, sizeof(mutex0));
-	rv = -(rv != sizeof(mutex0));
+	int rv = write(fd, &lock0, sizeof(lock0));
+	rv = -(rv != sizeof(lock0));
 	if (rv == 0)
 	    rv = close(fd);
 	if (rv == 0)
@@ -157,17 +166,17 @@ lock_start(filelock_t * ln)
 void
 lock_stop(filelock_t * ln)
 {
-    if (!ln->mutex) return;
+    if (!ln->lock) return;
     if (ln->have_lock)
 	unlock_fn(ln);
-   (void)munmap(ln->mutex, getpagesize());
-   ln->mutex = 0;
+   (void)munmap(ln->lock, getpagesize());
+   ln->lock = 0;
 }
 
 void
 lock_restart(filelock_t * ln)
 {
-    if (ln->mutex) {
+    if (ln->lock) {
 	if (ln->have_lock)
 	    unlock_fn(ln);
 	lock_stop(ln);
