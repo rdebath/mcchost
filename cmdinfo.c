@@ -42,7 +42,13 @@ cmd_info(char * UNUSED(cmd), char * arg)
 	    return show_user_info(user_rec);
     }
 
-    printf_chat("User \"%s\" not found", arg);
+    char user_name[128];
+    int c = match_user_name(arg, user_name, sizeof(user_name), 0);
+    if (c == 1) {
+	if (read_userrec(user_rec, user_name, 1) >= 0)
+	    return show_user_info(user_rec);
+	printf_chat("Details for user \"%s\" not found.", user_name);
+    }
 }
 
 void

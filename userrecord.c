@@ -88,6 +88,28 @@ copy_user_key(char *p, char * user_id)
     *p = 0;
 }
 
+void decode_user_key(char *hexed_key, char * user_id, int l)
+{
+    char * p = user_id;
+    for(char * s = hexed_key; *s && p-user_id+1<l; s++)
+    {
+	char *hex = "0123456789ABCDEF";
+	int ch = *s & 0xFF;
+	if (ch != '%') {
+	    *p++ = ch; continue;
+	}
+	char *h1, *h2;
+	if (s[0] && s[1] && (h1=strchr(hex,s[0])) != 0 && (h2=strchr(hex,s[1])) != 0) {
+	    s+=2;
+	    ch = ((h1-p) << 4);
+	    ch += (h2-p);
+	    *p++ = ch;
+	} else
+	    *p++ = ch;
+    }
+    *p = 0;
+}
+
 /*
     (when == 0) => Tick
     (when == 1) => At logon
@@ -369,6 +391,62 @@ init_userrec(MDB_txn * txn, userrec_t * rec_buf)
     E(mdb_put(txn, dbi_rec, &key, &data, 0) );
 
     rec_buf->user_no = idno;
+}
+
+int
+match_user_name(char * partname, char * namebuf, int l, int quiet)
+{
+    if (!partname || !*partname || strlen(partname) > l) {
+	if (!quiet) printf_chat("The user pattern given is invalid.");
+	return -1;
+    }
+
+    if (!userdb_open) open_userdb();
+    MDB_txn *txn;
+    E(mdb_txn_begin(env, NULL, MDB_RDONLY, &txn));
+
+    MDB_cursor *curs;
+
+    E(mdb_cursor_open(txn, dbi_ind1, &curs));
+
+    MDB_val key = {0}, data = {0};
+
+    int found = 0;
+    int n = mdb_cursor_get(curs, &key, &data, MDB_FIRST);
+    for( ; n == MDB_SUCCESS; n = mdb_cursor_get(curs, &key, &data, MDB_NEXT))
+    {
+	char user_name[NB_SLEN*4];
+	decode_user_key(key.mv_data, user_name, sizeof(user_name));
+	if (strcasecmp(user_name, partname) == 0) {
+	    // "Exact" match.
+	    snprintf(namebuf, l, "%s", user_name);
+	    found = 1;
+	    break;
+	} else if (my_strcasestr(user_name, partname)) {
+	    if (found == 0)
+		snprintf(namebuf, l, "%s", user_name);
+	    else if (strlen(namebuf) + strlen(user_name) + 3 < l) {
+		strcat(namebuf, ", ");
+		strcat(namebuf, user_name);
+	    }
+	    found++;
+	}
+    }
+    if (n != MDB_SUCCESS && n != MDB_NOTFOUND) {
+	if (!quiet) printf_chat("&WSearch of user index failed");
+        mdb_txn_abort(txn);
+        return -1;
+    }
+
+    if (!quiet) {
+	if (found>1) {
+	    printf_chat("The id \"%s\" matches %d users including %s", partname, found, namebuf);
+	} else if (found != 1)
+	    printf_chat("User \"%s\" not found.", partname);
+    }
+
+    E(mdb_txn_commit(txn));
+    return found;
 }
 
 LOCAL void
