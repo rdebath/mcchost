@@ -124,7 +124,6 @@ open_main_level()
     stop_shared();
 
     if (ini_settings->void_for_login && !user_authenticated) {
-	auto_load_main();
 	cmd_void(0,0);
     } else {
 	char fixedname[NB_SLEN];
