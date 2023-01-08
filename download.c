@@ -1,7 +1,6 @@
 #define _XOPEN_SOURCE
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <errno.h>
 #if _POSIX_VERSION >= 200112L
 #include <sys/select.h>
 #endif

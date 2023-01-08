@@ -1,6 +1,5 @@
 #include <sys/mman.h>
 #include <fcntl.h>
-#include <errno.h>
 #include <assert.h>
 #include <sys/stat.h>
 
@@ -240,7 +239,8 @@ open_blocks(char * levelname)
     if((uintptr_t)l != l || (off_t)l != l || (size_t)l != l) {
 	errno = EINVAL;
 	perror("Server address space too small for this map");
-	printf_chat("Map is too large (%d,%d,%d) -> %jd cells",
+	printf_chat("Map \"%s\" is too large (%d,%d,%d) -> %jd cells",
+	    levelname,
 	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
 	    (intmax_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z);
 	return -1;

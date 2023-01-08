@@ -1,6 +1,5 @@
 
 #include <signal.h>
-#include <errno.h>
 #include <assert.h>
 
 #include "client_list.h"

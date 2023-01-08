@@ -1,6 +1,5 @@
 
 #include <fcntl.h>
-#include <errno.h>
 
 #include "fcntl_mutex.h"
 

@@ -1,4 +1,6 @@
 
+#include "mapinfo.h"
+char * Version = VERSION;
 #if INTERFACE
 
 #define BLOCKMAX 1024

@@ -1,5 +1,4 @@
 #include <fcntl.h>
-#include <errno.h>
 #include <assert.h>
 
 #include "main.h"

@@ -1,4 +1,3 @@
-#include <errno.h>
 #include <math.h>
 #include <zlib.h>
 

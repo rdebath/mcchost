@@ -169,7 +169,7 @@ cmd_sinfo(char * UNUSED(cmd), char * UNUSED(arg))
 	char timebuf[256];
 	conv_duration(timebuf, now-then);
 	printf_chat("  Been up for&T%s&S, running &T%s&S (version %s)&f %s",
-	    timebuf, server->software, VERSION,
+	    timebuf, server->software, Version,
 	    "https://github.com/rdebath/mcchost");
     }
 

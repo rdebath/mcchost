@@ -19,6 +19,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <limits.h>
+#include <errno.h>
 
 #ifdef NEVER_DEFINE
 #define int int
@@ -28,6 +29,10 @@
 #define uint16_t uint16_t
 #define uint32_t uint32_t
 #define uint64_t uint64_t
+#define int8_t int8_t
+#define int16_t int16_t
+#define int32_t int32_t
+#define int64_t int64_t
 #define tm tm
 #endif
 #endif

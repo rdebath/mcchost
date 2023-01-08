@@ -336,7 +336,7 @@ init_level_blocks(uint64_t fallback_seed)
 		}
     }
 
-    saprintf(level_prop->software, "%s %s", SWNAME, VERSION);
+    saprintf(level_prop->software, "%s %s", SWNAME, Version);
 
     if (!quiet) {
 	struct timeval now;

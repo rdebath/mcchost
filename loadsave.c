@@ -1,6 +1,5 @@
 #include <sys/stat.h>
 #include <dirent.h>
-#include <errno.h>
 
 #include "loadsave.h"
 

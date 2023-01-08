@@ -36,7 +36,7 @@ ifzero { next; }
 }
 /^\/\*HELP/ {next;}
 
-/^#define\ *CMD_[A-Z0-9]*[	 ]*[\\{]/ {
+/^#define *CMD_[A-Z0-9]*[	 ]*[\\{]/ {
     cmdlist = cmdlist "#ifdef " $2 "\n"
     cmdlist = cmdlist "    " $2 ",\n"
     cmdlist = cmdlist "#endif\n"

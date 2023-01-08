@@ -1,9 +1,8 @@
-#include <errno.h>
+
+#include "requestloop.h"
 #if _POSIX_VERSION >= 200112L
 #include <sys/select.h>
 #endif
-
-#include "requestloop.h"
 
 int64_t bytes_sent;
 static char *ttl_buf = 0;		/* Buffer for line output */
