@@ -146,7 +146,7 @@ tcpserver()
     close_logfile();
 
     if (server->no_unload_main)
-	auto_load_main();
+	auto_load_main(0);
 
     while(!term_sig)
     {
@@ -173,13 +173,14 @@ tcpserver()
 	    if (FD_ISSET(listen_socket, &read_fds))
 	    {
 		static int concount = 0;
-		int socket = accept_new_connection();
+		int ok = 0, socket = accept_new_connection();
 		if (!allow_connection()) {
 		    concount = (concount+1)%100;
 		    if (concount == 1)
 			printlog("Too many connections from %s", client_ipv4_str);
 		} else {
 		    concount = 0;
+		    ok = 1;
 		    if (server_runonce)
 			printlog("Connected, closing listen socket.");
 		    else
@@ -216,6 +217,9 @@ tcpserver()
 		    }
 		}
 		close(socket);
+
+		if (ok && ini_settings->void_for_login && server->loaded_levels == 0)
+		    auto_load_main(1);
 	    }
 	    if (FD_ISSET(listen_socket, &except_fds))
 		break;
@@ -793,9 +797,10 @@ check_new_exe()
 }
 
 void
-auto_load_main()
+auto_load_main(int fast_start)
 {
-    int autoload_pid = E(fork(),"fork() for load of main");
+    int autoload_pid = fork();
+    if (autoload_pid < 0) perror("fork() for load of main");
     if (autoload_pid != 0) return;
 
 #if defined(HAS_CORELIMIT) && defined(WCOREDUMP)
@@ -805,7 +810,7 @@ auto_load_main()
 
     if (listen_socket>=0) close(listen_socket);
 
-    msleep(2000);
+    if (fast_start) msleep(200); else msleep(2000);
 
     open_client_list();
 
@@ -816,6 +821,7 @@ auto_load_main()
     open_level_files(main_level(), 0, fixname, 0);
 
     stop_client_list();
+    msleep(1000);
 
     exit(0);
 }

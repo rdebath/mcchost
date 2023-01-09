@@ -15,8 +15,7 @@ Other notes
 */
 
 /*HELP todo
- +) If userdb errors MDB_VERSION_MISMATCH or MDB_INVALID
-	-- Remove the DB file and recreate it from text files.
+ +) Find_player (part2)
 
  +) Add walkthrough for default server setup.
     -- Including setting user to Admin with remote GUI.
@@ -38,6 +37,8 @@ Other notes
  +) /summon
  +) /clones
  +) /undo, /redo
+
+ +) Exponential backups.
 
  +) /newlvl, more "nice" levels?
     -- Perlin based nature, with caves.
