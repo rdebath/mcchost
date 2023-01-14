@@ -308,7 +308,8 @@ read_blockarray(gzFile ifd, uint32_t len)
     // This must be before other block arrays to ensure that the shared
     // memory is the correct size for others and correctly wiped.
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-    if (len>level_prop->total_blocks) level_prop->total_blocks = len;
+    if (len>level_prop->total_blocks) return 0;
+
     if (open_blocks(current_level_fname) < 0)
 	return 0;
 
@@ -423,7 +424,9 @@ change_int_value(char * section, char * item, int64_t value)
 	    strcmp(section, "ClassicWorld") == 0 ||
 	    strcmp(section, "MapSize") == 0) {
 	int ok = 1;
-	if (strcmp(item, "X") == 0) level_prop->cells_x = value;
+	if (value<0 && value >= -32768) value &= 0xFFFF; // CC written files
+	if (value<1) ok = 0;
+	else if (strcmp(item, "X") == 0) level_prop->cells_x = value;
 	else if (strcmp(item, "Y") == 0) level_prop->cells_y = value;
 	else if (strcmp(item, "Z") == 0) level_prop->cells_z = value;
 	else ok = 0;

@@ -3,6 +3,7 @@
 char * Version = VERSION;
 #if INTERFACE
 
+#define MAPDIMMAX 16384
 #define BLOCKMAX 1024
 #define BLOCKNIL ((block_t)-1)
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))

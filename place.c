@@ -256,9 +256,8 @@ cmd_mode(char * cmd, char * arg)
 void
 process_player_setblock(pkt_setblock pkt)
 {
-    if (!level_block_queue || !level_blocks) return; // !!!
-
-    if (!user_authenticated) { revert_client(pkt); return; }
+    if (!level_block_queue || !level_blocks || !user_authenticated)
+	{ revert_client(pkt); return; }
 
     int do_revert = 0;
 
@@ -284,6 +283,10 @@ process_player_setblock(pkt_setblock pkt)
 	    }
 	}
     }
+
+    if (pkt.coord.x < 0 || pkt.coord.x >= level_prop->cells_x) do_revert = 1;
+    if (pkt.coord.y < 0 || pkt.coord.y >= level_prop->cells_y) do_revert = 1;
+    if (pkt.coord.z < 0 || pkt.coord.z >= level_prop->cells_z) do_revert = 1;
 
     if (!do_revert && player_mark_mode) {
 	int l = sizeof(marks)/sizeof(*marks);
@@ -335,12 +338,9 @@ process_player_setblock(pkt_setblock pkt)
 	logout("Kicked for suspected griefing.");
     }
 
-    if (do_revert) { revert_client(pkt); return; }
-
     if (!level_block_queue || !level_blocks) return; // !!!
-    if (pkt.coord.x < 0 || pkt.coord.x >= level_prop->cells_x) return;
-    if (pkt.coord.y < 0 || pkt.coord.y >= level_prop->cells_y) return;
-    if (pkt.coord.z < 0 || pkt.coord.z >= level_prop->cells_z) return;
+
+    if (do_revert) { revert_client(pkt); return; }
 
     block_t b = level_blocks[World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z)];
     if (b != Block_Air && b < BLOCKMAX && !can_delete_block(b)) {
@@ -354,14 +354,28 @@ process_player_setblock(pkt_setblock pkt)
 void
 revert_client(pkt_setblock pkt)
 {
-    if (!level_block_queue || !level_blocks) return; // !!!
-    if (pkt.coord.x < 0 || pkt.coord.x >= level_prop->cells_x) return;
-    if (pkt.coord.y < 0 || pkt.coord.y >= level_prop->cells_y) return;
-    if (pkt.coord.z < 0 || pkt.coord.z >= level_prop->cells_z) return;
+    if (pkt.coord.x < 0 || pkt.coord.y < 0 || pkt.coord.z < 0)
+	return;
 
-    uintptr_t index = World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z);
-
-    block_t b = level_blocks[index];
+    block_t b;
+    if (!level_prop || !level_block_queue || !level_blocks ||
+	    pkt.coord.x >= level_prop->cells_x ||
+	    pkt.coord.y >= level_prop->cells_y ||
+	    pkt.coord.z >= level_prop->cells_z)
+    {
+	int y = pkt.coord.y;
+	if (!level_prop)
+	    b = Block_Air;
+	else if (y >= level_prop->cells_y/2)
+	    b = Block_Air;
+	else if (y+2 >= level_prop->cells_y/2)
+	    b = Block_ActiveWater;
+	else
+	    b = Block_Bedrock;
+    } else {
+	uintptr_t index = World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z);
+	b = level_blocks[index];
+    }
 
     send_setblock_pkt(pkt.coord.x, pkt.coord.y, pkt.coord.z, b);
 }

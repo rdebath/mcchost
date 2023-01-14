@@ -261,9 +261,7 @@ websocket_translate(char * inbuf, int * insize)
 		    mask_id = ((mask_id+1)&3);
 		}
 		hex_logfile(EOF);
-		char ebuf[256];
-		sprintf(ebuf, "Unexpected websocket opcode %d", op);
-		fatal(ebuf);
+		fatal_f("Unexpected websocket opcode %d", op);
 	    }
 	}
 

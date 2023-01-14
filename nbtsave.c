@@ -48,9 +48,15 @@ save_map_to_file(char * fn, int background)
     bc_ent_int8(savefile, "FormatVersion", 1);
     bc_ent_bytes(savefile, "UUID", (char*)level_prop->uuid, sizeof(level_prop->uuid));
 
-    bc_ent_int16(savefile, "X", level_prop->cells_x);
-    bc_ent_int16(savefile, "Y", level_prop->cells_y);
-    bc_ent_int16(savefile, "Z", level_prop->cells_z);
+    if (level_prop->cells_x >= 32768 || level_prop->cells_y >= 32768 || level_prop->cells_z >= 32768) {
+	bc_ent_int(savefile, "X", level_prop->cells_x);
+	bc_ent_int(savefile, "Y", level_prop->cells_y);
+	bc_ent_int(savefile, "Z", level_prop->cells_z);
+    } else {
+	bc_ent_int16(savefile, "X", level_prop->cells_x);
+	bc_ent_int16(savefile, "Y", level_prop->cells_y);
+	bc_ent_int16(savefile, "Z", level_prop->cells_z);
+    }
 
     // Part written by CC
     if (level_prop->software[0] || level_prop->seed[0]) {

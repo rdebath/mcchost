@@ -215,7 +215,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
     start_level(levelname, fixedname, backup_id);
     open_level_files(levelname, backup_id, fixedname, 0);
     if (!level_prop) {
-        printf_chat("&WLevel load failed, returning to main");
+        printf_chat("&WLevel \"%s\" load failed, returning to main", level);
         open_main_level();
         return 0;
     }
@@ -224,6 +224,14 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
     if (backup_id) {
 	level_prop->readonly = 1;
 	level_prop->disallowchange = 0;
+    }
+
+    if (!extn_extentityposn) {
+	if (level_prop->cells_x>1024 || level_prop->cells_y>1024 || level_prop->cells_z>1024) {
+	    printf_chat("&WLevel \"%s\" is too large for your client", level);
+	    cmd_main(0,0);
+	    return 0;
+	}
     }
 
     send_map_file();

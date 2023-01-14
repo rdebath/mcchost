@@ -1,8 +1,8 @@
 
 #include "cmdsethotbar.h"
 
-/*HELP sethotbar,chb H_CMD
-&T/sethotbar Slot [Block]
+/*HELP sethotbar,chb,shb H_CMD
+&T/sethotbar [Slot] [Block]
 Alias &T/shb
 &T/chb &S -- Clear hotbar
 */
@@ -35,9 +35,17 @@ cmd_sethotbar(char * cmd, char * arg)
     char * arg2 = strtok(0, " ");
     if (arg1 == 0) { reset_hotbar(); return; }
     int slot = atoi(arg1);
+    if (slot < 1 || slot > 9) {
+	printf_chat("Hotbar slot number should be 1..9");
+	return;
+    }
     if (arg2)
 	block = block_id(arg2);
 
-    send_sethotbar_pkt(slot, block);
+    if (block == (block_t)-1) {
+	printf_chat("Block %s is unknown", arg2?arg2:"");
+	return;
+    }
+    send_sethotbar_pkt(slot-1, block);
 }
 

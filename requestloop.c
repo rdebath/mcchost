@@ -326,9 +326,10 @@ process_client_message(int cmd, char * pktbuf)
 	{
 	    char * p = pktbuf+1;
 	    pkt_setblock pkt;
-	    pkt.coord.x = IntBE16(p); p+=2;
-	    pkt.coord.y = IntBE16(p); p+=2;
-	    pkt.coord.z = IntBE16(p); p+=2;
+	    // Assume this is a UIntBE16 as -ve is unreasonable
+	    pkt.coord.x = UIntBE16(p); p+=2;
+	    pkt.coord.y = UIntBE16(p); p+=2;
+	    pkt.coord.z = UIntBE16(p); p+=2;
 	    pkt.mode = *p++;
 	    if (extn_extendblockno) {
 		pkt.heldblock = IntBE16(p); p+=2;

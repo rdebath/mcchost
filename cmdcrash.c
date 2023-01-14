@@ -79,10 +79,7 @@ cmd_crash(char * UNUSED(cmd), char * arg)
 	exit(EXIT_FAILURE);
     else if (strcmp(crash_type, "606") == 0)
 	printf_chat("Value should fail %d", *crash_ptr);
-    else if (crash_type) {
-	char cbuf[1024];
-	saprintf(cbuf, "Server crash! Error code %s", crash_type);
-	fatal(cbuf);
-    }
+    else if (crash_type)
+	fatal_f("Server crash! Error code %s", crash_type);
 #endif
 }

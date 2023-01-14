@@ -84,7 +84,7 @@ init_map_null()
 void
 patch_map_nulls(xyzhv_t oldsize)
 {
-    if (level_prop->cells_x >= 16384 || level_prop->cells_y >= 16384 || level_prop->cells_z >= 16384 ||
+    if (level_prop->cells_x > 65535 || level_prop->cells_y > 65535 || level_prop->cells_z > 65535 ||
         level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0 )
     {
 	if (oldsize.valid == 1) {
@@ -180,7 +180,7 @@ read_blockfile_size(char * levelname, xyzhv_t * oldsize)
 	    unsigned x = b.size.cells_x;
 	    unsigned y = b.size.cells_y;
 	    unsigned z = b.size.cells_z;
-	    if (x>16384||y>16384||z>16384|| (int64_t)x*y*z > INT_MAX)
+	    if (x>65535||y>65535||z>65535||x==0||y==0||z==0|| (int64_t)x*y*z > INT_MAX)
 		continue;
 
 	    oldsize->x = x;

@@ -16,6 +16,7 @@ Other notes
 
 /*HELP todo
  +) Find_player (part2)
+ +) Login Whitelist ?
 
  +) Add walkthrough for default server setup.
     -- Including setting user to Admin with remote GUI.
@@ -30,6 +31,7 @@ Other notes
 
  +) Improve the /setvar command, more help, option lists.
     -- /setvar user username var value ?
+    -- Automatic restarts ?
 
  +) /restore
  +) /resizelvl

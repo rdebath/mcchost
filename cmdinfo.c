@@ -193,11 +193,11 @@ cmd_minfo(char * UNUSED(cmd), char * UNUSED(arg))
     }
 
     if (current_level_backup_id > 0)
-	printf_chat("&TAbout &WMuseum&S (&7%s %d): &SWidth=%d Height=%d Length=%d",
+	printf_chat("&TAbout &WMuseum&S (&7%s %d&S): &SWidth=%d Height=%d Length=%d",
 	    current_level_name, current_level_backup_id,
 	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
     else if (current_level_backup_id == 0)
-	printf_chat("&TAbout &7%s: &SWidth=%d Height=%d Length=%d",
+	printf_chat("&TAbout &7%s&S: &SWidth=%d Height=%d Length=%d",
 	    current_level_name, level_prop->cells_x,
 	    level_prop->cells_y, level_prop->cells_z);
     else

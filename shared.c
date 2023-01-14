@@ -230,6 +230,7 @@ open_blocks(char * levelname)
     deallocate_shared(SHMID_BLOCKS);
     level_blocks = 0;
 
+    if(*levelname == 0) return -1;
     sprintf(sharename, LEVEL_BLOCKS_NAME, levelname);
     int64_t l =
 	    (int64_t)level_prop->cells_x * level_prop->cells_y *
@@ -307,10 +308,9 @@ unlink_level(char * levelname, int silent)
 LOCAL void check_level_name(char * levelname)
 {
     if (strchr(levelname, '/') != 0 || levelname[0] == '.' || levelname[0] == 0
-	|| strlen(levelname) >= MAXLEVELNAMELEN*4) {
-	char buf[256];
-	saprintf(buf, "Illegal level file name \"%.66s\"", levelname);
-	fatal(buf);
+	|| strlen(levelname) >= MAXLEVELNAMELEN*4)
+    {
+	fatal_f("Illegal level file name \"%.66s\"", levelname);
     }
 }
 

@@ -124,7 +124,7 @@ int customblock_pkt_sent = 0;
 int customblock_enabled = 0;
 
 block_t client_block_limit = Block_CP;	// Unsafe to send to client.
-block_t level_block_limit = 0;		// We need to remap this or higher.
+block_t level_block_limit = Block_CP;	// We need to remap this or higher.
 
 void
 send_ext_list()
@@ -163,13 +163,10 @@ process_extentry(pkt_extentry * pkt)
 	    continue;
 	if (extensions[i].enabled) return; // Don't repeat it.
 
-	if (extensions[i].nolate && !cpe_pending) {
-	    char ebuf[256];
-	    saprintf(ebuf,
+	if (extensions[i].nolate && !cpe_pending)
+	    fatal_f(
 		"Extension \"%s\" cannot be enabled late.",
 		extensions[i].name);
-	    fatal(ebuf);
-	}
 
 	// Note CC sends ALL the extensions it supports even if we
 	// haven't advertised them.
@@ -233,7 +230,8 @@ process_extentry(pkt_extentry * pkt)
 		client_block_limit = CPELIMIT;
 
 	    level_block_limit = client_block_limit;
-	}
+	} else
+	    level_block_limit = Block_CPE;
 
 	// Classicube treats the Player ID as an unsigned char.
 	// Let's assume others do this too if the extensions are active.

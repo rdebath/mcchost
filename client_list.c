@@ -462,7 +462,7 @@ start_user()
 		continue;
 	    }
 	    if (!user_authenticated)
-		quiet_logout("Already logged in!");
+		disconnect_f(0, "User %s is already logged in!", user_id);
 	    shdat.client->user[i].active = 0;
 	    kicked++;
 	}
@@ -476,9 +476,9 @@ start_user()
     if (new_one < 0 || new_one >= MAX_USER) {
 	unlock_fn(system_lock);
 	if (kicked)
-	    quiet_logout("Too many sessions, please try again");
+	    disconnect_f(0, "Too many sessions, please try again");
 	else
-	    quiet_logout("Too many sessions already connected");
+	    disconnect_f(0, "Too many sessions already connected");
     }
 
     my_user_no = new_one;

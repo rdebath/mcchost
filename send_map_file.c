@@ -13,14 +13,28 @@ block_t cpe_conversion[] = {
     0x1d, 0x1c, 0x14, 0x2a, 0x31, 0x24, 0x05, 0x01
 };
 
-// Random translations for protocols 5 and 6
+// Random translations for protocols 4,5 and 6
 block_t proto_conversion[] = {
-    Block_Sand, Block_Sand, Block_Sand, Block_Sand, Block_Sand,
-    Block_Sand, Block_Sand, Block_Sand, Block_Sand, Block_Sand,
-    Block_Sand, Block_Sand, Block_Sand, Block_Sand, Block_Sand,
-    Block_Sand, Block_Sapling, Block_Sapling, Block_Sapling,
-    Block_Sapling, Block_GoldOre, Block_Stone, Block_Stone, Block_Stone,
-    Block_Cobble, Block_Sand, Block_Wood, Block_Cobble, Block_Cobble
+    // Available for any proto
+    // Block_Air, Block_Stone, Block_Grass, Block_Dirt, Block_Cobble,
+    // Block_Wood, Block_Sapling, Block_Bedrock, Block_ActiveWater,
+    // Block_StillWater, Block_ActiveLava, Block_StillLava, Block_Sand,
+    // Block_Gravel, Block_GoldOre, Block_IronOre, Block_CoalOre,
+    // Block_Log, Block_Leaves,
+
+    // Proto 4
+    Block_GoldOre, Block_Leaves,
+
+    // Proto 5
+    Block_Stone, Block_Stone, Block_Stone, Block_Stone, Block_Stone,
+    Block_Stone, Block_Stone, Block_Stone, Block_Stone, Block_Stone,
+    Block_Stone, Block_Stone, Block_Stone, Block_Stone, Block_Stone,
+    Block_Stone, Block_Sapling, Block_Sapling, Block_Sapling,
+    Block_Sapling, Block_Sponge,
+
+    // Proto 6
+    Block_Stone, Block_Grey, Block_Grey, Block_Red,
+    Block_Red, Block_Wood, Block_Cobble, Block_Cobble
 };
 
 static uint32_t metadata_generation = 0;
@@ -70,8 +84,11 @@ f_block_convert(block_t in)
     }
 
     if (in < client_block_limit) return in;
-    if (in >= Block_Red && in <= Block_Obsidian)
-	in = proto_conversion[in-Block_Red];
+    if (in >= Block_Sponge && in <= Block_Obsidian)
+	in = proto_conversion[in-Block_Sponge];
+    if (in < client_block_limit) return in;
+    if (in >= Block_Sponge && in <= Block_Obsidian)
+	in = proto_conversion[in-Block_Sponge];
     if (in < client_block_limit) return in;
     return Block_Bedrock;
 }
@@ -99,9 +116,11 @@ send_map_file()
     send_inventory_order();
 
     set_last_block_queue_id(); // Send updates from now.
-    send_block_array();
-
-    send_lvldone_pkt(level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
+    if ( cpe_requested || extn_fastmap ||
+	    ((level_prop->cells_x | level_prop->cells_y | level_prop->cells_z) & 31) == 0)
+	send_block_array();
+    else
+	send_padded_block_array();
 
     send_metadata();
     reset_player_list();
@@ -119,21 +138,42 @@ send_void_map()
 	0x00, 0x03, 0x63, 0x60, 0x60, 0x60, 0xe2, 0x64,
 	0x00, 0x00, 0x84, 0xce, 0x84, 0x63, 0x06, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    char empty_classic[] = {
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xed, 0xd3,
+	0xb1, 0x11, 0x00, 0x20, 0x10, 0xc3, 0xb0, 0x74, 0xac, 0xc5, 0xfe, 0x53,
+	0x31, 0x01, 0xd4, 0xdc, 0x47, 0x6a, 0x5d, 0x3b, 0xd9, 0x59, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x7c, 0x79, 0xd2, 0x75, 0xfd, 0xe7,
+	0xee, 0x7f, 0x5d, 0xef, 0xed, 0xfe, 0xd7, 0xf5, 0xde, 0xee, 0x7f, 0x5d,
+	0xef, 0xed, 0xfe, 0xd7, 0xf5, 0xde, 0xee, 0x7f, 0x5d, 0xef, 0xed, 0xfe,
+	0xd7, 0xf5, 0xde, 0x0e, 0x70, 0x71, 0x00, 0xe3, 0xce, 0x1f, 0xb6, 0x04,
+	0x40, 0x00, 0x00
+    };
     send_lvlinit_pkt(2);
-    if (extn_fastmap)
-	send_lvldata_pkt(empty_zlib, 4, 0);
-    else
-	send_lvldata_pkt(empty_gzip, 0x1a, 0);
-    send_lvldone_pkt(1, 2, 1);
-    if (extn_envcolours) {
-	for(int i = 0; i<6; i++)
-	    send_envsetcolour_pkt(i, 0);
-    }
-    player_posn.x = player_posn.z = 16; player_posn.y = 256;
-    player_posn.v = player_posn.h = 0; player_posn.valid = 1;
+    if (!cpe_requested) {
+	// Beware, 0.30 can't do a 1x2x1 map, so give them 32x16x32
+	// In fact the real map should be a multiple of that.
+	send_lvldata_pkt(empty_classic, 0x57, 0);
+	send_lvldone_pkt(32, 16, 32);
 
-    send_block_definitions(); // Clear any previous.
-    send_inventory_order();
+	player_posn.x = player_posn.z = 16*32; player_posn.y = 320;
+	player_posn.v = player_posn.h = 0; player_posn.valid = 1;
+    } else {
+	if (extn_fastmap)
+	    send_lvldata_pkt(empty_zlib, 4, 0);
+	else
+	    send_lvldata_pkt(empty_gzip, 0x1a, 0);
+	send_lvldone_pkt(1, 2, 1);
+	if (extn_envcolours) {
+	    for(int i = 0; i<6; i++)
+		send_envsetcolour_pkt(i, 0);
+	}
+	player_posn.x = player_posn.z = 16; player_posn.y = 256;
+	player_posn.v = player_posn.h = 0; player_posn.valid = 1;
+
+	send_block_definitions(); // Clear any previous.
+	send_inventory_order();
+    }
+
     reset_player_list();
 }
 
@@ -212,11 +252,8 @@ send_block_array()
 	    zrv = deflateInit2 (&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
 				 MAX_WBITS | 16, 8,
 				 Z_DEFAULT_STRATEGY);
-	if (zrv != Z_OK) {
-	    char buf[256];
-	    sprintf(buf, "ZLib:deflateInit2() failed RV=%d.\n", zrv);
-	    fatal(buf);
-	}
+	if (zrv != Z_OK)
+	    fatal_f("ZLib:deflateInit2() failed RV=%d.\n", zrv);
 
 	strm.next_in = blockbuffer;
 	strm.avail_in = extn_fastmap?0:4;
@@ -256,11 +293,8 @@ send_block_array()
 	    }
 
 	    zrv = deflate(&strm, strm.avail_in != 0?Z_NO_FLUSH:Z_FINISH);
-	    if (zrv != Z_OK && zrv != Z_STREAM_END && zrv != Z_BUF_ERROR) {
-		char buf[256];
-		sprintf(buf, "ZLib:deflate() failed RV=%d.\n", zrv);
-		fatal(buf);
-	    }
+	    if (zrv != Z_OK && zrv != Z_STREAM_END && zrv != Z_BUF_ERROR)
+		fatal_f("ZLib:deflate() failed RV=%d.\n", zrv);
 
 	    if (strm.avail_out == 0 || (zrv == Z_STREAM_END && sizeof(zblockbuffer) != strm.avail_out)) {
 		send_lvldata_pkt(zblockbuffer, sizeof(zblockbuffer)-strm.avail_out, percent);
@@ -284,6 +318,115 @@ send_block_array()
 
     // Record for next time.
     level_prop->last_map_download_size = blocks_sent * 1028 + 8;
+
+    send_lvldone_pkt(level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
+}
+
+void
+send_padded_block_array()
+{
+    int blocks_buffered = 0;
+    int scells_x = level_prop->cells_x;
+    int scells_y = level_prop->cells_y;
+    int scells_z = level_prop->cells_z;
+    if (scells_x&31) scells_x = ((scells_x+31) & -32);
+    if (scells_y&15) scells_y = ((scells_y+15) & -16);
+    if (scells_z&31) scells_z = ((scells_z+31) & -32);
+    uintptr_t slevel_len = (uintptr_t)scells_x * scells_y * scells_z;
+    block_t conv_blk[BLOCKMAX];
+
+    for(block_t b = 0; b<BLOCKMAX; b++)
+	conv_blk[b] = block_convert(b);
+
+    uintptr_t blocks_sent = 0;
+    unsigned char blockbuffer[65536];
+
+    if (!extn_fastmap) {
+	blockbuffer[0] = (slevel_len>>24);
+	blockbuffer[1] = (slevel_len>>16);
+	blockbuffer[2] = (slevel_len>>8);
+	blockbuffer[3] = (slevel_len&0xFF);
+    }
+
+    int zrv = 0;
+    z_stream strm = {0};
+    strm.zalloc = Z_NULL;
+    strm.zfree  = Z_NULL;
+    strm.opaque = Z_NULL;
+    zrv = deflateInit2 (&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+			 MAX_WBITS | 16, 8,
+			 Z_DEFAULT_STRATEGY);
+    if (zrv != Z_OK)
+	fatal_f("ZLib:deflateInit2() failed RV=%d.\n", zrv);
+
+    strm.next_in = blockbuffer;
+    strm.avail_in = extn_fastmap?0:4;
+
+    uintptr_t level_blocks_used = 0;
+    unsigned char zblockbuffer[1024];
+    int percent = 0;
+
+    strm.avail_out = sizeof(zblockbuffer);
+    strm.next_out = zblockbuffer;
+
+    int x=0, y=0, z=0;
+    do {
+	if (strm.avail_in == 0 && level_blocks_used < slevel_len) {
+	    // copy some bytes from level_blocks
+	    strm.next_in = blockbuffer;
+	    strm.avail_in = 0;
+
+	    for(int i=0; i<sizeof(blockbuffer) && level_blocks_used < slevel_len; i++)
+	    {
+		block_t b = Block_Bedrock;
+		if (x >= level_prop->cells_x || z >= level_prop->cells_z) {
+		}
+		if (x<level_prop->cells_x && y<level_prop->cells_y && z<level_prop->cells_z) 
+		    b = level_blocks[World_Pack(x,y,z)];
+		else {
+		    if (y >= level_prop->cells_y/2) b = Block_Air;
+		    else if (y+2 >= level_prop->cells_y/2)
+			b = Block_ActiveWater;
+		}
+
+		if (b<BLOCKMAX)
+		    b = conv_blk[b];
+		else
+		    b = block_convert(b);
+
+		blockbuffer[i] = b;
+
+		level_blocks_used += 1;
+		x++; if (x == scells_x) { x=0; z++; if (z == scells_z) {z=0; y++;}}
+		strm.avail_in += 1;
+	    }
+	}
+
+	zrv = deflate(&strm, strm.avail_in != 0?Z_NO_FLUSH:Z_FINISH);
+	if (zrv != Z_OK && zrv != Z_STREAM_END && zrv != Z_BUF_ERROR)
+	    fatal_f("ZLib:deflate() failed RV=%d.\n", zrv);
+
+	if (strm.avail_out == 0 || (zrv == Z_STREAM_END && sizeof(zblockbuffer) != strm.avail_out)) {
+	    send_lvldata_pkt(zblockbuffer, sizeof(zblockbuffer)-strm.avail_out, percent);
+	    blocks_sent += 1;
+	    strm.avail_out = sizeof(zblockbuffer);
+	    strm.next_out = zblockbuffer;
+
+	    percent = (int64_t)level_blocks_used * 100 / slevel_len;
+
+	    blocks_buffered ++;
+	    if (blocks_buffered > 64)
+		flush_to_remote();
+	}
+
+    } while(zrv != Z_STREAM_END);
+
+    deflateEnd(&strm);
+
+    // Record for next time.
+    level_prop->last_map_download_size = blocks_sent * 1028 + 8;
+
+    send_lvldone_pkt(scells_x, scells_y, scells_z);
 }
 
 struct preset { char * name; int fog, sky, clouds, sun, shadow; }

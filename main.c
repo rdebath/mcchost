@@ -212,12 +212,6 @@ logout(char * emsg)
 }
 
 void
-quiet_logout(char * emsg)
-{
-    disconnect(0, emsg);
-}
-
-void
 kicked(char * emsg)
 {
     printf_chat("@&W- %s &Skicked %s", player_list_name.c, emsg);
@@ -274,6 +268,46 @@ disconnect(int rv, char * emsg)
 	    socket_shutdown(0);
     }
     exit(rv);
+}
+
+#if INTERFACE
+#define fmt_fatal_w __attribute__ ((format (printf, 1, 2)))
+#endif
+
+void fmt_fatal_w
+fatal_f(char * fmt, ...)
+{
+    char pbuf[16<<10];
+    va_list ap;
+    va_start(ap, fmt);
+    int l = vsnprintf(pbuf, sizeof(pbuf), fmt, ap);
+    if (l > sizeof(pbuf)) {
+        strcpy(pbuf+sizeof(pbuf)-4, "...");
+        l = sizeof(pbuf);
+    }
+    va_end(ap);
+
+    fatal(pbuf);
+}
+
+#if INTERFACE
+#define fmt_disc_w __attribute__ ((format (printf, 2, 3)))
+#endif
+
+void fmt_disc_w
+disconnect_f(int rv, char * fmt, ...)
+{
+    char pbuf[16<<10];
+    va_list ap;
+    va_start(ap, fmt);
+    int l = vsnprintf(pbuf, sizeof(pbuf), fmt, ap);
+    if (l > sizeof(pbuf)) {
+        strcpy(pbuf+sizeof(pbuf)-4, "...");
+        l = sizeof(pbuf);
+    }
+    va_end(ap);
+
+    disconnect(rv, pbuf);
 }
 
 void
@@ -436,12 +470,12 @@ login()
 		teapot(inbuf, insize);
 	    if (insize >= 2 && (inbuf[1] < 3 || inbuf[1] > 9))
 		teapot(inbuf, insize);
-	    if (insize >= 2 && (inbuf[1] > 7 || inbuf[1] < 5)) {
+	    if (insize >= 2 && (inbuf[1] > 7 || inbuf[1] < 4)) {
 		if (insize >= 66) {
 		    convert_logon_packet(inbuf, &player);
 		    strcpy(user_id, player.user_id);
 		}
-		disconnect(0, "Unsupported protocol version");
+		disconnect_f(0, "Unsupported protocol version %d", inbuf[1]);
 	    }
 	}
 	if (insize >= 2 && inbuf[1] < 6)
@@ -458,20 +492,22 @@ login()
     saprintf(player_list_name.c, "&f%s", user_id);
     protocol_base_version = player.protocol;
 
-    if (player.protocol > 7 || player.protocol < 5)
+    if (player.protocol > 7)
 	disconnect(0, "Unsupported protocol version");
 
     // The older protocols are mostly the same but with fewer valid blocks.
     // 7 -- classic 0.28 - 0.30	-- CPE only for this version.
     // 6 -- classic 0.0.20+	-- No setuser type packet.
     // 5 -- classic 0.0.19	-- No usertype field.
-    // 3/4 -- classic 0.0.16+	-- Problems with teleport and spawn positions.
+    // 3/4 -- classic 0.0.16+	-- Differences with teleport and spawn positions.
     // ? -- classic 0.0.15a	-- No protocol version in ident packet.
     if (player.protocol < 7)
 	switch (player.protocol) {
 	case 6: client_block_limit = Block_Gold+1; break;
 	case 5: client_block_limit = Block_Glass+1; msglen[0]--; break;
-	default: client_block_limit = Block_Leaves+1; msglen[0]--; break;
+	case 4:
+	case 3: client_block_limit = Block_Leaves+1; msglen[0]--; break;
+	default: disconnect(0, "Unsupported protocol version");
 	}
 
     for(int i = 0; player.user_id[i]; i++)
