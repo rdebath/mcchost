@@ -46,6 +46,8 @@ int client_inventory_custom = 0;
 int classic_limit_blocks = 0;		// Used "reload classic" to see in classic mode.
 
 static uint8_t tex16_def[BLOCKMAX];
+xyz_t void_map_size = {1,1,1};
+xyz_t classic_map_offset = {0,0,0};
 
 // Convert from Map block numbers to ones the client will understand.
 block_t
@@ -116,8 +118,8 @@ send_map_file()
     send_inventory_order();
 
     set_last_block_queue_id(); // Send updates from now.
-    if ( cpe_requested || extn_fastmap ||
-	    ((level_prop->cells_x | level_prop->cells_y | level_prop->cells_z) & 31) == 0)
+    if (ini_settings->no_map_padding || (cpe_requested || extn_fastmap ||
+	    ((level_prop->cells_x | level_prop->cells_y | level_prop->cells_z) & 31) == 0))
 	send_block_array();
     else
 	send_padded_block_array();
@@ -151,9 +153,11 @@ send_void_map()
     send_lvlinit_pkt(2);
     if (!cpe_requested) {
 	// Beware, 0.30 can't do a 1x2x1 map, so give them 32x16x32
-	// In fact the real map should be a multiple of that.
+	// In fact the real map should always be a multiple of 16x16x16 of
+	// that size or larger
 	send_lvldata_pkt(empty_classic, 0x57, 0);
 	send_lvldone_pkt(32, 16, 32);
+	void_map_size = (xyz_t){32,16,32};
 
 	player_posn.x = player_posn.z = 16*32; player_posn.y = 320;
 	player_posn.v = player_posn.h = 0; player_posn.valid = 1;
@@ -163,6 +167,7 @@ send_void_map()
 	else
 	    send_lvldata_pkt(empty_gzip, 0x1a, 0);
 	send_lvldone_pkt(1, 2, 1);
+	void_map_size = (xyz_t){1,2,1};
 	if (extn_envcolours) {
 	    for(int i = 0; i<6; i++)
 		send_envsetcolour_pkt(i, 0);
@@ -335,6 +340,10 @@ send_padded_block_array()
     uintptr_t slevel_len = (uintptr_t)scells_x * scells_y * scells_z;
     block_t conv_blk[BLOCKMAX];
 
+    classic_map_offset.x = (scells_x - level_prop->cells_x) / 2;
+    classic_map_offset.y = (scells_y - level_prop->cells_y) / 2;
+    classic_map_offset.z = (scells_z - level_prop->cells_z) / 2;
+
     for(block_t b = 0; b<BLOCKMAX; b++)
 	conv_blk[b] = block_convert(b);
 
@@ -369,7 +378,9 @@ send_padded_block_array()
     strm.avail_out = sizeof(zblockbuffer);
     strm.next_out = zblockbuffer;
 
-    int x=0, y=0, z=0;
+    int x= -classic_map_offset.x;
+    int y= -classic_map_offset.y;
+    int z= -classic_map_offset.z;
     do {
 	if (strm.avail_in == 0 && level_blocks_used < slevel_len) {
 	    // copy some bytes from level_blocks
@@ -379,12 +390,15 @@ send_padded_block_array()
 	    for(int i=0; i<sizeof(blockbuffer) && level_blocks_used < slevel_len; i++)
 	    {
 		block_t b = Block_Bedrock;
-		if (x >= level_prop->cells_x || z >= level_prop->cells_z) {
-		}
-		if (x<level_prop->cells_x && y<level_prop->cells_y && z<level_prop->cells_z) 
+
+		if (x>=0 && y>=0 && z>=0 &&
+		    x<level_prop->cells_x && y<level_prop->cells_y && z<level_prop->cells_z) 
 		    b = level_blocks[World_Pack(x,y,z)];
 		else {
-		    if (y >= level_prop->cells_y/2) b = Block_Air;
+		    if (y<0)
+			b = Block_Bedrock;
+		    else if (y >= level_prop->cells_y/2)
+			b = Block_Air;
 		    else if (y+2 >= level_prop->cells_y/2)
 			b = Block_ActiveWater;
 		}
@@ -397,7 +411,12 @@ send_padded_block_array()
 		blockbuffer[i] = b;
 
 		level_blocks_used += 1;
-		x++; if (x == scells_x) { x=0; z++; if (z == scells_z) {z=0; y++;}}
+		x++;
+		if (x == scells_x-classic_map_offset.x) {
+		    x= -classic_map_offset.x; z++;
+		    if (z == scells_z-classic_map_offset.z)
+		    {z=-classic_map_offset.z; y++;}
+		}
 		strm.avail_in += 1;
 	    }
 	}

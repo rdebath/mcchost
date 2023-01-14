@@ -359,21 +359,24 @@ process_player_setblock(pkt_setblock pkt)
 void
 revert_client(pkt_setblock pkt)
 {
-    if (pkt.coord.x < 0 || pkt.coord.y < 0 || pkt.coord.z < 0)
-	return;
-
     block_t b;
     if (!level_prop || !level_block_queue || !level_blocks ||
+        pkt.coord.x < 0 || pkt.coord.y < 0 || pkt.coord.z < 0 ||
 	    pkt.coord.x >= level_prop->cells_x ||
 	    pkt.coord.y >= level_prop->cells_y ||
 	    pkt.coord.z >= level_prop->cells_z)
     {
 	int y = pkt.coord.y;
-	if (!level_prop)
+	xyz_t mapsz;
+	if (level_prop)
+	    mapsz = (xyz_t){level_prop->cells_x, level_prop->cells_y, level_prop->cells_z};
+	else mapsz = void_map_size;
+
+	if (y<0)
+	    b = Block_Bedrock;
+	else if (y >= mapsz.y/2)
 	    b = Block_Air;
-	else if (y >= level_prop->cells_y/2)
-	    b = Block_Air;
-	else if (y+2 >= level_prop->cells_y/2)
+	else if (y+2 >= mapsz.y/2 && (pkt.coord.x >= mapsz.x || pkt.coord.z >= mapsz.z))
 	    b = Block_ActiveWater;
 	else
 	    b = Block_Bedrock;

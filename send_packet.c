@@ -81,6 +81,11 @@ send_setblock_pkt(int x, int y, int z, int block)
     uint8_t packetbuf[1024];
     uint8_t *p = packetbuf;
     *p++ = PKID_SRVBLOCK;
+    if (!cpe_requested) {
+	x += classic_map_offset.x;
+	y += classic_map_offset.y;
+	z += classic_map_offset.z;
+    }
     nb_short(&p, x);
     nb_short(&p, y);
     nb_short(&p, z);
@@ -99,9 +104,17 @@ send_spawn_pkt(int player_id, char * playername, xyzhv_t posn)
     *p++ = PKID_SPAWN;
     *p++ = player_id;
     p += nb_string_write(p, playername);
-    nb_entcoord(&p, posn.x);
-    nb_entcoord(&p, posn.y+51);
-    nb_entcoord(&p, posn.z);
+    int x = posn.x;
+    int y = posn.y;
+    int z = posn.z;
+    if (!cpe_requested) {
+	x += classic_map_offset.x*32;
+	y += classic_map_offset.y*32;
+	z += classic_map_offset.z*32;
+    }
+    nb_entcoord(&p, x);
+    nb_entcoord(&p, y+51);
+    nb_entcoord(&p, z);
     *p++ = posn.h;
     *p++ = posn.v;
     write_to_remote(packetbuf, p-packetbuf);
@@ -139,12 +152,20 @@ send_posn_pkt(int player_id, xyzhv_t *oldpos, xyzhv_t posn)
     default:
 	*p++ = PKID_POSN;
 	*p++ = player_id;
-	nb_entcoord(&p, posn.x);
+	int x = posn.x;
+	int y = posn.y;
+	int z = posn.z;
+	if (!cpe_requested) {
+	    x += classic_map_offset.x*32;
+	    y += classic_map_offset.y*32;
+	    z += classic_map_offset.z*32;
+	}
+	nb_entcoord(&p, x);
 	if (player_id == -1)
-	    nb_entcoord(&p, posn.y+29);
+	    nb_entcoord(&p, y+29);
 	else
-	    nb_entcoord(&p, posn.y+51);
-	nb_entcoord(&p, posn.z);
+	    nb_entcoord(&p, y+51);
+	nb_entcoord(&p, z);
 	*p++ = posn.h;
 	*p++ = posn.v;
 	break;

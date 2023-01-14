@@ -88,6 +88,7 @@ struct server_ini_t {
     int disallow_ip_verify;
     int allow_pass_verify;
     int void_for_login;
+    int no_map_padding;
 
     int trusted_localnet;
     char localnet_cidr[64];

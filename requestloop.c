@@ -330,6 +330,11 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt.coord.x = UIntBE16(p); p+=2;
 	    pkt.coord.y = UIntBE16(p); p+=2;
 	    pkt.coord.z = UIntBE16(p); p+=2;
+	    if (!cpe_requested) {
+		pkt.coord.x -= classic_map_offset.x;
+		pkt.coord.y -= classic_map_offset.y;
+		pkt.coord.z -= classic_map_offset.z;
+	    }
 	    pkt.mode = *p++;
 	    if (extn_extendblockno) {
 		pkt.heldblock = IntBE16(p); p+=2;
@@ -370,6 +375,11 @@ process_client_message(int cmd, char * pktbuf)
 		pkt.pos.x = IntBE16(p); p+=2;
 		pkt.pos.y = IntBE16(p); p+=2;
 		pkt.pos.z = IntBE16(p); p+=2;
+		if (!cpe_requested) {
+		    pkt.pos.x -= classic_map_offset.x*32;
+		    pkt.pos.y -= classic_map_offset.y*32;
+		    pkt.pos.z -= classic_map_offset.z*32;
+		}
 	    }
 	    pkt.pos.h = *p++;
 	    pkt.pos.v = *p++;
