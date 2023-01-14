@@ -28,8 +28,7 @@ Teleports you to the spawn location of the level.
 void
 cmd_spawn(char * UNUSED(cmd), char *UNUSED(arg))
 {
-    if (!level_prop) return;
-    if (level_prop->hacks_flags & 8) {
+    if (!level_prop || (level_prop->hacks_flags & 8)) {
 	printf_chat("&cRespawning is currently disabled");
 	return;
     }
@@ -41,7 +40,7 @@ cmd_spawn(char * UNUSED(cmd), char *UNUSED(arg))
 void
 cmd_tp(char * cmd, char *arg)
 {
-    if (level_prop->hacks_flags & 8) {
+    if (!level_prop || (level_prop->hacks_flags & 8)) {
 	printf_chat("&cTeleport is currently disabled");
 	return;
     }

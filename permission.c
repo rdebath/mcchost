@@ -18,7 +18,7 @@ int
 perm_level_check(char * levelname, int expand_plus)
 {
     if (levelname == 0) {
-	if (expand_plus == 0) levelname = current_level_name;
+	if (level_prop && level_blocks && expand_plus == 0) levelname = current_level_name;
 	else {
 	    printf_chat("&WPermission denied on current level");
 	    return 0;

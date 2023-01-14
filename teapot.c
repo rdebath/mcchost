@@ -26,12 +26,12 @@ teapot(uint8_t * buf, int len)
 	    char hbuf[32] = "";
 	    for(int i=0; i<len; i++)
 		sprintf(hbuf+i*6, ", 0x%02x", buf[i]);
-	    printlog("Received byte%s %s from %s",
-		len>1?"s":"", hbuf+2, client_ipv4_str);
+	    printlog("Failed connect from %s, byte%s %s",
+		client_ipv4_str, len>1?"s":"", hbuf+2);
 	    fm = rv = dump_it = 0;
 
 	} else if (buf[0] == 0x16 && buf[1] == 0x03 && buf[1] >= 1 && buf[1] <= 3) { 
-	    printlog("Received a TLS Client hello packet from %s",
+	    printlog("Failed connect from %s, a TLS Client hello packet",
 		client_ipv4_str);
 	    fm = rv = dump_it = 0;
 	    send_tls_fail = 1;
@@ -86,7 +86,7 @@ teapot(uint8_t * buf, int len)
 		len ? "invalid client hello": "no data.");
     }
     else if (len <= 0)
-	printlog("Nothing received from remote");
+	printlog("Failed connect from unknown remote, nothing received.");
 
     if (dump_it) {
 	if (is_ascii) {

@@ -18,6 +18,7 @@ struct command_t {
     int dup;		// Don't show on /cmds (usually a duplicate)
     int nodup;		// No a dup, don't use previous.
     int harg;		// Help if no args
+    int map;		// Error if no map
 };
 
 typedef struct command_limit_t command_limit_t;
@@ -109,6 +110,9 @@ run_command(char * msg)
 	if (strcasecmp(ncmd, "afk") != 0)
 	    update_player_move_time();
 
+	if ((!level_prop || !level_blocks) && command_list[c].map)
+	    printf_chat("&WCommand failed, map is not loaded");
+	else
 	if (command_list[c].harg && *arg == 0)
 	    cmd_help(0, ncmd);
 	else

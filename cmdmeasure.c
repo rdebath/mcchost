@@ -11,7 +11,7 @@ Aliases: /ms
 
 #if INTERFACE
 #define CMD_MEASURE \
-    {N"measure", &cmd_measure}, {N"ms", &cmd_measure, .dup=1}
+    {N"measure", &cmd_measure, .map=1}, {N"ms", &cmd_measure, .dup=1}
 #endif
 
 void

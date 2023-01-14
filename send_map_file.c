@@ -684,6 +684,8 @@ reset_hotbar()
 void
 send_block_permission()
 {
+    if (!level_prop) return;
+
     if (!extn_block_permission) {
 	send_op_pkt(
 	    level_prop->disallowchange == 0 &&

@@ -34,6 +34,11 @@ Alias: &T/a
 Draws a cuboid between two points
 Alias: &T/z
 */
+/*HELP about,b H_CMD
+&T/about
+Shows information about a block location
+Alias: &T/b
+*/
 
 #if INTERFACE
 #define CMD_PLACE  {N"place", &cmd_place}, {N"pl", &cmd_place, .dup=1}, \
@@ -391,9 +396,11 @@ cmd_mark(char * cmd, char * arg)
 	char buf[] = "0";
 	cmd_mark("m", buf);
 	ar = 0; cnt = 3;
-	args[0] = level_prop->cells_x-1;
-	args[1] = level_prop->cells_y-1;
-	args[2] = level_prop->cells_z-1;
+	if (level_prop) {
+	    args[0] = level_prop->cells_x-1;
+	    args[1] = level_prop->cells_y-1;
+	    args[2] = level_prop->cells_z-1;
+	}
     }
     if (ar)
 	for(int i = 0; i<3; i++) {
@@ -531,7 +538,8 @@ cmd_about(char * cmd, char * arg)
 	return;
     }
 
-    if (marks[0].x < 0 || marks[0].x >= level_prop->cells_x ||
+    if (!level_prop ||
+	marks[0].x < 0 || marks[0].x >= level_prop->cells_x ||
         marks[0].y < 0 || marks[0].y >= level_prop->cells_y ||
         marks[0].z < 0 || marks[0].z >= level_prop->cells_z) {
 	printf_chat("&SLocation outside of map area");
@@ -539,7 +547,7 @@ cmd_about(char * cmd, char * arg)
 	return;
     }
 
-    if (!level_block_queue || !level_blocks) return;
+    if (!level_prop || !level_block_queue || !level_blocks) return;
 
     int x = marks[0].x, y = marks[0].y, z = marks[0].z;
     clear_pending_marks();
@@ -553,7 +561,7 @@ cmd_about(char * cmd, char * arg)
 void
 cmd_cuboid(char * cmd, char * arg)
 {
-    if (level_prop->disallowchange) { printf_chat("&WLevel cannot be changed"); return; }
+    if (!level_prop || level_prop->disallowchange) { printf_chat("&WLevel cannot be changed"); return; }
 
     if (!marks[0].valid || !marks[1].valid) {
 	if (!marks[0].valid) {
