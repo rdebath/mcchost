@@ -73,7 +73,7 @@ function save_text() {
     if (files && text != "") {
 	c = split(textname, a, ",");
 	for(j=0; j<c; j++) {
-	    print text > "help/" a[j+1] ".txt"
+	    print text > ("help/" a[j+1] ".txt")
 	}
     }
 

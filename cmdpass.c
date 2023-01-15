@@ -69,6 +69,8 @@ cmd_pass(char * cmd, char * arg)
 void
 do_setpass(char * passwd)
 {
+    if (!passwd || !*passwd) return cmd_help(0, "/setpass");
+
 static char base62[] =
     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 

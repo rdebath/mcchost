@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/select.h>
+#include <signal.h>
 
 #include "tcpserver.h"
 

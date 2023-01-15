@@ -1,9 +1,12 @@
+PROG=server
+ODIR=obj
+
 # Always ensure headers are up to date, unless we're cleaning.
 ifeq ($(findstring zip,$(MAKECMDGOALS)),)
 ifeq ($(findstring clean,$(MAKECMDGOALS)),)
 ifeq ($(findstring rebuild,$(MAKECMDGOALS)),)
 ifeq ($(findstring makeheaders,$(MAKECMDGOALS)),)
-NIL:=$(shell make $(MFLAGS) makeheaders >&2 )
+NIL:=$(shell $(MAKE) $(MFLAGS) ODIR="${ODIR}" makeheaders >&2 )
 NIL:=
 endif
 endif
@@ -15,7 +18,7 @@ DEFS=
 DBGSRC=-fdebug-prefix-map='$(shell pwd)'=src
 # Use -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
 # WTH is the point of the "truncation" warnings!
-WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation
+WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation -Wno-unknown-warning-option
 CFLAGS=-Iinclude -O2 -g3 -pthread ${WARN} ${DEFS} ${HEADER} ${DBGSRC}
 LDFLAGS=-lz -lm -llmdb
 HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
@@ -28,8 +31,6 @@ HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
 #TARGET_ARCH=-mx32
 #TARGET_ARCH=-m32
 
-PROG=server
-ODIR=obj
 SRC:=$(filter-out lib_%.c,$(wildcard *.c) )
 OBJ:=$(patsubst %.c,${ODIR}/%.o,${SRC}) ${ODIR}/lib_md5.o
 OBJGEN=${ODIR}/lib_text.o
@@ -77,21 +78,22 @@ endif
 
 MKHDRARG:=$(shell echo ${SRC} lib_text.c | sed 's@\([^ ]*\)\.c@\1.c:include/\1.h@g' )
 
-makeheaders: lib/makeheaders
+makeheaders: ${ODIR}/makeheaders
 	awk -f help_scan.awk *.c > tmp.c
 	cmp -s tmp.c lib_text.c || mv tmp.c lib_text.c
 	-@rm -f tmp.c
 	@:
 	@mkdir -p include
 	echo '#define VERSION "'"$$(git describe --tags --always --dirty)"'"' > include/version.h
-	lib/makeheaders lib_md5.c:include/lib_md5.h
-	lib/makeheaders -H >include/md5.h lib_md5.c
+	${ODIR}/makeheaders lib_md5.c:include/lib_md5.h
+	${ODIR}/makeheaders -H >include/md5.h lib_md5.c
 ifeq ($(findstring s,$(MFLAGS)),)
-	@echo "lib/makeheaders \$${FILES} include/md5.h include/version.h"
+	@echo "${ODIR}/makeheaders \$${FILES} include/md5.h include/version.h"
 endif
-	@lib/makeheaders ${MKHDRARG} include/md5.h include/version.h
+	@${ODIR}/makeheaders ${MKHDRARG} include/md5.h include/version.h
 
-lib/makeheaders: lib/makeheaders.c
+${ODIR}/makeheaders: lib/makeheaders.c
+	@mkdir -p ${ODIR}
 	$(CC) -O -o $@ $<
 
 ${ODIR}/lib_text.o: lib_text.c include/lib_text.h

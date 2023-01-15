@@ -415,8 +415,10 @@ process_args(int argc, char **argv)
 	generate_secret();
 
     if (save_conf) {
+	char pwd[PATH_MAX];
 	save_system_ini_file();
-	fprintf(stderr, "Configuration saved\n");
+	char * p = getcwd(pwd, sizeof(pwd));
+	fprintf(stderr, "Configuration saved to '%s/"SERVER_CONF_NAME"'\n", p?p:"");
 	exit(0);
     }
 

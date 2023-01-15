@@ -3,6 +3,7 @@ server
 *.o
 tmp.*
 build-opts.*
+obj/
 
 # Also generated
 *.h

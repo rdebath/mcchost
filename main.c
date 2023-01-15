@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <assert.h>
+#include <sys/socket.h>
 
 #include "main.h"
 

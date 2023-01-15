@@ -73,7 +73,7 @@ lock_start(filelock_t * ln)
 
     while(1)
     {
-	if (errno != 0 && ecount > 100) { perror(ln->name); abort(); }
+	if (errno != 0 && ecount > 20) { perror(ln->name); abort(); }
 
 	fd = open(ln->name, O_RDWR|O_CLOEXEC);
 	if (fd>=0) {
@@ -89,23 +89,30 @@ lock_start(filelock_t * ln)
 
 		if (ln->lock->magic == TY_MAGIC) {
 		    // Try to lock the lock; bad errors mean we recreate it.
+		    errno = 0;
 		    int n = pthread_mutex_trylock(ln->lock->mutex);
 		    if (n == EBUSY) return; // In use is fine.
-		    if (n == EOWNERDEAD) n = pthread_mutex_consistent(ln->lock->mutex);
+		    if (n == EOWNERDEAD)
+			n = pthread_mutex_consistent(ln->lock->mutex);
 		    if (n == 0) {
 			pthread_mutex_unlock(ln->lock->mutex);
 			return;
 		    }
-		}
+		    if (n == EINVAL)
+			fprintf(stderr, "Lockfile \"%s\" failed with EINVAL\n", ln->name);
+		} else
+		    fprintf(stderr, "ERROR: Bad magic in lock file \"%s\" 0%jo, requires recreation\n",
+			ln->name, (uintmax_t)ln->lock->magic);
 
 		lock_stop(ln);
 	    } else
 		close(fd);
 	    ecount++;
-	    fprintf(stderr, "ERROR: lock file '%s' requires recreation\n", ln->name);
+
 	    // This is dangerous, but should never happen unless someone has
 	    // corrupted the lock file.
 	    // Hopefully this delay is long enough for everyone to be happy.
+	    if (ecount > 20) { perror(ln->name); abort(); }
 	    if (unlink(ln->name) == 0)
 		msleep(500);
 	    continue;
