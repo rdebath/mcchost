@@ -15,7 +15,6 @@ Other notes
 */
 
 /*HELP todo
- +) Find_player (part2)
  +) Login Whitelist ?
 
  +) Add walkthrough for default server setup.

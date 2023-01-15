@@ -42,19 +42,23 @@ cmd_setrank(char * UNUSED(cmd), char *arg)
 	return;
     }
 
+    char user_name[128];
+    int uid = find_player(str1, user_name, sizeof(user_name), 1, 0);
+    if (uid<0) return;
+
     userrec_t user_rec;
-    if (read_userrec(&user_rec, str1, 1) == 0) {
+    if (read_userrec(&user_rec, user_name, 1) == 0) {
 	user_rec.ini_dirty = 1;
 	user_rec.user_group = group;
 	user_rec.ban_message[0] = 0;
 	write_userrec(&user_rec, 1);
-	printf_chat("%s&S set rank of %s", player_list_name.c, str1);
+	printf_chat("%s&S set rank of %s to %s", player_list_name.c, user_name, user_perms[group]);
+	saprintf(msg.arg.c, "&SYour rank has been set to %s", user_perms[group]);
     } else {
-	printf_chat("User '%s' not found, use fullname", str1);
+	printf_chat("User detail for '%s' not found", user_name);
 	return;
     }
 
-    int uid = find_online_player(str1, 1, 1);
-    if (uid >= 0)
+    if (uid >= 0 && uid < MAX_USER)
 	send_ipc_cmd(1, uid, &msg);
 }

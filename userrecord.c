@@ -394,7 +394,7 @@ init_userrec(MDB_txn * txn, userrec_t * rec_buf)
 }
 
 int
-match_user_name(char * partname, char * namebuf, int l, int quiet)
+match_user_name(char * partname, char * namebuf, int l, int quiet, int *skip_count)
 {
     if (!partname || !*partname || strlen(partname) > l) {
 	if (!quiet) printf_chat("The user pattern given is invalid.");
@@ -411,7 +411,7 @@ match_user_name(char * partname, char * namebuf, int l, int quiet)
 
     MDB_val key = {0}, data = {0};
 
-    int found = 0;
+    int found = 0, skipped = 0;
     int n = mdb_cursor_get(curs, &key, &data, MDB_FIRST);
     for( ; n == MDB_SUCCESS; n = mdb_cursor_get(curs, &key, &data, MDB_NEXT))
     {
@@ -428,7 +428,8 @@ match_user_name(char * partname, char * namebuf, int l, int quiet)
 	    else if (strlen(namebuf) + strlen(user_name) + 3 < l) {
 		strcat(namebuf, ", ");
 		strcat(namebuf, user_name);
-	    }
+	    } else
+		skipped++;
 	    found++;
 	}
     }
@@ -440,12 +441,16 @@ match_user_name(char * partname, char * namebuf, int l, int quiet)
 
     if (!quiet) {
 	if (found>1) {
-	    printf_chat("The id \"%s\" matches %d users including %s", partname, found, namebuf);
+            if (skipped)
+                printf_chat("The id \"%s\" matches %d users including %s", partname, found, namebuf);
+            else
+                printf_chat("The id \"%s\" matches %d users; %s", partname, found, namebuf);
 	} else if (found != 1)
 	    printf_chat("User \"%s\" not found.", partname);
     }
 
     E(mdb_txn_commit(txn));
+    if (skip_count) *skip_count = skipped;
     return found;
 }
 

@@ -33,22 +33,13 @@ cmd_info(char * UNUSED(cmd), char * arg)
     if (read_userrec(user_rec, arg, 1) >= 0)
 	return show_user_info(user_rec);
 
-    for(int i=0; i<MAX_USER; i++) {
-	if (!shdat.client->user[i].active) continue;
-	if (strstr(shdat.client->user[i].name.c, arg) == 0)
-	    continue;
-
-	if (read_userrec(user_rec, shdat.client->user[i].name.c, 1) >= 0)
-	    return show_user_info(user_rec);
-    }
-
     char user_name[128];
-    int c = match_user_name(arg, user_name, sizeof(user_name), 0);
-    if (c == 1) {
-	if (read_userrec(user_rec, user_name, 1) >= 0)
-	    return show_user_info(user_rec);
-	printf_chat("Details for user \"%s\" not found.", user_name);
-    }
+    int i = find_player(arg, user_name, sizeof(user_name), 1, 0);
+    if (i<0) return;
+
+    if (read_userrec(user_rec, user_name, 1) >= 0)
+	return show_user_info(user_rec);
+    printf_chat("Details for user \"%s\" not found.", user_name);
 }
 
 void

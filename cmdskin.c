@@ -19,7 +19,6 @@ void
 cmd_skin(char * cmd, char *arg)
 {
     char *str1, *str2;
-    char sbuf[256];
 
     if (strcasecmp(cmd, "xskin") == 0) {
 	str1 = "-own";
@@ -34,6 +33,7 @@ cmd_skin(char * cmd, char *arg)
 	else if (str2 == 0) {str2 = str1; str1 = 0;}
     }
 
+    char sbuf[256];
     if (str2) {
 	if (str2[0] == '+') {
 	    saprintf(sbuf, "https://minotar.net/skin/%s.png", str2+1);

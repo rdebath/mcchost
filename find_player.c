@@ -45,6 +45,7 @@ find_player(char * partname, char * namebuf, int l, int allow_self, int quiet)
     int ucount = 0;
     int acount = 0;
     int uid = -1;
+    int skipped = 0;
     char saved_name[NB_SLEN];
 
     for(int i = 0; i < MAX_USER; i++)
@@ -69,11 +70,12 @@ find_player(char * partname, char * namebuf, int l, int allow_self, int quiet)
             } else if (strlen(namebuf) + strlen(c.name.c) + 3 < l) {
                 strcat(namebuf, ", ");
                 strcat(namebuf, c.name.c);
-            }
+            } else
+		skipped++;
 	}
     }
 
-    acount = match_user_name(partname, namebuf, l, 1);
+    acount = match_user_name(partname, namebuf, l, 1, &skipped);
     if (!allow_self && acount == 1 && strcasecmp(namebuf, user_id) == 0)
 	acount = 0;
     if (acount == 1 || ucount == 1) {
@@ -83,8 +85,12 @@ find_player(char * partname, char * namebuf, int l, int allow_self, int quiet)
     }
 
     if (acount>1) {
-	if (!quiet)
-	    printf_chat("The id \"%s\" matches %d users including %s", partname, acount, namebuf);
+	if (!quiet) {
+	    if (skipped)
+		printf_chat("The id \"%s\" matches %d users including %s", partname, acount, namebuf);
+	    else
+		printf_chat("The id \"%s\" matches %d users; %s", partname, acount, namebuf);
+	}
 	return -acount;
     }
 

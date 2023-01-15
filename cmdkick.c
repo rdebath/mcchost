@@ -47,20 +47,23 @@ cmd_ban(char * UNUSED(cmd), char *arg)
     saprintf(msg.arg.c, "by %s%s%s", user_id, str2?": &f":"", str2?str2:"");
     msg.cmd_token = cmd_token_ban;
 
-    int uid = find_online_player(str1, 0, 1);
-    if (uid >= 0) {
+    char user_name[128];
+    int uid = find_player(str1, user_name, sizeof(user_name), 0, 0);
+    if (uid<0) return;
+
+    if (uid>=0 && uid != MAX_USER) {
 	send_ipc_cmd(1, uid, &msg);
     } else {
 	// Set ban data
 	userrec_t user_rec;
-	if (read_userrec(&user_rec, str1, 1) == 0) {
+	if (read_userrec(&user_rec, user_name, 1) == 0) {
 	    user_rec.ini_dirty = 1;
 	    user_rec.user_group = -1;
 	    saprintf(user_rec.ban_message, "Banned %s", msg.arg.c);
 	    write_userrec(&user_rec, 1);
-	    printf_chat("&7%s &Sbanned %s", user_id, str1);
+	    printf_chat("&7%s &Sbanned %s", user_id, user_name);
 	} else
-	    printf_chat("User '%s' not found, use fullname", str1);
+	    printf_chat("User detail for '%s' not found", user_name);
     }
 }
 
@@ -69,19 +72,23 @@ cmd_unban(char * UNUSED(cmd), char *arg)
 {
     char * str1 = strtok(arg, " ");
 
+    char user_name[128];
+    int found = match_user_name(str1, user_name, sizeof(user_name), 0, 0);
+    if (found != 1) return;
+
     // Reset ban data
     userrec_t user_rec;
-    if (read_userrec(&user_rec, str1, 1) == 0) {
+    if (read_userrec(&user_rec, user_name, 1) == 0) {
 	if (user_rec.user_group >= 0) {
 	    // Don't touch a user who might be logged in.
-	    printf_chat("User '%s' is not banned", str1);
+	    printf_chat("User '%s' is not banned", user_name);
 	    return;
 	}
 	user_rec.ini_dirty = 1;
 	user_rec.user_group = 1;
 	user_rec.ban_message[0] = 0;
 	write_userrec(&user_rec, 1);
-	printf_chat("&7%s &Sunbanned %s", user_id, str1);
+	printf_chat("&7%s &Sunbanned %s", user_id, user_name);
     } else
-	printf_chat("User '%s' not found, use fullname", str1);
+	printf_chat("User detail for '%s' not found", user_name);
 }

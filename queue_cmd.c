@@ -146,9 +146,13 @@ process_ipc_cmd(cmd_payload_t *msg)
     case cmd_token_loaduser:
 	read_ini_file_fields(&my_user);
 	update_player_look();
+	if (msg->arg.c[0])
+	    printf_chat("%s", msg->arg.c);
 	break;
     case cmd_token_loadperm:
 	load_ini_file(cmdset_ini_fields, CMDSET_CONF_NAME, 1, 0);
+	if (msg->arg.c[0])
+	    printf_chat("%s", msg->arg.c);
 	break;
     case cmd_token_kick:
 	kicked(msg->arg.c);
