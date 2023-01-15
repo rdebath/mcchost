@@ -71,24 +71,29 @@ void
 cmd_unban(char * UNUSED(cmd), char *arg)
 {
     char * str1 = strtok(arg, " ");
+    userrec_t user_rec;
 
     char user_name[128];
-    int found = match_user_name(str1, user_name, sizeof(user_name), 0, 0);
-    if (found != 1) return;
+    saprintf(user_name, "%s", str1);
+    if (read_userrec(&user_rec, user_name, 1) != 0) {
+	int found = match_user_name(str1, user_name, sizeof(user_name), 0, 0);
+	if (found != 1) return;
 
-    // Reset ban data
-    userrec_t user_rec;
-    if (read_userrec(&user_rec, user_name, 1) == 0) {
-	if (user_rec.user_group >= 0) {
-	    // Don't touch a user who might be logged in.
-	    printf_chat("User '%s' is not banned", user_name);
+	if (read_userrec(&user_rec, user_name, 1) != 0) {
+	    printf_chat("User detail for '%s' not found", user_name);
 	    return;
 	}
-	user_rec.ini_dirty = 1;
-	user_rec.user_group = 1;
-	user_rec.ban_message[0] = 0;
-	write_userrec(&user_rec, 1);
-	printf_chat("&7%s &Sunbanned %s", user_id, user_name);
-    } else
-	printf_chat("User detail for '%s' not found", user_name);
+    }
+
+    // Reset ban data
+    if (user_rec.user_group >= 0) {
+	// Don't touch a user who might be logged in.
+	printf_chat("User '%s' is not banned", user_name);
+	return;
+    }
+    user_rec.ini_dirty = 1;
+    user_rec.user_group = 1;
+    user_rec.ban_message[0] = 0;
+    write_userrec(&user_rec, 1);
+    printf_chat("&7%s &Sunbanned %s", user_id, user_name);
 }

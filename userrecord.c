@@ -8,48 +8,12 @@
 #include "userrecord.h"
 
 /*
- * User details.
+ * User details -- lmdb.
  */
 
 #if INTERFACE
 enum csv_type {FLD_I32, FLD_I64, FLD_SKIP, FLD_STR=16};
-
-typedef struct userrec_t userrec_t;
-struct userrec_t
-{
-    int32_t user_no;
-    char user_id[NB_SLEN];
-    int64_t blocks_placed;
-    int64_t blocks_deleted;
-    int64_t blocks_drawn;
-    int64_t first_logon;	// is time_t, time_t is sometimes 32bits.
-    int64_t last_logon;		// is time_t, time_t is sometimes 32bits.
-    int64_t logon_count;
-    int64_t kick_count;
-    int64_t death_count;
-    int64_t message_count;
-    char last_ip[NB_SLEN];
-    int64_t time_online_secs;
-
-    // Saved to ini file
-    int64_t coin_count;
-    int32_t click_distance;
-    char nick[NB_SLEN];
-    char title[NB_SLEN];
-    char skin[NB_SLEN];
-    char model[NB_SLEN];
-    char colour[NB_SLEN];
-    char title_colour[NB_SLEN];
-    char timezone[NB_SLEN];
-    int32_t user_group;
-    char ban_message[NB_SLEN];
-
-    // Not saved
-    int dirty;
-    int ini_dirty;
-    int user_logged_in;
-    int64_t time_of_last_save;
-}
+#define HAS_LMDB
 #endif
 
 #define E(_x) ERR_MDB((_x), #_x, __FILE__, __LINE__)
@@ -60,143 +24,12 @@ static inline int ERR_MDB(int n, char * tn, char *fn, int ln)
     abort();
 }
 
-userrec_t my_user = {.user_no = 0, .user_group=1};
 static int userdb_open = 0;
 
 MDB_env *mcc_mdb_env = 0;
 MDB_dbi dbi_rec;
 MDB_dbi dbi_ind1;
 #define env mcc_mdb_env
-
-void
-copy_user_key(char *p, char * user_id)
-{
-    for(char * s = user_id; *s; s++)
-    {
-	char *hex = "0123456789ABCDEF";
-	int ch = *s & 0xFF;
-	if ((ch >= '0' && ch <= '9') || ch == '_' || ch == '.' || (ch >= 'a' && ch <= 'z'))
-	    *p++ = ch;
-	else if (ch >= 'A' && ch <= 'Z')
-	    *p++ = ch - 'Z' + 'z';
-	else {
-	    *p++ = '%';
-	    *p++ = hex[(ch>>4) & 0xF];
-	    *p++ = hex[ch & 0xF];
-	}
-    }
-    *p = 0;
-}
-
-void decode_user_key(char *hexed_key, char * user_id, int l)
-{
-    char * p = user_id;
-    for(char * s = hexed_key; *s && p-user_id+1<l; s++)
-    {
-	char *hex = "0123456789ABCDEF";
-	int ch = *s & 0xFF;
-	if (ch != '%') {
-	    *p++ = ch; continue;
-	}
-	char *h1, *h2;
-	if (s[0] && s[1] && (h1=strchr(hex,s[0])) != 0 && (h2=strchr(hex,s[1])) != 0) {
-	    s+=2;
-	    ch = ((h1-p) << 4);
-	    ch += (h2-p);
-	    *p++ = ch;
-	} else
-	    *p++ = ch;
-    }
-    *p = 0;
-}
-
-/*
-    (when == 0) => Tick
-    (when == 1) => At logon
-    (when == 2) => At logoff
-    (when == 3) => At config change
- */
-void
-write_current_user(int when)
-{
-    time_t now = time(0);
-    if (when == 0 && now - my_user.time_of_last_save >= 300)
-	my_user.dirty = 1;
-
-    if (when == 0 && !my_user.dirty) return;
-    if (when >= 2 && !my_user.user_logged_in) return;
-
-    if (my_user.user_no == 0) {
-	if (*user_id == 0) return;
-	if (read_userrec(&my_user, user_id, 1) < 0)
-	    my_user.user_no = 0;
-    }
-
-    if (!userdb_open) open_userdb();
-
-    if (when == 1) {
-	if (!my_user.first_logon) my_user.first_logon = time(0);
-	my_user.last_logon = now;
-	my_user.time_of_last_save = now;
-	my_user.logon_count++;
-	my_user.user_logged_in = 1;
-
-	// Datafix. Expires: Tue 14 Nov 22:13:20 GMT 2023
-	if (now < 1700000000)
-	    if (my_user.time_online_secs > 1500000000) my_user.time_online_secs = 0;
-
-	if (*client_ipv4_str) {
-	    snprintf(my_user.last_ip, sizeof(my_user.last_ip), "%s", client_ipv4_str);
-	    char *p = strrchr(my_user.last_ip, ':');
-	    if (p) *p = 0;
-	}
-    }
-
-    if (now > my_user.time_of_last_save && my_user.user_logged_in) {
-	if (my_user.time_of_last_save == 0) my_user.time_of_last_save = now;
-	int64_t d = now - my_user.time_of_last_save;
-	my_user.time_online_secs += d;
-	my_user.time_of_last_save += d;
-    }
-
-    strcpy(my_user.user_id, user_id);
-
-    if (when == 3) my_user.ini_dirty = 1;
-    write_userrec(&my_user, (when>=2));
-
-    my_user.dirty = 0;
-}
-
-void
-read_ini_file_fields(userrec_t * userrec)
-{
-    uint8_t user_key[NB_SLEN*4];
-    copy_user_key(user_key, userrec->user_id);
-
-    char userini[PATH_MAX];
-    saprintf(userini, USER_INI_NAME, user_key);
-
-    userrec_t tmp = *userrec;
-    user_ini_tgt = userrec;
-    load_ini_file(user_ini_fields, userini, 1, 1);
-    user_ini_tgt = 0;
-
-    // Preserve the fields that are in the lmdb database.
-    userrec->user_no = tmp.user_no;
-    memcpy(userrec->user_id, tmp.user_id, NB_SLEN);
-    userrec->blocks_placed = tmp.blocks_placed;
-    userrec->blocks_deleted = tmp.blocks_deleted;
-    userrec->blocks_drawn = tmp.blocks_drawn;
-    userrec->first_logon = tmp.first_logon;
-    userrec->last_logon = tmp.last_logon;
-    userrec->logon_count = tmp.logon_count;
-    userrec->kick_count = tmp.kick_count;
-    userrec->death_count = tmp.death_count;
-    userrec->message_count = tmp.message_count;
-    memcpy(userrec->last_ip, tmp.last_ip, NB_SLEN);
-    userrec->time_online_secs = tmp.time_online_secs;
-    userrec->ini_dirty = 0;
-}
 
 void
 write_userrec(userrec_t * userrec, int ini_too)
@@ -230,7 +63,7 @@ write_userrec(userrec_t * userrec, int ini_too)
     E(mdb_txn_commit(txn));
 }
 
-void
+LOCAL void
 put_userrec(MDB_txn *txn, char * user_key, userrec_t * userrec)
 {
     uint8_t recbuf[sizeof(userrec_t) * 4];
@@ -362,7 +195,7 @@ read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
     return 0;
 }
 
-void
+LOCAL void
 init_userrec(MDB_txn * txn, userrec_t * rec_buf)
 {
     // fetch next id
@@ -634,7 +467,7 @@ read_fld(uint8_t **pp, int * bytes, void * data, enum csv_type type, int len)
     }
 }
 
-void
+LOCAL void
 check_userdb_exists(MDB_txn *txn)
 {
     if (userdb_open) return;
@@ -667,7 +500,7 @@ check_userdb_exists(MDB_txn *txn)
     E(mdb_put(txn, dbi_rec, &key, &data, 0) );
 }
 
-int
+LOCAL int
 rebuild_user_database(MDB_txn *txn)
 {
     struct dirent *entry;

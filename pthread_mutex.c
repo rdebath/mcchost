@@ -7,6 +7,7 @@
 
 #if INTERFACE
 #include <pthread.h>
+#define HAS_PTHREAD
 
 typedef struct lock_shm_t lock_shm_t;
 struct lock_shm_t {
@@ -23,10 +24,8 @@ struct filelock_t {
 };
 #endif
 
-#if 1
-//_REENTRANT
-
 // This MUST be compiled with -pthread otherwise gcc makes dumb assumptions.
+#if defined(HAS_PTHREAD)
 
 #define E(_x) ERR_PT((_x), #_x, __FILE__, __LINE__)
 static inline int ERR_PT(int n, char * tn, char *fn, int ln)
@@ -183,13 +182,6 @@ lock_restart(filelock_t * ln)
     }
     lock_start(ln);
 }
-
-#else
-void lock_fn(filelock_t * ln);
-void unlock_fn(filelock_t * ln);
-void lock_start(filelock_t * ln);
-void lock_stop(filelock_t * ln);
-void lock_restart(filelock_t * ln);
 #endif
 
 #ifdef TEST

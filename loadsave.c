@@ -253,7 +253,9 @@ scan_and_save_levels(int do_timed_save)
 		level_prop->dirty_save = 0;
 
 	    // Block unload unless we are restarting.
-	    int no_unload = shdat.client->levels[lvid].in_use && !restart_on_unload;
+	    int no_unload = shdat.client->levels[lvid].in_use &&
+		!shdat.client->levels[lvid].force_unload &&
+		!restart_on_unload;
 
 	    if (level_prop->dirty_save) {
 		int do_save = do_timed_save;

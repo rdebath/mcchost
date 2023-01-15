@@ -58,6 +58,10 @@ struct shared_data_t {
 #define level_block_queue shdat.blockq
 #endif
 
+#if _POSIX_VERSION >= 200112L && _POSIX_ADVISORY_INFO >= 200112L
+#define USE_POSIXALLOC
+#endif
+
 #define level_block_queue_len shdat.dat[SHMID_BLOCKQ].len
 
 chat_queue_t * shared_chat_queue = 0;
@@ -595,9 +599,14 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
 	sz -= sz % p;
     }
 
+#ifdef USE_POSIXALLOC
     // Weeeeeird calling process
-    if ((errno = posix_fallocate(shared_fd, 0, sz)) != 0) {
-	perror("posix_fallocate");
+    if ((errno = posix_fallocate(shared_fd, 0, sz)) != 0)
+#else
+    if (ftruncate(shared_fd, sz) < 0)
+#endif
+    {
+	perror("fallocate/ftruncate");
 	close(shared_fd);
         return -1;
     }
