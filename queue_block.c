@@ -147,7 +147,6 @@ grow_dirt_block(int x, int y, int z, block_t blk)
 void
 prelocked_update(int x, int y, int z, int b)
 {
-    check_block_queue(0);
     level_prop->dirty_save = 1;
     level_prop->last_modified = time(0);
     uint32_t id = level_block_queue->curr_offset;
@@ -213,8 +212,14 @@ send_queued_blocks()
     if (reload_pending) {
 	if (bytes_queued_to_send()) return;
 
-	// reload_pending contains centiseconds till reload.
-	if (reload_pending > 1) { reload_pending--; return; }
+	// reload_pending contains centiseconds till reload, but we adjust.
+	if (reload_pending > 1) {
+	    reload_pending--;
+	    if (reload_pending > 6 && last_id == level_block_queue->curr_offset)
+		reload_pending -= 5;
+	    last_id = level_block_queue->curr_offset;
+	    return;
+	}
 
 	reload_pending = 0;
 	if (perm_is_admin()) {	// Message for admin only

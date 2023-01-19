@@ -15,7 +15,7 @@ endif
 
 DEFS=
 # Move the source for install
-DBGSRC=-fdebug-prefix-map='$(shell pwd)'=src
+DBGSRC=-fwrapv -fdebug-prefix-map='$(shell pwd)'=src
 # Use -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
 # WTH is the point of the "truncation" warnings!
 WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation -Wno-unknown-warning-option

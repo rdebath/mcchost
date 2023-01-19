@@ -118,6 +118,7 @@ replace_blocks(block_t rpl, block_t*bllist, int blcount, int x0, int y0, int z0,
 	// Single block, simple and should be faster.
 	block_t b = bllist[0];
 	lock_fn(level_lock);
+	check_block_queue(0);
 	my_user.dirty = 1;
 	int x, y, z, placecount = 0;
 	for(y=args[2]; y<=args[5]; y++)
@@ -134,6 +135,7 @@ replace_blocks(block_t rpl, block_t*bllist, int blcount, int x0, int y0, int z0,
 	unlock_fn(level_lock);
     } else {
 	lock_fn(level_lock);
+	check_block_queue(0);
 	my_user.dirty = 1;
 	int x, y, z, placecount = 0;
 	for(y=args[2]; y<=args[5]; y++)

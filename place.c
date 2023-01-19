@@ -30,7 +30,8 @@ Turns off modes, toggles and pending operations.
 Alias: &T/a
 */
 /*HELP cuboid,z H_CMD
-&T/cuboid [block]
+&T/cuboid [mode] [block]
+Modes: solid/hollow/walls/wire
 Draws a cuboid between two points
 Alias: &T/z
 */
@@ -129,7 +130,7 @@ cmd_place(char * cmd, char * arg)
 	pkt.coord.y = args[2];
 	pkt.coord.z = args[3];
     } else {
-	plain_cuboid(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+	do_cuboid(args[0], 0, args[1], args[2], args[3], args[4], args[5], args[6]);
 	return;
     }
 
@@ -561,10 +562,30 @@ cmd_about(char * cmd, char * arg)
     printf_chat("&SBlock (%d, %d, %d): %d = %s.", x, y, z, b, block_name(b));
 }
 
+char * cuboids[] = { "solid", "hollow", "walls", "wire", 0 };
+
 void
 cmd_cuboid(char * cmd, char * arg)
 {
     if (!level_prop || level_prop->disallowchange) { printf_chat("&WLevel cannot be changed"); return; }
+
+    char * p = strchr(arg, ' ');
+    if (!p) p = arg+strlen(arg);
+    int ctype = 0;
+    char * blkname = arg;
+    for(int i = 0; cuboids[i]; i++)
+	if (strncasecmp(cuboids[i], arg, p-arg) == 0) {
+	    ctype = i;
+	    blkname = p;
+	    break;
+	}
+    while(*blkname == ' ') blkname++;
+
+    block_t b = block_id(blkname);
+    if (b == BLOCKNIL) {
+	printf_chat("&WUnknown block '%s'", blkname);
+	return;
+    }
 
     if (!marks[0].valid || !marks[1].valid) {
 	if (!marks[0].valid) {
@@ -580,12 +601,6 @@ cmd_cuboid(char * cmd, char * arg)
 	return;
     }
 
-    block_t b = block_id(arg);
-    if (b == BLOCKNIL) {
-	printf_chat("&WUnknown block '%s'", arg?arg:"");
-	return;
-    }
-
     if (!can_place_block(b)) {
 	printf_chat("&WYou cannot place block %s", block_name(b));
 	return;
@@ -595,18 +610,40 @@ cmd_cuboid(char * cmd, char * arg)
     xyzhv_t smarks[3];
     fetch_pending_marks(smarks);
 
-    plain_cuboid(b,
+    do_cuboid(b, ctype,
 	smarks[0].x, smarks[0].y, smarks[0].z,
 	smarks[1].x, smarks[1].y, smarks[1].z);
 }
 
 void
-plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
+do_cuboid(block_t b, int ctype, int x0, int y0, int z0, int x1, int y1, int z1)
 {
     int args[7] = {0, x0, y0, z0, x1, y1, z1};
 
     int64_t blk_count;
     if (clamp_cuboid(args, &blk_count) == 0) return;
+    if (ctype != 0) {
+	int x = args[4]-args[1]+1,
+	    y = args[5]-args[2]+1,
+	    z = args[6]-args[3]+1;
+	switch(ctype) {
+	case 1: // Hollow
+	    if (x>2 && y>2 && z>2)
+		blk_count -= (int64_t)(x-2)*(y-2)*(z-2);
+	    else
+		ctype = 0;
+	    break;
+	case 2: // Walls
+	    if (x>2 && z>2)
+		blk_count -= (int64_t)(x-2)*y*(z-2);
+	    else
+		ctype = 0;
+	    break;
+	case 3: // Wire
+	    blk_count = x*4+y+4+z*4-8;
+	    break;
+	}
+    }
     if (!perm_block_check(blk_count)) {
 	printf_chat("&WToo many blocks %jd>%jd", (intmax_t)blk_count, (intmax_t)command_limits.max_user_blocks);
 	return;
@@ -625,23 +662,86 @@ plain_cuboid(block_t b, int x0, int y0, int z0, int x1, int y1, int z1)
     // Grass/dirt processing might be reasonable to convert grass->dirt
     // but dirt->grass depends on "nearby" grass so the "correct" flow
     // is not well defined.
-
-    lock_fn(level_lock);
-    my_user.dirty = 1;
     int x, y, z, placecount = 0;
     if (b >= BLOCKMAX) b = BLOCKMAX-1;
-    for(y=args[2]; y<=args[5]; y++)
-	for(x=args[1]; x<=args[4]; x++)
-	    for(z=args[3]; z<=args[6]; z++)
+    my_user.dirty = 1;
+    lock_fn(level_lock);
+    check_block_queue(0);
+
+    switch(ctype)
+    {
+    case 0: // Full cuboid
+	for(y=args[2]; y<=args[5]; y++)
+	    for(x=args[1]; x<=args[4]; x++)
+		for(z=args[3]; z<=args[6]; z++)
+		{
+		    uintptr_t index = World_Pack(x, y, z);
+		    if (level_blocks[index] == b) continue;
+		    if (b != Block_Air && b < BLOCKMAX && !can_delete_block(b))
+			continue;
+		    placecount++;
+		    level_blocks[index] = b;
+		    prelocked_update(x, y, z, b);
+		}
+	break;
+    case 1: // Hollow and
+    case 2: // Walls styles
+	for(y=args[2]; y<=args[5]; y++)
+	{
+	    int fy = (y==args[2] || y==args[5]) && ctype == 1;
+	    for(x=args[1]; x<=args[4]; x++)
 	    {
-		uintptr_t index = World_Pack(x, y, z);
-		if (level_blocks[index] == b) continue;
-		if (b != Block_Air && b < BLOCKMAX && !can_delete_block(b))
-		    continue;
-		placecount++;
-		level_blocks[index] = b;
-		prelocked_update(x, y, z, b);
+		int fx = (x==args[1] || x==args[4]);
+		for(z=args[3]; z<=args[6]; z++)
+		{
+		    int fz = (z==args[3] || z==args[6]);
+		    if (!fy && !fx && !fz && z != args[6]) {
+			z = args[6]-1;
+			continue;
+		    }
+
+		    uintptr_t index = World_Pack(x, y, z);
+		    if (level_blocks[index] == b) continue;
+		    if (b != Block_Air && b < BLOCKMAX && !can_delete_block(b))
+			continue;
+		    placecount++;
+		    level_blocks[index] = b;
+		    prelocked_update(x, y, z, b);
+		}
 	    }
+	}
+	break;
+    case 3: // Just the edges (wire)
+	for(y=args[2]; y<=args[5]; y++)
+	{
+	    int fy = (y==args[2] || y==args[5]);
+	    for(x=args[1]; x<=args[4]; x++)
+	    {
+		int fx = (x==args[1] || x==args[4]);
+		if (fx+fy < 1 && x != args[4]) {
+		    x = args[4]-1;
+		    continue;
+		}
+		for(z=args[3]; z<=args[6]; z++)
+		{
+		    int fz = (z==args[3] || z==args[6]);
+		    if (fx+fy+fz < 2 && z != args[6]) {
+			z = args[6]-1;
+			continue;
+		    }
+
+		    uintptr_t index = World_Pack(x, y, z);
+		    if (level_blocks[index] == b) continue;
+		    if (b != Block_Air && b < BLOCKMAX && !can_delete_block(b))
+			continue;
+		    placecount++;
+		    level_blocks[index] = b;
+		    prelocked_update(x, y, z, b);
+		}
+	    }
+	}
+	break;
+    }
     my_user.blocks_drawn += placecount;
     unlock_fn(level_lock);
 }

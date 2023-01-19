@@ -183,6 +183,8 @@ scan_and_save_levels(int do_timed_save)
     nbtstr_t deleted_level = {0};
     int level_saved = 0;
     nbtstr_t saved_level = {0};
+    int level_unloaded = 0;
+    nbtstr_t unloaded_level = {0};
 
     // printlog("scan_and_save_levels(%s)", !do_timed_save?"unlink":"backup");
 
@@ -328,6 +330,9 @@ scan_and_save_levels(int do_timed_save)
 		if (shdat.client->levels[lvid].delete_on_unload) {
 		    deleted_level = lv;
 		    level_deleted = 1;
+		} else if (shdat.client->levels[lvid].force_unload) {
+		    unloaded_level = lv;
+		    level_unloaded = 1;
 		}
 		char fixedname[MAXLEVELNAMELEN*4];
 		int backup_id = shdat.client->levels[lvid].backup_id;
@@ -377,6 +382,13 @@ scan_and_save_levels(int do_timed_save)
 	// Do this outside the system lock.
 	level_saved = 0;
 	printf_chat("@Level %s backed up", saved_level.c);
+	stop_chat_queue();
+    }
+
+    if (level_unloaded) {
+	// Do this outside the system lock.
+	level_unloaded = 0;
+	printf_chat("@Level %s unloaded", unloaded_level.c);
 	stop_chat_queue();
     }
 

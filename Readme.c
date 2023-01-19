@@ -17,7 +17,7 @@ Other notes
 /*HELP todo
  +) Login Whitelist ?
 
- +) Add walkthrough for default server setup.
+ +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat ?
 
@@ -38,14 +38,16 @@ Other notes
  +) /summon
  +) /clones
  +) /undo, /redo
+ +) /fill
+ +) /fixgrass
+ +) /tree -- Only Notch variant
+ +) /loaded
 
  +) Exponential backups.
 
  +) /newlvl, more "nice" levels?
     -- Perlin based nature, with caves.
     -- Sub-themes, fcraft?
-
- +) More /cuboid variants ? /fill ?
 
  +) Run external command ...
     -- stdin == /dev/null

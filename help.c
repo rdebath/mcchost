@@ -9,7 +9,9 @@ struct help_text_t {
     char ** lines;
 };
 
-/*HELP welcome 0 */
+/*HELP welcome
+See &T/help&S and &T/cmds&S for information
+*/
 
 /*HELP license
 This software is licensed under the AFGPL and other licenses.
