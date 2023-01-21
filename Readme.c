@@ -16,6 +16,7 @@ Other notes
 
 /*HELP todo
  +) Login Whitelist ?
+ +) Level ini file for permissions etc.
 
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
@@ -34,6 +35,8 @@ Other notes
 
  +) /restore
  +) /resizelvl
+    -- Create new map so I don't have to do read locks.
+
  +) /sendcmd
  +) /summon
  +) /clones
@@ -41,7 +44,7 @@ Other notes
  +) /fill
  +) /fixgrass
  +) /tree -- Only Notch variant
- +) /loaded
+ +) /loaded -- Should this scan the directory?
 
  +) Exponential backups.
 
@@ -112,21 +115,38 @@ Other notes
     -- Don't work with web client.
 
 All files in subdirectories.
-    system.ini  --> move?
-    system.${port}.ini  --> move?
-    model.ini   --> move?
+    // Real data files.
+    system.ini
+    system.${port}.ini
+    model.ini
+    cmdset.ini
     map/${level}.cw
-    system/chat.queue
-    system/system.dat
-    system/userlevels.dat
-    level/${level}.*
     help/${helpname}.txt
+    user/${username}.ini
+    secret/${username}.ini
+    texture/*.zip
+    ini/*.ini -- save level config, blocks etc
+
+    // Backup and expiring data files (cleanup needed?)
     log/YYYY-MM-DD.log
     backup/${level}.${id}.cw
 
-    ini/*.ini -- save level config
+    // Semi temp; may have recent unique data.
+    system/userdb32.mdb
+    system/userdb32.mdb-lock
+    level/${level}.*
+
+    // Temp files
+    system/*.lock
+    system/chat.queue
+    system/cmd.queue
+    system/system.dat
+    system/userlevels.dat
     level/${level}.${id}.* -- backup unpack
-    blockdb/levelname.bdb
+
+    // Todo (expiring?)
+    blockdb/${level}.${id}.bdb -- id is rollover, day/week/megabyte.
+    blockdb/${level}.${id}.bdb.gz
 
 Features:
     -- CW file also contains pending physics operations.

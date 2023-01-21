@@ -28,6 +28,7 @@ static int last_id = -1;
 static uint32_t last_generation;
 
 /* Send a single chat message */
+/* to_where: 0) all, 1) Player(to_id), 2) Level(to_id), 3) Team(to_id) */
 void
 update_chat(int to_where, int to_id, pkt_message *pkt)
 {

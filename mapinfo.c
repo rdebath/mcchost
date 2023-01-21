@@ -170,6 +170,7 @@ struct blockdef_t {
     uint8_t tdoor_flag;
     uint8_t rails_flag;
     uint8_t opblock_flag;
+    uint8_t fastfall_flag;
 
     // Physics blocks
     block_t stack_block;

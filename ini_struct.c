@@ -333,6 +333,8 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_INTVAL("Max.Y", level_prop->blockdef[bn].coords[4]);
 	    INI_INTVAL("Max.Z", level_prop->blockdef[bn].coords[5]);
 
+	    INI_BOOLVAL("FastFallFlag", level_prop->blockdef[bn].fastfall_flag);
+
 	    INI_BLKVAL("StackBlock", level_prop->blockdef[bn].stack_block);
 	    INI_BLKVAL("GrassBlock", level_prop->blockdef[bn].grass_block);
 	    INI_BLKVAL("DirtBlock", level_prop->blockdef[bn].dirt_block);

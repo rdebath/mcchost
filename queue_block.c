@@ -60,15 +60,16 @@ update_block(pkt_setblock pkt)
 	}
     }
 
+    block_t above = Block_Air;
+    if (pkt.coord.y < level_prop->cells_y-1) {
+	uintptr_t indup = World_Pack(pkt.coord.x, pkt.coord.y+1, pkt.coord.z);
+	above = level_blocks[indup];
+    }
+    if (above >= BLOCKMAX) above = BLOCKMAX-1;
+
     // Correct this Grass/Dirt block
     if (level_prop->blockdef[b].dirt_block != 0 || level_prop->blockdef[b].grass_block != 0)
     {
-	block_t above = Block_Air;
-	if (pkt.coord.y < level_prop->cells_y-1) {
-	    uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y+1, pkt.coord.z);
-	    above = level_blocks[ind2];
-	}
-	if (above >= BLOCKMAX) above = BLOCKMAX-1;
 	int transmits_light = level_prop->blockdef[above].transmits_light;
 	if (!transmits_light && level_prop->blockdef[b].dirt_block != 0 &&
 		level_prop->blockdef[b].dirt_block != old_block)
@@ -80,19 +81,21 @@ update_block(pkt_setblock pkt)
     }
 
     // Fix Grass/Dirt block below
+    uintptr_t ind2 = 0;
+    block_t blkbelow = Block_Bedrock;
     if (pkt.coord.y > 0) {
 	int transmits_light = level_prop->blockdef[b].transmits_light;
-	uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
-	block_t blk = level_blocks[ind2];
-	if (blk >= BLOCKMAX) blk = BLOCKMAX-1;
+	ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
+	blkbelow = level_blocks[ind2];
+	if (blkbelow >= BLOCKMAX) blkbelow = BLOCKMAX-1;
 
-	if (transmits_light && level_prop->blockdef[blk].grass_block != 0) {
+	if (transmits_light && level_prop->blockdef[blkbelow].grass_block != 0) {
 	    int t = grow_dirt_block(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, level_blocks[ind2]);
 	    if (t != level_blocks[ind2])
 		new_below = t;
 	}
-	if (!transmits_light && level_prop->blockdef[blk].dirt_block != 0)
-	    new_below = level_prop->blockdef[blk].dirt_block;
+	if (!transmits_light && level_prop->blockdef[blkbelow].dirt_block != 0)
+	    new_below = level_prop->blockdef[blkbelow].dirt_block;
     }
 
     // Make sure the updates are in the right order and try to minimise the
@@ -106,13 +109,20 @@ update_block(pkt_setblock pkt)
 	}
     }
     if (new_below != (block_t)-1 && pkt.coord.y > 0) {
-	uintptr_t ind2 = World_Pack(pkt.coord.x, pkt.coord.y-1, pkt.coord.z);
-
 	if (new_below != level_blocks[ind2]) {
 	    level_blocks[ind2] = new_below;
 	    send_update(pkt.coord.x, pkt.coord.y-1, pkt.coord.z, new_below);
+	    blkbelow = new_below;
 	}
     }
+
+    // Now sand and gravel
+    if (pkt.coord.y > 0) {
+	if (level_prop->blockdef[b].fastfall_flag && blkbelow == 0)
+	    check_for_sand(pkt.coord.x, pkt.coord.y, pkt.coord.z);
+    }
+    if (above != Block_Air && level_prop->blockdef[above].fastfall_flag)
+	check_for_sand(pkt.coord.x, pkt.coord.y+1, pkt.coord.z);
 }
 
 int
@@ -142,6 +152,73 @@ grow_dirt_block(int x, int y, int z, block_t blk)
 	return grass;
     else
 	return blk;
+}
+
+void
+check_for_sand(int x, int y, int z)
+{
+    if (x < 0 || x >= level_prop->cells_x) return;
+    if (y < 0 || y >= level_prop->cells_y) return;
+    if (z < 0 || z >= level_prop->cells_z) return;
+
+    int min_y = y;
+    while(min_y>0)
+    {
+	uintptr_t index = World_Pack(x, min_y, z);
+	block_t blk = level_blocks[index];
+	if (blk >= BLOCKMAX) blk = BLOCKMAX-1;
+	if (blk != Block_Air && !level_prop->blockdef[blk].fastfall_flag) break;
+	min_y--;
+    }
+
+    int sav_y = -1;
+    block_t sav_b = Block_Air;
+
+    int new_y = min_y, old_y;
+    for(old_y = min_y; old_y < level_prop->cells_y; old_y++) {
+	for(;;new_y++) {
+	    if (new_y >= level_prop->cells_y) goto break_break;
+	    uintptr_t index = World_Pack(x, new_y, z);
+	    block_t blk = level_blocks[index];
+	    if (blk >= BLOCKMAX) blk = BLOCKMAX-1;
+	    if (blk == Block_Air) break;
+	}
+	if (old_y < new_y) old_y = new_y;
+	block_t to_move = Block_Air;
+	for(;;old_y++) {
+	    if (old_y >= level_prop->cells_y) goto break_break;
+	    uintptr_t index = World_Pack(x, old_y, z);
+	    block_t blk = level_blocks[index];
+	    if (blk >= BLOCKMAX) blk = BLOCKMAX-1;
+	    to_move = blk;
+	    if (blk != Block_Air) break;
+	}
+
+	if (!level_prop->blockdef[to_move].fastfall_flag) break;
+
+	if (sav_y == new_y) {
+	    level_blocks[World_Pack(x, sav_y, z)] = sav_b;
+	    sav_y = -1;
+	}
+	if (sav_y >= 0 && sav_y < level_prop->cells_y) {
+	    send_update(x, sav_y, z, Block_Air);
+	    sav_y = -1;
+	}
+
+	if (level_blocks[World_Pack(x, new_y, z)] != to_move) {
+	    level_blocks[World_Pack(x, new_y, z)] = to_move;
+	    send_update(x, new_y, z, to_move);
+	}
+
+	sav_y = old_y;
+	sav_b = level_blocks[World_Pack(x, sav_y, z)];
+	level_blocks[World_Pack(x, old_y, z)] = Block_Air;
+    }
+
+break_break:;
+    if (sav_y >= 0 && sav_y < level_prop->cells_y) {
+	send_update(x, sav_y, z, Block_Air);
+    }
 }
 
 void

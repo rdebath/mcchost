@@ -1,4 +1,7 @@
 
+// Failed on MacOSX and FreeBSD
+#if defined(__linux__)
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -15,8 +18,9 @@ struct lock_shm_t {
     pthread_mutex_t mutex[1];
 };
 
-typedef struct filelock_t filelock_t;
-struct filelock_t {
+#define filelock_t pthread_filelock_t
+typedef struct pthread_filelock_t pthread_filelock_t;
+struct pthread_filelock_t {
     char * name;
     int have_lock; // Not allowed to "nest" pthread locks, but can't
 		   // portably configure PTHREAD_MUTEX_ERRORCHECK
@@ -189,6 +193,7 @@ lock_restart(filelock_t * ln)
     }
     lock_start(ln);
 }
+#endif
 #endif
 
 #ifdef TEST

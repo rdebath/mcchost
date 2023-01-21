@@ -158,7 +158,9 @@ revert_amp_to_perc(char * msg)
     }
 }
 
-/* Post a long cp437 chat message to everyone (0) or just me (1) */
+/* Post a long cp437 chat message */
+/* where == -1 => Just me.
+ * where: 0) all, 1) Player(to_id), 2) Level(to_id), 3) Team(to_id) */
 void
 post_chat(int where, int to_id, int type, char * chat, int chat_len)
 {
@@ -243,9 +245,15 @@ post_chat(int where, int to_id, int type, char * chat, int chat_len)
 	// Otherwise, truncate.
 	if (d >= MB_STRLEN) {
 	    if (type == 0) {
-		if (where == -1)
-		    send_message_pkt(0, pkt.message_type, pkt.message);
-		else
+		if (where == -1) {
+		    if (line_ofd <= 0) {
+			if (my_user_no >= 0)
+			    update_chat(1, my_user_no, &pkt);
+			else
+			    update_chat(0, 0, &pkt);
+		    } else
+			send_message_pkt(0, pkt.message_type, pkt.message);
+		} else
 		    update_chat(where, to_id, &pkt);
 	    } else
 		break;

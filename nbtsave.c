@@ -683,6 +683,7 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
     bc_ent_int(ofd, "TdoorFlag", blkdef->tdoor_flag);
     bc_ent_int(ofd, "RailsFlag", blkdef->rails_flag);
     bc_ent_int(ofd, "OpblockFlag", blkdef->opblock_flag);
+    bc_ent_int(ofd, "FastFallFlag", blkdef->fastfall_flag);
 
     bc_ent_int(ofd, "StackBlock", blkdef->stack_block);
     bc_ent_int(ofd, "OdoorBlock", blkdef->odoor_block);

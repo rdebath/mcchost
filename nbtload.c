@@ -646,6 +646,8 @@ change_int_value(char * section, char * item, int64_t value)
 	    level_prop->blockdef[current_block].rails_flag = value;
 	} else if (strcmp(item, "OpblockFlag") == 0) {
 	    level_prop->blockdef[current_block].opblock_flag = value;
+	} else if (strcmp(item, "FastFallFlag") == 0) {
+	    level_prop->blockdef[current_block].fastfall_flag = value;
 	} else if (strcmp(item, "StackBlock") == 0) {
 	    level_prop->blockdef[current_block].stack_block = value;
 	} else if (strcmp(item, "OdoorBlock") == 0) {
