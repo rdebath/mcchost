@@ -105,6 +105,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_INTVAL("BlockSpamCount", server->block_spam_count);
 	INI_DURATION("BlockSpamInterval", server->block_spam_interval);
+	INI_INTVAL("BlockSpamKick", server->block_spam_kick);
 	INI_INTVAL("CmdSpamCount", server->cmd_spam_count);
 	INI_DURATION("CmdSpamInterval", server->cmd_spam_interval);
 	INI_DURATION("CmdSpamBan", server->cmd_spam_ban);

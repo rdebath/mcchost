@@ -272,6 +272,26 @@ disconnect(int rv, char * emsg)
 }
 
 #if INTERFACE
+#define fmt_logout_w __attribute__ ((format (printf, 1, 2)))
+#endif
+
+void fmt_logout_w
+logout_f(char * fmt, ...)
+{
+    char pbuf[16<<10];
+    va_list ap;
+    va_start(ap, fmt);
+    int l = vsnprintf(pbuf, sizeof(pbuf), fmt, ap);
+    if (l > sizeof(pbuf)) {
+        strcpy(pbuf+sizeof(pbuf)-4, "...");
+        l = sizeof(pbuf);
+    }
+    va_end(ap);
+
+    logout(pbuf);
+}
+
+#if INTERFACE
 #define fmt_fatal_w __attribute__ ((format (printf, 1, 2)))
 #endif
 

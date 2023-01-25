@@ -151,11 +151,9 @@ cmd_quit(char * cmd, char * arg)
     if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
 	logout("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
 
-    if (arg&&*arg) {
-	char buf[256];
-	saprintf(buf, "Left the game: %s", arg);
-	logout(buf);
-    } else
+    if (arg&&*arg)
+	logout_f("Left the game: %s", arg);
+    else
 	logout("Left the game.");
 }
 

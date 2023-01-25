@@ -17,6 +17,7 @@ Other notes
 /*HELP todo
  +) Login Whitelist ?
  +) Level ini file for permissions etc.
+ +) Change level load so that unpack is done in by forked process and the user(s) are then summoned.
 
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
@@ -33,9 +34,10 @@ Other notes
     -- /setvar user username var value ?
     -- Automatic restarts ?
 
- +) /restore
- +) /resizelvl
-    -- Create new map so I don't have to do read locks.
+ +) /restore /resizelvl
+    -- Backup overwritten level (if dirty)
+    -- Create as new map so I don't have to do read locks.
+    -- Summon users to new level id ?
 
  +) /sendcmd
  +) /summon
@@ -47,6 +49,8 @@ Other notes
  +) /loaded -- Should this scan the directory?
 
  +) Exponential backups.
+
+ +) UserType() { return group.Blocks[Block.Bedrock] ? 100 : 0; }
 
  +) /newlvl, more "nice" levels?
     -- Perlin based nature, with caves.

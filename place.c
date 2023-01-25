@@ -56,6 +56,7 @@ Alias: &T/b
 
 int player_mode_paint = 0;
 int player_mode_mode = -1;
+time_t player_block_message_time = 0;
 
 xyzhv_t marks[3] = {0};
 uint8_t player_mark_mode = 0;
@@ -69,18 +70,29 @@ can_place_block(block_t blk)
 {
     if (level_prop->disallowchange || blk >= BLOCKMAX)
 	return 0;
-    if (server->cpe_disabled && (blk == Block_Grass || blk == Block_DoubleSlab || blk >= Block_CP))
-        return 0;
     if ((level_prop->blockdef[blk].block_perm&1) != 0)
         return 0;
+    if (server->cpe_disabled) {
+	if (blk == Block_Grass || blk == Block_DoubleSlab || blk >= Block_CP)
+	    return 0;
+	if (!server->op_flag && !perm_is_admin() &&
+	    (blk == Block_Bedrock || blk == Block_ActiveWater || blk == Block_ActiveLava))
+	    return 0;
+    }
     return 1;
 }
 
 static inline int
 can_delete_block(block_t blk)
 {
+    if (level_prop->disallowchange)
+	return 0;
     if ((level_prop->blockdef[blk].block_perm&2) != 0)
         return 0;
+    if (server->cpe_disabled) {
+	if (!server->op_flag && !perm_is_admin() && blk == Block_Bedrock)
+	    return 0;
+    }
     return 1;
 }
 
@@ -150,7 +162,7 @@ cmd_place(char * cmd, char * arg)
     // that there's no advantage to the client sending /place commands as well
     // as setblock packets.
     if (add_antispam_event(player_block_spam, server->block_spam_count, server->block_spam_interval, 0)) {
-	printf_chat("&WToo many set-blocks received, suspected griefing.");
+	print_player_spam_msg("&WYou're changing blocks too fast, slow down.");
 	return;
     }
 
@@ -173,6 +185,30 @@ cmd_paint(char * UNUSED(cmd), char * UNUSED(arg))
     player_mode_paint = !player_mode_paint;
 
     printf_chat("&SPainting mode: &T%s.", player_mode_paint?"ON":"OFF");
+}
+
+#if INTERFACE
+#define fmt_spam_msg_w __attribute__ ((format (printf, 1, 2)))
+#endif
+
+void fmt_spam_msg_w
+print_player_spam_msg(char * fmt, ...)
+{
+    time_t now = time(0);
+    if (now <= player_block_message_time) return;
+
+    char pbuf[16<<10];
+    va_list ap;
+    va_start(ap, fmt);
+    int l = vsnprintf(pbuf, sizeof(pbuf), fmt, ap);
+    if (l > sizeof(pbuf)) {
+        strcpy(pbuf+sizeof(pbuf)-4, "...");
+        l = sizeof(pbuf);
+    }
+    va_end(ap);
+
+    player_block_message_time = now;
+    printf_chat("%s", pbuf);
 }
 
 void
@@ -262,14 +298,23 @@ cmd_mode(char * cmd, char * arg)
 void
 process_player_setblock(pkt_setblock pkt)
 {
-    if (!level_block_queue || !level_blocks || !user_authenticated)
-	{ revert_client(pkt); return; }
+    if (!user_authenticated) {
+	print_player_spam_msg("&SYou need to login first");
+	revert_client(pkt);
+	return;
+    }
+    if (!level_block_queue || !level_blocks || !user_authenticated) {
+	print_player_spam_msg("&SLevel cannot be changed");
+	revert_client(pkt);
+	return;
+    }
 
     int do_revert = 0;
 
     if (!do_revert && player_lockout>0) {
 	do_revert = 1;
 	player_lockout = 50;
+	print_player_spam_msg("&SPlayer has changed level, stop placing blocks.");
     }
 
     if (!do_revert) {
@@ -284,7 +329,7 @@ process_player_setblock(pkt_setblock pkt)
 	    if (ok_reach > 5*32) ok_reach += 4*32; else ok_reach += 2*32;
 	    ok_reach *= ok_reach;
 	    if (range >= ok_reach) {
-		printf_chat("You can't build that far away.");
+		print_player_spam_msg("You can't build that far away.");
 		do_revert = 1;
 	    }
 	}
@@ -329,7 +374,7 @@ process_player_setblock(pkt_setblock pkt)
     }
 
     // Classic mode can't place Grass.
-    if (!cpe_enabled && pkt.block == Block_Grass)
+    if (!cpe_enabled && !server->cpe_disabled && pkt.block == Block_Grass)
 	pkt.block = Block_Dirt;
 
     if (player_mode_mode >= 0 && pkt.mode) {
@@ -337,11 +382,26 @@ process_player_setblock(pkt_setblock pkt)
 	pkt.mode = 2;
     }
 
-    if (!do_revert) do_revert = !can_place_block(pkt.block);
+    if (!do_revert) {
+	do_revert = !can_place_block(pkt.block);
+	if (do_revert)
+	    print_player_spam_msg("&WYou cannot place block %s", block_name(pkt.block));
+    }
 
     if (add_antispam_event(player_block_spam, server->block_spam_count, server->block_spam_interval, 0)) {
-	my_user.kick_count++;
-	logout("Kicked for suspected griefing.");
+	if (server->block_spam_kick) {
+	    my_user.kick_count++;
+	    logout("Kicked for suspected griefing.");
+	}
+	int secs = 0;
+        if (player_block_spam->banned_til)
+            secs = player_block_spam->banned_til - time(0);
+
+	if (secs > 10)
+	    print_player_spam_msg("&WYou can't change blocks for %d seconds", secs);
+	else
+	    print_player_spam_msg("&WYou're changing blocks too fast, slow down.");
+	do_revert = 1;
     }
 
     if (!level_block_queue || !level_blocks) return; // !!!
@@ -350,6 +410,7 @@ process_player_setblock(pkt_setblock pkt)
 
     block_t b = level_blocks[World_Pack(pkt.coord.x, pkt.coord.y, pkt.coord.z)];
     if (b != Block_Air && b < BLOCKMAX && !can_delete_block(b)) {
+	print_player_spam_msg("Cannot delete block %s", block_name(b));
 	revert_client(pkt);
 	return;
     }

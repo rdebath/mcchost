@@ -50,6 +50,7 @@ struct server_t {
 
     int block_spam_count;
     int block_spam_interval;
+    int block_spam_kick;
 
     int cmd_spam_count;
     int cmd_spam_interval;

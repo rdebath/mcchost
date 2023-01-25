@@ -308,7 +308,7 @@ process_client_message(int cmd, char * pktbuf)
 	    return;
     }
     if (!cpe_enabled && cmd > PKID_OPER)
-	logout("Unexpected packet type received");
+	logout_f("Unexpected packet type received: 0x%02x", cmd);
 
 #if 0
     if (!cpe_enabled) {
