@@ -104,12 +104,22 @@ filelock_t level_lock[1];
  *    !=0: just open files don't create
  */
 void
-open_level_files(char * level_name, int backup_id, char * fixname, int to_unload)
+open_level_files(char * level_name, int backup_id, char * cw_name, char * fixname, int to_unload)
 {
     char sharename[256];
     int del_on_err = 0, try_cw_file = 0;
 
     stop_shared();
+
+    char cwfilename[256];
+
+    if (cw_name == 0) {
+	cw_name = cwfilename;
+	if (backup_id == 0)
+	    saprintf(cwfilename, LEVEL_CW_NAME, fixname);
+	else
+	    saprintf(cwfilename, LEVEL_BACKUP_DIR_NAME "/%s.cw", fixname);
+    }
 
     check_level_name(fixname); // Last check.
     shdat.level_fixed_name = strdup(fixname);
@@ -144,9 +154,7 @@ open_level_files(char * level_name, int backup_id, char * fixname, int to_unload
     else
 	// If it's not dirty, the cw file should be the master so okay to delete.
 	if (!level_prop->dirty_save) {
-	    char cwfilename[256];
-	    saprintf(cwfilename, LEVEL_CW_NAME, fixname);
-	    if (access(cwfilename, R_OK) == 0)
+	    if (access(cw_name, R_OK) == 0)
 		del_on_err = 1;
 	}
 
@@ -155,20 +163,15 @@ open_level_files(char * level_name, int backup_id, char * fixname, int to_unload
 
 	int ok = 0;
 	// If level missing -- extract the matching *.cw file
-	char cwfilename[256];
-	if (backup_id == 0)
-	    saprintf(cwfilename, LEVEL_CW_NAME, fixname);
-	else
-	    saprintf(cwfilename, LEVEL_BACKUP_DIR_NAME "/%s.cw", fixname);
-	if (access(cwfilename, R_OK) == 0) {
-	    ok = (load_map_from_file(cwfilename, fixname, level_name) >= 0);
+	if (access(cw_name, R_OK) == 0) {
+	    ok = (load_map_from_file(cw_name, fixname, level_name) >= 0);
 	    // If the cw extraction fails we don't want to use anything
 	    // else as overwriting it might be bad.
 	    if (!ok)
 		goto open_failed;
 
-	    if (access(cwfilename, W_OK) != 0) {
-		printlog("Loaded read only map %s", cwfilename);
+	    if (access(cw_name, W_OK) != 0) {
+		printlog("Loaded read only map \"%s\"", cw_name);
 		level_prop->readonly = 1;
 	    }
 	}

@@ -17,18 +17,18 @@ Other notes
 /*HELP todo
  +) Login Whitelist ?
  +) Level ini file for permissions etc.
+    -- NoUnload, ReadOnly
+
+ +) /maps backup needs to cope with backup subdirs.
+
  +) Change level load so that unpack is done in by forked process and the user(s) are then summoned.
+    -- For resizelvl and restore at least.
 
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat ?
 
  +) Message blocks don't need physics.
-
- +) Divide maps into collections "fcraft", "junk", etc
-    -- Command to change set ?
-    -- Allow main= to be an absolute path? (Unconverted '/' characters)
-    --    level dir contains name "main.lvl.blocks" with real dot?
 
  +) Improve the /setvar command, more help, option lists.
     -- /setvar user username var value ?

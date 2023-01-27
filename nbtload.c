@@ -47,14 +47,14 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
     }
 
     // 1 -> yes, 0 -> Nothing to load, -1 -> failed miserably.
-    int cw_loaded = load_cwfile(ifd, level_fname, level_name);
+    int cw_loaded = load_cwfile(ifd, level_fname, level_name, filename);
 
     if (cw_loaded == 0) {
 	// Looks like it might be a text file.
 	struct stat st = {0};
 	(void)stat(filename, &st);
-	if (!try_asciimode(ifd, level_fname, (uint64_t)st.st_mtime)) {
-	    fprintf_logfile("Level \"%s\" NBT and INI load failed.", level_name);
+	if (!try_asciimode(ifd, level_fname, filename, (uint64_t)st.st_mtime)) {
+	    printlog("Level file \"%s\" NBT and INI load failed.", filename);
 	    cw_loaded = -1;
 	} else
 	    cw_loaded = 1;
@@ -87,7 +87,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 }
 
 LOCAL int
-load_cwfile(gzFile ifd, char * level_fname, char * level_name)
+load_cwfile(gzFile ifd, char * level_fname, char * level_name, char * cw_filename)
 {
     int ClassicWorld_found = 0;
     int ch = gzgetc(ifd);
@@ -124,13 +124,13 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name)
 	    fprintf_logfile("Level \"%s\" incorrect NBT schema label \"%s\".", level_name, last_lbl);
 	    return -1;
 	}
-	fprintf_logfile("Loading %s map for \"%s\"", last_lbl, level_name);
+	printlog("Loading %s map into \"%s\" from \"%s\"", last_lbl, level_fname, cw_filename);
 	create_property_file(level_name, level_fname);
 	init_map_null();
 	if (!read_element(ifd, ch))
 	    return -1;
     } else if (ch == EOF || (ch&0x80) != 0) {
-	fprintf_logfile("Level \"%s\" unknown file format", level_name);
+	printlog("Level file \"%s\" unknown file format", cw_filename);
 	return -1;
     } else
 	return 0;

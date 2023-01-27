@@ -13,12 +13,12 @@
  * known commands all other commands are ignored.
  */
 int
-try_asciimode(gzFile ifd, char * levelfile, uint64_t fallback_seed)
+try_asciimode(gzFile ifd, char * levelfile, char * ini_filename, uint64_t fallback_seed)
 {
     ini_state_t st = {.quiet = 0, .filename = levelfile};
     int blocks_opened = 0;
 
-    printlog("Trying to load \"%s\" as an ini file", levelfile);
+    printlog("Trying to load \"%s\" as an ini file", ini_filename);
 
     init_map_null();
 

@@ -21,6 +21,7 @@
 
 #define LEVEL_BACKUP_DIR_NAME "backup"
 #define LEVEL_BACKUP_NAME LEVEL_BACKUP_DIR_NAME "/%s.%d.cw"
+#define LEVEL_BACKUP_NAME_1 LEVEL_BACKUP_DIR_NAME "/%s.cw"
 
 #define USER_DIR "user"
 #define USER_INI_NAME "user/%s.ini"

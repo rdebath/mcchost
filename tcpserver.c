@@ -820,7 +820,7 @@ auto_load_main(int fast_start)
     fix_fname(fixname, sizeof(fixname), main_level());
     if (!start_level(main_level(), fixname, 0)) exit(1);
 
-    open_level_files(main_level(), 0, fixname, 0);
+    open_level_files(main_level(), 0, 0, fixname, 0);
 
     stop_client_list();
     msleep(1000);

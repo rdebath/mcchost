@@ -228,7 +228,7 @@ scan_and_save_levels(int do_timed_save)
 
 	    char fixedname[MAXLEVELNAMELEN*4];
 	    fix_fname(fixedname, sizeof(fixedname), level_name);
-	    open_level_files(level_name, 0, fixedname, 1);
+	    open_level_files(level_name, 0, 0, fixedname, 1);
 	    if (!level_prop)
 	    {
 		// I can't open the level ... hmmm.
