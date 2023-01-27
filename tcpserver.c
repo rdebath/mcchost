@@ -818,7 +818,8 @@ auto_load_main(int fast_start)
     // Open level mmap files.
     char fixname[MAXLEVELNAMELEN*4];
     fix_fname(fixname, sizeof(fixname), main_level());
-    start_level(main_level(), fixname, 0);
+    if (!start_level(main_level(), fixname, 0)) exit(1);
+
     open_level_files(main_level(), 0, fixname, 0);
 
     stop_client_list();

@@ -7,7 +7,7 @@ enum perm_token { perm_token_none, perm_token_admin, perm_token_level };
 
 #define CMD_PERM_ADMIN  .perm_okay=perm_token_admin		/* System admin */
 #define CMD_PERM_LEVEL  .perm_okay=perm_token_level		/* Level owner */
-#define CMD_HELPARG	.harg=1
+#define CMD_HELPARG	.help_if_no_args=1
 
 typedef void (*cmd_func_t)(char * cmd, char * arg);
 typedef struct command_t command_t;
@@ -17,7 +17,7 @@ struct command_t {
     enum perm_token perm_okay;
     int dup;		// Don't show on /cmds (usually a duplicate)
     int nodup;		// No a dup, don't use previous.
-    int harg;		// Help if no args
+    int help_if_no_args;
     int map;		// Error if no map
 };
 
@@ -113,7 +113,7 @@ run_command(char * msg)
 	if ((!level_prop || !level_blocks) && command_list[c].map)
 	    printf_chat("&WCommand failed, map is not loaded");
 	else
-	if (command_list[c].harg && *arg == 0)
+	if (command_list[c].help_if_no_args && *arg == 0)
 	    cmd_help(0, ncmd);
 	else
 	    command_list[c].function(ncmd, arg);

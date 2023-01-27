@@ -129,16 +129,10 @@ open_main_level()
 	char fixedname[NB_SLEN];
 	fix_fname(fixedname, sizeof(fixedname), main_level());
 
-	start_level(main_level(), fixedname, 0);
-	open_level_files(main_level(), 0, fixedname, 0);
+	if (start_level(main_level(), fixedname, 0))
+	    open_level_files(main_level(), 0, fixedname, 0);
 
-	if (!level_prop) {
-	    start_level(main_level(), fixedname, -1);
-	    if (level_prop) {
-		level_prop->readonly = 1;
-		level_prop->disallowchange = 0;
-	    }
-	}
+	if (!level_prop) cmd_void(0, 0);
 
 	if (level_prop) player_posn = level_prop->spawn;
 	send_map_file();
@@ -153,7 +147,7 @@ cmd_void(char * cmd, char * UNUSED(arg))
     char fixedname[NB_SLEN];
     fix_fname(fixedname, sizeof(fixedname), voidname);
     stop_shared();
-    start_level(voidname, fixedname, -1);
+    (void)start_level(voidname, fixedname, -1);
     send_map_file();
 
     if (cmd) {
@@ -212,8 +206,8 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 
     stop_shared();
 
-    start_level(levelname, fixedname, backup_id);
-    open_level_files(levelname, backup_id, fixedname, 0);
+    if (start_level(levelname, fixedname, backup_id))
+	open_level_files(levelname, backup_id, fixedname, 0);
     if (!level_prop) {
         printf_chat("&WLevel \"%s\" load failed, returning to main", level);
         open_main_level();

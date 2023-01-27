@@ -116,7 +116,7 @@ open_level_files(char * level_name, int backup_id, char * fixname, int to_unload
 
     saprintf(sharename, LEVEL_LOCK_NAME, fixname);
     level_lock->name = strdup(sharename);
-    lock_start(level_lock);
+    if (!lock_start_try(level_lock)) return;
 
     saprintf(sharename, LEVEL_BLOCKS_NAME, fixname);
     del_on_err = access(sharename, F_OK);

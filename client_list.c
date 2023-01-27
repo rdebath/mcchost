@@ -527,7 +527,7 @@ start_user()
     unlock_fn(system_lock);
 }
 
-void
+int
 start_level(char * levelname, char * levelfile, int backup_id)
 {
     nbtstr_t level = {0};
@@ -542,38 +542,40 @@ start_level(char * levelname, char * levelfile, int backup_id)
 
     lock_fn(system_lock);
 
-    for(int i=0; i<MAX_LEVEL; i++) {
-	if (!shdat.client->levels[i].loaded) {
-	    if (level_id == -1) level_id = i;
-	    continue;
+    if (backup_id>= 0) {
+	for(int i=0; i<MAX_LEVEL; i++) {
+	    if (!shdat.client->levels[i].loaded) {
+		if (level_id == -1) level_id = i;
+		continue;
+	    }
+	    nbtstr_t n = shdat.client->levels[i].level;
+	    if (strcmp(n.c, level.c) == 0 && shdat.client->levels[i].backup_id == backup_id) {
+		level_id = i;
+		break;
+	    }
 	}
-	nbtstr_t n = shdat.client->levels[i].level;
-	if (strcmp(n.c, level.c) == 0 && shdat.client->levels[i].backup_id == backup_id) {
-	    level_id = i;
-	    break;
+
+	if (level_id<0) {
+	    unlock_fn(system_lock);
+	    return 0;
+	}
+
+	if (!shdat.client->levels[level_id].loaded) {
+	    client_level_t t = {0};
+	    t.level = level;
+	    t.loaded = 1;
+	    t.backup_id = backup_id;
+	    shdat.client->levels[level_id] = t;
+	    server->loaded_levels++;
 	}
     }
 
-    if (level_id<0)
-	fatal("Too many levels loaded");
-
-    if (!shdat.client->levels[level_id].loaded) {
-	client_level_t t = {0};
-	t.level = level;
-	t.loaded = 1;
-	t.backup_id = backup_id;
-	shdat.client->levels[level_id] = t;
-	server->loaded_levels++;
+    if (my_user_no >= 0 && my_user_no < MAX_USER) {
+	shdat.client->user[my_user_no].on_level = level_id;
+	shdat.client->user[my_user_no].level_bkp_id = backup_id;
+	shdat.client->user[my_user_no].posn = (xyzhv_t){0};
     }
 
-    if (my_user_no < 0 || my_user_no >= MAX_USER) {
-	unlock_fn(system_lock);
-	return;
-    }
-
-    shdat.client->user[my_user_no].on_level = level_id;
-    shdat.client->user[my_user_no].level_bkp_id = backup_id;
-    shdat.client->user[my_user_no].posn = (xyzhv_t){0};
     shdat.client->generation++;
     player_lockout = 50;
 
@@ -600,6 +602,8 @@ start_level(char * levelname, char * levelfile, int backup_id)
 	send_addplayername_pkt(-1, user_id, listname, groupname, 0);
     } else
 	unlock_fn(system_lock);
+
+    return 1;
 }
 
 void

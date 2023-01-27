@@ -57,8 +57,16 @@ unlock_fn(filelock_t * ln)
     ln->have_lock = 0;
 }
 
-void
-lock_start(filelock_t * ln)
+#if INTERFACE
+inline static void
+lock_start(pthread_filelock_t * ln)
+{
+    if (!lock_start_try(ln)) abort();
+}
+#endif
+
+int
+lock_start_try(filelock_t * ln)
 {
     int fd = -1;
 
@@ -73,11 +81,11 @@ lock_start(filelock_t * ln)
 
     int ecount = 0;
     ln->lock = 0;
-    if (!ln->name) return;
+    if (!ln->name) return 0;
 
     while(1)
     {
-	if (errno != 0 && ecount > 20) { perror(ln->name); abort(); }
+	if (errno != 0 && ecount > 20) { perror(ln->name); return 0; }
 
 	fd = open(ln->name, O_RDWR|O_CLOEXEC);
 	if (fd>=0) {
@@ -89,18 +97,19 @@ lock_start(filelock_t * ln)
 		lock_shm_t * tmp_lock;
 		tmp_lock = mmap(NULL, getpagesize(), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 		close(fd);
-		ln->lock = tmp_lock;
+		if (tmp_lock != (void *) -1)
+		    ln->lock = tmp_lock;
 
-		if (ln->lock->magic == TY_MAGIC) {
+		if (ln->lock && ln->lock->magic == TY_MAGIC) {
 		    // Try to lock the lock; bad errors mean we recreate it.
 		    errno = 0;
 		    int n = pthread_mutex_trylock(ln->lock->mutex);
-		    if (n == EBUSY) return; // In use is fine.
+		    if (n == EBUSY) return 1; // In use is fine.
 		    if (n == EOWNERDEAD)
 			n = pthread_mutex_consistent(ln->lock->mutex);
 		    if (n == 0) {
 			pthread_mutex_unlock(ln->lock->mutex);
-			return;
+			return 1;
 		    }
 		    if (n == EINVAL)
 			fprintf(stderr, "Lockfile \"%s\" failed with EINVAL\n", ln->name);
@@ -116,14 +125,14 @@ lock_start(filelock_t * ln)
 	    // This is dangerous, but should never happen unless someone has
 	    // corrupted the lock file.
 	    // Hopefully this delay is long enough for everyone to be happy.
-	    if (ecount > 20) { perror(ln->name); abort(); }
+	    if (ecount > 20) { perror(ln->name); return 0; }
 	    if (unlink(ln->name) == 0)
 		msleep(500);
 	    continue;
 	}
 
 	// ENOENT -> Need to make; other -> not good.
-	if (errno != ENOENT || ecount > 100) { perror(ln->name); return; }
+	if (errno != ENOENT || ecount > 100) { perror(ln->name); return 0; }
 	ecount++;
 
 	// Create the mutex in local memory
@@ -145,7 +154,7 @@ lock_start(filelock_t * ln)
 	fd = open(tmpfile, O_RDWR|O_CREAT|O_CLOEXEC|O_TRUNC|O_EXCL, 0600);
 	if(fd < 0) {
 	    // Directory missing...
-	    if (errno == ENOENT) { perror(ln->name); return; }
+	    if (errno == ENOENT) { perror(ln->name); return 0; }
 	    // Shouldn't happen, but wait and retry.
 	    usleep(20000);
 	    continue;

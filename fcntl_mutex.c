@@ -26,14 +26,23 @@ void unlock_fn(fcntl_filelock_t * ln)
     share_lock(ln->fcntl_fd, F_SETLK, F_UNLCK);
 }
 
-void lock_start(fcntl_filelock_t * ln)
+#if INTERFACE
+inline static void
+lock_start(fcntl_filelock_t * ln)
+{
+    if (!lock_start_try(ln)) abort();
+}
+#endif
+
+int lock_start_try(fcntl_filelock_t * ln)
 {
     int fd = open(ln->name, O_RDWR|O_CLOEXEC|O_CREAT, 0600);
     if (fd <= 0) {
 	perror(ln->name);
-	exit(1);
+	return 0;
     }
     ln->fcntl_fd = fd;
+    return 1;
 }
 
 void lock_stop(fcntl_filelock_t * ln)
