@@ -18,6 +18,8 @@
 #define LEVEL_CW_NAME LEVEL_MAP_DIR_NAME "/%s.cw"
 #define LEVEL_TMP_NAME LEVEL_MAP_DIR_NAME "/%s.tmp"
 #define LEVEL_BAK_NAME LEVEL_MAP_DIR_NAME "/%s.bak"
+#define LEVEL_INI_NAME LEVEL_MAP_DIR_NAME "/%s.ini"
+#define LEVEL_TMPINI_NAME LEVEL_MAP_DIR_NAME "/%s.ini-"
 
 #define LEVEL_BACKUP_DIR_NAME "backup"
 #define LEVEL_BACKUP_NAME LEVEL_BACKUP_DIR_NAME "/%s.%d.cw"

@@ -16,8 +16,6 @@ Other notes
 
 /*HELP todo
  +) Login Whitelist ?
- +) Level ini file for permissions etc.
-    -- NoUnload, ReadOnly
 
  +) /maps backup needs to cope with backup subdirs.
 

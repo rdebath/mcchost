@@ -6,9 +6,9 @@ void
 time_t_to_iso8601(char * timebuf, time_t t)
 {
     struct tm tm;
-    if(gmtime_r(&t, &tm))
+    if(t > 0 && gmtime_r(&t, &tm))
 	sprintf(timebuf, "%04d-%02d-%02dT%02d:%02d:%02dZ",
-	    tm.tm_year+1900, tm.tm_mon, tm.tm_mday,
+	    tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
 	    tm.tm_hour, tm.tm_min, tm.tm_sec);
     else
 	sprintf(timebuf, "%jd", (intmax_t)t);
@@ -42,7 +42,7 @@ iso8601_to_time_t(const char * iso8601_datetime)
     isodt[4]=isodt[7]=isodt[10]=isodt[13]=isodt[16]=isodt[19]=0;
     struct tm tm = {0};
     tm.tm_year = atoi(isodt+0) - 1900;
-    tm.tm_mon = atoi(isodt+5);
+    tm.tm_mon = atoi(isodt+5)-1;
     tm.tm_mday = atoi(isodt+8);
     tm.tm_hour = atoi(isodt+11);
     tm.tm_min = atoi(isodt+14) + tz;

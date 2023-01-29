@@ -41,6 +41,21 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 {
     gzFile ifd;
 
+    char ini_name[PATH_MAX];
+    if (strlen(filename) > sizeof(ini_name)-4) {
+	printlog("Level file \"%s\" name too long", filename);
+	return -1;
+    }
+    {
+	strcpy(ini_name, filename);
+	char * p = strrchr(ini_name, '.');
+	if (p && strcmp(p, ".cw") == 0)
+	    *p = 0;
+	strcat(ini_name, ".ini");
+	if (access(ini_name, R_OK) != 0)
+	    *ini_name = 0;
+    }
+
     if ((ifd = gzopen(filename, "r")) == 0) {
 	perror(filename);
 	return -1;
@@ -61,12 +76,12 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
     }
 
     int rv = gzclose(ifd);
-    if (rv) {
-	printlog("Load '%s' failed error Z%d", filename, rv);
-	return -1;
-    }
+    if (rv) printlog("Load '%s' failed error Z%d", filename, rv);
     if (cw_loaded != 1)
 	return -1;
+
+    if (*ini_name)
+	load_ini_file(mcc_level_ini_fields, ini_name, 1, 1);
 
     if (level_prop && level_prop->time_created == 0) {
 	// Hmm, no creation time, pickup the file modified time.
@@ -156,17 +171,22 @@ read_element(gzFile ifd, int etype)
 	for(i=0; i<4; i++)
 	    len = (len<<8) + (ch = gzgetc(ifd));
 
-	if (strcmp(last_lbl, "BlockArray") == 0 && len>0)
-	    return read_blockarray(ifd, len);
+	if (len>0) {
+	    if (strcmp(last_lbl, "BlockArray") == 0)
+		return read_blockarray(ifd, len);
 
-	if (strcmp(last_lbl, "BlockArray2") == 0 && len>0)
-	    return read_blockarray2(ifd, len);
+	    if (strcmp(last_lbl, "BlockArray2") == 0)
+		return read_blockarray2(ifd, len);
 
-	if (strcmp(last_lbl, "BlockArray3") == 0 && len>0)
-	    return read_blockarray3(ifd, len);
+	    if (strcmp(last_lbl, "BlockArray3") == 0)
+		return read_blockarray3(ifd, len);
 
-	if (strcmp(last_lbl, "BlockArrayPhysics") == 0 && len>0)
-	    return read_blockarray_physics(ifd, len);
+	    if (strcmp(last_lbl, "BlockArrayExt") == 0)
+		return read_blockarray3(ifd, len);
+
+	    if (strcmp(last_lbl, "BlockArrayPhysics") == 0)
+		return read_blockarray_physics(ifd, len);
+	}
 
 	uint8_t bin_buf[256];
 	if (len <= 0)
@@ -370,37 +390,17 @@ read_blockarray_physics(gzFile ifd, uint32_t len)
 	return 1;
     }
 
+    if (!level_prop->mcg_physics_blocks) {
+	level_prop->mcg_physics_blocks = 1;
+	init_mcg_physics();
+	define_mcg_physics_blocks();
+    }
+
     for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
 	if (ch)
 	    level_blocks[i] = ch + MCG_PHYSICS_0FFSET;
-    }
-
-    init_mcg_physics();
-    char * start = mcgalaxy_names;
-    for(int i = 0; i<256; i++) {
-	int blk = i + MCG_PHYSICS_0FFSET;
-	char namebuf[64];
-	*namebuf = 0;
-	if (start) {
-	    char * e = strchr(start, '@');
-	    if (e) {
-		if (e!=start) memcpy(namebuf, start, e-start);
-		namebuf[e-start] = 0;
-		start = e+1;
-	    } else
-		start = e;
-	}
-	if (!level_prop->blockdef[blk].defined) {
-	    level_prop->blockdef[blk] = level_prop->blockdef[mcg_physics[i]];
-	    level_prop->blockdef[blk].defined = 1;
-	    level_prop->blockdef[blk].no_save = 1;
-	    level_prop->blockdef[blk].fallback = mcg_physics[i];
-	    level_prop->blockdef[blk].inventory_order = 0;
-	    if (*namebuf)
-		strcpy(level_prop->blockdef[blk].name.c, namebuf);
-	}
     }
     return 1;
 }
@@ -588,6 +588,16 @@ change_int_value(char * section, char * item, int64_t value)
 	if (strcmp(item, "DisallowChange") == 0) level_prop->disallowchange = value;
 	if (strcmp(item, "ReadOnly") == 0) level_prop->readonly = value;
 	if (strcmp(item, "ResetHotbar") == 0) level_prop->reset_hotbar = value;
+
+    } else if (strcasecmp(section, "MCGalaxy") == 0) {
+
+	if (strcasecmp(item, "PhysicsBlocks") == 0) {
+	    level_prop->mcg_physics_blocks = value;
+	    if (level_prop->mcg_physics_blocks) {
+		init_mcg_physics();
+		define_mcg_physics_blocks();
+	    }
+	}
 
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {
@@ -829,6 +839,8 @@ cpy_nstr(char *buf, int buflen, char *str)
 void
 init_mcg_physics()
 {
+    if (mcg_physics[1] == 1) return; // Done already
+
     // MCGalaxy physics block fallback and visual representations.
     for(int i = 0; i<256; i++)
 	if (i<66) mcg_physics[i] = i;
@@ -1005,6 +1017,50 @@ init_mcg_physics()
     mcg_physics[252] = 16;
     mcg_physics[253] = 41;
     mcg_physics[254] = 0;
+}
+
+void
+define_mcg_physics_blocks()
+{
+    char * start = mcgalaxy_names;
+    for(int i = 0; i<256; i++) {
+	int blk = i + MCG_PHYSICS_0FFSET;
+	char namebuf[64];
+	*namebuf = 0;
+	if (start) {
+	    char * e = strchr(start, '@');
+	    if (e) {
+		if (e!=start) memcpy(namebuf, start, e-start);
+		namebuf[e-start] = 0;
+		start = e+1;
+	    } else
+		start = e;
+	}
+	if (!level_prop->blockdef[blk].defined) {
+	    level_prop->blockdef[blk] = level_prop->blockdef[mcg_physics[i]];
+	    level_prop->blockdef[blk].defined = 1;
+	    level_prop->blockdef[blk].no_save = 1;
+	    level_prop->blockdef[blk].fallback = mcg_physics[i];
+	    level_prop->blockdef[blk].inventory_order = 0;
+	    if (*namebuf) {
+		strcpy(level_prop->blockdef[blk].name.c, namebuf);
+		if (strncmp(namebuf, "Door", 4) == 0) {
+		    if (strstr(namebuf, "Air"))
+			; // "Door..Air" blocks.
+		    else {
+			level_prop->blockdef[blk].door_flag = 1;
+			// Door_Green and Door_TNT Air type is not Air.
+		    }
+		}
+		else if (strncmp(namebuf, "Op", 2) == 0)
+		    level_prop->blockdef[blk].block_perm = 3;
+		else if (strstr(namebuf, "_Portal") == 0)
+		    level_prop->blockdef[blk].portal_flag = 1;
+		else if (strstr(namebuf, "_Message") == 0)
+		    level_prop->blockdef[blk].mblock_flag = 1;
+	    }
+	}
+    }
 }
 
 LOCAL char mcgalaxy_names[] =

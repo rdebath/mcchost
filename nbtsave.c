@@ -172,6 +172,13 @@ save_map_to_file(char * fn, int background)
     bc_end(savefile);
 
     // Not written by CC
+    if (level_prop->mcg_physics_blocks) {
+	bc_compound(savefile, "MCGalaxy");
+	bc_ent_int(savefile, "PhysicsBlocks", 1);
+	bc_end(savefile);
+    }
+
+    // Not written by CC
     if (level_prop->hacks_flags) {
 	bc_compound(savefile, "HackControl");
 	int v = level_prop->hacks_flags;
@@ -308,14 +315,7 @@ save_map_to_file(char * fn, int background)
     if (level_blocks) {
 	int flg = 0, flg2 = 0, flg3 = 0;
 
-	int use_mcg_physics = 0; // Use BA3 or BA_Physics for blocks > 767
-	for(int i = MCG_PHYSICS_0FFSET; i<MCG_PHYSICS_0FFSET+255; i++) {
-	    if (level_prop->blockdef[i].defined && level_prop->blockdef[i].no_save) {
-		use_mcg_physics = 1;
-		init_mcg_physics();
-		break;
-	    }
-	}
+	int use_mcg_physics = level_prop->mcg_physics_blocks; // Use BA3 or BA_Physics for blocks > 767
 
 	// Save as much as we can, lost blocks would be at the top of the Y axis.
 	int saveable_blocks = level_prop->total_blocks;
@@ -327,9 +327,10 @@ save_map_to_file(char * fn, int background)
 
 	for (intptr_t i = 0; i<saveable_blocks; i++) {
 	    int b = level_blocks[i];
-	    if (use_mcg_physics && b>MCG_PHYSICS_0FFSET && b<MCG_PHYSICS_0FFSET+255)
+	    if (use_mcg_physics && b>MCG_PHYSICS_0FFSET && b<MCG_PHYSICS_0FFSET+255) {
 		gzputc(savefile, mcg_physics[b&0xFF]);
-	    else {
+		flg3 = 1;
+	    } else {
 		if (b>=CPELIMIT) {flg2 = 1; b &= 0xFF; }
 		gzputc(savefile, b & 0xFF);
 		flg |= (b>0xFF);

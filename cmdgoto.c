@@ -89,7 +89,10 @@ cmd_goto(char * cmd, char * arg)
 	return;
     }
 
-    direct_teleport(levelname, 0, 0);
+    if (strcmp(levelname, main_level()) == 0)
+	cmd_main(0,0);
+    else
+	direct_teleport(levelname, 0, 0);
 }
 
 void
@@ -234,9 +237,11 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 
     if (!extn_extentityposn) {
 	if (level_prop->cells_x>1024 || level_prop->cells_y>1024 || level_prop->cells_z>1024) {
-	    printf_chat("&WLevel \"%s\" is too large for your client", level);
-	    cmd_main(0,0);
-	    return 0;
+	    if (strcmp(level, main_level()) != 0) {
+		printf_chat("&WLevel \"%s\" is too large for your client", level);
+		cmd_main(0,0);
+		return 0;
+	    }
 	}
     }
 

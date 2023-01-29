@@ -60,6 +60,7 @@ struct client_level_t {
     uint8_t force_unload;
     uint8_t force_backup;
     uint8_t delete_on_unload;
+    uint8_t no_unload;
 };
 
 typedef struct client_data_t client_data_t;

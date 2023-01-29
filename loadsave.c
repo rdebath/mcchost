@@ -37,18 +37,13 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 
     lock_fn(level_lock);
 
-    time_t backup_sav = level_prop->last_backup;
-    if (save_bkp) {
-	// We're gonna do the backup.
-	level_prop->last_backup = time(0);
-    }
+    int backup_ok = 1;
 
     if (save_map_to_file(tmp_fn, 1) < 0) {
 	int e = errno;
 	(void) unlink(tmp_fn);
 	unlock_fn(level_lock);
 	errno = e;
-	level_prop->last_backup = backup_sav;
 
 	fprintf_logfile("map save of '%s' to '%s' failed", level_name, tmp_fn);
 	return -1;
@@ -57,8 +52,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     if (save_bkp && save_bkp != 2) {
 	if (access(map_fn, F_OK) == 0) {
 	    // Do anything else on backup failure?
-	    if (link(map_fn, bak_fn) < 0)
-		level_prop->last_backup = backup_sav;
+	    if (link(map_fn, bak_fn) < 0) backup_ok = 0;
 	}
     }
 
@@ -83,10 +77,14 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     level_prop->dirty_save = 0;
     unlock_fn(level_lock);
 
-    if (access(bak_fn, F_OK) == 0)
+    if (access(bak_fn, F_OK) == 0) {
+	if (backup_ok) {
+	    level_prop->last_backup = time(0);
+	    save_level_ini(level_fname);
+	}
+
 	move_file_to_backups(bak_fn, level_fname, level_name);
-    else
-	level_prop->last_backup = backup_sav;
+    }
     return 0;
 }
 
@@ -236,6 +234,10 @@ scan_and_save_levels(int do_timed_save)
 		ignore_broken_level(lvid, &loaded_levels);
 		continue;
 	    }
+
+	    shdat.client->levels[lvid].no_unload = level_prop->no_unload;
+	    set_level_in_use_flag(lvid, &user_count);
+	    level_in_use = shdat.client->levels[lvid].in_use;
 
 	    int force_backup = 0; // And delete
 	    if (shdat.client->levels[lvid].delete_on_unload) {
@@ -395,6 +397,19 @@ scan_and_save_levels(int do_timed_save)
     return trigger_full_run;
 }
 
+void
+save_level_ini(char * level_fname)
+{
+    char buf[256], ini_file[256];
+    saprintf(buf, LEVEL_TMPINI_NAME, level_fname);
+    saprintf(ini_file, LEVEL_INI_NAME, level_fname);
+    if (save_ini_file(mcc_level_ini_fields, buf, ini_file) >= 0) {
+        if (rename(buf, ini_file) < 0)
+            perror("rename ${level}.ini file");
+    }
+    (void)unlink(buf);
+}
+
 LOCAL void
 ignore_broken_level(int lvid, int *loaded_levels)
 {
@@ -467,15 +482,18 @@ set_level_in_use_flag(int lvid, int * users_on_level)
 	} else other_users++;
     }
     if (users_on_level) *users_on_level = user_count;
-    // Main is kept open more.
-    if (this_is_main
+    // Main and other normal levels may be held open.
+    if (shdat.client->levels[lvid].backup_id == 0
 	&& !restart_on_unload && !term_sig
 	&& !shdat.client->levels[lvid].force_unload
 	&& !shdat.client->levels[lvid].delete_on_unload)
     {
-	if (server->no_unload_main) level_in_use = 1;
-	if (other_users>0) level_in_use = 1;
-	user_count += other_users;
+	if (shdat.client->levels[lvid].no_unload) level_in_use = 1;
+	if (this_is_main && !level_in_use) {
+	    if (server->no_unload_main) level_in_use = 1;
+	    if (other_users>0) level_in_use = 1;
+	    user_count += other_users;
+	}
     }
     if (shdat.client->levels[lvid].in_use == level_in_use)
 	return 1;

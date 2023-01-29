@@ -15,7 +15,7 @@ and &T/maps backup pattern&S to show backups matching pattern.
 #if INTERFACE
 #define CMD_MAPS \
     {N"maps", &cmd_maps}, {N"levels", &cmd_maps, .dup=1}, \
-    {N"worlds", &cmd_maps, .dup=1}
+    {N"worlds", &cmd_maps, .dup=1}, {N"unloaded", &cmd_maps, .dup=1}
 
 typedef struct maplist_entry_t maplist_entry_t;
 struct maplist_entry_t {

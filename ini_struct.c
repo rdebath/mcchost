@@ -16,6 +16,7 @@ struct ini_state_t {
     uint8_t write;	// Set to write fields
     uint8_t quiet;	// Don't comment to the remote (use stderr)
     uint8_t no_unsafe;	// Disable protected fields
+    uint8_t looped;
 };
 
 #endif
@@ -242,6 +243,9 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_FIXEDP("ClickDistance", level_prop->click_distance, 32);
 
+	if (!st->write || level_prop->mcg_physics_blocks)
+	    INI_INTVAL("MCGalaxyPhysicsBlocks", level_prop->mcg_physics_blocks);
+
 	INI_INTHEX("HacksFlags", level_prop->hacks_flags);
 	INI_INTVAL("HacksJump", level_prop->hacks_jump);
 
@@ -269,12 +273,12 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_INTVAL("ExpFog", level_prop->exp_fog);
 	INI_FIXEDP("SkyboxHorSpeed", level_prop->skybox_hor_speed, 1024);
 	INI_FIXEDP("SkyboxVerSpeed", level_prop->skybox_ver_speed, 1024);
+    }
 
-	INI_BOOLVAL("ResetHotbar", level_prop->reset_hotbar);
-	INI_BOOLVAL("DisallowChange", level_prop->disallowchange);
-	INI_BOOLVAL("ReadOnly", level_prop->readonly);
-	if (!st->write)
-	    INI_BOOLVAL("DirtySave", level_prop->dirty_save);
+    if (!found && !st->write && !st->looped) {
+	st->looped = 1;
+	found = mcc_level_ini_fields(st, fieldname, fieldvalue);
+	st->looped = 0;
     }
 
     int bn = 0;
@@ -386,6 +390,38 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	cn++;
     } while(st->all && cn < MAX_CUBES);
+
+    return found;
+}
+
+int
+mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
+{
+    char *section = "", *fld;
+    int found = 0;
+
+    section = "level";
+    if (st->all || strcmp(section, st->curr_section) == 0)
+    {
+	INI_BOOLVAL("NoUnload", level_prop->no_unload);
+	INI_BOOLVAL("ReadOnly", level_prop->readonly);
+	INI_BOOLVAL("DisallowChange", level_prop->disallowchange);
+	INI_BOOLVAL("ResetHotbar", level_prop->reset_hotbar);
+	if (!st->write)
+	    INI_BOOLVAL("DirtySave", level_prop->dirty_save);
+
+	// In CW file: INI_TIME_T("TimeCreated", level_prop->time_created);
+	// INI_TIME_T("LastModified", level_prop->last_modified);
+	INI_TIME_T("LastBackup", level_prop->last_backup);
+
+	// TODO: Owner.
+    }
+
+    if (!found && !st->write && !st->looped) {
+	st->looped = 1;
+	found = level_ini_fields(st, fieldname, fieldvalue);
+	st->looped = 0;
+    }
 
     return found;
 }

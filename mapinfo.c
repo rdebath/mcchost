@@ -42,14 +42,16 @@ struct map_info_t {
     int force_save;
     int readonly;
     int disallowchange;	// even if readonly, you can change the working map.
+    int no_unload;
     int reset_hotbar;
 
     int dirty_save;
+    int mcg_physics_blocks;
     uint32_t metadata_generation;
     uint32_t blockdef_generation;
     time_t time_created;	// Map initial creation time
-    time_t last_modified;	// Time of last save to cw file
-    time_t last_backup;
+    time_t last_modified;	// Time of last block or metadata change
+    time_t last_backup;		// last write to backup directory
 
     uint8_t uuid[16];
     uint8_t hacks_flags;
