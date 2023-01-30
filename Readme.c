@@ -15,6 +15,7 @@ Other notes
 */
 
 /*HELP todo
+ +) Version in software to login server.
  +) Login Whitelist ?
 
  +) /maps backup needs to cope with backup subdirs.
@@ -174,6 +175,7 @@ Advanced
     Fire(TNT) -> Explosion
     Fire(...) -> Fire
     Time(Fire) -> Air
+    Deaths -> send to spawn, hell level or kick?
 
 Backup while physics running --> Copy level.* then freeze physics.
     Copy to backup level/.. files then save.

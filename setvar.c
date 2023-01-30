@@ -195,21 +195,25 @@ cmd_setvar(char * cmd, char * arg)
 	    return;
 
 	int ro = level_prop->readonly;
+	st->looped = 1;
 
-	if (!level_ini_fields(st, varname, &value)) {
+	if (level_ini_fields(st, varname, &value)) {
+	    if (level_prop->readonly && !ro && current_level_backup_id == 0) {
+		printf_chat("&SNote: Will override 'readonly' flag to save flag change");
+		level_prop->force_save = 1;
+	    }
+
+	    level_prop->dirty_save = 1;
+	    level_prop->metadata_generation++;
+	    level_prop->last_modified = time(0);
+	} else if (current_level_backup_id == 0 && mcc_level_ini_fields(st, varname, &value)) {
+	    save_level_ini(current_level_fname);
+	} else {
 	    fprintf_logfile("%s: Setfailed %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s&S] %s&S = %s&S", section, varname, value);
 	    return;
 	}
 
-	if (level_prop->readonly && !ro && current_level_backup_id == 0) {
-	    printf_chat("&SNote: Will override 'readonly' flag to save flag change");
-	    level_prop->force_save = 1;
-	}
-
-	level_prop->dirty_save = 1;
-	level_prop->metadata_generation++;
-	level_prop->last_modified = time(0);
     }
 
     printf_chat("&SSet %s&S.%s&S=\"%s&S\" ok.", section, varname, value);
