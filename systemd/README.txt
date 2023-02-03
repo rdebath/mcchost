@@ -1,15 +1,7 @@
-Files for strting MCChost using systemd.
 
-# put in system:
-sudo cp mcchost* /etc/systemd/system/
-sudo systemctl daemon-reload
+The "unit file" mcchost.service sets up systemd to restart mcchost
+in a similar fashion to inittab.
 
-# Enable now:
-sudo systemctl start mcchost.socket
-sudo systemctl start mcchost-timer.timer
-
-# Enable boot:
-sudo systemctl enable mcchost.socket
-sudo systemctl enable mcchost-timer.timer
-
+The files in the socket subdirectory allow systemd to use socket
+activation in the style of inetd and cron.
 

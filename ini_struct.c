@@ -410,11 +410,20 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	if (!st->write)
 	    INI_BOOLVAL("DirtySave", level_prop->dirty_save);
 
-	// In CW file: INI_TIME_T("TimeCreated", level_prop->time_created);
-	// INI_TIME_T("LastModified", level_prop->last_modified);
 	INI_TIME_T("LastBackup", level_prop->last_backup);
 
+	if (!st->looped && !st->no_unsafe) {
+	    // These items are normally only written to the level.ini file.
+	    // Placed here for /*info commands.
+	    INI_TIME_T("TimeCreated", level_prop->time_created);
+	    INI_TIME_T("LastModified", level_prop->last_modified);
+	    INI_INTVAL("Size.X", level_prop->cells_x);
+	    INI_INTVAL("Size.Y", level_prop->cells_y);
+	    INI_INTVAL("Size.Z", level_prop->cells_z);
+	}
+
 	// TODO: Owner.
+
     }
 
     if (!found && !st->write && !st->looped) {

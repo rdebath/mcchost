@@ -78,13 +78,18 @@ save_level(char * level_fname, char * level_name, int save_bkp)
     unlock_fn(level_lock);
 
     if (access(bak_fn, F_OK) == 0) {
-	if (backup_ok) {
+	if (backup_ok)
 	    level_prop->last_backup = time(0);
-	    save_level_ini(level_fname);
-	}
 
 	move_file_to_backups(bak_fn, level_fname, level_name);
     }
+
+    if (save_bkp == 2) {
+	char buf3[256];
+	saprintf(buf3, LEVEL_INI_NAME, level_fname);
+	(void)unlink(buf3); // Remove additional data file.
+    } else
+	save_level_ini(level_fname); // Incl last modified time
     return 0;
 }
 

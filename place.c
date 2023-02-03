@@ -428,17 +428,19 @@ revert_client(pkt_setblock pkt)
 	    pkt.coord.y >= level_prop->cells_y ||
 	    pkt.coord.z >= level_prop->cells_z)
     {
+	int x = pkt.coord.x;
 	int y = pkt.coord.y;
+	int z = pkt.coord.z;
 	xyz_t mapsz;
 	if (level_prop)
 	    mapsz = (xyz_t){level_prop->cells_x, level_prop->cells_y, level_prop->cells_z};
 	else mapsz = void_map_size;
 
-	if (y<0)
+	if (mapsz.y > 3 && (x == 0 || y <= 0 || z == 0 || x == mapsz.x-1 || y == mapsz.y-1 || z == mapsz.z-1))
 	    b = Block_Bedrock;
 	else if (y >= mapsz.y/2)
 	    b = Block_Air;
-	else if (y+2 >= mapsz.y/2 && (pkt.coord.x >= mapsz.x || pkt.coord.z >= mapsz.z))
+	else if (y+2 >= mapsz.y/2 && (pkt.coord.x >= mapsz.x || pkt.coord.z >= mapsz.z || mapsz.y <= 3))
 	    b = Block_ActiveWater;
 	else
 	    b = Block_Bedrock;

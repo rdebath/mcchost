@@ -165,7 +165,7 @@ cmd_sinfo(char * UNUSED(cmd), char * UNUSED(arg))
     else {
 	char timebuf[256];
 	conv_duration(timebuf, now-then);
-	printf_chat("  Been up for&T%s&S, running &T%s&S (version %s)&f %s",
+	printf_chat("  Been up for&T%s&S, running &T%s %s&f %s",
 	    timebuf, server->software, Version,
 	    "https://github.com/rdebath/mcchost");
     }
@@ -315,7 +315,7 @@ process_start_time(int pid)
     int fno = 1; char *fld = strtok(stat_buf, " ");
     for(; 1; fno++, fld = strtok(0, " ")) {
 	if (fno == 22) {
-	    process_start_time_since_boot = !fld?0: strtol(fld, 0, 0);
+	    process_start_time_since_boot = !fld?0: strtoimax(fld, 0, 0);
 	    break;
 	}
     }

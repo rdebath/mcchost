@@ -43,6 +43,8 @@
 #define LEVEL_LOCK_NAME "level/%s.lock"
 
 #define CMDSET_CONF_NAME "cmdset.ini"
+
+#define LOGFILE_SYMLINK_NAME "log/current.log"
 #endif
 
 static char * dirlist[] = {

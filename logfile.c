@@ -46,8 +46,15 @@ open_logfile()
 
     if (logfile) fclose(logfile);
     logfile = fopen(fname, "a");
-    // Sigh: setlinebuf(logfile);
+    // setlinebuf(logfile); // Sigh: BSD not Posix
     setvbuf(logfile, NULL, _IOLBF, 0);
+
+    // Create a constant name for the most recent logfile (probably)
+    char * basename = strrchr(fname, '/');
+    if (basename && basename[1]) basename++; else basename = fname;
+    (void)unlink(LOGFILE_SYMLINK_NAME);
+    (void)symlink(basename, LOGFILE_SYMLINK_NAME);
+
     free(fname);
 }
 

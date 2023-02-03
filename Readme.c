@@ -15,23 +15,26 @@ Other notes
 */
 
 /*HELP todo
+ +) NoUnloadMain ($level.NoUnload ?) keeps filesystem access going when idle.
+
  +) Version in software to login server.
  +) Login Whitelist ?
-
  +) /maps backup needs to cope with backup subdirs.
 
  +) Change level load so that unpack is done in by forked process and the user(s) are then summoned.
     -- For resizelvl and restore at least.
 
+ +) Search (some?) subdirectories for *.c files to feed to makeheaders etc.
+
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat ?
 
- +) Message blocks don't need physics.
+ +) Message blocks and portals don't need physics.
 
  +) Improve the /setvar command, more help, option lists.
     -- /setvar user username var value ?
-    -- Automatic restarts ?
+    -- /setvar with no section to level and system sections.
 
  +) /restore /resizelvl
     -- Backup overwritten level (if dirty)

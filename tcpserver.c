@@ -241,6 +241,8 @@ tcpserver()
 	alarm_sig = 0;
     }
 
+    if (listen_socket>=0) { close(listen_socket); listen_socket = -1; }
+
     if (enable_heartbeat_poll && !ini_settings->private) {
 	printlog("Shutting down service");
 	send_heartbeat_poll();
@@ -740,6 +742,9 @@ start_backup_process()
     }
     if (listen_socket>=0) close(listen_socket);
 
+    memset(proc_args_mem, 0, proc_args_len);
+    snprintf(proc_args_mem, proc_args_len, "MCCHost saver");
+
     if (trigger_unload)
 	trigger_backup |= scan_and_save_levels(0);
     if (trigger_backup)
@@ -810,6 +815,9 @@ auto_load_main(int fast_start)
 #endif
 
     if (listen_socket>=0) close(listen_socket);
+
+    memset(proc_args_mem, 0, proc_args_len);
+    snprintf(proc_args_mem, proc_args_len, "MCCHost load main");
 
     if (fast_start) msleep(200); else msleep(2000);
 

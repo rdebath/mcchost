@@ -1,0 +1,20 @@
+[Unit]
+Description=MCChost Classicube server
+After=network.target
+
+[Service]
+Type=exec
+ExecStart=-/home/mcchost/bin/mcchost-server -dir /home/mcchost/mcchost -no-detach -port 25568
+ExecReload=kill -HUP $MAINPID
+
+# Run as a other user
+User=mcchost
+Group=mcchost
+
+# Restarting
+RemainAfterExit=no
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

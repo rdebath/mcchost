@@ -20,7 +20,7 @@ cmd_deletelvl(char * UNUSED(cmd), char * arg)
     if (!perm_level_check(levelname, 1))
         return;
 
-    char fixedname[MAXLEVELNAMELEN*4], buf2[256], lvlname[MAXLEVELNAMELEN+1];
+    char fixedname[MAXLEVELNAMELEN*4], buf2[256], buf3[256], lvlname[MAXLEVELNAMELEN+1];
 
     fix_fname(fixedname, sizeof(fixedname), levelname);
     unfix_fname(lvlname, sizeof(lvlname), fixedname);
@@ -57,6 +57,9 @@ cmd_deletelvl(char * UNUSED(cmd), char * arg)
 	printf_chat("&WLevel '%s' failed to delete", levelname);
 	return;
     }
+
+    saprintf(buf3, LEVEL_INI_NAME, fixedname);
+    (void)unlink(buf3); // Remove additional data file.
 
     unlock_fn(system_lock);
 
