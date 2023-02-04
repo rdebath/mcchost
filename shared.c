@@ -37,6 +37,7 @@ typedef struct shmem_t shmem_t;
 struct shmem_t {
     void * ptr;
     uintptr_t len;
+    int zeroed;
     int lock_fd;
 };
 
@@ -55,6 +56,7 @@ struct shared_data_t {
 
 #define level_prop shdat.prop
 #define level_blocks shdat.blocks
+#define level_blocks_zeroed (shdat.dat[SHMID_BLOCKS].zeroed)
 #define level_block_queue shdat.blockq
 #endif
 
@@ -590,10 +592,17 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
     if (shm->lock_fd > 0) close(shm->lock_fd);
     shm->ptr = 0;
     shm->len = 0;
+    shm->zeroed = 0;
     shm->lock_fd = -1;
 
     shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW|O_CLOEXEC, 0600);
     if (shared_fd < 0) { perror(share_name); return -1; }
+
+    {
+	struct stat st;
+	if (fstat(shared_fd, &st) == 0 && st.st_size == 0)
+	    shm->zeroed = 1;	// System will do this.
+    }
 
     {
 	int p = sysconf(_SC_PAGESIZE);

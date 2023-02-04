@@ -17,10 +17,7 @@ Alias &T/shb
 void
 cmd_sethotbar(char * cmd, char * arg)
 {
-    if (!extn_sethotbar) {
-	printf_chat("Your client does not support the command \"%s\"", cmd);
-	return;
-    }
+    if (!cpe_support(cmd, extn_sethotbar)) return;
 
     block_t block = Block_Air;
     reset_hotbar_on_mapload = 0;

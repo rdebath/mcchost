@@ -345,3 +345,20 @@ process_extentry(pkt_extentry * pkt)
     }
 }
 
+int
+cpe_support(char * cmd, int extn_flag)
+{
+    if (!cpe_requested) {
+        printf_chat("Your client is not supporting CPE commands like \"%s\"", cmd);
+        return 0;
+    }
+    if (server->cpe_disabled) {
+        printf_chat("CPE for the command \"%s\" is not enabled", cmd);
+        return 0;
+    }
+    if (!extn_flag) {
+        printf_chat("Your client does not support the command \"%s\"", cmd);
+        return 0;
+    }
+    return 1;
+}

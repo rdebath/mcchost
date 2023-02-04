@@ -356,3 +356,63 @@ send_queued_blocks()
 	send_setblock_pkt(upd.x, upd.y, upd.z, upd.b);
     }
 }
+
+void
+fetch_queued_blocks(xyzb_t ** rv_array, int * rv_len)
+{
+    *rv_array = 0;
+    *rv_len = 0;
+
+    if (last_id < 0) return;
+    if (!level_block_queue) return;
+
+    check_block_queue(1);
+
+    xyzb_t *update_list = 0;
+    int update_count = 0;
+    int update_sz = 0;
+
+    lock_fn(level_lock);
+
+    for(;;)
+    {
+	xyzb_t upd;
+	if (last_generation != level_block_queue->generation)
+	{
+	    int isok = 0;
+	    if (last_generation == level_block_queue->generation-1 &&
+		level_block_queue->queue_len == level_block_queue->last_queue_len) {
+		if (level_block_queue->curr_offset < last_id)
+		    isok = 1;
+	    }
+	    if (!isok) {
+		printlog("WARNING: Block queue overflow on fetch queued blocks");
+		wipe_last_block_queue_id();
+		break;
+	    }
+	}
+	if (last_id == level_block_queue->curr_offset) {
+	    // Nothing more to send.
+	    break;
+	}
+	upd = level_block_queue->updates[last_id++];
+	if (last_id == level_block_queue->queue_len) {
+	    last_generation ++;
+	    last_id = 0;
+	}
+	if (update_count >= update_sz) {
+	    unlock_fn(level_lock);
+	    if (update_sz <= 0) update_sz = 256;
+	    xyzb_t * ul = realloc(update_list, (update_sz*=2)*sizeof(*update_list));
+	    if (ul == 0) { free(update_list); return; }
+	    update_list = ul;
+	    lock_fn(level_lock);
+	}
+	update_list[update_count++] = upd;
+    }
+
+    unlock_fn(level_lock);
+
+    *rv_array = update_list;
+    *rv_len = update_count;
+}

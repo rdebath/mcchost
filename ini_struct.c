@@ -420,6 +420,13 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_INTVAL("Size.X", level_prop->cells_x);
 	    INI_INTVAL("Size.Y", level_prop->cells_y);
 	    INI_INTVAL("Size.Z", level_prop->cells_z);
+	} else if (!st->looped) {
+	    time_t dummy1 = 0; int dummy2 = 0;
+	    INI_TIME_T("TimeCreated", dummy1);
+	    INI_TIME_T("LastModified", dummy1);
+	    INI_INTVAL("Size.X", dummy2);
+	    INI_INTVAL("Size.Y", dummy2);
+	    INI_INTVAL("Size.Z", dummy2);
 	}
 
 	// TODO: Owner.

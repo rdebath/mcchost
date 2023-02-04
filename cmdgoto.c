@@ -48,7 +48,12 @@ cmd_goto(char * cmd, char * arg)
 	    return;
 	}
     } else if (strcmp(cmd, "gotorandom") == 0) {
+	*fixedname = 0;
 	choose_random_level(fixedname, sizeof(fixedname));
+	if (!*fixedname) {
+	    printf_chat("&WFailed to find another level");
+	    return;
+	}
     } else if (strcasecmp(arg, "+") == 0 || strcasecmp(arg, "-") == 0) {
 	char userlevel[256];
 	saprintf(userlevel, "%.60s+", user_id);
@@ -430,10 +435,11 @@ choose_random_level(char * fixedname, int name_len)
 	    maplist[i] = maplist[i+1];
 	maplist[maplist_cnt-1] = 0;
 	maplist_cnt--;
-	if (maplist_cnt <= 0) {
-	    free(maplist);
-	    maplist = 0;
-	}
+    }
+    if (maplist_cnt <= 0) {
+	free(maplist);
+	maplist = 0;
+	maplist_sz = maplist_cnt = 0;
     }
     return;
 }

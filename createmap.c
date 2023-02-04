@@ -39,7 +39,7 @@ createmap(char * levelname)
 
     open_blocks(levelname);
 
-    init_block_file(0);
+    init_block_file(0, level_blocks_zeroed);
 }
 
 void
@@ -114,7 +114,7 @@ patch_map_nulls(xyzhv_t oldsize)
 }
 
 void
-init_block_file(uint64_t fallback_seed)
+init_block_file(uint64_t fallback_seed, int pre_zeroed)
 {
     map_len_t test_map;
     memcpy(&test_map, (void*)(level_blocks+level_prop->total_blocks),
@@ -136,7 +136,7 @@ init_block_file(uint64_t fallback_seed)
 	memcpy((void*)(level_blocks+level_prop->total_blocks),
 		&test_map, sizeof(map_len_t));
 
-	init_level_blocks(fallback_seed);
+	init_level_blocks(fallback_seed, pre_zeroed);
     }
 }
 
@@ -193,7 +193,7 @@ read_blockfile_size(char * levelname, xyzhv_t * oldsize)
 }
 
 void
-init_level_blocks(uint64_t fallback_seed)
+init_level_blocks(uint64_t fallback_seed, int pre_zeroed)
 {
     int x, y, z, y1, quiet = 0;
     struct timeval start;
@@ -219,22 +219,23 @@ init_level_blocks(uint64_t fallback_seed)
 	// Empty: Bedrock bottom layer
 	level_prop->side_level = 1;
 	level_prop->seed[0] = 0;
-	for(y=0; y<level_prop->cells_y; y++)
+	for(y=0; y<level_prop->cells_y; y++) {
+	    if (y == 1 && pre_zeroed) break;
+	    block_t px = Block_Air;
+	    if (y==0) px = Block_Bedrock;
 	    for(z=0; z<level_prop->cells_z; z++)
 		for(x=0; x<level_prop->cells_x; x++)
-		{
-		    block_t px = Block_Air;
-		    if (y==0) px = Block_Bedrock;
 		    level_blocks[World_Pack(x,y,z)] = px;
-		}
+	}
 
     } else if (strcasecmp(level_prop->theme, "air") == 0) {
 	// Air: Entire map is air
 	level_prop->seed[0] = 0;
-	for(y=0; y<level_prop->cells_y; y++)
-	    for(z=0; z<level_prop->cells_z; z++)
-		for(x=0; x<level_prop->cells_x; x++)
-		    level_blocks[World_Pack(x,y,z)] = Block_Air;
+	if (!pre_zeroed)
+	    for(y=0; y<level_prop->cells_y; y++)
+		for(z=0; z<level_prop->cells_z; z++)
+		    for(x=0; x<level_prop->cells_x; x++)
+			level_blocks[World_Pack(x,y,z)] = Block_Air;
 
     } else if (strcasecmp(level_prop->theme, "rainbow") == 0 ||
                strcasecmp(level_prop->theme, "bw") == 0) {
@@ -307,33 +308,34 @@ init_level_blocks(uint64_t fallback_seed)
     } else if (strcasecmp(level_prop->theme, "plasma") == 0) {
 	level_prop->dirty_save |=
 	    populate_map_seed(level_prop->seed, fallback_seed);
-	gen_plasma_map(level_prop->seed);
+	gen_plasma_map(level_prop->seed, pre_zeroed);
 	level_prop->side_level = 1;
 
     } else {
-	// Unknown map style is generated as flat.
+	// Unknown map style is generated as unseeded flat.
 	if (strcasecmp(level_prop->theme, "flat") == 0) {
 	    if (level_prop->seed[0])
 		level_prop->side_level = atoi(level_prop->seed);
 	} else {
 	    strcpy(level_prop->theme, "Flat");
 	    level_prop->seed[0] = 0;
+	    quiet = 1;
 	}
-	quiet = 1;
 
 	// Flat: Edge level is grass, everything below is dirt.
 	y1 = level_prop->side_level-1;
-	for(y=0; y<level_prop->cells_y; y++)
+	for(y=0; y<level_prop->cells_y; y++) {
+	    block_t b = Block_Air;
+	    if (y>y1) {
+		if (pre_zeroed) break;
+	    } else if (y==y1)
+		b = Block_Grass;
+	    else
+		b = Block_Dirt;
 	    for(z=0; z<level_prop->cells_z; z++)
 		for(x=0; x<level_prop->cells_x; x++)
-		{
-		    if (y>y1)
-			level_blocks[World_Pack(x,y,z)] = Block_Air;
-		    else if (y==y1)
-			level_blocks[World_Pack(x,y,z)] = Block_Grass;
-		    else
-			level_blocks[World_Pack(x,y,z)] = Block_Dirt;
-		}
+		    level_blocks[World_Pack(x,y,z)] = b;
+	}
     }
 
     saprintf(level_prop->software, "%s %s", SWNAME, Version);

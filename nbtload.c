@@ -39,6 +39,10 @@ static char mcgalaxy_names[];
 int
 load_map_from_file(char * filename, char * level_fname, char * level_name)
 {
+    int quiet = 0;
+    struct timeval start;
+    gettimeofday(&start, 0);
+
     gzFile ifd;
 
     char ini_name[PATH_MAX];
@@ -66,6 +70,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 
     if (cw_loaded == 0) {
 	// Looks like it might be a text file.
+	quiet = 1;
 	struct stat st = {0};
 	(void)stat(filename, &st);
 	if (!try_asciimode(ifd, level_fname, filename, (uint64_t)st.st_mtime)) {
@@ -96,6 +101,14 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 	    level_prop->time_created = st.st_mtime;
 	if (level_prop->time_created == 0)
 	    level_prop->time_created = time(0);
+    }
+
+    if (!quiet) {
+	struct timeval now;
+	gettimeofday(&now, 0);
+	printlog("Map load (%d,%d,%d) time %.2fms",
+	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
+	    (now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0);
     }
 
     return 0;

@@ -3,6 +3,8 @@
 
 #include "loadsave.h"
 
+filelock_t level_save_lock[1] = {{.name = SAVE_LOCK_NAME}};
+
 int
 save_level(char * level_fname, char * level_name, int save_bkp)
 {
@@ -35,14 +37,14 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	fprintf_logfile("Saving \"%s\" to map directory%s",
 	    level_name, save_bkp && cw_ok?" with backup of previous":"");
 
-    lock_fn(level_lock);
+    lock_fn(level_save_lock);	// Only one save at a time.
 
     int backup_ok = 1;
 
     if (save_map_to_file(tmp_fn, 1) < 0) {
 	int e = errno;
 	(void) unlink(tmp_fn);
-	unlock_fn(level_lock);
+	unlock_fn(level_save_lock);
 	errno = e;
 
 	fprintf_logfile("map save of '%s' to '%s' failed", level_name, tmp_fn);
@@ -60,7 +62,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	perror("save rename failed");
 	int e = errno;
 	(void) unlink(tmp_fn);
-	unlock_fn(level_lock);
+	unlock_fn(level_save_lock);
 	errno = e;
 	return -1;
     }
@@ -69,13 +71,13 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	if (rename(map_fn, bak_fn) < 0) {
 	    perror("backup rename failed");
 	    int e = errno;
-	    unlock_fn(level_lock);
+	    unlock_fn(level_save_lock);
 	    errno = e;
 	    return -1;
 	}
     }
     level_prop->dirty_save = 0;
-    unlock_fn(level_lock);
+    unlock_fn(level_save_lock);
 
     if (access(bak_fn, F_OK) == 0) {
 	if (backup_ok)
@@ -196,6 +198,7 @@ scan_and_save_levels(int do_timed_save)
 
     stop_shared();
     stop_block_queue();
+    lock_restart(level_save_lock);
 
     *current_level_name = 0;
     *current_level_fname = 0;

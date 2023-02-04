@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+#ifndef DISABLE_LMDB
 #include <lmdb.h>
 #include "userrecord.h"
 
@@ -592,4 +593,5 @@ read_bin_userrec(userrec_t * rec_buf, uint8_t *p, int bytes)
     // No more fields ever written to bin format.
     rec_buf->dirty = 1;
 }
+#endif
 #endif

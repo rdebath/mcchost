@@ -35,6 +35,8 @@ save_map_to_file(char * fn, int background)
 	return -1;
     }
 
+    set_last_block_queue_id();
+
     gzFile savefile = gzopen(fn, "w9");
 
     if (!savefile) {
@@ -316,7 +318,7 @@ save_map_to_file(char * fn, int background)
     bc_end(savefile);
 
     if (level_blocks) {
-	int flg = 0, flg2 = 0, flg3 = 0;
+	int set_ba2 = 0, set_ba3 = 0, set_ba_ph = 0;
 
 	int use_mcg_physics = level_prop->mcg_physics_blocks; // Use BA3 or BA_Physics for blocks > 767
 
@@ -332,16 +334,16 @@ save_map_to_file(char * fn, int background)
 	    int b = level_blocks[i];
 	    if (use_mcg_physics && b>MCG_PHYSICS_0FFSET && b<MCG_PHYSICS_0FFSET+255) {
 		gzputc(savefile, mcg_physics[b&0xFF]);
-		flg3 = 1;
+		set_ba_ph = 1;
 	    } else {
-		if (b>=CPELIMIT) {flg2 = 1; b &= 0xFF; }
+		if (b>=CPELIMIT) {set_ba3 = 1; b &= 0xFF; }
 		gzputc(savefile, b & 0xFF);
-		flg |= (b>0xFF);
+		set_ba2 |= (b>0xFF);
 	    }
 	}
 
 	// Written by CC
-	if (flg) {
+	if (set_ba2) {
 	    // BlockArray2 can only have 0..767 so we need BlockArray3
 	    bc_ent_bytes_header(savefile, "BlockArray2", saveable_blocks);
 
@@ -357,7 +359,7 @@ save_map_to_file(char * fn, int background)
 	}
 
 	// Not written by CC
-	if (flg2) {
+	if (set_ba3) {
 	    // What format should I use for this?
 	    // Currently it's a corrected high byte but this means BA2 makes
 	    // a random block in 0..767. This byte is only set if BA2 is wrong.
@@ -376,7 +378,7 @@ save_map_to_file(char * fn, int background)
 	    }
 	}
 	// Not written by CC
-	if (flg3) {
+	if (set_ba_ph) {
 	    bc_ent_bytes_header(savefile, "BlockArrayPhysics", saveable_blocks);
 
 	    for (intptr_t i = 0; i<saveable_blocks; i++) {
@@ -387,6 +389,8 @@ save_map_to_file(char * fn, int background)
 		    gzputc(savefile, 0);
 	    }
 	}
+
+	bc_write_setblocks(savefile);
     }
 
     bc_end(savefile);
@@ -401,6 +405,23 @@ save_map_to_file(char * fn, int background)
 
     if (rv) return -1;
     return 0;
+}
+
+LOCAL void
+bc_write_setblocks(gzFile savefile)
+{
+    xyzb_t *update_list = 0;
+    int update_count = 0;
+    fetch_queued_blocks(&update_list, &update_count);
+    for(int i = 0; i<update_count; i++) {
+	bc_compound(savefile, "SetBlock");
+	bc_ent_int(savefile, "X", update_list[i].x);
+	bc_ent_int(savefile, "Y", update_list[i].y);
+	bc_ent_int(savefile, "Z", update_list[i].z);
+	bc_ent_int(savefile, "Blk", update_list[i].b);
+	bc_end(savefile);
+    }
+    if (update_list) free(update_list);
 }
 
 LOCAL void

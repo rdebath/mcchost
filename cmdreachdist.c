@@ -14,8 +14,10 @@ Shortcuts: /Reach
 */
 
 void
-cmd_reachdist(char * UNUSED(cmd), char *arg)
+cmd_reachdist(char * cmd, char *arg)
 {
+    if (!cpe_support(cmd, extn_clickdistance)) return;
+
     char * str1 = strtok(arg, " ");
 
     int rd = strtol(str1, 0, 0);

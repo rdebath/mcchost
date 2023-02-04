@@ -2,7 +2,7 @@
 #include "plasmamap.h"
 
 void
-gen_plasma_map(char * seed)
+gen_plasma_map(char * seed, int pre_zeroed)
 {
     map_random_t rng[1];
     map_init_rng(rng, seed);
@@ -18,10 +18,11 @@ gen_plasma_map(char * seed)
 		heightmap[x+z*level_prop->cells_x] %
 		    (Block_Black-Block_Red)+Block_Red;
 
-    for(y=1; y<level_prop->cells_y; y++)
-	for(z=0; z<level_prop->cells_z; z++)
-	    for(x=0; x<level_prop->cells_x; x++)
-		level_blocks[World_Pack(x,y,z)] = Block_Air;
+    if (!pre_zeroed)
+	for(y=1; y<level_prop->cells_y; y++)
+	    for(z=0; z<level_prop->cells_z; z++)
+		for(x=0; x<level_prop->cells_x; x++)
+		    level_blocks[World_Pack(x,y,z)] = Block_Air;
 }
 
 LOCAL void

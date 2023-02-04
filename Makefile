@@ -20,11 +20,13 @@ DBGSRC=-fwrapv -fdebug-prefix-map='$(shell pwd)'=src
 # WTH is the point of the "truncation" warnings!
 WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation -Wno-unknown-warning-option
 CFLAGS=-Iinclude -O2 -g3 -pthread ${WARN} ${DEFS} ${HEADER} ${DBGSRC}
-LDFLAGS=-lz -lm -llmdb
+LIBLMDB=-llmdb
+LDFLAGS=-lz -lm ${LIBLMDB}
 HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
 
 # May be needed for older systems (eg: Debian Etch on x86)
 # CC=c99 -D_GNU_SOURCE
+# Also: DEFS=-DDISABLE_LMDB LIBLMDB=
 
 # Pick one for cross compile, use ODIR and PROG for out of tree binaries.
 #TARGET_ARCH=-m64

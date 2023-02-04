@@ -53,7 +53,7 @@ try_asciimode(gzFile ifd, char * levelfile, char * ini_filename, uint64_t fallba
 	if (open_blocks(levelfile) < 0)
 	    return 0;
 
-	init_block_file(fallback_seed);
+	init_block_file(fallback_seed, level_blocks_zeroed);
     }
     return 1;
 }
