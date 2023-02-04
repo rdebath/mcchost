@@ -563,8 +563,8 @@ cleanup_zombies()
 	    if (restart_on_unload) last_execheck = time(0) - 300;
 	} else {
 	    client_process_finished++;
-	    if (server->connected_sessions == 0 && restart_needed)
-		last_execheck = time(0) - 300;
+	    if (server->connected_sessions == 0)
+		last_execheck = time(0) - FREQUENT_CHECK+1;
 	}
 
 	// No complaints on clean exit

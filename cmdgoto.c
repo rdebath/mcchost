@@ -360,59 +360,81 @@ find_file_match(char * fixedname, char * levelname)
     return 0;
 }
 
+static time_t maplist_time = 0;
+static char ** maplist = 0;
+static int maplist_sz = 0, maplist_cnt = 0;
+
 void
 choose_random_level(char * fixedname, int name_len)
 {
-    struct dirent *entry;
-
-    DIR *directory = opendir(LEVEL_MAP_DIR_NAME);
-
-    if (!directory) {
-        printf_chat("#No maps found, not even %s is saved yet‼", main_level());
-        return;
-    }
-
-    char ** maplist = 0;
-    int maplist_sz = 0, maplist_cnt = 0;
-
-    while( (entry=readdir(directory)) )
-    {
-#if defined(_DIRENT_HAVE_D_TYPE) && defined(DT_REG) && defined(DT_UNKNOWN)
-	if (entry->d_type != DT_REG && entry->d_type != DT_UNKNOWN)
-	    continue;
-#endif
-	int l = strlen(entry->d_name);
-	if (l<=3 || strcmp(entry->d_name+l-3, ".cw") != 0) continue;
-
-	char nbuf[MAXLEVELNAMELEN*4];
-	char nbuf2[MAXLEVELNAMELEN+1];
-	l -= 3;
-	if (l>sizeof(nbuf)-2) continue;
-	memcpy(nbuf, entry->d_name, l);
-	nbuf[l] = 0;
-	unfix_fname(nbuf2, sizeof(nbuf2), nbuf);
-	if (*nbuf2 == 0) continue;
-	l = strlen(nbuf2);
-	if (l>MAXLEVELNAMELEN) continue;
-
-	if (maplist_cnt >= maplist_sz) {
-	    if (maplist_sz==0) maplist_sz = 32;
-	    maplist = realloc(maplist, (maplist_sz *= 2)*sizeof*maplist);
+    // If they stay on a level for more than 5 minutes, refresh the list.
+    if (!maplist || maplist_time + 300 < time(0)) {
+	if (maplist) {
+	    for(int i = 0; i<maplist_cnt; i++)
+		if (maplist[i]) free(maplist[i]);
+	    free(maplist);
+	    maplist = 0;
+	    maplist_sz = maplist_cnt = 0;
 	}
-	if (strcmp(nbuf2, current_level_name) != 0)
-	    maplist[maplist_cnt++] = strdup(nbuf);
+
+	struct dirent *entry;
+
+	DIR *directory = opendir(LEVEL_MAP_DIR_NAME);
+
+	if (!directory) {
+	    printf_chat("#No maps found, not even %s is saved yet‼", main_level());
+	    return;
+	}
+
+	while( (entry=readdir(directory)) )
+	{
+    #if defined(_DIRENT_HAVE_D_TYPE) && defined(DT_REG) && defined(DT_UNKNOWN)
+	    if (entry->d_type != DT_REG && entry->d_type != DT_UNKNOWN)
+		continue;
+    #endif
+	    int l = strlen(entry->d_name);
+	    if (l<=3 || strcmp(entry->d_name+l-3, ".cw") != 0) continue;
+
+	    char nbuf[MAXLEVELNAMELEN*4];
+	    char nbuf2[MAXLEVELNAMELEN+1];
+	    l -= 3;
+	    if (l>sizeof(nbuf)-2) continue;
+	    memcpy(nbuf, entry->d_name, l);
+	    nbuf[l] = 0;
+	    unfix_fname(nbuf2, sizeof(nbuf2), nbuf);
+	    if (*nbuf2 == 0) continue;
+	    l = strlen(nbuf2);
+	    if (l>MAXLEVELNAMELEN) continue;
+
+	    if (maplist_cnt >= maplist_sz) {
+		if (maplist_sz==0) maplist_sz = 32;
+		maplist = realloc(maplist, (maplist_sz *= 2)*sizeof*maplist);
+	    }
+	    if (strcmp(nbuf2, current_level_name) != 0)
+		maplist[maplist_cnt++] = strdup(nbuf);
+	}
+	closedir(directory);
     }
-    closedir(directory);
+
+    maplist_time = time(0);
 
     *fixedname = 0;
     if (maplist_cnt>0) {
         int which = bounded_random(maplist_cnt);
 	snprintf(fixedname, name_len, "%s", maplist[which]);
-    }
 
-    for(int i = 0; i<maplist_cnt; i++)
-	free(maplist[i]);
-    free(maplist);
+	// Remove this one from the list, keep the rest for next time.
+	free(maplist[which]);
+	maplist[which] = 0;
+	for(int i = which; i<maplist_cnt-1; i++)
+	    maplist[i] = maplist[i+1];
+	maplist[maplist_cnt-1] = 0;
+	maplist_cnt--;
+	if (maplist_cnt <= 0) {
+	    free(maplist);
+	    maplist = 0;
+	}
+    }
     return;
 }
 
