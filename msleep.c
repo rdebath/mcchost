@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#if _POSIX_VERSION >= 200112L
+#if ( _POSIX_VERSION >= 200112L ) && ! (_POSIX_SOURCE >= 200809L)
 
 #define msleep msleep_ns
 

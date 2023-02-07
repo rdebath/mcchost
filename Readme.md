@@ -15,7 +15,7 @@ To run on Windows, install [Microsoft WSL 2](https://learn.microsoft.com/en-us/w
 
 Alternatively, the `Dockerfile` can be used to create an image of the repository on either Linux or Windows hosts.
 
-Other Unix derived OS's should be possible if the dependancies (ZLib, LMDB) are available. Note if `pthread_mutex.c` fails to compile or gives the error `Lockfile "system/system.lock" failed with EINVAL`, delete `pthread_mutex.c`, recompiled and try again. (For example FreeBSD's pthread locking does not work)
+Other Unix derived OS's should be possible if the dependancies (ZLib, LMDB) are available. Note if `pthread_mutex.c` fails to compile or gives the error `Lockfile "system/system.lock" failed with EINVAL`, add the option `PTHREAD=` or delete `pthread_mutex.c`, recompiled and try again. (For example FreeBSD's pthread locking does not work)
 
 If LMDB is not available (and `userrecord.c` is removed) certain command will fail to work correctly.
 

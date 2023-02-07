@@ -283,7 +283,7 @@ reset_player_list()
 	send_posn_pkt(-1, 0, player_posn);
     else {
 	player_posn = level_prop->spawn;
-	player_posn.v = 128; // Bots start with flip-head.
+	player_posn.v = -128; // Bots start with flip-head.
 	player_posn.valid = 1;
 	myuser[my_user_no].posn = player_posn;
 	if (shdat.client)

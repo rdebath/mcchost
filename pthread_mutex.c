@@ -1,6 +1,22 @@
 
 // Failed on MacOSX and FreeBSD
-#if defined(__linux__)
+//
+// MacOSX does not have PTHREAD_MUTEX_ROBUST
+//
+// FreeBSD has it, but it doesn't work.
+//  -> pthread_mutex_t is a pointer and so cannot exist in real shared memory.
+
+#if _REENTRANT
+// The define _REENTRANT must be defined by -pthread for normal compilers.
+// Occasionally, you will find a buggy compiler that doesn't define this
+// and you'll have to use "PTHREAD='-pthread -D_REENTRANT'" to workaround
+// the bug. However, these compilers are likely to have broken pthreads
+// anyway so you'll probably have to do "PTHREAD=" instead to disable
+// this option and use fcntl().
+
+// The DISABLE_ROBUST flag is for the rare pthreads implementation that
+// correctly implements robust multi-process locks by default.
+// Please use the test program at the end of this file check for this.
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -45,7 +61,11 @@ lock_fn(filelock_t * ln)
     if (!ln->lock || ln->have_lock) return;
 
     if (E(pthread_mutex_lock(ln->lock->mutex)))
+#ifndef DISABLE_ROBUST
 	E(pthread_mutex_consistent(ln->lock->mutex));
+#else
+	abort();
+#endif
     ln->have_lock = 1;
 }
 
@@ -105,14 +125,21 @@ lock_start_try(filelock_t * ln)
 		    errno = 0;
 		    int n = pthread_mutex_trylock(ln->lock->mutex);
 		    if (n == EBUSY) return 1; // In use is fine.
-		    if (n == EOWNERDEAD)
+#ifndef DISABLE_ROBUST
+		    if (n == EOWNERDEAD) {
 			n = pthread_mutex_consistent(ln->lock->mutex);
+			if (n != 0)
+			    fprintf(stderr, "Lockfile \"%s\" inconsistent -> %s\n", ln->name, strerror(n));
+		    }
+#endif
 		    if (n == 0) {
 			pthread_mutex_unlock(ln->lock->mutex);
 			return 1;
 		    }
 		    if (n == EINVAL)
-			fprintf(stderr, "Lockfile \"%s\" failed with EINVAL\n", ln->name);
+			fprintf(stderr, "Lockfile \"%s\" returned EINVAL -> %s\n", ln->name, strerror(errno));
+		    else
+			fprintf(stderr, "Lockfile \"%s\" returned %d -> %s\n", ln->name, n, strerror(n));
 		} else
 		    fprintf(stderr, "ERROR: Bad magic in lock file \"%s\" 0%jo, requires recreation\n",
 			ln->name, (uintmax_t)ln->lock->magic);
@@ -139,8 +166,10 @@ lock_start_try(filelock_t * ln)
 	pthread_mutexattr_t att;
 	lock_shm_t lock0 = {.magic=TY_MAGIC};
 	E(pthread_mutexattr_init(&att));
-	E(pthread_mutexattr_setrobust(&att, PTHREAD_MUTEX_ROBUST));
 	E(pthread_mutexattr_setpshared(&att, PTHREAD_PROCESS_SHARED));
+#ifndef DISABLE_ROBUST /* PTHREAD_MUTEX_ROBUST is not visible to ifdef */
+	E(pthread_mutexattr_setrobust(&att, PTHREAD_MUTEX_ROBUST));
+#endif
 	E(pthread_mutex_init(lock0.mutex, &att));
 
 	char tmpfile[PATH_MAX];
@@ -156,7 +185,7 @@ lock_start_try(filelock_t * ln)
 	    // Directory missing...
 	    if (errno == ENOENT) { perror(ln->name); return 0; }
 	    // Shouldn't happen, but wait and retry.
-	    usleep(20000);
+	    msleep(20);
 	    continue;
 	}
 
@@ -176,7 +205,7 @@ lock_start_try(filelock_t * ln)
 	(void)unlink(tmpfile);
 
 	if (rv < 0)
-	    usleep(100000);
+	    msleep(100);
 
 	/* We go round again to actually map it. */
     }
@@ -206,39 +235,132 @@ lock_restart(filelock_t * ln)
 #endif
 
 #ifdef TEST
-static filelock_t llock[1] = {{0}};
+#ifndef _REENTRANT
+#include <stdio.h>
+#include "fcntl_mutex.c"
+#endif
+#include <sys/wait.h>
 
+// This runs multiple processes on a lockfile.
+// All should complete including No.5 (which should drop out early)
+// The final value in /tmp/datafile should be the number of runs.
+
+#define RUNS 20
 int
 main(int argc, char **argv)
 {
+#ifndef _REENTRANT
+    fprintf(stderr, "Note: using fcntl_mutex.c\n");
+#endif
+
     char * filename = argc>1&&argv[1][0]?argv[1]:"/tmp/mutex";
     char * fn2 = argc>2&&argv[2][0]?argv[2]:"/tmp/datafile";
+    int pc = 0, pcount = 0;
+    int pid[RUNS];
+    int exit_pid = 0, st;
 
-    llock->name = filename;
-    lock_start(llock);
+    // Create a lock file and try to break it.
+    if (fork() == 0) {
+	filelock_t llock[1] = {{0}};
+	llock->name = filename;
+	fprintf(stderr, "Start lockfile\n");
+	lock_start(llock);
+	fprintf(stderr, "Lock lockfile\n");
+	lock_fn(llock);
+	fprintf(stderr, "Exit process without unlocking\n");
+	exit(0);
+    } else
+	exit_pid = wait(&st);
 
-    lock_fn(llock);
-
-    FILE * fd = fopen(fn2, "r");
-    int v = 0;
-    if (fd) {
-	usleep(10000);
-	fscanf(fd, "%d", &v);
-	fclose(fd);
-    }
-	usleep(10000);
-
-    fd = fopen(fn2, "w");
-	usleep(10000);
-    if (!fd) {
-	perror("fopen");
+    if (exit_pid < 0 || !WIFEXITED(st) || WEXITSTATUS(st) != 0) {
+	fprintf(stderr, "Subprocess exited unexpectedly\n");
 	exit(1);
     }
-    fprintf(fd, "%d\n", v+1);
-	usleep(10000);
-    fclose(fd);
-	usleep(10000);
 
-    unlock_fn(llock);
+    // Does the the lock file still work ?
+    if (fork() == 0) {
+	filelock_t llock[1] = {{0}};
+	llock->name = filename;
+	fprintf(stderr, "Start lockfile\n");
+	lock_start(llock);
+	fprintf(stderr, "Lock lockfile\n");
+	lock_fn(llock);
+	// Clear counter file.
+	unlink(fn2);
+	fprintf(stderr, "Unlock lockfile\n");
+	unlock_fn(llock);
+	exit(0);
+    } else
+	exit_pid = wait(&st);
+
+    if (exit_pid < 0 || !WIFEXITED(st) || WEXITSTATUS(st) != 0) {
+	fprintf(stderr, "Subprocess exited unexpectedly\n");
+	exit(1);
+    }
+
+    // Does the lock file actually lock..
+    for(pc=0; pc<RUNS; pc++) {
+	pid[pc] = fork();
+	if (pid[pc]) {
+	    if (pid[pc] > 0)
+		pcount++;
+	    continue;
+	}
+
+	{
+	    filelock_t llock[1] = {{0}};
+	    llock->name = filename;
+	    lock_start(llock);
+
+	    lock_fn(llock);
+
+	    FILE * fd = fopen(fn2, "r");
+	    int v = 0;
+	    if (fd) {
+		msleep(10);
+		fscanf(fd, "%d", &v);
+		fclose(fd);
+	    }
+	    msleep(10);
+
+	    fd = fopen(fn2, "w");
+	    if (!fd) {
+		perror("fopen");
+		exit(1);
+	    }
+	    msleep(10);
+	    fprintf(fd, "%d\n", v+1);
+	    msleep(10);
+	    fclose(fd);
+	    msleep(10);
+
+	    if (v == 5) exit(5);
+	    unlock_fn(llock);
+
+	    exit(0);
+	}
+    }
+
+    fprintf(stderr, "Processes started: %d\n", pcount);
+
+    while((exit_pid = wait(&st)) > 0) {
+	fprintf(stderr, "Process %d exit -> 0x%04x\n", exit_pid, st);
+    }
+
+    {
+	FILE * fd = fopen(fn2, "r");
+	int v = 0;
+	if (fd) {
+	    msleep(10);
+	    fscanf(fd, "%d", &v);
+	    fclose(fd);
+	}
+
+#ifndef _REENTRANT
+	fprintf(stderr, "FCNTL Result = %d%s\n", v, v==RUNS?" -> good":"\033[5;31;40m FAILED \033[m");
+#else
+	fprintf(stderr, "Result = %d%s\n", v, v==RUNS?" -> good":"\033[5;31;40m FAILED \033[m");
+#endif
+    }
 }
 #endif

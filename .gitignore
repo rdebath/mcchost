@@ -13,6 +13,7 @@ lib_text.c
 tags
 core
 core.*
+*.core
 gmon.out
 *.cw
 
