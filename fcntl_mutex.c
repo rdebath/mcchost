@@ -61,7 +61,8 @@ void lock_restart(fcntl_filelock_t * ln)
 LOCAL void
 share_lock(int fd, int mode, int l_type)
 {
-   for(int ec=0;;ec++)
+   int ec=0;
+   for(;;ec++)
    {
       int rv;
       struct flock lck = {0};

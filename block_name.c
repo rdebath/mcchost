@@ -8,7 +8,7 @@ block_name(block_t block)
     static int bid = 0;
     static char name[BBUFLEN][NB_SLEN];
     char * n = 0;
-    if (block >= BLOCKMAX)
+    if (block >= BLOCKMAX || (server->cpe_disabled && block >= Block_CP))
 	return "Invalid Block";
 
     if (level_prop->blockdef[block].defined)

@@ -124,7 +124,7 @@ cmd_place(char * cmd, char * arg)
 
     if (!level_block_queue || !level_blocks) return;
     if (level_prop->disallowchange) { printf_chat("&WThis level cannot be changed"); return; }
-    if (!can_place_block(args[0])) { printf_chat("&WYou cannot place block %s", block_name(args[0])); return; }
+    if (complain_bad_block(args[0])) return;
 
     // NB: Place is treated just like the client setblock, including any
     // Grass/Dirt/Slab conversions. The Cuboid call is NOT treated in the
@@ -211,6 +211,15 @@ print_player_spam_msg(char * fmt, ...)
     printf_chat("%s", pbuf);
 }
 
+int
+complain_bad_block(block_t blk)
+{
+    int bad_block = !can_place_block(blk);
+    if (bad_block)
+	print_player_spam_msg("&WYou cannot place \"%s\"", block_name(blk));
+    return bad_block;
+}
+
 void
 clear_pending_marks() {
     memset(marks, 0, sizeof(marks));
@@ -288,7 +297,7 @@ cmd_mode(char * cmd, char * arg)
 	    return;
 	}
 
-	if (!can_place_block(b)) { printf_chat("&WYou cannot place block %s", block_name(b)); return; }
+	if (complain_bad_block(b)) return;
 
 	player_mode_mode = b;
 	printf_chat("&SPlayer /mode set to block &T%s", block_name(player_mode_mode));
@@ -382,11 +391,7 @@ process_player_setblock(pkt_setblock pkt)
 	pkt.mode = 2;
     }
 
-    if (!do_revert) {
-	do_revert = !can_place_block(pkt.block);
-	if (do_revert)
-	    print_player_spam_msg("&WYou cannot place block %s", block_name(pkt.block));
-    }
+    if (!do_revert) do_revert = complain_bad_block(pkt.block);
 
     if (add_antispam_event(player_block_spam, server->block_spam_count, server->block_spam_interval, 0)) {
 	if (server->block_spam_kick) {
@@ -664,10 +669,7 @@ cmd_cuboid(char * cmd, char * arg)
 	return;
     }
 
-    if (!can_place_block(b)) {
-	printf_chat("&WYou cannot place block %s", block_name(b));
-	return;
-    }
+    if (complain_bad_block(b)) return;
 
     //TODO: Other cuboids.
     xyzhv_t smarks[3];

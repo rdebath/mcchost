@@ -1,10 +1,16 @@
 
 #include "msleep.h"
 
+#if INTERFACE
+#include <unistd.h>
+#include <time.h>
+
 #if _POSIX_VERSION >= 200112L
 
-void
-msleep(long millisec)
+#define msleep msleep_ns
+
+inline static void
+msleep_ns(long millisec)
 {
     struct timespec req = {0};
     time_t sec = millisec / 1000;
@@ -16,10 +22,13 @@ msleep(long millisec)
 
 #else
 
-void
-msleep(long millisec)
+#define msleep msleep_us
+
+inline static void
+msleep_us(long millisec)
 {
     usleep(millisec * 1000L);
 }
 
+#endif
 #endif
