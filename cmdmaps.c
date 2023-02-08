@@ -10,6 +10,10 @@ and &T/maps all&S to show all maps.
 and &T/maps backup&S to show all backups.
 and &T/maps all pattern&S to show maps matching pattern.
 and &T/maps backup pattern&S to show backups matching pattern.
+
+If a backup entry has a suffix of &T[*]&S it is a subdirectory
+that can be listed by using &T/maps backup directory&S
+and visited using &T/museum directory/level 1&S
 */
 
 #if INTERFACE
@@ -81,10 +85,25 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 	}
     }
     if (backups) {
-	DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
-	if (directory) {
-	    read_maps(&maps, 1, directory, ar2);
-	    closedir(directory);
+	int flg = 0;
+	if (ar2 && *ar2) {
+	    char sbuf[PATH_MAX];
+	    char fixedname_dir[MAXLEVELNAMELEN*4];
+	    fix_fname(fixedname_dir, sizeof(fixedname_dir), ar2);
+	    saprintf(sbuf, LEVEL_BACKUP_DIR_NAME "/%s", fixedname_dir);
+	    DIR *directory = opendir(sbuf);
+	    if (directory) {
+		read_maps(&maps, 1, directory, 0);
+		closedir(directory);
+		flg = 1;
+	    }
+	}
+	if (flg == 0) {
+	    DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
+	    if (directory) {
+		read_maps(&maps, 1, directory, ar2);
+		closedir(directory);
+	    }
 	}
     }
 
@@ -117,9 +136,16 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 		m2++; i++;
 	    }
 
-	    if (m1 == m2)
-		l += sprintf(num, "[%d]", maps.entry[i].backup_id);
-	    else
+	    if (m1 == m2) {
+		if (m1 == -1)
+		    l += sprintf(num, "[*]");
+		else if (m1 == 1)
+		    *num = 0;
+		else
+		    l += sprintf(num, "[%d]", maps.entry[i].backup_id);
+	    } else if (m1+1 == m2) {
+		l += sprintf(num, "[%d,%d]", m1, m2);
+	    } else
 		l += sprintf(num, "[%d-%d]", m1, m2);
 	}
 
@@ -150,30 +176,41 @@ read_maps(maplist_t * maps, int is_backup, DIR *directory, char * matchstr)
 
     while( (entry=readdir(directory)) )
     {
-
-#if defined(_DIRENT_HAVE_D_TYPE) && defined(DT_REG) && defined(DT_UNKNOWN)
-	if (entry->d_type != DT_REG && entry->d_type != DT_UNKNOWN)
+	enum { ft_unk, ft_file, ft_dir } ft = ft_unk;
+#if defined(_DIRENT_HAVE_D_TYPE) && defined(DT_REG) && defined(DT_UNKNOWN) && defined(DT_DIR)
+	if (entry->d_type == DT_DIR) {
+	    if (!is_backup) continue;
+	    ft = ft_dir;
+	} else if (entry->d_type != DT_REG && entry->d_type != DT_UNKNOWN)
 	    continue;
+	else
+	    ft = ft_file;
 #endif
 	int l = strlen(entry->d_name);
-	if (l<=3 || strcmp(entry->d_name+l-3, ".cw") != 0) continue;
+	if (ft != ft_dir) {
+	    if (l<=3 || strcmp(entry->d_name+l-3, ".cw") != 0) continue;
+	    l -= 3;
+	}
 
 	char nbuf[MAXLEVELNAMELEN*4+sizeof(int)*3+3];
 	char nbuf2[MAXLEVELNAMELEN+1];
 	int backup_id = 0;
 
-	l -= 3;
 	if (l>sizeof(nbuf)-2) continue;
 	memcpy(nbuf, entry->d_name, l);
 	nbuf[l] = 0;
 
-	if (is_backup) {
+	if (ft == ft_dir) {
+	    backup_id = -1;
+	} else if (is_backup) {
 	    char * p = strrchr(nbuf, '.');
-	    if (p == 0) continue;
-	    char *e = "";
-	    backup_id = strtol(p+1, &e, 10);
-	    if (backup_id<=0 || *e) continue;
-	    *p = 0;
+	    if (p == 0) backup_id = 1;
+	    else {
+		char *e = "";
+		backup_id = strtol(p+1, &e, 10);
+		if (backup_id<=0 || *e) continue;
+		*p = 0;
+	    }
 	}
 
 	unfix_fname(nbuf2, sizeof(nbuf2), nbuf);
