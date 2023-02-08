@@ -310,8 +310,10 @@ send_block_array()
 		    percent = (int64_t)level_blocks_used * 100 / level_len;
 
 		blocks_buffered ++;
-		if (blocks_buffered > 64)
+		if (blocks_buffered > 64) {
 		    flush_to_remote();
+		    blocks_buffered = 0;
+		}
 	    }
 
 	} while(zrv != Z_STREAM_END);
@@ -434,8 +436,10 @@ send_padded_block_array()
 	    percent = (int64_t)level_blocks_used * 100 / slevel_len;
 
 	    blocks_buffered ++;
-	    if (blocks_buffered > 64)
+	    if (blocks_buffered > 64) {
 		flush_to_remote();
+		blocks_buffered = 0;
+	    }
 	}
 
     } while(zrv != Z_STREAM_END);
