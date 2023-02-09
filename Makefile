@@ -87,7 +87,7 @@ makeheaders: ${ODIR}/makeheaders
 	-@rm -f tmp.c
 	@:
 	@mkdir -p include
-	echo '#define VERSION "'"$$(git describe --tags --always --dirty | sed 's/^mcc-//')"'"' > include/version.h
+	@sh version.sh > include/version.h
 	${ODIR}/makeheaders lib_md5.c:include/lib_md5.h
 	${ODIR}/makeheaders -H >include/md5.h lib_md5.c
 ifeq ($(findstring s,$(MFLAGS)),)

@@ -83,6 +83,7 @@ struct server_ini_t {
     char heartbeat_url[1024];
     char user_id_suffix[NB_SLEN];
     int use_http_post;
+    int omit_software_version;
     int private;
 
     int disallow_ip_admin;

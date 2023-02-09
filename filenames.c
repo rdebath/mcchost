@@ -48,6 +48,8 @@
 #define LOGFILE_SYMLINK_NAME "log/current.log"
 #endif
 
+char * Version = VERSION;
+
 static char * dirlist[] = {
     "system",
     "level",

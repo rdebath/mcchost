@@ -175,6 +175,7 @@ system_x_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAY("Heartbeat", server_ini_tgt->heartbeat_url);
 	INI_BOOLVAL("PollHeartbeat", server_ini_tgt->enable_heartbeat_poll);
 	INI_BOOLVAL("UseHttpPost", server_ini_tgt->use_http_post);
+	INI_BOOLVAL("OmitSoftwareVersion", server_ini_tgt->omit_software_version);
 	INI_BOOLVAL("Private", server_ini_tgt->private);
 	INI_STRARRAY("UserSuffix", server_ini_tgt->user_id_suffix);
 	INI_BOOLVAL("DisallowIPAdmin", server_ini_tgt->disallow_ip_admin);

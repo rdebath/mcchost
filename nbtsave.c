@@ -65,8 +65,6 @@ save_map_to_file(char * fn, int background)
 	bc_compound(savefile, "MapGenerator");
 	if (level_prop->software[0])
 	    bc_ent_string(savefile, "Software", level_prop->software);
-	else
-	    bc_ent_string(savefile, "Software", server->software);
 	bc_ent_string(savefile, "MapGeneratorName", level_prop->theme);
 	if (level_prop->seed[0]) {
 	    // CC Only allows an integer here.

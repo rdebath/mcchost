@@ -62,6 +62,7 @@ send_heartbeat_poll()
     char postbuf[4096] = "";
     char namebuf[256];
     char softwarebuf[256];
+    char softwarecons[256];
     char secretbuf[NB_SLEN];
     int valid_salt = (*server->secret != 0 && *server->secret != '-');
 
@@ -92,6 +93,18 @@ send_heartbeat_poll()
     //  └┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀
     //  αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ 
 
+    if (server->software[0]) {
+	if (ini_settings->omit_software_version)
+	    saprintf(softwarecons, "%s", server->software);
+	else
+	    saprintf(softwarecons, "%s %s", server->software, Version);
+    } else {
+	if (ini_settings->omit_software_version)
+	    saprintf(softwarecons, "%s", SWNAME);
+	else
+	    saprintf(softwarecons, "%s %s", SWNAME, Version);
+    }
+
     if (!ini_settings->use_http_post)
 	saprintf(urlbuf,
 	    "%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s&%s%s",
@@ -103,7 +116,7 @@ send_heartbeat_poll()
 	    "users=",unique_ip_count(),
 	    "salt=",secretbuf,
 	    "name=",ccnet_cp437_quoteurl(server->name, namebuf, sizeof(namebuf), 1),
-	    "software=",ccnet_cp437_quoteurl(server->software, softwarebuf, sizeof(softwarebuf), 0),
+	    "software=",ccnet_cp437_quoteurl(softwarecons, softwarebuf, sizeof(softwarebuf), 0),
 	    "web=","True"
 	    );
     else
@@ -116,7 +129,7 @@ send_heartbeat_poll()
 	    "version=",7,
 	    "salt=",secretbuf,
 	    "users=",unique_ip_count(),
-	    "software=",ccnet_cp437_quoteurl(server->software, softwarebuf, sizeof(softwarebuf), 0),
+	    "software=",ccnet_cp437_quoteurl(softwarecons, softwarebuf, sizeof(softwarebuf), 0),
 	    "web=","True"
 	    );
 

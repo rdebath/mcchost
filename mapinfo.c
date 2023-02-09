@@ -1,6 +1,5 @@
 
 #include "mapinfo.h"
-char * Version = VERSION;
 #if INTERFACE
 
 #define MAPDIMMAX 16384
