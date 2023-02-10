@@ -15,6 +15,10 @@
 int
 try_asciimode(gzFile ifd, char * levelfile, char * ini_filename, uint64_t fallback_seed)
 {
+    int quiet = 0;
+    struct timeval start;
+    gettimeofday(&start, 0);
+
     ini_state_t st = {.quiet = 0, .filename = levelfile};
     int blocks_opened = 0;
 
@@ -54,6 +58,15 @@ try_asciimode(gzFile ifd, char * levelfile, char * ini_filename, uint64_t fallba
 	    return 0;
 
 	init_block_file(fallback_seed, level_blocks_zeroed);
+	quiet = 1;
+    }
+
+    if (!quiet) {
+        struct timeval now;
+        gettimeofday(&now, 0);
+        printlog("INI load (%d,%d,%d) time %s",
+            level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
+            conv_ms_a((now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0));
     }
     return 1;
 }

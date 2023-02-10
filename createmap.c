@@ -343,9 +343,20 @@ init_level_blocks(uint64_t fallback_seed, int pre_zeroed)
     if (!quiet) {
 	struct timeval now;
 	gettimeofday(&now, 0);
-	printlog("Map gen (%d,%d,%d) theme=%s%s%s, time %.2fms",
+	printlog("Map gen (%d,%d,%d) theme=%s%s%s, time %s",
 	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
 	    level_prop->theme, level_prop->seed[0]?", seed=":"", level_prop->seed,
-	    (now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0);
+	    conv_ms_a((now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0));
     }
+}
+
+char *
+conv_ms_a(double ms)
+{
+    static char prtbuf[32];
+    if (ms > 1000.0)
+	snprintf(prtbuf, sizeof(prtbuf), "%.3fs", ms/1000.0);
+    else
+	snprintf(prtbuf, sizeof(prtbuf), "%.2fms", ms);
+    return prtbuf;
 }

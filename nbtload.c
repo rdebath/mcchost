@@ -106,9 +106,9 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
     if (!quiet) {
 	struct timeval now;
 	gettimeofday(&now, 0);
-	printlog("Map load (%d,%d,%d) time %.2fms",
+	printlog("Map load (%d,%d,%d) time %s",
 	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
-	    (now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0);
+	    conv_ms_a((now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0));
     }
 
     return 0;
