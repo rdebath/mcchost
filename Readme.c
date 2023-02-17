@@ -17,9 +17,7 @@ Other notes
 /*HELP todo
  +) NoUnloadMain ($level.NoUnload ?) keeps filesystem access going when idle.
 
- +) Version in software to login server.
  +) Login Whitelist ?
- +) /maps backup needs to cope with backup subdirs.
 
  +) Change level load so that unpack is done in by forked process and the user(s) are then summoned.
     -- For resizelvl and restore at least.
@@ -48,7 +46,6 @@ Other notes
  +) /fill
  +) /fixgrass
  +) /tree -- Only Notch variant
- +) /loaded -- Should this scan the directory?
 
  +) Exponential backups.
 
@@ -164,13 +161,14 @@ Physics queue is a level/${level}.physics file.
 
 Basic
     Grass ✓, Slabs ✓
-    Falling sand/gravel
+    Falling sand/gravel ✓
     Finite? Water/Lava
     Sponge (Lava Sponge?)
 
 Extra
     Leaves removed if !Log
     Shrub grows to tree --> /tree command
+    Slow falling sand/gravel
 
 Advanced
     Lava(Sand) -> Glass

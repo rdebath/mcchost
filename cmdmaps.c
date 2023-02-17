@@ -57,6 +57,7 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 {
     int start = 0, backups = 0;
     char *ar1 = 0, *ar2 = 0;
+    int filtered = 0;
 
     if (!arg || *arg == 0) start = 1;
     else {
@@ -77,6 +78,7 @@ cmd_maps(char * UNUSED(cmd), char * arg)
     }
 
     maplist_t maps = {0};
+    filtered = (ar2 && *ar2 != 0);
     if (!backups) {
 	DIR *directory = opendir("map");
 	if (directory) {
@@ -116,7 +118,10 @@ cmd_maps(char * UNUSED(cmd), char * arg)
     if (end>maps.count) end = maps.count;
 
     if (!maps.count) {
-	printf_chat("&WNo levels have been saved yet");
+	if (!filtered)
+	    printf_chat("&WNo levels have been saved yet");
+	else
+	    printf_chat("&WNo levels match your filter");
 	return;
     }
 
