@@ -1,6 +1,6 @@
 #include <fcntl.h>
 
-#include "cmdpass.h"
+#include "password.h"
 
 /* This is not the best example of password handling.
  *
@@ -15,7 +15,7 @@
  * that headache onto someone else ... ie use mppass.
  *
  * For this application the main issue is that this password
- * is transmitted over an unencrypted connection. (use mmpass!)
+ * is transmitted over an unencrypted connection. (use mppass!)
  */
 
 /*HELP pass,setpass H_CMD
@@ -33,7 +33,7 @@ Try again or contact the OPs to reset it
 
 #if INTERFACE
 #define CMD_PASS \
-    {N"pass", &cmd_pass, CMD_HELPARG}, {N"setpass", &cmd_pass, .nodup=1, .dup=1}
+    {N"pass", &cmd_pass, CMD_HELPARG}, {N"setpass", &cmd_pass, .nodup=1, .dup=1, CMD_HELPARG}
 #endif
 
 static int testing_just_set_password = 0;
@@ -69,7 +69,7 @@ cmd_pass(char * cmd, char * arg)
 void
 do_setpass(char * passwd)
 {
-    if (!passwd || !*passwd) return cmd_help(0, "/setpass");
+    if (!passwd || !*passwd) return;
 
 static char base62[] =
     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

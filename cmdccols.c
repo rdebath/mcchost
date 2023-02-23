@@ -1,24 +1,13 @@
 
-#include "textcolour.h"
+#include "cmdccols.h"
 
 #if INTERFACE
-typedef struct textcolour_t textcolour_t;
-struct textcolour_t {
-    nbtstr_t name;
-    int32_t colour;
-    uint8_t a;
-    char fallback;
-    uint8_t defined;
-};
-
 #define CMD_TEXTCOLOUR \
-    {N"ccols", &cmd_textcolour, CMD_PERM_ADMIN}, \
+    {N"ccols", &cmd_textcolour, CMD_PERM_ADMIN, CMD_HELPARG}, \
     {N"CustomColors", &cmd_textcolour, .dup=1}, \
     {N"CustomColours", &cmd_textcolour, .dup=1}
 
 #endif
-
-textcolour_t textcolour[256];
 
 /*HELP ccols,customcolours,customcolors H_CMD
 &T/CustomColors add [code] [name] [fallback] #[hex]
@@ -28,7 +17,7 @@ textcolour_t textcolour[256];
 */
 
 void
-cmd_textcolour(char * cmd, char *arg)
+cmd_textcolour(char * UNUSED(cmd), char *arg)
 {
     char * subcmd = strtok(arg, " ");
     char * txcode = strtok(0, " ");
@@ -36,11 +25,12 @@ cmd_textcolour(char * cmd, char *arg)
     char * txfallback = strtok(0, " ");
     char * txcolour = strtok(0, " ");
 
-    if (!subcmd) return cmd_help("", cmd);
-
     if (strcasecmp(subcmd, "remove") == 0 || strcasecmp(subcmd, "rm") == 0 ||
 	    strcasecmp(subcmd, "del") == 0) {
-	if (!txcode || !*txcode) return cmd_help("", cmd);
+	if (!txcode || !*txcode) {
+	    printf_chat("&SMissing argument to remove");
+	    return;
+	}
 	uint8_t c = *txcode;
 	if (txcode[1] != 0) c = 0;
 	if (c==0 || !textcolour[c].defined) {
@@ -49,7 +39,10 @@ cmd_textcolour(char * cmd, char *arg)
 	}
 	textcolour[c].defined = 0;
     } else if (strcasecmp(subcmd, "add") == 0) {
-	if (!txcode || !txname || !txfallback || !txcolour) return cmd_help("", cmd);
+	if (!txcode || !txname || !txfallback || !txcolour) {
+	    printf_chat("&SMissing argument to add");
+	    return;
+	}
 	uint8_t c = *txcode;
 	if (txcode[1] != 0) c = 0;
 	if (c == '%' || c == '&' || c == ' ') c = 0;
@@ -67,42 +60,13 @@ cmd_textcolour(char * cmd, char *arg)
 	int base = 0;
 	if (*txcolour == '#') { base = 16; txcolour++; }
 	textcolour[c].colour = strtol(txcolour, 0, base);
-    } else
-	return cmd_help("", cmd);
+    } else {
+	printf_chat("&SUse add or remove subcommand");
+	return;
+    }
 
     send_textcolours();
     save_system_ini_file();
-}
-
-void
-init_textcolours() {
-    for (int i = 0; i<256; i++) {
-	textcolour[i].defined = 0;
-	textcolour[i].name.c[0] = 0;
-	textcolour[i].fallback = 'f';
-	textcolour[i].colour = -1;
-	textcolour[i].a = 255;
-    }
-
-    set_alias('H', 'e'); // HelpDescriptionColor
-    set_alias('I', '5'); // IRCColor
-    set_alias('S', 'e'); // DefaultColor
-    set_alias('T', 'a'); // HelpSyntaxColor
-    set_alias('W', 'c'); // WarningErrorColor
-
-    for(int i = 'A'; i<='F'; i++)
-	set_alias(i, i-'A'+'a');
-}
-
-void
-set_alias(int from, int to)
-{
-    if (from > 255 || from < 0) return;
-    textcolour[from].name.c[0] = 0;
-    textcolour[from].defined = 1;
-    textcolour[from].fallback = to;
-    textcolour[from].colour = -1;
-    textcolour[from].a = -1;
 }
 
 void

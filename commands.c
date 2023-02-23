@@ -139,8 +139,9 @@ Perform various server hacks, OPERATORS ONLY!
 Aliases: /hacks
 */
 #if INTERFACE
-#define CMD_QUITS  {N"quit", &cmd_quit}, {N"rq", &cmd_quit}, \
-    {N"hax", &cmd_quit}, {N"hacks", &cmd_quit, .dup=1}
+#define CMD_QUITS  {N"quit", &cmd_quit}, \
+    {N"rq", &cmd_quit, .dup=1, .nodup=1 }, \
+    {N"hax", &cmd_quit, .dup=1, .nodup=1 }, {N"hacks", &cmd_quit, .dup=1}
 #endif
 
 void
@@ -163,8 +164,10 @@ List all available commands
 Aliases: /cmds /cmdlist
 */
 #if INTERFACE
-#define CMD_COMMANDS  {N"commands", &cmd_commands}, \
-    {N"cmds", &cmd_commands, .dup=1}, {N"cmdlist", &cmd_commands, .dup=1}
+#define CMD_COMMANDS \
+    {N"cmds", &cmd_commands}, \
+    {N"commands", &cmd_commands, .dup=1}, \
+    {N"cmdlist", &cmd_commands, .dup=1}
 #endif
 void
 cmd_commands(char * UNUSED(cmd), char * UNUSED(arg))

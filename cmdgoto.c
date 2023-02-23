@@ -126,44 +126,6 @@ cmd_main(char * UNUSED(cmd), char * arg)
     read_only_message();
 }
 
-void
-open_main_level()
-{
-    stop_shared();
-
-    if (ini_settings->void_for_login && !user_authenticated) {
-	cmd_void(0,0);
-    } else {
-	char fixedname[NB_SLEN];
-	fix_fname(fixedname, sizeof(fixedname), main_level());
-
-	if (start_level(main_level(), fixedname, 0))
-	    open_level_files(main_level(), 0, 0, fixedname, 0);
-
-	if (!level_prop) cmd_void(0, 0);
-
-	if (level_prop) player_posn = level_prop->spawn;
-	send_map_file();
-    }
-}
-
-void
-cmd_void(char * cmd, char * UNUSED(arg))
-{
-    char * voidname = "<void>";
-
-    char fixedname[NB_SLEN];
-    fix_fname(fixedname, sizeof(fixedname), voidname);
-    stop_shared();
-    (void)start_level(voidname, fixedname, -1);
-    send_map_file();
-
-    if (cmd) {
-	printf_chat("@%s&S was sucked into the void.", player_list_name.c);
-	printf_chat("&SYou jumped into the void");
-    }
-}
-
 int
 direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 {
@@ -442,25 +404,6 @@ choose_random_level(char * fixedname, int name_len)
 	maplist_sz = maplist_cnt = 0;
     }
     return;
-}
-
-char *
-my_strcasestr(char *haystack, char *needle)
-{
-    int nlen = strlen(needle);
-    int slen = strlen(haystack) - nlen + 1;
-    int i;
-
-    for (i = 0; i < slen; i++) {
-	int j;
-	for (j = 0; j < nlen; j++) {
-	    if (toupper((unsigned char)haystack[i+j]) != toupper((unsigned char)needle[j]))
-		goto break_continue;
-	}
-	return haystack + i;
-    break_continue: ;
-    }
-    return 0;
 }
 
 int

@@ -208,7 +208,7 @@ emconv_t emconv[] = {
 { "inversecircle", 0x0A },
 { "male", 0x0B }, { "mars", 0x0B },
 { "female", 0x0C }, { "venus", 0x0C },
-{ "note", 0x0D }, { "quaver", 0x0D }, { "8", 0x0D },
+{ "note", 0x0D }, { "quaver", 0x0D },
 { "notes", 0x0E }, { "music", 0x0E },
 { "sun", 0x0F }, { "celestia", 0x0F },
 { ">>", 0x10 }, { "right", 0x10 }, { "|>", 0x10 },

@@ -1,12 +1,11 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#include "setvar.h"
+#include "cmdsetvar.h"
 
 #if INTERFACE
 #define CMD_SETVAR \
-    {N"set", &cmd_setvar}, {N"setvar", &cmd_setvar, .dup=1}, \
-    {N"restart", &cmd_restart, CMD_PERM_ADMIN}
+    {N"set", &cmd_setvar, CMD_HELPARG}, {N"setvar", &cmd_setvar, .dup=1}
 #endif
 
 /*HELP setvar,set H_CMD
@@ -120,7 +119,7 @@ Use &T/set server [varname] [value]&S for each item or alter the server.ini or s
 
 
 void
-cmd_setvar(char * cmd, char * arg)
+cmd_setvar(char * UNUSED(cmd), char * arg)
 {
     char * section = strtok(arg, " ");
     char * varname = 0;
@@ -154,8 +153,10 @@ cmd_setvar(char * cmd, char * arg)
     }
     if (value == 0) value = "";
 
-    if (section == 0 || varname == 0)
-	return cmd_help(0, cmd);
+    if (section == 0 || varname == 0) {
+	printf_chat("&SIncomplete section/variable name arguments");
+	return;
+    }
 
     ini_state_t stv = {.no_unsafe=1}, *st = &stv;
     st->curr_section = section;
@@ -217,24 +218,4 @@ cmd_setvar(char * cmd, char * arg)
     }
 
     printf_chat("&SSet %s&S.%s&S=\"%s&S\" ok.", section, varname, value);
-}
-
-/*HELP restart H_CMD
-&T/restart
-Restarts the server listener process.
-*/
-
-void
-cmd_restart(char * UNUSED(cmd), char * UNUSED(arg))
-{
-    if (alarm_handler_pid) {
-	if (kill(alarm_handler_pid, SIGHUP) < 0) {
-	    perror("kill(alarm_handler,SIGHUP)");
-	    printf_chat("&WCannot signal listener process");
-	} else
-	    printf_chat("&SListener process restart triggered");
-    } else if (inetd_mode)
-	printf_chat("&SNo listener process exists for this session");
-    else
-	printf_chat("&WListener process not found");
 }

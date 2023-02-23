@@ -7,15 +7,18 @@ copy a level
 */
 
 #if INTERFACE
-#define CMD_COPYLVL {N"copylvl", &cmd_copylvl, CMD_PERM_ADMIN}
+#define CMD_COPYLVL {N"copylvl", &cmd_copylvl, CMD_PERM_ADMIN, CMD_HELPARG}
 #endif
 
 void
-cmd_copylvl(char * cmd, char * arg)
+cmd_copylvl(char * UNUSED(cmd), char * arg)
 {
     char * oldlvlarg = strtok(arg, " ");
     char * newlvlarg = strtok(0, " ");
-    if (!oldlvlarg || !newlvlarg) return cmd_help(0, cmd);
+    if (!oldlvlarg || !newlvlarg) {
+	printf_chat("&WNeed both old and new level names");
+	return;
+    }
 
     char fixedname[MAXLEVELNAMELEN*4], lvlname[MAXLEVELNAMELEN+1];
     char fixedname2[MAXLEVELNAMELEN*4], lvlname2[MAXLEVELNAMELEN+1];

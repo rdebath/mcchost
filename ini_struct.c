@@ -19,6 +19,14 @@ struct ini_state_t {
     uint8_t looped;
 };
 
+typedef struct textcolour_t textcolour_t;
+struct textcolour_t {
+    nbtstr_t name;
+    int32_t colour;
+    uint8_t a;
+    char fallback;
+    uint8_t defined;
+};
 #endif
 
 /*HELP inifile
@@ -45,6 +53,7 @@ Character set of file is UTF8
 
 userrec_t * user_ini_tgt = 0;
 server_ini_t * server_ini_tgt = 0;
+textcolour_t textcolour[256];
 
 int
 system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)

@@ -149,7 +149,9 @@ complete_connection()
 
     open_main_level();
 
+#ifdef CMD_TEXTCOLOUR
     send_textcolours();
+#endif
 
     printf_chat("&SWelcome %s", player_list_name.c);
     printf_chat("@&a+ %s &Sconnected", player_list_name.c);
@@ -583,3 +585,36 @@ login()
     if (!user_authenticated)
 	printlog("User %s not authenticated with mppass \"%s\"", user_id, player.mppass);
 }
+
+
+void
+init_textcolours() {
+    for (int i = 0; i<256; i++) {
+	textcolour[i].defined = 0;
+	textcolour[i].name.c[0] = 0;
+	textcolour[i].fallback = 'f';
+	textcolour[i].colour = -1;
+	textcolour[i].a = 255;
+    }
+
+    set_alias('H', 'e'); // HelpDescriptionColor
+    set_alias('I', '5'); // IRCColor
+    set_alias('S', 'e'); // DefaultColor
+    set_alias('T', 'a'); // HelpSyntaxColor
+    set_alias('W', 'c'); // WarningErrorColor
+
+    for(int i = 'A'; i<='F'; i++)
+	set_alias(i, i-'A'+'a');
+}
+
+void
+set_alias(int from, int to)
+{
+    if (from > 255 || from < 0) return;
+    textcolour[from].name.c[0] = 0;
+    textcolour[from].defined = 1;
+    textcolour[from].fallback = to;
+    textcolour[from].colour = -1;
+    textcolour[from].a = -1;
+}
+

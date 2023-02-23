@@ -13,7 +13,7 @@ Seed is:
 */
 
 #if INTERFACE
-#define CMD_NEWLVL {N"newlvl", &cmd_newlvl}
+#define CMD_NEWLVL {N"newlvl", &cmd_newlvl, CMD_HELPARG}
 
 typedef struct lvltheme_t lvltheme_t;
 struct lvltheme_t {
@@ -39,7 +39,7 @@ lvltheme_t themelist[] = {
 };
 
 void
-cmd_newlvl(char * cmd, char * arg)
+cmd_newlvl(char * UNUSED(cmd), char * arg)
 {
     char * lvlarg = strtok(arg, " ");
     char * sx = strtok(0, " ");
@@ -48,7 +48,10 @@ cmd_newlvl(char * cmd, char * arg)
     char * th = strtok(0, " ");
     char * se = strtok(0, "");
 
-    if (!lvlarg || (sx && !sz)) return cmd_help(0, cmd);
+    if (!lvlarg || (sx && !sz)) {
+	printf_chat("&WNeed more arguments to specify level size");
+	return;
+    }
 
     char levelname[256];
     saprintf(levelname, "%s", lvlarg);
