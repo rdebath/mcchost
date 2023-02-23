@@ -36,6 +36,8 @@ struct client_entry_t {
     int on_level;
     int level_bkp_id;
     xyzhv_t posn;
+    int summon_level_id;
+    xyzhv_t summon_posn;
     uint8_t active;
     uint8_t visible;
     uint8_t look_update_counter;
@@ -110,6 +112,35 @@ check_user()
     if (!shdat.client->user[my_user_no].active) {
 	shdat.client->user[my_user_no].session_id = 0;
 	logout("(Connecting on new session)");
+    }
+
+    if (shdat.client->user[my_user_no].summon_level_id >= 0) {
+	xyzhv_t tp = shdat.client->user[my_user_no].summon_posn, t={0};
+
+	// Just on the same level ?
+	if (shdat.client->user[my_user_no].summon_level_id == shdat.client->user[my_user_no].on_level) {
+
+	    shdat.client->user[my_user_no].summon_level_id = -1;
+	    shdat.client->user[my_user_no].summon_posn = t;
+            send_posn_pkt(-1, &player_posn, tp);
+	    player_posn = tp;
+
+	} else {
+
+	    // Full teleport between levels.
+	    nbtstr_t level = {0};
+	    int bkpid = 0;
+
+	    int lv = shdat.client->user[my_user_no].summon_level_id;
+	    if (shdat.client->levels[lv].loaded) {
+		level = shdat.client->levels[lv].level;
+		bkpid = shdat.client->levels[lv].backup_id;
+	    }
+	    shdat.client->user[my_user_no].summon_level_id = -1;
+	    shdat.client->user[my_user_no].summon_posn = t;
+
+	    direct_teleport(level.c, bkpid, &tp);
+	}
     }
 
     struct timeval now;
@@ -492,6 +523,7 @@ start_user()
     t.client_proto_ver = protocol_base_version;
     t.client_cpe = cpe_enabled;
     t.on_level = -1;
+    t.summon_level_id = -1;
     t.level_bkp_id = -1;
     t.ip_address = client_ipv4_addr;
     t.authenticated = user_authenticated;
@@ -516,7 +548,7 @@ start_user()
 	else if (t.client_proto_ver == 3)
 	    strcpy(t.client_software.c, "Classic 0.0.16");
 	else
-	    strcpy(t.client_software.c, "Unknown");
+	    strcpy(t.client_software.c, "Classic");
     }
 
     shdat.client->user[my_user_no] = t;
