@@ -155,6 +155,8 @@ cmd_sinfo(char * UNUSED(cmd), char * UNUSED(arg))
 {
     time_t now = time(0);
     time_t then = process_start_time(alarm_handler_pid);
+    if (then == 0) then = proc_start_time;
+
     printf_chat("About &T%s", server->name);
 
     // &T18&S players total. (&T1&S online)

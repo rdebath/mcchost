@@ -32,11 +32,13 @@ int protocol_base_version = 7;
 
 char * proc_args_mem = 0;
 int    proc_args_len = 0;
+time_t proc_start_time = 0;
 
 int
 main(int argc, char **argv)
 {
     saprintf(program_name, "%s", argv[0]);
+    proc_start_time = time(0);
 
     init_textcolours();
 

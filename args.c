@@ -128,6 +128,7 @@ process_args(int argc, char **argv)
     int bc = 1, plen = strlen(argv[0]);
     int port_no = -1;
     int found_dir_arg = 0;
+    int found_process_start = 0;
 
     getprogram(argv[0]);
 
@@ -210,6 +211,13 @@ process_args(int argc, char **argv)
 			ar++;
 			addarg = 0;
 			found_dir_arg = 1;
+			break;
+		    }
+
+		    if (strcmp(argv[ar], "-process-start-time") == 0) {
+			proc_start_time = strtoimax(argv[ar+1], 0, 0);
+			ar++; addarg++;
+			found_process_start = 1;
 			break;
 		    }
 		}
@@ -305,6 +313,7 @@ process_args(int argc, char **argv)
 		}
 
 		if (strcmp(argv[ar], "-cwd") == 0) {
+		    if (found_dir_arg) addarg = 0;
 		    found_dir_arg = 1; // Disable move to ~/.mcchost
 		    break;
 		}
@@ -425,8 +434,18 @@ process_args(int argc, char **argv)
     }
 
     // The -dir arg isn't added, make sure we don't go anywhere.
-    program_args[bc++] = strdup("-cwd");
-    plen += 5;
+    if (!found_dir_arg) {
+	program_args[bc++] = strdup("-cwd");
+	plen += 5;
+    }
+
+    if (!found_process_start) {
+	program_args[bc++] = strdup("-process-start-time");
+	plen += 30;
+	char buf[sizeof(intmax_t)*3+3];
+	sprintf(buf, "%jd", (intmax_t)proc_start_time);
+	program_args[bc++] = strdup(buf);
+    }
 
     // Pad the program args so we get some space after a restart.
     // Also we must turn off -detach to keep the same pid.

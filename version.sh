@@ -6,14 +6,19 @@ main() {
 
     git_describe
 
-    echo "#define VERSION          \"$VER\""
-    echo "#define VERSION_MAJOR    $MAJOR"
-    echo "#define VERSION_MINOR    $MINOR"
-    echo "#define VERSION_BUILD    $BUILD"
-    echo "#define VERSION_HASH    \"$HASH\""
-    [ "$GITHASH" != "" ] && echo "#define GITHASH $GITHASH"
-    [ "$GITTIME" != "" ] && echo "#define GITTIME $GITTIME"
-    [ "$GITDECO" != "" ] && echo "#define GITDECO $GITDECO"
+    if [ "$VER" != '' ]||[ ! -s "$1" ]
+    then {
+	echo "#define VERSION          \"$VER\""
+	echo "#define VERSION_MAJOR    $MAJOR"
+	echo "#define VERSION_MINOR    $MINOR"
+	echo "#define VERSION_BUILD    $BUILD"
+	echo "#define VERSION_HASH    \"$HASH\""
+	[ "$GITHASH" != "" ] && echo "#define GITHASH $GITHASH"
+	[ "$GITTIME" != "" ] && echo "#define GITTIME $GITTIME"
+	[ "$GITDECO" != "" ] && echo "#define GITDECO $GITDECO"
+	} > "$1"
+    fi
+
     :
 }
 
@@ -22,7 +27,7 @@ git_describe() {
     # Get more detail than just git describe --tags
     # tag + commits to branch from upstream + local commits + local mods.
 
-    VER='0.0.0.0-pre' ; MAJOR=0 ; MINOR=0 ; BUILD=0 ; HASH='*'
+    VER='' ; MAJOR=0 ; MINOR=0 ; BUILD=0 ; HASH='*'
 
     # What's upstream -- "--verify -q" is NOT silent despite the docs, sigh
     UPSTREAM=`git rev-parse --verify -q @{u} 2>/dev/null`
