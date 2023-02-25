@@ -56,8 +56,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
 	if (p && strcmp(p, ".cw") == 0)
 	    *p = 0;
 	strcat(ini_name, ".ini");
-	if (access(ini_name, R_OK) != 0)
-	    *ini_name = 0;
+	// if (access(ini_name, R_OK) != 0) *ini_name = 0;
     }
 
     if ((ifd = gzopen(filename, "r")) == 0) {
@@ -85,8 +84,12 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
     if (cw_loaded != 1)
 	return -1;
 
-    if (*ini_name)
-	load_ini_file(mcc_level_ini_fields, ini_name, 1, 1);
+    if (*ini_name) {
+	if (access(ini_name, F_OK) == 0)
+	    load_ini_file(mcc_level_ini_fields, ini_name, 1, 1);
+	else
+	    save_ini_file(mcc_level_ini_fields, ini_name, 0);
+    }
 
     if (level_prop && level_prop->time_created == 0) {
 	// Hmm, no creation time, pickup the file modified time.

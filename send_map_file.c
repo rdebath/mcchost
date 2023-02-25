@@ -399,9 +399,9 @@ send_padded_block_array()
 		else {
 		    if (y<0)
 			b = Block_Bedrock;
-		    else if (y >= level_prop->cells_y/2)
+		    else if (y >= (level_prop->cells_y+1)/2)
 			b = Block_Air;
-		    else if (y+2 >= level_prop->cells_y/2)
+		    else if (y+2 >= (level_prop->cells_y+1)/2)
 			b = Block_ActiveWater;
 		}
 

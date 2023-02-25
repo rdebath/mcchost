@@ -35,6 +35,11 @@ cmd_goto(char * cmd, char * arg)
     if (strcasecmp(arg, "-random") == 0)
 	return run_command("/gotorandom");
 
+    if (player_lockout>0) {
+	printf_chat("Cannot use /%s, already joining a map.", cmd);
+	return;
+    }
+
     while (*arg == ' ') arg++;
     int l = strlen(arg);
     // A quoted name is used exactly.

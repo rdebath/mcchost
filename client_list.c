@@ -90,7 +90,7 @@ int player_is_afk = 0;
 aspam_t player_block_spam[1];
 aspam_t player_cmd_spam[1];
 aspam_t player_chat_spam[1];
-int player_lockout = 50;
+int player_lockout = 5;
 
 nbtstr_t player_title_name;	// Name including colour and title
 nbtstr_t player_list_name;	// Name with &Colour
@@ -610,7 +610,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
     }
 
     shdat.client->generation++;
-    player_lockout = 50;
+    player_lockout = 5;
 
     if (extn_extplayerlist) {
 	char groupname[256] = "";
