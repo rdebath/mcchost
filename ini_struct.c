@@ -96,6 +96,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_DURATION("BackupInterval", server->backup_interval);
 	INI_BOOLVAL("NoUnloadMain", server->no_unload_main);
 	INI_BOOLVAL("NoSaveInuse", server->no_save_inuse);
+	INI_BOOLVAL("UseUTCZone", server->use_utc_zone);
 
 	if (st->write) fprintf(st->fd, "\n");
 
@@ -417,6 +418,7 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("ReadOnly", level_prop->readonly);
 	INI_BOOLVAL("DisallowChange", level_prop->disallowchange);
 	INI_BOOLVAL("ResetHotbar", level_prop->reset_hotbar);
+	INI_BOOLVAL("LevelChat", level_prop->level_chat);
 	if (!st->write)
 	    INI_BOOLVAL("DirtySave", level_prop->dirty_save);
 

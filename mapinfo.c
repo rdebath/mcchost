@@ -42,7 +42,6 @@ struct map_info_t {
     int readonly;
     int disallowchange;	// even if readonly, you can change the working map.
     int no_unload;
-    int reset_hotbar;
 
     int dirty_save;
     int mcg_physics_blocks;
@@ -55,6 +54,9 @@ struct map_info_t {
     uint8_t uuid[16];
     uint8_t hacks_flags;
     int16_t hacks_jump;
+
+    int reset_hotbar;
+    int level_chat;
 
     // Init together til side_offset.
     uint8_t weather;

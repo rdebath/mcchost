@@ -17,12 +17,14 @@ Other notes
 /*HELP todo
  +) NoUnloadMain ($level.NoUnload ?) keeps filesystem access going when idle.
 
+ +) Option to show MOTD as announce on map load.
+    -- Classic 0.30 ?
+
  +) Login Whitelist ?
+    -- Only Admin login ?
 
  +) Change level load so that unpack is done in by forked process and the user(s) are then summoned.
     -- For resizelvl and restore at least.
-
- +) Search (some?) subdirectories for *.c files to feed to makeheaders etc.
 
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
@@ -44,8 +46,7 @@ Other notes
  +) /clones
  +) /undo, /redo
  +) /fill
- +) /fixgrass
- +) /tree -- Only Notch variant
+ +) /tree -- Only Notch variant ?
 
  +) Exponential backups.
 
@@ -81,8 +82,7 @@ Other notes
 
  +) Lowercase the uppercase CP437 extras? These: ÇÆÅÉÑÄÖÜ also Σσ and Φφ
 
- +) Level limited chat -- primitive chatroom.
- +) Team chat, less primitive chatroom.
+ +) Team chat, less primitive chatroom than level chat.
 
  +) Block/User history records.
     -- Stored in a ${level} file normally.

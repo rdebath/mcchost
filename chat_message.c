@@ -103,10 +103,21 @@ convert_inbound_chat(int to_user, char * msg)
 {
     char * buf = malloc(strlen(msg) + 256);
     char * p;
-    if (to_user < 0)
-	p = buf + sprintf(buf, "&e%s&e:&f ", player_title_name.c);
-    else
+
+    int to_level = -1;
+    if (level_prop && level_prop->level_chat) {
+	if (shdat.client && my_user_no >= 0 && my_user_no < MAX_USER)
+	    to_level = shdat.client->user[my_user_no].on_level;
+	if (to_level >= MAX_LEVEL)
+	    to_level = -1;
+    }
+
+    if (to_user >= 0)
 	p = buf + sprintf(buf, "&9[>] &e%s&e: &f", player_list_name.c);
+    else if (to_level >= 0)
+	p = buf + sprintf(buf, "&e<local>%s&e:&f ", player_title_name.c);
+    else
+	p = buf + sprintf(buf, "&e%s&e:&f ", player_title_name.c);
 
     for(char *s = msg; *s; s++) {
 	if (!extn_textcolours && (*s == '%' || *s == '&')) {
@@ -131,8 +142,10 @@ convert_inbound_chat(int to_user, char * msg)
 	post_chat(1, to_user, 0, buf, l-1);
 	buf[1] = 'S'; buf[3] = '<';
 	post_chat(-1, 0, 0, buf, l-1);
-    } else
-	post_chat(0, 0, 0, buf, l-1);
+    } else if (to_level >= 0)
+	post_chat(2, to_level, 0, buf, l-1);
+    else
+	post_chat(0, 1, 0, buf, l-1);
     free(buf);
 }
 

@@ -37,7 +37,7 @@ uint8_t mcg_physics[256];
 static char mcgalaxy_names[];
 
 int
-load_map_from_file(char * filename, char * level_fname, char * level_name)
+load_map_from_file(char * filename, char * level_fname, char * level_name, int backup_id)
 {
     int quiet = 0;
     struct timeval start;
@@ -87,7 +87,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name)
     if (*ini_name) {
 	if (access(ini_name, F_OK) == 0)
 	    load_ini_file(mcc_level_ini_fields, ini_name, 1, 1);
-	else
+	else if (backup_id == 0)
 	    save_ini_file(mcc_level_ini_fields, ini_name, 0);
     }
 

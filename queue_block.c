@@ -64,8 +64,8 @@ update_block(pkt_setblock pkt)
     if (pkt.coord.y < level_prop->cells_y-1) {
 	uintptr_t indup = World_Pack(pkt.coord.x, pkt.coord.y+1, pkt.coord.z);
 	above = level_blocks[indup];
+	if (above >= BLOCKMAX) above = BLOCKMAX-1;
     }
-    if (above >= BLOCKMAX) above = BLOCKMAX-1;
 
     // Correct this Grass/Dirt block
     if (level_prop->blockdef[b].dirt_block != 0 || level_prop->blockdef[b].grass_block != 0)

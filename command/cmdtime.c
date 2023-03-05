@@ -50,7 +50,12 @@ void
 detect_timezone()
 {
     if (strcmp(my_user.last_ip, "127.0.0.1") == 0) return;
+    if (server->use_utc_zone) {
+	sprintf(my_user.timezone, "UTC+00:00");
+	return;
+    }
 
+    // See also: http://ip-api.com/json/8.8.8.8
     char buf[256];
     sprintf(buf, "curl -s -f -m 2 https://ipapi.co/%s/utc_offset", my_user.last_ip);
     FILE * fd = popen(buf, "r");

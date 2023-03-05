@@ -166,7 +166,7 @@ open_level_files(char * level_name, int backup_id, char * cw_name, char * fixnam
 	int ok = 0;
 	// If level missing -- extract the matching *.cw file
 	if (access(cw_name, R_OK) == 0) {
-	    ok = (load_map_from_file(cw_name, fixname, level_name) >= 0);
+	    ok = (load_map_from_file(cw_name, fixname, level_name, backup_id) >= 0);
 	    // If the cw extraction fails we don't want to use anything
 	    // else as overwriting it might be bad.
 	    if (!ok)

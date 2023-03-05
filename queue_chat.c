@@ -16,6 +16,7 @@ struct chat_queue_t {
 
 typedef chat_entry_t chat_entry_t;
 struct chat_entry_t {
+    int is_global;
     int to_level_id;
     int to_player_id;
     int to_team_id;
@@ -29,6 +30,7 @@ static uint32_t last_generation;
 
 /* Send a single chat message */
 /* to_where: 0) all, 1) Player(to_id), 2) Level(to_id), 3) Team(to_id) */
+/* to_id: filter id or for "all" 0=>system, 1=>chat. */
 void
 update_chat(int to_where, int to_id, pkt_message *pkt)
 {
@@ -37,11 +39,13 @@ update_chat(int to_where, int to_id, pkt_message *pkt)
 
     lock_fn(chat_queue_lock);
     int id = shared_chat_queue->curr_offset;
+    shared_chat_queue->updates[id].is_global = 0; // Is global chat.
     shared_chat_queue->updates[id].to_player_id = -1;
     shared_chat_queue->updates[id].to_level_id = -1;
     shared_chat_queue->updates[id].to_team_id = -1;
     shared_chat_queue->updates[id].not_player_id = -1;
     switch (to_where) {
+    case 0: shared_chat_queue->updates[id].is_global = to_id; break;
     case 1: shared_chat_queue->updates[id].to_player_id = to_id; break;
     case 2: shared_chat_queue->updates[id].to_level_id = to_id; break;
     case 3: shared_chat_queue->updates[id].to_team_id = to_id; break;
@@ -76,6 +80,16 @@ void
 send_queued_chats(int flush)
 {
     if (last_id < 0) return; // Hmmm.
+
+    int my_level = shdat.client->user[my_user_no].on_level;
+    int filter_level = 0;
+
+    if (shdat.client && my_user_no >= 0 && my_user_no < MAX_USER)
+	my_level = shdat.client->user[my_user_no].on_level;
+    if (my_level >= MAX_LEVEL)
+	my_level = -1;
+
+    if (my_level >= 0 && level_prop && level_prop->level_chat) filter_level = 1;
 
     for(;;)
     {
@@ -118,10 +132,12 @@ send_queued_chats(int flush)
 
 	// To somewhere and not here
 	if (upd.to_level_id >= 0) {
-	    int my_level = shdat.client->user[my_user_no].on_level;
 	    if (upd.to_level_id != my_level)
 		continue;
 	}
+
+	if (filter_level && upd.is_global)
+	    continue;
 
 	// To a team ... Not me.
 	if (upd.to_team_id >= 0) continue;
