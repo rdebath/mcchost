@@ -76,7 +76,7 @@ Draw methods
 void
 cmd_defblk(char * UNUSED(cmd), char * arg)
 {
-    if (!perm_level_check(0, 0))
+    if (!perm_level_check(0, 0, 0))
 	return;
 
     char * blk_str = strtok(arg, " ");

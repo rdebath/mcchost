@@ -90,7 +90,7 @@ run_command(char * msg)
 		    return;
 		}
 	    } else if (command_list[c].perm_okay == perm_token_level) {
-		if (!perm_level_check(0,0))
+		if (!perm_level_check(0,0,0))
 		    return;
 	    }
 	}

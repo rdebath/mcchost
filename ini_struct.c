@@ -421,6 +421,8 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("LevelChat", level_prop->level_chat);
 	if (!st->write)
 	    INI_BOOLVAL("DirtySave", level_prop->dirty_save);
+	if (!st->write || level_prop->mcg_physics_blocks)
+	    INI_BOOLVAL("MCGPhysicsBlock", level_prop->mcg_physics_blocks);
 
 	INI_TIME_T("LastBackup", level_prop->last_backup);
 

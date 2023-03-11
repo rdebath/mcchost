@@ -21,7 +21,7 @@ cmd_unload(char * UNUSED(cmd), char * arg)
 	strcpy(levelname, current_level_name);
     else
 	saprintf(levelname, "%s", lvlarg);
-    if (!perm_level_check(levelname, 1))
+    if (!perm_level_check(levelname, 1, 0))
         return;
 
     char fixedname[MAXLEVELNAMELEN*4], lvlname[MAXLEVELNAMELEN+1];

@@ -192,7 +192,7 @@ cmd_setvar(char * UNUSED(cmd), char * arg)
 		kill(alarm_handler_pid, SIGALRM);
 	}
     } else {
-	if (!perm_level_check(0, 0))
+	if (!perm_level_check(0, 0, 0))
 	    return;
 
 	int ro = level_prop->readonly;

@@ -17,7 +17,7 @@ cmd_deletelvl(char * UNUSED(cmd), char * arg)
 
     char levelname[256];
     saprintf(levelname, "%s", lvlarg);
-    if (!perm_level_check(levelname, 1))
+    if (!perm_level_check(levelname, 1, 0))
         return;
 
     char fixedname[MAXLEVELNAMELEN*4], buf2[256], buf3[256], lvlname[MAXLEVELNAMELEN+1];

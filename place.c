@@ -62,8 +62,11 @@ can_place_block(block_t blk)
 {
     if (level_prop->disallowchange || blk >= BLOCKMAX)
 	return 0;
-    if ((level_prop->blockdef[blk].block_perm&1) != 0)
+    if ((level_prop->blockdef[blk].block_perm&1) != 0) {
+	if (perm_level_check(0, 0, 1))
+	    return 1;
         return 0;
+    }
     if (server->cpe_disabled) {
 	if (blk == Block_Grass || blk == Block_DoubleSlab || blk >= Block_CP)
 	    return 0;
@@ -80,8 +83,11 @@ can_delete_block(block_t blk)
 {
     if (level_prop->disallowchange)
 	return 0;
-    if ((level_prop->blockdef[blk].block_perm&2) != 0)
+    if ((level_prop->blockdef[blk].block_perm&2) != 0) {
+	if (perm_level_check(0, 0, 1))
+	    return 1;
         return 0;
+    }
     if (server->cpe_disabled) {
 	if (!server->op_flag && !perm_is_admin() && blk == Block_Bedrock)
 	    return 0;

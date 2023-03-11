@@ -15,12 +15,13 @@ int client_trusted = 0;
 /* Does user have extended permissions for "levelname"
  */
 int
-perm_level_check(char * levelname, int expand_plus)
+perm_level_check(char * levelname, int expand_plus, int quiet)
 {
     if (levelname == 0) {
 	if (level_prop && level_blocks && expand_plus == 0) levelname = current_level_name;
 	else {
-	    printf_chat("&WPermission denied on current level");
+	    if (!quiet)
+		printf_chat("&WPermission denied on current level");
 	    return 0;
 	}
     }
@@ -36,12 +37,14 @@ perm_level_check(char * levelname, int expand_plus)
     // TODO: Levels with list of users who can access.
 
     if (!perm_is_admin()) {
-	if (*userlevel)
-	    printf_chat("&WPermission denied, your level name is '%s'", userlevel);
-	else if (levelname == current_level_name)
-	    printf_chat("&WYou do not have permission for level \"%s\"", levelname);
-	else
-	    printf_chat("&WPermission denied");
+	if (!quiet) {
+	    if (*userlevel)
+		printf_chat("&WPermission denied, your level name is '%s'", userlevel);
+	    else if (levelname == current_level_name)
+		printf_chat("&WYou do not have permission for level \"%s\"", levelname);
+	    else
+		printf_chat("&WPermission denied");
+	}
         return 0;
     }
     return 1;
