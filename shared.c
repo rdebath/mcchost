@@ -585,6 +585,8 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
     uintptr_t sz;
     void * shm_p;
     int shared_fd = -1;
+    struct timeval start;
+    gettimeofday(&start, 0);
 
     // size_t for mmap and off_t for posix_fallocate
     assert((size_t)share_size > 0 && (off_t)share_size > 0);
@@ -641,6 +643,13 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
     shm->ptr = shm_p;
     shm->len = sz;
     shm->lock_fd = shared_fd;
+
+    struct timeval now;
+    gettimeofday(&now, 0);
+    double ms = (now.tv_sec-start.tv_sec)*1000.0+(now.tv_usec-start.tv_usec)/1000.0;
+    if (ms > 100.0)
+	printlog("WARNING: Mapping of \"%s\" took %s is it on a local filesystem?",
+	    share_name, conv_ms_a(ms));
 
     return 0;
 }

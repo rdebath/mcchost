@@ -36,6 +36,11 @@ Other notes
     -- /setvar user username var value ?
     -- /setvar with no section to level and system sections.
 
+    -- /map command aliases ?
+    -- /blockprops command aliases ?
+    -- /lb command aliases ?
+    -- /os command aliases ?
+
  +) /restore /resizelvl
     -- Backup overwritten level (if dirty)
     -- Create as new map so I don't have to do read locks.

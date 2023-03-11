@@ -112,6 +112,10 @@ send_map_file()
 
     send_hack_control();
 
+    reset_textureurl(); // Normal dirt texture on load screen.
+    if (level_prop->texname.c[0])
+	send_textureurl(); // Texture for New map on load screen.
+
     send_lvlinit_pkt(level_len);
 
     send_block_definitions();
@@ -508,9 +512,19 @@ send_textureurl()
     if (!extn_envmapaspect) return;
     // We define the textures based on block definitions.
     // If client doesn't have blockdefs they can't properly use our textures.
+    // TODO: If no blockdefs skip this check ?
     if (!extn_blockdefn) return;
 
     send_textureurl_pkt(&level_prop->texname);
+}
+
+void
+reset_textureurl()
+{
+    if (!extn_envmapaspect || !extn_blockdefn) return;
+
+    nbtstr_t nil = {0};
+    send_textureurl_pkt(&nil);
 }
 
 void
