@@ -16,7 +16,7 @@ struct ini_state_t {
     uint8_t write;	// Set to write fields
     uint8_t quiet;	// Don't comment to the remote (use stderr)
     uint8_t no_unsafe;	// Disable protected fields
-    uint8_t looped;
+    uint8_t looped_read;
 };
 
 typedef struct textcolour_t textcolour_t;
@@ -54,6 +54,7 @@ Character set of file is UTF8
 userrec_t * user_ini_tgt = 0;
 server_ini_t * server_ini_tgt = 0;
 textcolour_t textcolour[256];
+map_info_t * level_ini_tgt = 0;
 
 int
 system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
@@ -211,6 +212,9 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     char *section = "", *fld;
     int found = 0;
 
+    map_info_t *tgt = level_prop;
+    if (level_ini_tgt) tgt = level_ini_tgt;
+
     // When writing include a copy of some system stuff.
     // Skip it quietly on read.
     if (st->write) {
@@ -219,7 +223,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAYCP437("Name", server->name);
 	INI_STRARRAYCP437("Motd", server->motd);
 	INI_STRARRAYCP437("Level", current_level_name);
-	INI_TIME_T("TimeCreated", level_prop->time_created);
+	INI_TIME_T("TimeCreated", tgt->time_created);
 
     } else if (st->curr_section && strcmp("source", st->curr_section) == 0)
 	return 1;
@@ -228,9 +232,9 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
 	if (!st->no_unsafe) {
-	    INI_INTVAL("Size.X", level_prop->cells_x);
-	    INI_INTVAL("Size.Y", level_prop->cells_y);
-	    INI_INTVAL("Size.Z", level_prop->cells_z);
+	    INI_INTVAL("Size.X", tgt->cells_x);
+	    INI_INTVAL("Size.Y", tgt->cells_y);
+	    INI_INTVAL("Size.Z", tgt->cells_z);
 	} else {
 	    int x = 0, y = 0, z = 0;	// Ignore these fields without comment.
 	    INI_INTVAL("Size.X", x);
@@ -238,58 +242,58 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_INTVAL("Size.Z", z);
 	}
 
-	INI_STRARRAYCP437("Motd", level_prop->motd);
-	INI_STRARRAYCP437("Name", level_prop->name);
-	INI_STRARRAYCP437("Software", level_prop->software);
-	INI_STRARRAYCP437("Theme", level_prop->theme);
-	INI_STRARRAYCP437("Seed", level_prop->seed);
+	INI_STRARRAYCP437("Motd", tgt->motd);
+	INI_STRARRAYCP437("Name", tgt->name);
+	INI_STRARRAYCP437("Software", tgt->software);
+	INI_STRARRAYCP437("Theme", tgt->theme);
+	INI_STRARRAYCP437("Seed", tgt->seed);
 	if (!st->write)
-	    INI_TIME_T("TimeCreated", level_prop->time_created);
+	    INI_TIME_T("TimeCreated", tgt->time_created);
 
-	INI_FIXEDP("Spawn.X", level_prop->spawn.x, 32);
-	INI_FIXEDP("Spawn.Y", level_prop->spawn.y, 32);
-	INI_FIXEDP("Spawn.Z", level_prop->spawn.z, 32);
-	INI_FIXEDP2("Spawn.H", level_prop->spawn.h, 256, 360);
-	INI_FIXEDP2("Spawn.V", level_prop->spawn.v, 256, 360);
+	INI_FIXEDP("Spawn.X", tgt->spawn.x, 32);
+	INI_FIXEDP("Spawn.Y", tgt->spawn.y, 32);
+	INI_FIXEDP("Spawn.Z", tgt->spawn.z, 32);
+	INI_FIXEDP2("Spawn.H", tgt->spawn.h, 256, 360);
+	INI_FIXEDP2("Spawn.V", tgt->spawn.v, 256, 360);
 
-	INI_FIXEDP("ClickDistance", level_prop->click_distance, 32);
+	INI_FIXEDP("ClickDistance", tgt->click_distance, 32);
 
-	if (!st->write || level_prop->mcg_physics_blocks)
-	    INI_INTVAL("MCGalaxyPhysicsBlocks", level_prop->mcg_physics_blocks);
+	if (!st->write || tgt->mcg_physics_blocks)
+	    INI_INTVAL("MCGPhysicsBlocks", tgt->mcg_physics_blocks);
 
-	INI_INTHEX("HacksFlags", level_prop->hacks_flags);
-	INI_INTVAL("HacksJump", level_prop->hacks_jump);
+	INI_INTHEX("HacksFlags", tgt->hacks_flags);
+	INI_INTVAL("HacksJump", tgt->hacks_jump);
 
-	INI_NBTSTR("Texture", level_prop->texname);
-	INI_INTVAL("WeatherType", level_prop->weather);
+	INI_NBTSTR("Texture", tgt->texname);
+	INI_INTVAL("WeatherType", tgt->weather);
 
-	INI_INTHEX("SkyColour", level_prop->sky_colour);
-	INI_INTHEX("CloudColour", level_prop->cloud_colour);
-	INI_INTHEX("FogColour", level_prop->fog_colour);
-	INI_INTHEX("AmbientColour", level_prop->ambient_colour);
-	INI_INTHEX("SunlightColour", level_prop->sunlight_colour);
-	INI_INTHEX("SkyboxColour", level_prop->skybox_colour);
+	INI_INTHEX("SkyColour", tgt->sky_colour);
+	INI_INTHEX("CloudColour", tgt->cloud_colour);
+	INI_INTHEX("FogColour", tgt->fog_colour);
+	INI_INTHEX("AmbientColour", tgt->ambient_colour);
+	INI_INTHEX("SunlightColour", tgt->sunlight_colour);
+	INI_INTHEX("SkyboxColour", tgt->skybox_colour);
 
-	INI_INTVAL("SideBlock", level_prop->side_block);
-	INI_INTVAL("EdgeBlock", level_prop->edge_block);
-	INI_INTVAL("SideLevel", level_prop->side_level);
-	INI_INTVAL("SideOffset", level_prop->side_offset);
+	INI_INTVAL("SideBlock", tgt->side_block);
+	INI_INTVAL("EdgeBlock", tgt->edge_block);
+	INI_INTVAL("SideLevel", tgt->side_level);
+	INI_INTVAL("SideOffset", tgt->side_offset);
 
-	INI_INTVAL("CloudHeight", level_prop->clouds_height);
-	INI_INTVAL("MaxFog", level_prop->max_fog);
+	INI_INTVAL("CloudHeight", tgt->clouds_height);
+	INI_INTVAL("MaxFog", tgt->max_fog);
 
-	INI_FIXEDP("CloudsSpeed", level_prop->clouds_speed, 256);
-	INI_FIXEDP("WeatherSpeed", level_prop->weather_speed, 256);
-	INI_FIXEDP("WeatherFade", level_prop->weather_fade, 128);
-	INI_INTVAL("ExpFog", level_prop->exp_fog);
-	INI_FIXEDP("SkyboxHorSpeed", level_prop->skybox_hor_speed, 1024);
-	INI_FIXEDP("SkyboxVerSpeed", level_prop->skybox_ver_speed, 1024);
+	INI_FIXEDP("CloudsSpeed", tgt->clouds_speed, 256);
+	INI_FIXEDP("WeatherSpeed", tgt->weather_speed, 256);
+	INI_FIXEDP("WeatherFade", tgt->weather_fade, 128);
+	INI_INTVAL("ExpFog", tgt->exp_fog);
+	INI_FIXEDP("SkyboxHorSpeed", tgt->skybox_hor_speed, 1024);
+	INI_FIXEDP("SkyboxVerSpeed", tgt->skybox_ver_speed, 1024);
     }
 
-    if (!found && !st->write && !st->looped) {
-	st->looped = 1;
+    if (!found && !st->write && !st->looped_read) {
+	st->looped_read = 1;
 	found = mcc_level_ini_fields(st, fieldname, fieldvalue);
-	st->looped = 0;
+	st->looped_read = 0;
     }
 
     int bn = 0;
@@ -297,8 +301,8 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     do
     {
 	if (st->all) {
-	    if (!level_prop->blockdef[bn].defined &&
-		level_prop->blockdef[bn].block_perm == 0) { bn++; continue; }
+	    if (!tgt->blockdef[bn].defined &&
+		tgt->blockdef[bn].block_perm == 0) { bn++; continue; }
 	    sprintf(sectionbuf, "block.%d", bn);
 	    section = sectionbuf;
 	} else {
@@ -310,7 +314,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 		if (bn < 0 || bn >= BLOCKMAX) break;
 		sprintf(sectionbuf, "block.%d", bn);
 		section = sectionbuf;
-		level_prop->blockdef[bn].defined = 1;
+		tgt->blockdef[bn].defined = 1;
 	    } else
 		break;
 	}
@@ -318,51 +322,53 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	int tf = found;
 	found = 0;
 
-	if (level_prop->blockdef[bn].defined || !st->write) {
-	    INI_BOOLVAL(WC("Defined"), level_prop->blockdef[bn].defined);
-	    INI_BOOLVAL(WC("NoSave"), level_prop->blockdef[bn].no_save);
-	    INI_NBTSTR("Name", level_prop->blockdef[bn].name);
-	    INI_INTVAL("Collide", level_prop->blockdef[bn].collide);
-	    INI_BOOLVAL("TransmitsLight", level_prop->blockdef[bn].transmits_light);
-	    INI_INTVAL("WalkSound", level_prop->blockdef[bn].walksound);
-	    INI_BOOLVAL("FullBright", level_prop->blockdef[bn].fullbright);
-	    int shape = !level_prop->blockdef[bn].shape;
+	if ( !st->write ||
+	     (tgt->blockdef[bn].defined && !tgt->blockdef[bn].no_save)
+	) {
+	    INI_BOOLVAL(WC("Defined"), tgt->blockdef[bn].defined);
+	    INI_BOOLVAL(WC("NoSave"), tgt->blockdef[bn].no_save);
+	    INI_NBTSTR("Name", tgt->blockdef[bn].name);
+	    INI_INTVAL("Collide", tgt->blockdef[bn].collide);
+	    INI_BOOLVAL("TransmitsLight", tgt->blockdef[bn].transmits_light);
+	    INI_INTVAL("WalkSound", tgt->blockdef[bn].walksound);
+	    INI_BOOLVAL("FullBright", tgt->blockdef[bn].fullbright);
+	    int shape = !tgt->blockdef[bn].shape;
 	    INI_BOOLVAL("Shape", shape);
-	    level_prop->blockdef[bn].shape = shape?0:16;
-	    INI_INTVAL("Draw", level_prop->blockdef[bn].draw);
-	    INI_FIXEDP("Speed", level_prop->blockdef[bn].speed, 1024);
-	    INI_BLKVAL("Fallback", level_prop->blockdef[bn].fallback);
-	    INI_INTVAL("Texture.Top", level_prop->blockdef[bn].textures[0]);
-	    INI_INTVAL("Texture.Left", level_prop->blockdef[bn].textures[1]);
-	    INI_INTVAL("Texture.Right", level_prop->blockdef[bn].textures[2]);
-	    INI_INTVAL("Texture.Front", level_prop->blockdef[bn].textures[3]);
-	    INI_INTVAL("Texture.Back", level_prop->blockdef[bn].textures[4]);
-	    INI_INTVAL("Texture.Bottom", level_prop->blockdef[bn].textures[5]);
-	    INI_INTVAL("Fog.Den", level_prop->blockdef[bn].fog[0]);
-	    INI_INTVAL("Fog.R", level_prop->blockdef[bn].fog[1]);
-	    INI_INTVAL("Fog.G", level_prop->blockdef[bn].fog[2]);
-	    INI_INTVAL("Fog.B", level_prop->blockdef[bn].fog[3]);
-	    INI_INTVAL("Min.X", level_prop->blockdef[bn].coords[0]);
-	    INI_INTVAL("Min.Y", level_prop->blockdef[bn].coords[1]);
-	    INI_INTVAL("Min.Z", level_prop->blockdef[bn].coords[2]);
-	    INI_INTVAL("Max.X", level_prop->blockdef[bn].coords[3]);
-	    INI_INTVAL("Max.Y", level_prop->blockdef[bn].coords[4]);
-	    INI_INTVAL("Max.Z", level_prop->blockdef[bn].coords[5]);
+	    tgt->blockdef[bn].shape = shape?0:16;
+	    INI_INTVAL("Draw", tgt->blockdef[bn].draw);
+	    INI_FIXEDP("Speed", tgt->blockdef[bn].speed, 1024);
+	    INI_BLKVAL("Fallback", tgt->blockdef[bn].fallback);
+	    INI_INTVAL("Texture.Top", tgt->blockdef[bn].textures[0]);
+	    INI_INTVAL("Texture.Left", tgt->blockdef[bn].textures[1]);
+	    INI_INTVAL("Texture.Right", tgt->blockdef[bn].textures[2]);
+	    INI_INTVAL("Texture.Front", tgt->blockdef[bn].textures[3]);
+	    INI_INTVAL("Texture.Back", tgt->blockdef[bn].textures[4]);
+	    INI_INTVAL("Texture.Bottom", tgt->blockdef[bn].textures[5]);
+	    INI_INTVAL("Fog.Den", tgt->blockdef[bn].fog[0]);
+	    INI_INTVAL("Fog.R", tgt->blockdef[bn].fog[1]);
+	    INI_INTVAL("Fog.G", tgt->blockdef[bn].fog[2]);
+	    INI_INTVAL("Fog.B", tgt->blockdef[bn].fog[3]);
+	    INI_INTVAL("Min.X", tgt->blockdef[bn].coords[0]);
+	    INI_INTVAL("Min.Y", tgt->blockdef[bn].coords[1]);
+	    INI_INTVAL("Min.Z", tgt->blockdef[bn].coords[2]);
+	    INI_INTVAL("Max.X", tgt->blockdef[bn].coords[3]);
+	    INI_INTVAL("Max.Y", tgt->blockdef[bn].coords[4]);
+	    INI_INTVAL("Max.Z", tgt->blockdef[bn].coords[5]);
 
-	    INI_BOOLVAL("FastFallFlag", level_prop->blockdef[bn].fastfall_flag);
+	    INI_BOOLVAL("FastFallFlag", tgt->blockdef[bn].fastfall_flag);
 
-	    INI_BLKVAL("StackBlock", level_prop->blockdef[bn].stack_block);
-	    INI_BLKVAL("GrassBlock", level_prop->blockdef[bn].grass_block);
-	    INI_BLKVAL("DirtBlock", level_prop->blockdef[bn].dirt_block);
-	    INI_BLKVAL("Order", level_prop->blockdef[bn].inventory_order);
+	    INI_BLKVAL("StackBlock", tgt->blockdef[bn].stack_block);
+	    INI_BLKVAL("GrassBlock", tgt->blockdef[bn].grass_block);
+	    INI_BLKVAL("DirtBlock", tgt->blockdef[bn].dirt_block);
+	    INI_BLKVAL("Order", tgt->blockdef[bn].inventory_order);
 	}
-	if (found && !st->write) level_prop->blockdef_generation++;
+	if (found && !st->write) tgt->blockdef_generation++;
 	found |= tf;
 
-	if (level_prop->blockdef[bn].block_perm || !st->write) {
-	    INI_BLKVAL("Permission", level_prop->blockdef[bn].block_perm);
-	    if (!level_prop->blockdef[bn].defined && st->write)
-		INI_BOOLVAL("Defined", level_prop->blockdef[bn].defined);
+	if (!st->write || (tgt->blockdef[bn].block_perm && !tgt->blockdef[bn].no_save)) {
+	    INI_BLKVAL("Permission", tgt->blockdef[bn].block_perm);
+	    if (!tgt->blockdef[bn].defined && st->write)
+		INI_BOOLVAL("Defined", tgt->blockdef[bn].defined);
 	}
 
 	bn++;
@@ -372,7 +378,7 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     do
     {
 	if (st->all) {
-	    if (!level_prop->cuboid[cn].defined) { cn++; continue; }
+	    if (!tgt->cuboid[cn].defined) { cn++; continue; }
 	    sprintf(sectionbuf, "cuboid.%d", cn);
 	    section = sectionbuf;
 	} else {
@@ -383,21 +389,21 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 		if (cn < 0 || cn >= MAX_CUBES) break;
 		sprintf(sectionbuf, "cuboid.%d", cn);
 		section = sectionbuf;
-		level_prop->cuboid[cn].defined = 1;
+		tgt->cuboid[cn].defined = 1;
 	    } else
 		break;
 	}
 
-	INI_BOOLVAL(WC("Defined"), level_prop->cuboid[cn].defined);
-	INI_NBTSTR("Label", level_prop->cuboid[cn].name);
-	INI_INTVAL("Start.X", level_prop->cuboid[cn].start_x);
-	INI_INTVAL("Start.Y", level_prop->cuboid[cn].start_y);
-	INI_INTVAL("Start.Z", level_prop->cuboid[cn].start_z);
-	INI_INTVAL("End.X", level_prop->cuboid[cn].end_x);
-	INI_INTVAL("End.Y", level_prop->cuboid[cn].end_y);
-	INI_INTVAL("End.Z", level_prop->cuboid[cn].end_z);
-	INI_INTHEX("Colour", level_prop->cuboid[cn].colour);
-	INI_INTVAL("Opacity", level_prop->cuboid[cn].opacity);
+	INI_BOOLVAL(WC("Defined"), tgt->cuboid[cn].defined);
+	INI_NBTSTR("Label", tgt->cuboid[cn].name);
+	INI_INTVAL("Start.X", tgt->cuboid[cn].start_x);
+	INI_INTVAL("Start.Y", tgt->cuboid[cn].start_y);
+	INI_INTVAL("Start.Z", tgt->cuboid[cn].start_z);
+	INI_INTVAL("End.X", tgt->cuboid[cn].end_x);
+	INI_INTVAL("End.Y", tgt->cuboid[cn].end_y);
+	INI_INTVAL("End.Z", tgt->cuboid[cn].end_z);
+	INI_INTHEX("Colour", tgt->cuboid[cn].colour);
+	INI_INTVAL("Opacity", tgt->cuboid[cn].opacity);
 
 	cn++;
     } while(st->all && cn < MAX_CUBES);
@@ -411,46 +417,55 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     char *section = "", *fld;
     int found = 0;
 
+    if (st->looped_read && st->write) return 0; // Nope!
+
+    // Info commands use level_ini_tgt
+    map_info_t nil_tgt[0], *tgt = level_prop;
+    if (level_ini_tgt) tgt = level_ini_tgt;
+
+    // These are read/written on iload/isave, in the level.ini and info cmds.
     section = "level";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
-	INI_BOOLVAL("NoUnload", level_prop->no_unload);
-	INI_BOOLVAL("ReadOnly", level_prop->readonly);
-	INI_BOOLVAL("DisallowChange", level_prop->disallowchange);
-	INI_BOOLVAL("ResetHotbar", level_prop->reset_hotbar);
-	INI_BOOLVAL("LevelChat", level_prop->level_chat);
+	INI_BOOLVAL("NoUnload", tgt->no_unload);
+	INI_BOOLVAL("ReadOnly", tgt->readonly);
+	INI_BOOLVAL("DisallowChange", tgt->disallowchange);
+	INI_BOOLVAL("ResetHotbar", tgt->reset_hotbar);
+	INI_BOOLVAL("LevelChat", tgt->level_chat);
+	INI_TIME_T("LastBackup", tgt->last_backup);
+
 	if (!st->write)
-	    INI_BOOLVAL("DirtySave", level_prop->dirty_save);
-	if (!st->write || level_prop->mcg_physics_blocks)
-	    INI_BOOLVAL("MCGPhysicsBlock", level_prop->mcg_physics_blocks);
-
-	INI_TIME_T("LastBackup", level_prop->last_backup);
-
-	if (!st->looped && !st->no_unsafe) {
-	    // These items are normally only written to the level.ini file.
-	    // Placed here for /*info commands.
-	    INI_TIME_T("TimeCreated", level_prop->time_created);
-	    INI_TIME_T("LastModified", level_prop->last_modified);
-	    INI_INTVAL("Size.X", level_prop->cells_x);
-	    INI_INTVAL("Size.Y", level_prop->cells_y);
-	    INI_INTVAL("Size.Z", level_prop->cells_z);
-	} else if (!st->looped) {
-	    time_t dummy1 = 0; int dummy2 = 0;
-	    INI_TIME_T("TimeCreated", dummy1);
-	    INI_TIME_T("LastModified", dummy1);
-	    INI_INTVAL("Size.X", dummy2);
-	    INI_INTVAL("Size.Y", dummy2);
-	    INI_INTVAL("Size.Z", dummy2);
-	}
+	    INI_BOOLVAL("DirtySave", tgt->dirty_save);
 
 	// TODO: Owner.
-
     }
 
-    if (!found && !st->write && !st->looped) {
-	st->looped = 1;
+    if (!st->write) tgt = nil_tgt;
+    if (level_ini_tgt) tgt = level_ini_tgt;
+
+    // These are only written to the level.ini and used by info load
+    section = "level";
+    if (st->all || strcmp(section, st->curr_section) == 0)
+    {
+	map_info_t *utgt = tgt;
+
+	if (st->no_unsafe || st->looped_read) tgt = nil_tgt;
+	INI_TIME_T("TimeCreated", tgt->time_created);
+	INI_TIME_T("LastModified", tgt->last_modified);
+	INI_INTVAL("Size.X", tgt->cells_x);
+	INI_INTVAL("Size.Y", tgt->cells_y);
+	INI_INTVAL("Size.Z", tgt->cells_z);
+
+	INI_STRARRAYCP437("Software", tgt->software);
+	INI_STRARRAYCP437("Theme", tgt->theme);
+	INI_STRARRAYCP437("Seed", tgt->seed);
+	tgt = utgt;
+    }
+
+    if (!found && !st->write && !st->looped_read) {
+	st->looped_read = 1;
 	found = level_ini_fields(st, fieldname, fieldvalue);
-	st->looped = 0;
+	st->looped_read = 0;
     }
 
     return found;

@@ -53,6 +53,8 @@ Other notes
  +) /fill
  +) /tree -- Only Notch variant ?
 
+ +) On /defblk of block used for edge or horizon need to redefine those.
+
  +) Exponential backups.
 
  +) UserType() { return group.Blocks[Block.Bedrock] ? 100 : 0; }

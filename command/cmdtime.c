@@ -55,7 +55,11 @@ detect_timezone()
 	return;
     }
 
-    // See also: http://ip-api.com/json/8.8.8.8
+    // https://ipapi.co/ratelimited/
+    // Rate problems with https://ipapi.co/%s/utc_offset
+
+    // See also: http://ip-api.com/line/8.8.8.8?fields=offset
+
     char buf[256];
     sprintf(buf, "curl -s -f -m 2 https://ipapi.co/%s/utc_offset", my_user.last_ip);
     FILE * fd = popen(buf, "r");

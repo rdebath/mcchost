@@ -301,9 +301,7 @@ send_queued_blocks()
 	reload_pending = 0;
 	if (perm_is_admin()) {	// Message for admin only
 	    if (check_block_queue(1))
-		printf_chat("Reset block queue and reload");
-	    else
-		printf_chat("Reloading");
+		printf_chat("Resetting block queue and reload");
 	}
 	send_map_file();
 	return;

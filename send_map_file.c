@@ -49,6 +49,8 @@ static uint8_t tex16_def[BLOCKMAX];
 xyz_t void_map_size = {1,1,1};
 xyz_t classic_map_offset = {0,0,0};
 
+static nbtstr_t last_send_texture;
+
 // Convert from Map block numbers to ones the client will understand.
 block_t
 f_block_convert(block_t in)
@@ -112,9 +114,16 @@ send_map_file()
 
     send_hack_control();
 
-    reset_textureurl(); // Normal dirt texture on load screen.
-    if (level_prop->texname.c[0])
-	send_textureurl(); // Texture for New map on load screen.
+    if (level_prop->texname.c[0]) {
+	// If textures are same keep for load screen
+	if (strcmp(last_send_texture.c, level_prop->texname.c) != 0)
+#ifdef DOUBLE_DOWNLOAD
+	    send_textureurl(); // Texture for New map on load screen.
+#else
+	    reset_textureurl(); // Normal dirt texture on load screen.
+#endif
+    } else if (level_prop->texname.c[0] != 0)
+	reset_textureurl(); // Normal dirt texture on load screen.
 
     send_lvlinit_pkt(level_len);
 
@@ -516,6 +525,7 @@ send_textureurl()
     if (!extn_blockdefn) return;
 
     send_textureurl_pkt(&level_prop->texname);
+    last_send_texture = level_prop->texname;
 }
 
 void

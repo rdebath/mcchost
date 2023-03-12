@@ -196,7 +196,7 @@ cmd_setvar(char * UNUSED(cmd), char * arg)
 	    return;
 
 	int ro = level_prop->readonly;
-	st->looped = 1;
+	st->looped_read = 1;
 
 	if (level_ini_fields(st, varname, &value)) {
 	    if (level_prop->readonly && !ro && current_level_backup_id == 0) {
