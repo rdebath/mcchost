@@ -58,6 +58,9 @@ detect_timezone()
     // https://ipapi.co/ratelimited/
     // Rate problems with https://ipapi.co/%s/utc_offset
 
+    // http://ipinfo.io/
+    // UTC offset ?
+
     // See also: http://ip-api.com/line/8.8.8.8?fields=offset
 
     char buf[256];

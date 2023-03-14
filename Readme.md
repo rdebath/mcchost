@@ -17,7 +17,20 @@ Alternatively, the `Dockerfile` can be used to create an image of the repository
 
 Other Unix derived OS's should be possible if the dependancies (ZLib, LMDB) are available. Note if `pthread_mutex.c` fails to compile or gives the error `Lockfile "system/system.lock" failed with EINVAL`, add the option `PTHREAD=` or delete `pthread_mutex.c`, recompiled and try again. (For example FreeBSD's pthread locking does not work)
 
-If LMDB is not available (and `userrecord.c` is removed) certain command will fail to work correctly.
+If LMDB is not available (and disabled with `make DEFS='-DDISABLE_LMDB' LIBLMDB=`) certain command will fail to work correctly.
+
+<!--
+Normal
+$ make install
+$ mcchost-server -tcp -detach -saveconf
+$ mcchost-server
+
+FreeBSD
+$ gmake
+
+macosx 11.4.2
+$ make DEFS='-DDISABLE_LMDB' LIBLMDB= WARN=-w PTHREAD= -j install
+-->
 
 Starting your server
 ---

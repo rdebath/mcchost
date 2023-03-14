@@ -177,38 +177,61 @@ cmd_sinfo(char * UNUSED(cmd), char * UNUSED(arg))
 }
 
 void
-cmd_minfo(char * UNUSED(cmd), char * UNUSED(arg))
+cmd_minfo(char * UNUSED(cmd), char * arg)
 {
-    time_t now = time(0);
-    if (!level_prop) {
+    int backup_id = current_level_backup_id;
+    char * level_name = current_level_name;
+    map_info_t * prop = level_prop;
+    map_info_t prop_dat[1];
+
+    if (arg[0]) {
+	prop_dat[0] = (map_info_t){0};
+
+	backup_id = 0;
+	level_name = arg;
+	prop = prop_dat;
+
+	char fixname[MAXLEVELNAMELEN*4];
+	char ini_name[MAXLEVELNAMELEN*4];
+	fix_fname(fixname, sizeof(fixname), level_name);
+	saprintf(ini_name, LEVEL_INI_NAME, fixname);
+
+	level_ini_tgt = prop_dat;
+	int l = load_ini_file(mcc_level_ini_fields, ini_name, 1, 0);
+	level_ini_tgt = 0;
+	if (l < 0) {
+	    printf_chat("Level \"%s\" not found (%d)", level_name, l);
+	    return;
+	}
+    }
+
+    if (!prop) {
 	printf_chat("&WThe void is eternal and unknowable");
 	return;
     }
 
-    if (current_level_backup_id > 0)
+    if (backup_id > 0)
 	printf_chat("&TAbout &WMuseum&S (&7%s %d&S): &SWidth=%d Height=%d Length=%d",
-	    current_level_name, current_level_backup_id,
-	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
-    else if (current_level_backup_id == 0)
+	    level_name, backup_id, prop->cells_x, prop->cells_y, prop->cells_z);
+    else if (backup_id == 0)
 	printf_chat("&TAbout &7%s&S: &SWidth=%d Height=%d Length=%d",
-	    current_level_name, level_prop->cells_x,
-	    level_prop->cells_y, level_prop->cells_z);
+	    level_name, prop->cells_x, prop->cells_y, prop->cells_z);
     else
 	printf_chat("&WAbout %s&S: &SWidth=%d Height=%d Length=%d",
-	    current_level_name, level_prop->cells_x,
-	    level_prop->cells_y, level_prop->cells_z);
+	    level_name, prop->cells_x, prop->cells_y, prop->cells_z);
 
+    time_t now = time(0);
     char timebuf[256], timebuf2[256];
-    if (level_prop->time_created == 0)
+    if (prop->time_created == 0)
 	strcpy(timebuf, " (unknown)");
     else
-	conv_duration(timebuf, now-level_prop->time_created);
+	conv_duration(timebuf, now-prop->time_created);
 
     int last_bkp = -1;
     time_t last_backup_time = 0;
     {
 	char fixname[MAXLEVELNAMELEN*4];
-	fix_fname(fixname, sizeof(fixname), current_level_name);
+	fix_fname(fixname, sizeof(fixname), level_name);
 	last_bkp = find_recent_backup(fixname, &last_backup_time);
     }
     char bkp_msg[512];
@@ -220,8 +243,8 @@ cmd_minfo(char * UNUSED(cmd), char * UNUSED(arg))
     }
 
     printf_chat("  Created%s ago, %s", timebuf, bkp_msg);
-    if (level_prop->motd[0])
-	printf_chat("  MOTD: &b%s", level_prop->motd);
+    if (prop->motd[0])
+	printf_chat("  MOTD: &b%s", prop->motd);
     else
 	printf_chat("  MOTD: &Wignore");
 
