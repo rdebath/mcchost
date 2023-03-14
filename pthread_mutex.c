@@ -189,15 +189,26 @@ lock_start_try(filelock_t * ln)
 	    continue;
 	}
 
-	int doclose = 1;
+	int rv = 0, doclose = 1;
 
 	// Write the mutex to the file
-	int rv = write(fd, &lock0, sizeof(lock0));
-	rv = -(rv != sizeof(lock0));
+	if (rv == 0) {
+	    int rv = write(fd, &lock0, sizeof(lock0));
+	    rv = -(rv != sizeof(lock0));
+	}
 	if (rv == 0)
 	    rv = close(fd);
 	if (rv == 0)
 	    doclose = 0;
+	if (rv == 0) {
+	    struct stat st = {0};
+	    if (stat(tmpfile, &st) >= 0) {
+		if ((st.st_mode & S_IWOTH) != 0) {
+		    fprintf(stderr, "Lock creation failed: %s\n", ln->name);
+		    rv = -1;
+		}
+	    }
+	}
 	if (rv == 0)
 	    rv = link(tmpfile, ln->name);
 
