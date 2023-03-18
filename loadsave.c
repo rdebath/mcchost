@@ -408,14 +408,9 @@ scan_and_save_levels(int do_timed_save)
 void
 save_level_ini(char * level_fname)
 {
-    char buf[256], ini_file[256];
-    saprintf(buf, LEVEL_TMPINI_NAME, level_fname);
+    char ini_file[256];
     saprintf(ini_file, LEVEL_INI_NAME, level_fname);
-    if (save_ini_file(mcc_level_ini_fields, buf, ini_file) >= 0) {
-        if (rename(buf, ini_file) < 0)
-            perror("rename ${level}.ini file");
-    }
-    (void)unlink(buf);
+    save_ini_file(mcc_level_ini_fields, ini_file);
 }
 
 LOCAL void

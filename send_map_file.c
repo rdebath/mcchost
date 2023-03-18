@@ -645,7 +645,12 @@ send_block_definitions()
     block_t newmax = 0;
     for(block_t b = 0; b<client_block_limit; b++)
     {
-	if (!level_prop || !level_prop->blockdef[b].defined) {
+	if (!level_prop && b == Block_Bedrock) {
+	    newmax = b+1;
+	    blockdef_t def = default_blocks[Block_Bedrock];
+	    def.collide = 0;
+	    send_defineblock_pkt(b, &def);
+	} else if (!level_prop || !level_prop->blockdef[b].defined) {
 	    if (b<max_defined_block)
 		send_removeblockdef_pkt(b);
 	} else {

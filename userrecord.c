@@ -46,7 +46,7 @@ write_userrec(userrec_t * userrec, int ini_too)
 	saprintf(userini, USER_INI_NAME, user_key);
 
 	user_ini_tgt = userrec;
-	save_ini_file(user_ini_fields, userini, 0);
+	save_ini_file(user_ini_fields, userini);
 	user_ini_tgt = 0;
 	userrec->ini_dirty = 0;
     }

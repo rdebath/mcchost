@@ -523,23 +523,12 @@ save_system_ini_file()
     // inetd_mode = ini_settings->inetd_mode;
     // server_runonce = ini_settings->server_runonce;
 
-    char buf[256];
-    saprintf(buf, SERVER_CONF_TMP, getpid());
-    if (save_ini_file(system_ini_fields, buf, SERVER_CONF_NAME) >= 0) {
-        if (rename(buf, SERVER_CONF_NAME) < 0)
-            perror("rename server.ini");
-    }
-    unlink(buf);
+    save_ini_file(system_ini_fields, SERVER_CONF_NAME);
 
     if (ini_settings->use_port_specific_file) {
 	char buf[256];
 	saprintf(buf, SERVER_CONF_PORT, tcp_port_no);
-	char tbuf[256];
-	saprintf(tbuf, SERVER_CONF_TMP, getpid());
 
-	if (save_ini_file(system_x_ini_fields, tbuf, buf) >= 0) {
-	    if (rename(tbuf, buf) < 0)
-		perror("rename server.$port.ini");
-	}
+	save_ini_file(system_x_ini_fields, buf);
     }
 }

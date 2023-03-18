@@ -54,7 +54,7 @@ cmd_cmdset(char * UNUSED(cmd), char * arg)
 void
 save_cmdset()
 {
-    save_ini_file(cmdset_ini_fields, CMDSET_CONF_NAME, 0);
+    save_ini_file(cmdset_ini_fields, CMDSET_CONF_NAME);
     cmd_payload_t msg = {0};
     saprintf(msg.arg.c, "Permission update");
     msg.cmd_token = cmd_token_loadperm;

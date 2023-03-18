@@ -420,7 +420,7 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     if (st->looped_read && st->write) return 0; // Nope!
 
     // Info commands use level_ini_tgt
-    map_info_t nil_tgt[0], *tgt = level_prop;
+    map_info_t nil_tgt[1], *tgt = level_prop;
     if (level_ini_tgt) tgt = level_ini_tgt;
 
     // These are read/written on iload/isave, in the level.ini and info cmds.
@@ -430,9 +430,9 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_BOOLVAL("NoUnload", tgt->no_unload);
 	INI_BOOLVAL("ReadOnly", tgt->readonly);
 	INI_BOOLVAL("DisallowChange", tgt->disallowchange);
+	INI_TIME_T("LastBackup", tgt->last_backup);
 	INI_BOOLVAL("ResetHotbar", tgt->reset_hotbar);
 	INI_BOOLVAL("LevelChat", tgt->level_chat);
-	INI_TIME_T("LastBackup", tgt->last_backup);
 
 	if (!st->write)
 	    INI_BOOLVAL("DirtySave", tgt->dirty_save);
@@ -440,8 +440,7 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	// TODO: Owner.
     }
 
-    if (!st->write) tgt = nil_tgt;
-    if (level_ini_tgt) tgt = level_ini_tgt;
+    if (st->write) fprintf(st->fd, "\n");
 
     // These are only written to the level.ini and used by info load
     section = "level";
@@ -449,9 +448,12 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     {
 	map_info_t *utgt = tgt;
 
+	if (!st->write && !level_ini_tgt) tgt = nil_tgt;
 	if (st->no_unsafe || st->looped_read) tgt = nil_tgt;
+
 	INI_TIME_T("TimeCreated", tgt->time_created);
 	INI_TIME_T("LastModified", tgt->last_modified);
+	INI_TIME_T("LastLoaded", tgt->last_loaded);
 	INI_INTVAL("Size.X", tgt->cells_x);
 	INI_INTVAL("Size.Y", tgt->cells_y);
 	INI_INTVAL("Size.Z", tgt->cells_z);
@@ -459,6 +461,7 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAYCP437("Software", tgt->software);
 	INI_STRARRAYCP437("Theme", tgt->theme);
 	INI_STRARRAYCP437("Seed", tgt->seed);
+	INI_NBTSTR("Texture", tgt->texname);
 	tgt = utgt;
     }
 
@@ -548,19 +551,26 @@ cmdset_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 }
 
 int
-save_ini_file(ini_func_t filetype, char * filename, char * oldfilename)
+save_ini_file(ini_func_t filetype, char * filename)
 {
     ini_state_t st = (ini_state_t){.all=1, .write=1};
+    int l = strlen(filename), do_ren = 0;
     char * comment_data = 0;
-    if (!oldfilename) oldfilename = filename;
-    FILE * fd = fopen(oldfilename, "r");
+    char * nbuf = malloc(l + sizeof(pid_t)*3+10);
+    strcpy(nbuf, filename);
+    if (l > 4 && strcmp(nbuf+l-4, ".ini") == 0) {
+	sprintf(nbuf+l-4, ".%d.tmp", getpid());
+	do_ren = 1;
+    }
+    FILE * fd = fopen(filename, "r");
     if (fd) {
 	comment_data = read_comment_data(fd);
 	fclose(fd);
     }
-    st.fd = fopen(filename, "w");
+    st.fd = fopen(nbuf, "w");
     if (!st.fd) {
-	perror(filename);
+	perror(nbuf);
+	free(nbuf);
 	return -1;
     }
     if (comment_data) {
@@ -570,6 +580,13 @@ save_ini_file(ini_func_t filetype, char * filename, char * oldfilename)
     filetype(&st,0,0);
     fclose(st.fd);
     if (st.curr_section) free(st.curr_section);
+    if (do_ren) {
+      if (rename(nbuf, filename) < 0)
+	  perror(nbuf);
+      unlink(nbuf);
+    }
+
+    free(nbuf);
     return 0;
 }
 

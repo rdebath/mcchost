@@ -49,6 +49,7 @@ struct map_info_t {
     uint32_t blockdef_generation;
     time_t time_created;	// Map initial creation time
     time_t last_modified;	// Time of last block or metadata change
+    time_t last_loaded;		// Time the map was last loaded
     time_t last_backup;		// last write to backup directory
 
     uint8_t uuid[16];

@@ -67,7 +67,7 @@ cmd_isave(char * UNUSED(cmd), char * arg)
 	return;
     }
 
-    save_ini_file(level_ini_fields, buf2, 0);
+    save_ini_file(level_ini_fields, buf2);
 
     printf_chat("#&SConfig saved to %s", buf2);
 }

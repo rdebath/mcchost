@@ -87,8 +87,10 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
     if (*ini_name) {
 	if (access(ini_name, F_OK) == 0)
 	    load_ini_file(mcc_level_ini_fields, ini_name, 1, 1);
-	else if (backup_id == 0)
-	    save_ini_file(mcc_level_ini_fields, ini_name, 0);
+	if (backup_id == 0) {
+	    level_prop->last_loaded = time(0);
+	    save_ini_file(mcc_level_ini_fields, ini_name);
+	}
     }
 
     if (level_prop && level_prop->time_created == 0) {
