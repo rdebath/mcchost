@@ -294,6 +294,7 @@ post_chat(int where, int to_id, int type, char * chat, int chat_len)
  * Prefix format with '@' to broadcast.
  * Prefix format with '#' for UTF-8
  * Prefix format with '#@' to broadcast UTF-8
+ * Prefix format with ';' to save for next chat
  * Prefix format with '\\' to quote a prefix.
  * Prefix format with '(11)' to choose message type
  * Prefix format with '~' for '%' -> '&' conversion.
@@ -306,8 +307,10 @@ post_chat(int where, int to_id, int type, char * chat, int chat_len)
 void printf_chat_w
 printf_chat(char * fmt, ...)
 {
+static char * saved_buffer = 0;
+
     char pbuf[16<<10];
-    int to = -1, utf8 = 0, type = 0, percamp = 0;
+    int to = -1, utf8 = 0, type = 0, percamp = 0, save_it = 0;
     char *f = fmt;
     va_list ap;
     va_start(ap, fmt);
@@ -315,6 +318,7 @@ printf_chat(char * fmt, ...)
 	if (*f == '#') { f++, utf8 = 1; }
 	else if (*f == '@') { f++, to = 0; }
 	else if (*f == '~') { f++, percamp = 1; }
+	else if (*f == ';') { f++, save_it = 1; }
 	else if (*f == '(') {
 	    f++;
 	    type = atoi(f);
@@ -345,5 +349,21 @@ printf_chat(char * fmt, ...)
 
     if (utf8)
 	convert_to_cp437(pbuf, &l);
-    post_chat(to, 0, type, pbuf, l);
+
+    if (save_it || saved_buffer) {
+	int ol = (saved_buffer?strlen(saved_buffer):0); 
+	char * np = malloc(l+ol+1);
+	memcpy(np, saved_buffer, ol);
+	memcpy(np+ol, pbuf, l);
+	np[ol+l] = 0;
+	if (saved_buffer) free(saved_buffer);
+	if (save_it) {
+	    saved_buffer = np;
+	} else {
+	    saved_buffer = 0;
+	    post_chat(to, 0, type, np, ol+l);
+	    free(np);
+	}
+    } else
+	post_chat(to, 0, type, pbuf, l);
 }

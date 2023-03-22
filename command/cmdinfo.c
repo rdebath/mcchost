@@ -45,17 +45,21 @@ cmd_info(char * UNUSED(cmd), char * arg)
 void
 show_user_info(userrec_t *user)
 {
-    int is_me = 0;
+    int is_me = 0, is_level_adm = 0;
     if (strcmp(user->user_id, user_id) == 0) {
 	is_me = 1;
+	if (perm_level_check(0, 0, 1))
+	    is_level_adm = 1;
 	if (current_level_backup_id == 0)
-	    printf_chat("%s is on %s at &a(%d,%d,%d)",
+	    printf_chat("%s is on %s at &a(%d,%d,%d)%s",
 		user->user_id, current_level_name,
-		player_posn.x/32, player_posn.y/32, player_posn.z/32);
+		player_posn.x/32, player_posn.y/32, player_posn.z/32,
+		is_level_adm?"&S, level admin":"");
 	else if (current_level_backup_id>0)
-	    printf_chat("%s is on museum &a%d&S of %s at &a(%d,%d,%d)",
+	    printf_chat("%s is on museum &a%d&S of %s at &a(%d,%d,%d)%s",
 		user->user_id, current_level_backup_id, current_level_name,
-		player_posn.x/32, player_posn.y/32, player_posn.z/32);
+		player_posn.x/32, player_posn.y/32, player_posn.z/32,
+		is_level_adm?"&S, level admin":"");
 	else
 	    printf_chat("%s is nowhere.", user->user_id);
     } else {
@@ -93,7 +97,12 @@ show_user_info(userrec_t *user)
 	}
     }
 
-    printf_chat(" Has written &a%jd&S messages", (intmax_t)user->message_count);
+    char *perm_str = "unknown";
+    if (user->user_group >= 0 && user->user_group < USER_PERM_CNT)
+	perm_str = user_perms[user->user_group];
+
+    printf_chat("; Rank of %s", perm_str);
+    printf_chat(", wrote &a%jd&S messages", (intmax_t)user->message_count);
 
     printf_chat(" Modified &a%jd&S\377blocks, &a%jd&S\377placed, &a%jd&S\377drawn, &a%jd&S\377deleted",
 	(intmax_t)user->blocks_placed + user->blocks_deleted + user->blocks_drawn,
