@@ -42,11 +42,13 @@ struct server_t {
     time_t afk_interval;
     time_t afk_kick_interval;
 
-    int flag_log_commands;
-    int flag_log_place_commands;
-    int flag_log_chat;
+    uint8_t flag_log_commands;
+    uint8_t flag_log_place_commands;
+    uint8_t flag_log_chat;
 
-    int allow_user_levels;
+    uint8_t allow_user_levels;
+    uint8_t all_levels_owned;
+
     int player_update_ms;
 
     int block_spam_count;

@@ -110,6 +110,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_DURATION("AFKInterval", server->afk_interval);
 	INI_DURATION("AFKKickInterval", server->afk_kick_interval);
 	INI_BOOLVAL("AllowUserLevels", server->allow_user_levels);
+	INI_BOOLVAL("AllLevelsOwned", server->all_levels_owned);
 	INI_INTVAL("PlayerUpdateMS", server->player_update_ms);
 	INI_DURATION("IPConnectDelay", server->ip_connect_delay);
 
@@ -433,11 +434,11 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_TIME_T("LastBackup", tgt->last_backup);
 	INI_BOOLVAL("ResetHotbar", tgt->reset_hotbar);
 	INI_BOOLVAL("LevelChat", tgt->level_chat);
+	INI_BOOLVAL("OtherUserOp", tgt->other_user_op);
+	INI_STRARRAY("LevelOwnerList", tgt->op_user_list);
 
 	if (!st->write)
 	    INI_BOOLVAL("DirtySave", tgt->dirty_save);
-
-	// TODO: Owner.
     }
 
     if (st->write) fprintf(st->fd, "\n");
@@ -630,7 +631,13 @@ load_ini_file(ini_func_t filetype, char * filename, int quiet, int no_unsafe)
 	return -1;
     }
 
-    char ibuf[BUFSIZ];
+    char ibuf[BUFSIZ], *p = ibuf;
+    *ibuf = 0;
+
+    // Mark the start of the load to free INI_STRPTR items.
+    st.curr_section = strdup("#");
+    (void)filetype(&st, "#", &p);
+
     while(fgets(ibuf, sizeof(ibuf), ifd)) {
 	int v;
 	if ((v=load_ini_line(&st, filetype, ibuf)) != 0) {
@@ -810,6 +817,22 @@ ini_read_nbtstr(nbtstr_t * buf, char *value)
 }
 
 LOCAL void
+ini_write_strptr(ini_state_t *st, char * section, char *fieldname, char **value)
+{
+    ini_write_section(st, section);
+    char * s = value?*value:"";
+    fprintf(st->fd, "%s =%s%s\n", fieldname, *s?" ":"", s);
+}
+
+LOCAL void
+ini_read_strptr(char ** buf, char *value)
+{
+    if (!buf) return;
+    if (*buf) free(*buf);
+    *buf = strdup(value);
+}
+
+LOCAL void
 ini_write_intmax(ini_state_t *st, char * section, char *fieldname, intmax_t value)
 {
     ini_write_section(st, section);
@@ -974,6 +997,18 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 ini_read_nbtstr(&(_var), *fieldvalue); \
             else \
                 ini_write_nbtstr(st, section, fld, &(_var)); \
+        } \
+    }while(0)
+
+#define INI_STRPTR(_field, _var) \
+    do{\
+        fld = _field; \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                ini_read_strptr(_var, *fieldvalue); \
+            else \
+                ini_write_strptr(st, section, fld, _var); \
         } \
     }while(0)
 

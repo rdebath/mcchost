@@ -38,13 +38,17 @@ struct map_info_t {
     int last_map_download_size;
 
     // Do we want/need to backup/save/update ?
-    int force_save;
-    int readonly;
-    int disallowchange;	// even if readonly, you can change the working map.
-    int no_unload;
+    uint8_t force_save;
+    uint8_t readonly;
+    uint8_t disallowchange;	// even if readonly, you can change the working map.
+    uint8_t no_unload;
 
-    int dirty_save;
-    int mcg_physics_blocks;
+    uint8_t dirty_save;
+    uint8_t mcg_physics_blocks;
+
+    uint8_t other_user_op;
+    char op_user_list[MB_STRLEN*4+1];
+
     uint32_t metadata_generation;
     uint32_t blockdef_generation;
     time_t time_created;	// Map initial creation time

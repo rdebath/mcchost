@@ -4,7 +4,7 @@
 /*HELP newlvl H_CMD
 &T/newlvl name [width height length] [theme] [seed]
 Create a new level, if size is not set it uses the default.
-The name "+" is a shorthand for your personal level.
+The name "+" is a shorthand for your personal level which will be named after your user name with an "+" appended.
 
 Themes are flat, general, plain, pixel, empty, space, rainbow
 Seed is:
