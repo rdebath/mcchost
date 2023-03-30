@@ -46,7 +46,7 @@ add_strlist(char * list, int l, char * entry)
     if (strlen(list) + strlen(entry) + 2 > l) return -1;
     if (in_strlist(list, entry)) return 0;
 
-    strcat(list, ",");
+    if (*list) strcat(list, ",");
     strcat(list, entry);
     return 1;
 }

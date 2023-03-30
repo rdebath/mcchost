@@ -816,6 +816,7 @@ ini_read_nbtstr(nbtstr_t * buf, char *value)
     *buf = t;
 }
 
+#if 0
 LOCAL void
 ini_write_strptr(ini_state_t *st, char * section, char *fieldname, char **value)
 {
@@ -831,6 +832,7 @@ ini_read_strptr(char ** buf, char *value)
     if (*buf) free(*buf);
     *buf = strdup(value);
 }
+#endif
 
 LOCAL void
 ini_write_intmax(ini_state_t *st, char * section, char *fieldname, intmax_t value)
@@ -1000,6 +1002,7 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
         } \
     }while(0)
 
+#if 0
 #define INI_STRPTR(_field, _var) \
     do{\
         fld = _field; \
@@ -1011,6 +1014,7 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 ini_write_strptr(st, section, fld, _var); \
         } \
     }while(0)
+#endif
 
 #define INI_INTVAL(_field, _var) \
     do{\

@@ -650,6 +650,11 @@ send_block_definitions()
 	    blockdef_t def = default_blocks[Block_Bedrock];
 	    def.collide = 0;
 	    send_defineblock_pkt(b, &def);
+	} else if (!level_prop && b == Block_StillWater) {
+	    newmax = b+1;
+	    blockdef_t def = default_blocks[Block_StillWater];
+	    def.fog[0] = 0; def.fog[1] = 0; def.fog[2] = 0; def.fog[3] = 0;
+	    send_defineblock_pkt(b, &def);
 	} else if (!level_prop || !level_prop->blockdef[b].defined) {
 	    if (b<max_defined_block)
 		send_removeblockdef_pkt(b);
