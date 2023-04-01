@@ -48,7 +48,11 @@ static struct ext_list_t extensions[] = {
     { N"InstantMOTD",         1, &extn_instantmotd },
 
     { N"ExtendedTextures",    1, &extn_extendtexno, .nolate=1 },
+#ifdef EIGHTBITMAP
+    { N"ExtendedBlocks",      1, .disabled=1 },
+#else
     { N"ExtendedBlocks",      1, &extn_extendblockno, .nolate=1 },
+#endif
     { N"FastMap",             1, &extn_fastmap, .nolate=1 },
 
     { N"SetHotbar",           1, &extn_sethotbar },
@@ -145,6 +149,7 @@ void
 process_extentry(pkt_extentry * pkt)
 {
     int enabled_extension = 0;
+    int disabled_extension = 0;
 
     if (classicube[classicube_match_len] &&
 	strcmp(classicube[classicube_match_len], pkt->extname) == 0)
@@ -172,7 +177,8 @@ process_extentry(pkt_extentry * pkt)
 	// haven't advertised them.
 	if (extensions[i].disabled) {
 	    //printlog("Not enabling extension %s", extensions[i].name);
-	    return;
+	    disabled_extension = 1;
+	    break;
 	}
 	// printlog("Enable extension %s", extensions[i].name);
 
@@ -182,7 +188,7 @@ process_extentry(pkt_extentry * pkt)
 	    *extensions[i].enabled_flag = 1;
     }
 
-    if (!enabled_extension && (pkt->version || pkt->extname[0]))
+    if (!enabled_extension && (pkt->version || pkt->extname[0]) && !disabled_extension)
 	printlog("Unknown extension %s:%d", pkt->extname, pkt->version);
 
     if (!customblock_pkt_sent && extn_customblocks) {

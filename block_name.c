@@ -15,7 +15,7 @@ block_name(block_t block)
 	if (level_prop->blockdef[block].name.c[0])
 	    n = level_prop->blockdef[block].name.c;
 
-    if (block < Block_CPE)
+    if (n == 0 && block < Block_CPE)
 	if (default_blocks[block].name.c[0])
 	    n = default_blocks[block].name.c;
 

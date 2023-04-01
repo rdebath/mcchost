@@ -44,7 +44,7 @@ struct shmem_t {
 typedef struct shared_data_t shared_data_t;
 struct shared_data_t {
     map_info_t *prop;
-    block_t *blocks;
+    map_block_t *blocks;
     block_queue_t* blockq;
     client_data_t *client;
 

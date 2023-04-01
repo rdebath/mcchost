@@ -19,6 +19,8 @@ Other Unix derived OS's should be possible if the dependancies (ZLib, LMDB) are 
 
 If LMDB is not available (and disabled with `make DEFS='-DDISABLE_LMDB' LIBLMDB=`) certain command will fail to work correctly.
 
+By default the server supports 10bit block numbers to reduce the uncompressed map size, and client memory allocation, this can be limited to 8 bits by the define `EIGHTBITMAP` add this in the `DEFS` variable in the form `make DEFS='-DEIGHTBITMAP'`.
+
 <!--
 Normal
 $ make install

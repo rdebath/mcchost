@@ -8,6 +8,11 @@
 #define World_Pack(x, y, z) (((y) * (uintptr_t)level_prop->cells_z + (z)) * level_prop->cells_x + (x))
 
 typedef uint16_t block_t;
+#ifdef EIGHTBITMAP
+#define map_block_t uint8_t
+#else
+#define map_block_t block_t
+#endif
 
 typedef struct xyz_t xyz_t;
 struct xyz_t { int x, y, z; };

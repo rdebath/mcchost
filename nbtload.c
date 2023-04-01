@@ -378,7 +378,16 @@ read_blockarray2(gzFile ifd, uint32_t len)
     for(int i=0; i<len; i++) {
 	uint32_t ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
+#ifdef EIGHTBITMAP
+	block_t b = (level_blocks[i] & 0x00FF) + (ch<<8);
+	if (b > 255 && b < BLOCKMAX) {
+	    block_t nb = level_prop->blockdef[b].fallback;
+	    if (nb < 255) b = nb; else b = Block_Bedrock;
+	}
+	level_blocks[i] = b;
+#else
 	level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
+#endif
     }
     return 1;
 }
@@ -394,8 +403,17 @@ read_blockarray3(gzFile ifd, uint32_t len)
     for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
-	if (ch)
-	    level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
+	if (ch == 0) continue;
+#ifdef EIGHTBITMAP
+	block_t b = (level_blocks[i] & 0x00FF) + (ch<<8);
+	if (b > 255 && b < BLOCKMAX) {
+	    block_t nb = level_prop->blockdef[b].fallback;
+	    if (nb < 255) b = nb; else b = Block_Bedrock;
+	}
+	level_blocks[i] = b;
+#else
+	level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
+#endif
     }
     return 1;
 }
@@ -417,8 +435,13 @@ read_blockarray_physics(gzFile ifd, uint32_t len)
     for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
+#ifdef EIGHTBITMAP
+	if (ch)
+	    level_blocks[i] = mcg_physics[ch];
+#else
 	if (ch)
 	    level_blocks[i] = ch + MCG_PHYSICS_0FFSET;
+#endif
     }
     return 1;
 }
