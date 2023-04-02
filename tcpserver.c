@@ -528,9 +528,8 @@ cleanup_zombies()
     // Clean up any zombies.
     int status = 0, pid;
     child_sig = 0;
-    char msgbuf[256];
-    char userid[64];
-    int died_badly = 0, unclean_disconnect = 0, client_process_finished = 0;
+    int client_process_finished = 0;
+    char * id = 0;
 
     while ((pid = waitpid(-1, &status, WNOHANG)) != 0)
     {
@@ -540,12 +539,12 @@ cleanup_zombies()
 	    perror("waitpid()");
 	    exit(1);
 	}
-	*userid = *msgbuf = 0;
 
 	if (pid == logger_pid) {
 	    // Whup! that's our stderr! Try to respawn it.
 	    printlog("Attempting to restart logger process");
 	    logger_process();
+	    id = " (logger)";
 	} else
 	if (pid == heartbeat_pid) {
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
@@ -555,92 +554,22 @@ cleanup_zombies()
 	    heartbeat_pid = 0;
 
 	    log_heartbeat_response();
+	    id = " (heartbeat)";
 	} else
 	if (pid == backup_pid) {
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		printlog("Backup and unload process %d failed", pid);
 	    backup_pid = 0;
 	    if (restart_on_unload) last_execheck = time(0) - 300;
+	    id = " (saved)";
 	} else {
 	    client_process_finished++;
 	    if (server->connected_sessions == 0)
 		last_execheck = time(0) - FREQUENT_CHECK+1;
+	    id = " (user)";
 	}
 
-	// No complaints on clean exit
-	if (WIFEXITED(status)) {
-	    if (WEXITSTATUS(status)) {
-		printlog("Process %d had exit status %d",
-		    pid, WEXITSTATUS(status));
-		saprintf(msgbuf,
-		    "kicked by panic with exit status %d",
-		    WEXITSTATUS(status));
-	    }
-
-	    died_badly = delete_session_id(pid, userid, sizeof(userid));
-	}
-	if (WIFSIGNALED(status)) {
-#if _POSIX_C_SOURCE >= 200809L
-	    printlog("Process %d was killed by signal %s (%d)%s",
-		pid,
-		strsignal(WTERMSIG(status)),
-		WTERMSIG(status),
-		WCOREDUMP_X(status)?" (core dumped)":"");
-
-	    saprintf(msgbuf,
-		"kicked by signal %s (%d)%s",
-		strsignal(WTERMSIG(status)),
-		WTERMSIG(status),
-		WCOREDUMP_X(status)?" (core dumped)":"");
-#else
-	    printlog("Process %d was killed by signal %d %s",
-		pid,
-		WTERMSIG(status),
-		WCOREDUMP_X(status)?" (core dumped)":"");
-
-	    saprintf(msgbuf,
-		"kicked by signal %d %s",
-		WTERMSIG(status),
-		WCOREDUMP_X(status)?" (core dumped)":"");
-#endif
-
-	    died_badly = delete_session_id(pid, userid, sizeof(userid));
-	    if (WTERMSIG(status) == SIGPIPE) {
-		unclean_disconnect = died_badly;
-		died_badly = 0;
-	    }
-
-	    // If there was a core dump try to spit out something.
-	    if (WCOREDUMP_X(status)) {
-		char buf[1024];
-
-		// Are the programs and core file likely okay?
-		int pgmok = 0;
-		if (program_args[0][0] == '/' || strchr(program_args[0], '/') == 0)
-		    pgmok = 1;
-		if (pgmok && access("core", F_OK) != 0)
-		    pgmok = 0;
-		if (pgmok && access("/usr/bin/gdb", X_OK) != 0)
-		    pgmok = 0;
-
-		if (pgmok && sizeof(buf) > snprintf(buf, sizeof(buf),
-		    "/usr/bin/gdb -batch -ex 'backtrace full' -c core '%s'", program_args[0]))
-		    system(buf);
-		else
-		    printlog("Skipped running /usr/bin/gdb; checking exe and core files failed.");
-	    }
-	}
-
-	if (*userid && *msgbuf) {
-	    if (died_badly) {
-		printf_chat("@&W- &7%s: &W%s", userid, msgbuf);
-		stop_chat_queue();
-	    }
-	    if (unclean_disconnect) {
-		printf_chat("@&W- &7%s &S%s", userid, "disconnected");
-		stop_chat_queue();
-	    }
-	}
+	process_status_message(status, pid, id);
 
 	if (client_process_finished)
 	    trigger_unload = 1;
@@ -676,14 +605,10 @@ run_timer_tasks()
 	pid_t pid = waitpid(-1, &status, 0);
 	if (pid == logger_pid || pid == -1) break;
 
-	char * id = pid==heartbeat_pid?"(heartbeat)":pid==backup_pid?"(backup)":"?";
+	char * id = pid==heartbeat_pid?" (heartbeat)":pid==backup_pid?" (backup)":" ?";
 
-	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-	    printlog("Process %d %s exited with status %d",
-		pid, id, WEXITSTATUS(status));
-	else if (WIFSIGNALED(status))
-	    printlog("Process %d %s was killed by signal %d%s",
-		pid, id, WTERMSIG(status), WCOREDUMP_X(status)?" (core dumped)":"");
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+            process_status_message(status, pid, id);
 
 	if (pid == heartbeat_pid) heartbeat_pid = 0;
 	if (pid == backup_pid) backup_pid = 0;

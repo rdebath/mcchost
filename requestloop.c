@@ -199,6 +199,8 @@ on_select_timeout()
 
     if (player_lockout>0) player_lockout--;
 
+    check_waitpid();
+
     time(&now);
     int secs = ((now-last_ping) & 0xFF);
     if (secs > tc) {
