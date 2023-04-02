@@ -16,7 +16,7 @@ cmd_cmdset(char * UNUSED(cmd), char * arg)
     char * str2 = strtok(0, "");
 
     int group = INT_MIN;
-    for(int i = 0; i<USER_PERM_CNT; i++) {
+    for(int i = 0; i<CMD_PERM_CNT; i++) {
         if (str2 && strcasecmp(cmd_perms[i], str2) == 0) {
             group = i;
             break;
@@ -25,7 +25,7 @@ cmd_cmdset(char * UNUSED(cmd), char * arg)
     if (group < 0) {
         char pbuf[256];
         sprintf(pbuf, "&WPermission '%s' is unknown, valid are: ", str2?str2:"");
-        for(int i = 0; i<USER_PERM_CNT; i++) {
+        for(int i = 0; i<CMD_PERM_CNT; i++) {
             if(i) strcat(pbuf, ", ");
             strcat(pbuf, cmd_perms[i]);
         }

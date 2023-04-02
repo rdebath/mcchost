@@ -2,8 +2,8 @@
 #include "commands.h"
 
 #if INTERFACE
-enum perm_token { perm_token_none, perm_token_admin, perm_token_level };
-#define CMD_PERM_CNT 3
+enum perm_token { perm_token_none, perm_token_admin, perm_token_level, perm_token_disabled };
+#define CMD_PERM_CNT 4
 
 #define CMD_PERM_ADMIN  .perm_okay=perm_token_admin		/* System admin */
 #define CMD_PERM_LEVEL  .perm_okay=perm_token_level		/* Level owner */
@@ -29,7 +29,7 @@ struct command_limit_t {
 
 command_limit_t command_limits = {400};
 
-char * cmd_perms[CMD_PERM_CNT] = { "user", "admin", "level" };
+char * cmd_perms[CMD_PERM_CNT] = { "user", "admin", "level", "disabled" };
 
 void
 run_command(char * msg)
@@ -79,6 +79,9 @@ run_command(char * msg)
 	while(c>0 && command_list[c].dup && !command_list[c].nodup &&
 	    command_list[c].function == command_list[c-1].function)
 	    c--;
+
+	if (command_list[c].perm_okay == perm_token_disabled)
+	    continue;
 
 	char * ncmd = command_list[c].name;
 
@@ -180,6 +183,8 @@ cmd_commands(char * UNUSED(cmd), char * UNUSED(arg))
 	    continue;
 	if (command_list[i].perm_okay == perm_token_admin &&
 	    !perm_is_admin())
+	    continue;
+	if (command_list[i].perm_okay == perm_token_disabled)
 	    continue;
 
 	int l = strlen(command_list[i].name);
