@@ -22,7 +22,7 @@ cmd_sethotbar(char * cmd, char * arg)
     block_t block = Block_Air;
     reset_hotbar_on_mapload = 0;
 
-    if (strcasecmp("clearhotbar", cmd) == 0) {
+    if (!level_prop || strcasecmp("clearhotbar", cmd) == 0) {
 	for(int id = 0; id<9; id++)
 	    send_sethotbar_pkt(id, block);
 	return;

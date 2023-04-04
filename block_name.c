@@ -11,7 +11,7 @@ block_name(block_t block)
     if (block >= BLOCKMAX || (server->cpe_disabled && block >= Block_CP))
 	return "Invalid Block";
 
-    if (level_prop->blockdef[block].defined)
+    if (level_prop && level_prop->blockdef[block].defined)
 	if (level_prop->blockdef[block].name.c[0])
 	    n = level_prop->blockdef[block].name.c;
 
@@ -58,12 +58,13 @@ block_id(char * name)
 	    return b;
     }
 
-    for(int i=0; i < BLOCKMAX; i++) {
-	if (!level_prop->blockdef[i].defined) continue;
-	if (!level_prop->blockdef[i].name.c[0]) continue;
-	if (block_name_match(bnb, level_prop->blockdef[i].name.c))
-	    return i;
-    }
+    if (level_prop)
+	for(int i=0; i < BLOCKMAX; i++) {
+	    if (!level_prop->blockdef[i].defined) continue;
+	    if (!level_prop->blockdef[i].name.c[0]) continue;
+	    if (block_name_match(bnb, level_prop->blockdef[i].name.c))
+		return i;
+	}
 
 #ifdef OLDBLOCKNAMES
     for(int i=0; oldblock_names[i]; i++)

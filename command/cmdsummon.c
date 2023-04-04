@@ -22,11 +22,7 @@ cmd_summon(char * UNUSED(cmd), char *arg)
     if (uid < 0) return;
 
     int on_level = shdat.client->user[my_user_no].on_level;
-    if (on_level < 0 || on_level >= MAX_LEVEL) {
-	printf_chat("&SSummoning into the void doesn't work");
-	return;
-    }
-    if (!player_posn.valid || player_on_new_level) {
+    if (on_level < 0 || on_level >= MAX_LEVEL || !player_posn.valid || player_on_new_level) {
 	printf_chat("&SI can't find you");
 	return;
     }

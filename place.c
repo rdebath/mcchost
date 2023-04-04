@@ -60,7 +60,7 @@ char * mark_cmd_arg = 0;
 int
 can_place_block(block_t blk)
 {
-    if (level_prop->disallowchange || blk >= BLOCKMAX)
+    if (!level_prop || level_prop->disallowchange || blk >= BLOCKMAX)
 	return 0;
     if ((level_prop->blockdef[blk].block_perm&1) != 0) {
 	if (perm_level_check(0, 0, 1))

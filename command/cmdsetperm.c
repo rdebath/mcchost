@@ -15,15 +15,6 @@ Use "add" to add the user to "owners" for current level
 Use "del" to remove the user from list
 */
 
-#if INTERFACE
-#define USER_PERM_ADMIN	0
-#define USER_PERM_USER	1
-#define USER_PERM_SUPER	2
-#define USER_PERM_CNT	3
-#endif
-
-char * user_perms[USER_PERM_CNT] = { "admin", "user", "super" };
-
 void
 cmd_setperm(char * UNUSED(cmd), char *arg)
 {

@@ -70,7 +70,7 @@ cmd_tp(char * cmd, char *arg)
 	    lvl = shdat.client->levels[c.on_level];
 
 	if (!lvl.loaded || lvl.backup_id < 0) {
-	    printf_chat("&WUser %s is lost in the void", c.name.c);
+	    cmd_void("",0);
 	    return;
 	}
 

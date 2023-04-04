@@ -25,11 +25,18 @@ typedef struct command_limit_t command_limit_t;
 struct command_limit_t {
     int max_user_blocks;
 };
+
+#define USER_PERM_ADMIN	0
+#define USER_PERM_USER	1
+#define USER_PERM_SUPER	2
+#define USER_PERM_CNT	3
 #endif
 
 command_limit_t command_limits = {400};
 
 char * cmd_perms[CMD_PERM_CNT] = { "user", "admin", "level", "disabled" };
+
+char * user_perms[USER_PERM_CNT] = { "admin", "user", "super" };
 
 void
 run_command(char * msg)

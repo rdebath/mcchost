@@ -63,7 +63,7 @@ cmd_pass(char * cmd, char * arg)
     testing_just_set_password = 0;
     user_authenticated = 1;
 
-    if (reopen) open_main_level();
+    if (reopen || !level_prop) open_main_level();
 }
 
 void
