@@ -98,7 +98,7 @@ f_block_convert(block_t in)
 }
 
 void
-send_map_file()
+send_map_file(int reload)
 {
     if (extn_instantmotd)
 	send_system_ident();
@@ -138,6 +138,15 @@ send_map_file()
 	send_padded_block_array();
 
     send_metadata();
+
+    if (!reload && level_prop->announce_motd && level_prop->motd[0]) {
+	char *p, announce[MB_STRLEN*2+1];
+	strcpy(announce, level_prop->motd);
+	// Usual to try to hide -hax headings.
+	if ((p = strstr(announce, "&0")) != 0) *p = 0;
+	printf_chat("~(100)%s", announce);
+    }
+
     reset_player_list();
 }
 

@@ -128,7 +128,10 @@ open_level_files(char * level_name, int backup_id, char * cw_name, char * fixnam
 
     saprintf(sharename, LEVEL_LOCK_NAME, fixname);
     level_lock->name = strdup(sharename);
-    if (!lock_start_try(level_lock)) return;
+    if (!lock_start_try(level_lock)) {
+	fprintf_logfile("Unable to lock level %s", level_name);
+	return;
+    }
 
     saprintf(sharename, LEVEL_BLOCKS_NAME, fixname);
     del_on_err = access(sharename, F_OK);
@@ -169,8 +172,10 @@ open_level_files(char * level_name, int backup_id, char * cw_name, char * fixnam
 	    ok = (load_map_from_file(cw_name, fixname, level_name, backup_id) >= 0);
 	    // If the cw extraction fails we don't want to use anything
 	    // else as overwriting it might be bad.
-	    if (!ok)
+	    if (!ok) {
+		printlog("Load of level map file \"%s\" failed", cw_name);
 		goto open_failed;
+	    }
 
 	    if (access(cw_name, W_OK) != 0) {
 		printlog("Loaded read only map \"%s\"", cw_name);

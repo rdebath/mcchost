@@ -65,8 +65,9 @@ struct map_info_t {
     uint8_t hacks_flags;
     int16_t hacks_jump;
 
-    int reset_hotbar;
-    int level_chat;
+    uint8_t reset_hotbar;
+    uint8_t level_chat;
+    uint8_t announce_motd;
 
     // Init together til side_offset.
     uint8_t weather;

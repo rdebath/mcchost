@@ -303,7 +303,7 @@ send_queued_blocks()
 	    if (check_block_queue(1))
 		printf_chat("Resetting block queue and reload");
 	}
-	send_map_file();
+	send_map_file(1);
 	return;
     }
 

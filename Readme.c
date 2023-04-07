@@ -17,20 +17,14 @@ Other notes
 /*HELP todo
  +) NoUnloadMain ($level.NoUnload ?) keeps filesystem access going when idle.
 
- +) Option to show MOTD as announce on map load.
-    -- Classic 0.30 ?
-
  +) Login Whitelist ?
     -- Only Admin login ?
-
- +) Change level load so that unpack is done in by forked process and the user(s) are then summoned.
-    -- For resizelvl and restore at least.
 
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat ?
 
- +) Message blocks and portals don't need physics.
+ +) Message blocks and portals don't need physics process.
 
  +) Improve the /setvar command, more help, option lists.
     -- /setvar user username var value ?
@@ -41,10 +35,13 @@ Other notes
     -- /lb command aliases ?
     -- /os command aliases ?
 
+ +) On /defblk of block used for edge or horizon need to redefine those.
+
  +) /restore /resizelvl
     -- Backup overwritten level (if dirty)
     -- Create as new map so I don't have to do read locks.
-    -- Summon users to new level id ?
+    -- Process is done by forked process
+    -- Summon users to new level id
 
  +) /sendcmd
  +) /summon
@@ -53,9 +50,8 @@ Other notes
  +) /fill
  +) /tree -- Only Notch variant ?
 
- +) On /defblk of block used for edge or horizon need to redefine those.
-
- +) Exponential backups.
+ +) Exponential backups. (Delete old backups using +50% rule)
+    for i in 2^k ; if file$i and file$(i*1.5) exist rm file $i
 
  +) UserType() { return group.Blocks[Block.Bedrock] ? 100 : 0; }
 
@@ -122,7 +118,7 @@ Other notes
  +) lmdb appears with Debian jessie, do I want a fallback ?
 
  +) Crash catcher restarts server process without dropping connection.
-    -- Don't work with web client.
+    -- Don't work with web client (unless proxy).
 
 All files in subdirectories.
     // Real data files.

@@ -434,6 +434,7 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_TIME_T("LastBackup", tgt->last_backup);
 	INI_BOOLVAL("ResetHotbar", tgt->reset_hotbar);
 	INI_BOOLVAL("LevelChat", tgt->level_chat);
+	INI_BOOLVAL("AnnounceMotd", tgt->announce_motd);
 	INI_BOOLVAL("OtherUserOp", tgt->other_user_op);
 	INI_STRARRAY("LevelOwnerList", tgt->op_user_list);
 

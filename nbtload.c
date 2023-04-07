@@ -81,12 +81,14 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
 	if (!try_asciimode(ifd, level_fname, filename, (uint64_t)st.st_mtime)) {
 	    printlog("Level file \"%s\" NBT and INI load failed.", filename);
 	    cw_loaded = -1;
-	} else
+	} else {
+	    printlog("Level file \"%s\" loaded as INI.", filename);
 	    cw_loaded = 1;
+	}
     }
 
     int rv = gzclose(ifd);
-    if (rv) printlog("Load '%s' failed error Z%d", filename, rv);
+    if (rv) printlog("Load '%s' failed error (gzclose) Z%d", filename, rv);
     if (cw_loaded != 1)
 	return -1;
 
@@ -217,11 +219,11 @@ read_element(gzFile ifd, int etype)
 	    ;
 	else if (len > sizeof(bin_buf)) {
 	    for(i=0; i<len; i++) {
-		if ((ch = gzgetc(ifd)) == EOF) return 0;
+		if ((ch = gzgetc(ifd)) == EOF) goto read_failed;
 	    }
 	} else {
 	    for(i=0; i<len; i++) {
-		if ((ch = gzgetc(ifd)) == EOF) return 0;
+		if ((ch = gzgetc(ifd)) == EOF) goto read_failed;
 		if (i<sizeof(bin_buf)) bin_buf[i] = ch;
 	    }
 
@@ -236,14 +238,14 @@ read_element(gzFile ifd, int etype)
 
 	len = (len<<8) + (ch = gzgetc(ifd));
 	len = (len<<8) + (ch = gzgetc(ifd));
-	if (ch == EOF) return 0;
+	if (ch == EOF) goto read_failed;
 
 	if (etype == NBT_STR) {
 	    str_buf[len < sizeof(str_buf)-1?len:0] = 0;
 	} else
 	    last_lbl[len < sizeof(last_lbl)-1?len:0] = 0;
 	for(i=0; i<len; i++) {
-	    if ((ch = gzgetc(ifd)) == EOF) return 0;
+	    if ((ch = gzgetc(ifd)) == EOF) goto read_failed;
 	    if (etype == NBT_STR)
 	    {
 		if (i<sizeof(str_buf)-1) { str_buf[i] = ch; str_buf[i+1] = 0; }
@@ -292,12 +294,12 @@ read_element(gzFile ifd, int etype)
 
     } else if (etype == NBT_LIST) {
 	int etype = gzgetc(ifd);
-	if (etype == EOF) return 0;
+	if (etype == EOF) goto read_failed;
 
 	int len = 0, i, ch;
 	for(i = 0; i<4; i++)
 	    len = (len<<8) + ((ch=gzgetc(ifd)) & 0xFF);
-	if (ch == EOF) return 0;
+	if (ch == EOF) goto read_failed;
 
 	indent++;
 	for(i=0; i<len; i++) {
@@ -310,6 +312,7 @@ read_element(gzFile ifd, int etype)
 	return 1;
 
     } else if ( etype < NBT_END || etype > NBT_COMPOUND) {
+	printlog("Bad tag 0x%02x in level \"%s\"", etype, loading_level_fname);
 	return 0;
 
     } else if (NbtLen[etype] > 0) {
@@ -340,10 +343,14 @@ read_element(gzFile ifd, int etype)
 	change_int_value(last_sect, last_lbl, V);
 
     } else {
-	printlog("# UNIMPL: %s", NbtName[etype]);
+	printlog("Unimplemented tag %s", NbtName[etype]);
 	return 0;
     }
     return 1;
+
+read_failed:
+    printlog("Short NBT file in tag %s in %s", NbtName[etype], loading_level_fname);
+    return 0;
 }
 
 LOCAL int
@@ -352,10 +359,18 @@ read_blockarray(gzFile ifd, uint32_t len)
     // This must be before other block arrays to ensure that the shared
     // memory is the correct size for others and correctly wiped.
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-    if (len>level_prop->total_blocks) return 0;
-
-    if (open_blocks(loading_level_fname) < 0)
+    if (len>level_prop->total_blocks) {
+	printlog("Too many blocks %jd>%jd (%d,%d,%d) for \"%s\"",
+	    (intmax_t)len, (intmax_t)level_prop->total_blocks,
+	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
+	    loading_level_fname);
 	return 0;
+    }
+
+    if (open_blocks(loading_level_fname) < 0) {
+	printlog("Unable to open block file for \"%s\"", loading_level_fname);
+	return 0;
+    }
 
     map_len_t test_map;
     test_map.magic_no = TY_MAGIC;
@@ -367,7 +382,10 @@ read_blockarray(gzFile ifd, uint32_t len)
 
     for(uint32_t i=0; i<len; i++) {
 	int ch;
-	if ((ch = gzgetc(ifd)) == EOF) return 0;
+	if ((ch = gzgetc(ifd)) == EOF) {
+	    printlog("Short block array on \"%s\"", loading_level_fname);
+	    return 0;
+	}
 	level_blocks[i] = (ch&0xFF);
     }
     return 1;

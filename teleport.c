@@ -98,7 +98,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 	}
     }
 
-    send_map_file();
+    send_map_file(0);
 
     if (backup_id)
 	printf_chat("@%s&S went to museum %d of &7%s", player_list_name.c, backup_id, levelname);
@@ -185,8 +185,8 @@ preload_level(char *levelname, int backup_id, char * levelstdname, char * cw_pat
 
 	open_level_files(levelname, backup_id, cw_pathname, levelstdname, 0);
 	if (!level_prop) {
-	    printf_chat("Failed to load level.");
-	    exit(1);
+	    printf_chat("Level \"%s\" load failed", levelname);
+	    exit(0);
 	}
 
 	lock_fn(system_lock);

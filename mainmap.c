@@ -18,7 +18,7 @@ open_main_level()
 	if (!level_prop) cmd_void(0, 0);
 
 	if (level_prop) player_posn = level_prop->spawn;
-	send_map_file();
+	send_map_file(0);
     }
 }
 
@@ -29,7 +29,7 @@ cmd_void(char * cmd, char * UNUSED(arg))
 
     stop_shared();
     (void)start_level(voidname, -1);
-    send_map_file();
+    send_map_file(0);
 
     if (cmd) {
 	printf_chat("@%s&S was sucked into the void.", player_list_name.c);
