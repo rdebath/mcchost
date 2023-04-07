@@ -17,7 +17,6 @@ int start_backup_task = 0;
 nbtstr_t client_software;
 
 char current_level_name[MAXLEVELNAMELEN+1];
-char current_level_fname[MAXLEVELNAMELEN*4];
 int current_level_backup_id = 0;
 
 char logfile_pattern[1024] = "";
@@ -147,6 +146,7 @@ complete_connection()
     create_cmd_queue();
 
     // Permissions.
+    init_cmdset_perms();
     load_ini_file(cmdset_ini_fields, CMDSET_CONF_NAME, 1, 0);
 
     open_main_level();

@@ -22,6 +22,8 @@ check_waitpid()
 	    break;
 	}
 
+	if (pid == level_loader_pid) level_loader_pid = 0;
+
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 	    process_status_message(status, pid, 0);
     }

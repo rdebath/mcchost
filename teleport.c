@@ -3,6 +3,8 @@
 
 #include "teleport.h"
 
+pid_t level_loader_pid = 0;
+
 int
 direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 {
@@ -63,9 +65,16 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 	return 0;
     }
 
+    if (level_prop) {
+	// Check to see if the level is loaded; return of 1 if it's gonna
+	// happen in the background.
+	if (preload_level(levelname, backup_id, levelstdname, cw_pathname) == 1)
+	    return 0;
+    }
+
     stop_shared();
 
-    if (start_level(levelname, levelstdname, backup_id))
+    if (start_level(levelname, backup_id))
 	open_level_files(levelname, backup_id, cw_pathname, levelstdname, 0);
     if (!level_prop) {
         printf_chat("&WLevel \"%s\" load failed, returning to main", level);
@@ -137,4 +146,86 @@ find_alt_museum_file(char * cw_pathname, int len, char * level, int backup_id)
     if (access(cw_pathname, F_OK) == 0) return 1;
 
     return 0;
+}
+
+/* RV: -1 => Just open the level (This routine can't or won't).
+ * RV: 0 => Open the level; it's already loaded.
+ * RV: 1 => Background job forked to load and summon.
+ */
+int
+preload_level(char *levelname, int backup_id, char * levelstdname, char * cw_pathname)
+{
+    if (backup_id < 0 || my_user_no < 0) return -1;
+
+    int level_id = -1;
+    nbtstr_t level = {0};
+    strcpy(level.c, levelname);
+
+    for(int i=0; i<MAX_LEVEL; i++) {
+	if (!shdat.client->levels[i].loaded) {
+	    if (level_id == -1) level_id = i;
+	    continue;
+	}
+	nbtstr_t n = shdat.client->levels[i].level;
+	if (strcmp(n.c, level.c) == 0 && shdat.client->levels[i].backup_id == backup_id) {
+	    // Level already loaded
+	    return 0;
+	}
+    }
+    if (level_id == -1) return -1; // Too many.
+
+    if ((level_loader_pid = fork()) == 0) {
+	if (line_ofd >= 0) close(line_ofd);
+	if (line_ifd >= 0 && line_ofd != line_ifd) close(line_ifd);
+	line_ifd = line_ofd = -1;
+
+	stop_shared();
+	*current_level_name = 0;
+	current_level_backup_id = -1;
+
+	open_level_files(levelname, backup_id, cw_pathname, levelstdname, 0);
+	if (!level_prop) {
+	    printf_chat("Failed to load level.");
+	    exit(1);
+	}
+
+	lock_fn(system_lock);
+
+	level_id = -1;
+	for(int i=0; i<MAX_LEVEL; i++) {
+            if (!shdat.client->levels[i].loaded) {
+                if (level_id == -1) level_id = i;
+                continue;
+            }
+            nbtstr_t n = shdat.client->levels[i].level;
+            if (strcmp(n.c, level.c) == 0 && shdat.client->levels[i].backup_id == backup_id) {
+                level_id = i;
+                break;
+            }
+        }
+
+        if (level_id >= 0 && !shdat.client->levels[level_id].loaded) {
+            client_level_t t = {0};
+            t.level = level;
+            t.loaded = 1;
+            t.backup_id = backup_id;
+            shdat.client->levels[level_id] = t;
+            server->loaded_levels++;
+        }
+
+	shdat.client->user[my_user_no].summon_level_id = level_id;
+	shdat.client->user[my_user_no].summon_posn = level_prop->spawn;
+
+	unlock_fn(system_lock);
+	stop_shared();
+
+	exit(0);
+    }
+    if (level_loader_pid<0) {
+        level_loader_pid = 0;
+        perror("fork()");
+	return -1;
+    }
+
+    return 1;
 }

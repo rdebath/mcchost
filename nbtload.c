@@ -30,6 +30,8 @@ static int inventory_block = -1;
 static int permission_block = -1;
 static int curr_x, curr_y, curr_z;
 
+static char * loading_level_fname = 0;
+
 #if INTERFACE
 #define MCG_PHYSICS_0FFSET CPELIMIT	//768
 #endif
@@ -64,8 +66,12 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
 	return -1;
     }
 
+    loading_level_fname = level_fname;
+
     // 1 -> yes, 0 -> Nothing to load, -1 -> failed miserably.
     int cw_loaded = load_cwfile(ifd, level_fname, level_name, filename);
+
+    loading_level_fname = 0;
 
     if (cw_loaded == 0) {
 	// Looks like it might be a text file.
@@ -348,7 +354,7 @@ read_blockarray(gzFile ifd, uint32_t len)
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
     if (len>level_prop->total_blocks) return 0;
 
-    if (open_blocks(current_level_fname) < 0)
+    if (open_blocks(loading_level_fname) < 0)
 	return 0;
 
     map_len_t test_map;
@@ -877,7 +883,7 @@ cpy_nstr(char *buf, int buflen, char *str)
     *d = 0;
 }
 
-void
+LOCAL void
 init_mcg_physics()
 {
     if (mcg_physics[1] == 1) return; // Done already
@@ -1060,7 +1066,7 @@ init_mcg_physics()
     mcg_physics[254] = 0;
 }
 
-void
+LOCAL void
 define_mcg_physics_blocks()
 {
     char * start = mcgalaxy_names;

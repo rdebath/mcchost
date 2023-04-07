@@ -35,7 +35,7 @@ cmd_goto(char * cmd, char * arg)
     if (strcasecmp(arg, "-random") == 0)
 	return run_command("/gotorandom");
 
-    if (player_lockout>0) {
+    if (player_lockout>0 || level_loader_pid > 0) {
 	printf_chat("Cannot use /%s, already joining a map.", cmd);
 	return;
     }

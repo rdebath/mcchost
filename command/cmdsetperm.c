@@ -52,6 +52,11 @@ cmd_setperm(char * UNUSED(cmd), char *arg)
     int uid = find_player(user, user_name, sizeof(user_name), 1, 0);
     if (uid<0) return;
 
+    if (perm_type != 1 && current_level_backup_id > 0) {
+	printf_chat("&WPermissions cannot be applied to individual backup levels");
+	return;
+    }
+
     if (perm_type == 1 && !perm_is_admin()) {
 	printf_chat("&WPermission denied, only admin can change that permission");
 	return;
@@ -81,7 +86,7 @@ cmd_setperm(char * UNUSED(cmd), char *arg)
 	int r = add_strlist(level_prop->op_user_list, sizeof(level_prop->op_user_list), user_name);
 	if (r == 1) {
 	    printf_chat("User '%s' is in level owner list", user_name);
-	    save_level_ini(current_level_fname);
+	    save_level_ini(current_level_name);
 	} else if (r == 0)
 	    printf_chat("User '%s' is already in the level owner list", user_name);
 	else
@@ -92,7 +97,7 @@ cmd_setperm(char * UNUSED(cmd), char *arg)
 	    printf_chat("User '%s' is not in level owner list", user_name);
 	else {
 	    printf_chat("User '%s' has been removed from level owner list", user_name);
-	    save_level_ini(current_level_fname);
+	    save_level_ini(current_level_name);
 	}
     }
 }

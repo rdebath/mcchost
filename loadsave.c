@@ -201,7 +201,6 @@ scan_and_save_levels(int do_timed_save)
     lock_restart(level_save_lock);
 
     *current_level_name = 0;
-    *current_level_fname = 0;
 
     shdat.client->cleanup_generation = shdat.client->generation;
 
@@ -324,7 +323,8 @@ scan_and_save_levels(int do_timed_save)
 	for(int uid=0; uid<MAX_USER; uid++)
 	{
 	    if (shdat.client->user[uid].active != 1) continue;
-	    if (lvid == shdat.client->user[uid].on_level || lvid == shdat.client->user[uid].summon_level_id)
+	    if (lvid == shdat.client->user[uid].on_level ||
+		lvid == shdat.client->user[uid].summon_level_id)
 		user_count++;
 	}
 
@@ -406,10 +406,12 @@ scan_and_save_levels(int do_timed_save)
 }
 
 void
-save_level_ini(char * level_fname)
+save_level_ini(char * level_name)
 {
+    char fixedname[MAXLEVELNAMELEN*4];
+    fix_fname(fixedname, sizeof(fixedname), level_name);
     char ini_file[256];
-    saprintf(ini_file, LEVEL_INI_NAME, level_fname);
+    saprintf(ini_file, LEVEL_INI_NAME, fixedname);
     save_ini_file(mcc_level_ini_fields, ini_file);
 }
 
@@ -423,7 +425,8 @@ ignore_broken_level(int lvid, int *loaded_levels)
     {
 	if (shdat.client->user[uid].active != 1) continue;
 	// NB: Only unload main when the _total_ user count hits zero.
-	if (lvid == shdat.client->user[uid].on_level || lvid == shdat.client->user[uid].summon_level_id)
+	if (lvid == shdat.client->user[uid].on_level ||
+	    lvid == shdat.client->user[uid].summon_level_id)
 	    user_count++;
     }
 
@@ -479,7 +482,8 @@ set_level_in_use_flag(int lvid, int * users_on_level)
     {
 	if (shdat.client->user[uid].active != 1) continue;
 	// NB: Only unload main when the _total_ user count hits zero.
-	if (lvid == shdat.client->user[uid].on_level || lvid == shdat.client->user[uid].summon_level_id) {
+	if (lvid == shdat.client->user[uid].on_level ||
+	    lvid == shdat.client->user[uid].summon_level_id) {
 	    user_count++;
 	    level_in_use = 1;
 	} else other_users++;

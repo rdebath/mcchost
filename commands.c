@@ -5,8 +5,8 @@
 enum perm_token { perm_token_none, perm_token_admin, perm_token_level, perm_token_disabled };
 #define CMD_PERM_CNT 4
 
-#define CMD_PERM_ADMIN  .perm_okay=perm_token_admin		/* System admin */
-#define CMD_PERM_LEVEL  .perm_okay=perm_token_level		/* Level owner */
+#define CMD_PERM_ADMIN  .perm_def=perm_token_admin		/* System admin */
+#define CMD_PERM_LEVEL  .perm_def=perm_token_level		/* Level owner */
 #define CMD_HELPARG	.help_if_no_args=1
 
 typedef void (*cmd_func_t)(char * cmd, char * arg);
@@ -15,6 +15,7 @@ struct command_t {
     char * name;
     cmd_func_t function;
     enum perm_token perm_okay;
+    enum perm_token perm_def;
     int dup;		// Don't show on /cmds (usually a duplicate)
     int nodup;		// No a dup, don't use previous.
     int help_if_no_args;
@@ -132,6 +133,14 @@ run_command(char * msg)
 
     printf_chat("&SUnknown command \"%s&S\" -- see &T/cmds", cmd);
     return;
+}
+
+void
+init_cmdset_perms()
+{
+    for(int i = 0; command_list[i].name; i++) {
+	command_list[i].perm_okay = command_list[i].perm_def;
+    }
 }
 
 /*HELP quit H_CMD

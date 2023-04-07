@@ -12,7 +12,7 @@ open_main_level()
 	char fixedname[NB_SLEN];
 	fix_fname(fixedname, sizeof(fixedname), main_level());
 
-	if (start_level(main_level(), fixedname, 0))
+	if (start_level(main_level(), 0))
 	    open_level_files(main_level(), 0, 0, fixedname, 0);
 
 	if (!level_prop) cmd_void(0, 0);
@@ -27,10 +27,8 @@ cmd_void(char * cmd, char * UNUSED(arg))
 {
     char * voidname = "<void>";
 
-    char fixedname[NB_SLEN];
-    fix_fname(fixedname, sizeof(fixedname), voidname);
     stop_shared();
-    (void)start_level(voidname, fixedname, -1);
+    (void)start_level(voidname, -1);
     send_map_file();
 
     if (cmd) {

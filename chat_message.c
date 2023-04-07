@@ -189,6 +189,14 @@ post_chat(int where, int to_id, int type, char * chat, int chat_len)
     else if (!user_logged_in)
 	return; // Would go to everyone eventually.
 
+    if (where == -1 && line_ofd <= 0 ) {
+	// There's no connection; this should be a background job.
+	if (my_user_no >= 0)
+	    where = 1, to_id = my_user_no;
+	else
+	    where = to_id = 0;
+    }
+
     int s, d, ws = -1, wd = -1, add_gt = 0, el = 1;
     for(d = s = 0; s<chat_len; s++) {
 	uint8_t c = chat[s];
@@ -258,15 +266,9 @@ post_chat(int where, int to_id, int type, char * chat, int chat_len)
 	// Otherwise, truncate.
 	if (d >= MB_STRLEN) {
 	    if (type == 0) {
-		if (where == -1) {
-		    if (line_ofd <= 0) {
-			if (my_user_no >= 0)
-			    update_chat(1, my_user_no, &pkt);
-			else
-			    update_chat(0, 0, &pkt);
-		    } else
-			send_message_pkt(0, pkt.message_type, pkt.message);
-		} else
+		if (where == -1)
+		    send_message_pkt(0, pkt.message_type, pkt.message);
+		else
 		    update_chat(where, to_id, &pkt);
 	    } else
 		break;

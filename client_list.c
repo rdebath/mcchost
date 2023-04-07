@@ -22,7 +22,7 @@
 #define MAX_LEVEL	256
 
 #define TY_MAGIC2    0x557FFF00
-#define TY_MAGIC3    ((MAX_USER<<16)+MAX_LEVEL)
+#define TY_MAGIC3    ((int)(sizeof(client_data_t)+sizeof(server_t)))
 #define TY_VERSION   0x00000100
 
 typedef struct client_entry_t client_entry_t;
@@ -55,6 +55,7 @@ struct client_entry_t {
 
 typedef struct client_level_t client_level_t;
 struct client_level_t {
+    pid_t loader_pid;
     int backup_id;
     nbtstr_t level;
     uint8_t loaded;
@@ -561,21 +562,20 @@ start_user()
 }
 
 int
-start_level(char * levelname, char * levelfile, int backup_id)
+start_level(char * levelname, int backup_id)
 {
     nbtstr_t level = {0};
     int level_id = -1;
 
     strcpy(level.c, levelname);
     strcpy(current_level_name, levelname);
-    strcpy(current_level_fname, levelfile);
     current_level_backup_id = backup_id;
     player_posn = (xyzhv_t){0};
     player_on_new_level = 1;
 
     lock_fn(system_lock);
 
-    if (backup_id>= 0) {
+    if (backup_id >= 0) {
 	for(int i=0; i<MAX_LEVEL; i++) {
 	    if (!shdat.client->levels[i].loaded) {
 		if (level_id == -1) level_id = i;
@@ -589,6 +589,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
 	}
 
 	if (level_id<0) {
+	    // Too many already loaded levels.
 	    unlock_fn(system_lock);
 	    return 0;
 	}
@@ -603,6 +604,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
 	}
     }
 
+    // Move me to new level_no.
     if (my_user_no >= 0 && my_user_no < MAX_USER) {
 	shdat.client->user[my_user_no].on_level = level_id;
 	shdat.client->user[my_user_no].level_bkp_id = backup_id;
@@ -612,6 +614,7 @@ start_level(char * levelname, char * levelfile, int backup_id)
     shdat.client->generation++;
     player_lockout = 5;
 
+    // Change system player list on my client.
     if (extn_extplayerlist) {
 	char groupname[256] = "";
 	if (current_level_backup_id == 0)

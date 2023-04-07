@@ -4,7 +4,7 @@
 #if INTERFACE
 #define CMD_SUMMON \
     {N"summon", &cmd_summon, CMD_PERM_ADMIN,CMD_HELPARG}, \
-    {N"s", &cmd_ban, .dup=1}
+    {N"s", &cmd_summon, .dup=1}
 #endif
 
 /*HELP summon H_CMD

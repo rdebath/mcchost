@@ -18,7 +18,8 @@ DEFS=
 DBGSRC=-fwrapv -fdebug-prefix-map='$(shell pwd)'=src
 # Use -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
 # WTH is the point of the "truncation" warnings!
-WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation -Wno-unknown-warning-option
+WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation
+# For Clang? -Wno-unknown-warning-option
 CFLAGS=-Iinclude -O2 -g3 ${PTHREAD} ${WARN} ${DEFS} ${HEADER} ${DBGSRC}
 LIBLMDB=-llmdb
 PTHREAD=-pthread
