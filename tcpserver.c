@@ -627,7 +627,7 @@ start_backup_process()
 
     if (alarm_sig == 0 && trigger_backup == 0 && start_backup_task == 0 && restart_on_unload == 0) {
 	if (shdat.client->generation == shdat.client->cleanup_generation &&
-	    server->loaded_levels == 0)
+	    server->loaded_levels == server->pinned_levels)
 	    return;
     }
 
@@ -641,7 +641,7 @@ start_backup_process()
 	    trigger_backup = 1;
 	else {
 	    if ((now-server->last_unload) >= FREQUENT_CHECK) {
-		if (server->loaded_levels != 0)
+		if (server->loaded_levels != server->pinned_levels)
 		    trigger_unload = 1;
 	    }
 	}

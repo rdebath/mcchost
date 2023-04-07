@@ -33,6 +33,7 @@ struct server_t {
     int max_players;
     int loaded_levels;
     int connected_sessions;
+    int pinned_levels;
 
     time_t last_heartbeat;
     time_t last_backup;

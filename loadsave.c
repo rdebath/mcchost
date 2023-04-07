@@ -376,8 +376,10 @@ scan_and_save_levels(int do_timed_save)
 	unlock_fn(system_lock);
     }
 
-    if (server->loaded_levels != loaded_levels)
+    if (server->loaded_levels != loaded_levels) {
 	server->loaded_levels = loaded_levels;
+	server->pinned_levels = 0;
+    }
 
     if (check_again) shdat.client->generation++;
 
@@ -442,7 +444,7 @@ ignore_broken_level(int lvid, int *loaded_levels)
 int
 scan_levels()
 {
-    int loaded_levels = 0;
+    int loaded_levels = 0, pinned_levels = 0, rv = 0;
 
     open_client_list();
     if (!shdat.client) return 0;
@@ -457,16 +459,22 @@ scan_levels()
 	loaded_levels++;
 
 	if (shdat.client->levels[lvid].force_backup)
-	    return 1;
+	    rv = 1;
 
 	if (!set_level_in_use_flag(lvid,0))
-	    return 1;
+	    rv = 1;
+
+	if (shdat.client->levels[lvid].in_use)
+	    pinned_levels++;
     }
 
     if (server->loaded_levels != loaded_levels)
 	server->loaded_levels = loaded_levels;
 
-    return 0;
+    if (server->pinned_levels != pinned_levels)
+	server->pinned_levels = pinned_levels;
+
+    return rv;
 }
 
 LOCAL int

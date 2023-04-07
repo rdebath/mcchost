@@ -15,8 +15,6 @@ Other notes
 */
 
 /*HELP todo
- +) NoUnloadMain ($level.NoUnload ?) keeps filesystem access going when idle.
-
  +) Login Whitelist ?
     -- Only Admin login ?
 
