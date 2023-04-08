@@ -188,19 +188,21 @@ tcpserver()
 			    client_trusted?"trusted host ":"",
 			    client_ipv4_str, tcp_port_no);
 
+		    close_userdb();
+		    close_logfile();
+
 		    int pid = 0;
-		    if (!server_runonce) {
-			close_userdb();
+		    if (!server_runonce)
 			pid = E(fork(), "Forking failure");
-		    }
+
 		    if (pid == 0)
 		    {
-			if (!detach_tcp_server)
+			if (!detach_tcp_server && !server_runonce)
 			    setsid();
-    #if defined(HAS_CORELIMIT) && defined(WCOREDUMP)
+#if defined(HAS_CORELIMIT) && defined(WCOREDUMP)
 			if (access("/usr/bin/gdb", X_OK) == 0)
 			    enable_coredump();
-    #endif
+#endif
 			(void)signal(SIGHUP, SIG_DFL);
 			(void)signal(SIGCHLD, SIG_DFL);
 			(void)signal(SIGALRM, SIG_DFL);
@@ -267,6 +269,7 @@ void
 logger_process()
 {
     lock_stop(system_lock);
+    close_logfile();
 
     // Logging pipe
     int pipefd[2];
@@ -293,7 +296,7 @@ logger_process()
 	    return;
 	}
 
-	// Stdin/out should be line fd.
+	// Stdin/out could be line fd.
 	E(dup2(pipefd[1], 2), "dup2(logger,2)");
 	close(pipefd[0]);
 	close(pipefd[1]);
@@ -312,23 +315,25 @@ logger_process()
     if (listen_socket>=0)
 	E(close(listen_socket), "close(listen)");
     E(close(pipefd[1]), "close(pipe)");
+    if (pipefd[0] != 0) {
+	E(dup2(pipefd[0], 0), "dup2(pipefd[0],0)");
+	close(pipefd[0]);
+    }
 
-    // Detach logger from everything.
+    // Detach logger from output too.
     int nullfd = E(open("/dev/null", O_RDWR), "open(null)");
-    E(dup2(nullfd, 0), "dup2(nullfd,0)");
     E(dup2(nullfd, 1), "dup2(nullfd,1)");
     E(dup2(nullfd, 2), "dup2(nullfd,2)");
     close(nullfd);
 
-    FILE * ilog = fdopen(pipefd[0], "r");
     char logbuf[BUFSIZ];
-    while(fgets(logbuf, sizeof(logbuf), ilog)) {
+    while(fgets(logbuf, sizeof(logbuf), stdin)) {
 	char *p = logbuf+strlen(logbuf);
 	while(p>logbuf && p[-1] == '\n') {p--; p[0] = 0; }
 	printlog("| %s", logbuf);
     }
 
-    if (ferror(ilog))
+    if (ferror(stdin))
 	exit(errno);
     exit(0);
 }
