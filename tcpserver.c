@@ -131,8 +131,7 @@ tcpserver()
     else
 	printlog("Accepting connections on port %d (pid:%d).", tcp_port_no, getpid());
 
-    memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "%s port %d", SWNAME, tcp_port_no);
+    proctitle("%s port %d", SWNAME, tcp_port_no);
 
     convert_localnet_cidr();
 
@@ -267,6 +266,8 @@ fork_and_detach()
 void
 logger_process()
 {
+    lock_stop(system_lock);
+
     // Logging pipe
     int pipefd[2];
     E(pipe(pipefd), "cannot create pipe");
@@ -287,6 +288,8 @@ logger_process()
 	    int nullfd = E(open("/dev/null", O_RDWR), "open(null)");
 	    E(dup2(nullfd, 0), "dup2(nullfd,0)");
 	    close(nullfd);
+
+	    lock_start(system_lock);
 	    return;
 	}
 
@@ -295,13 +298,15 @@ logger_process()
 	close(pipefd[0]);
 	close(pipefd[1]);
 
+	lock_start(system_lock);
 	return;
     }
 
     // No longer needed -- we have one job.
     stop_system_conf();
     stop_client_list();
-    lock_stop(system_lock);
+
+    proctitle("MCCHost logger");
 
     // Logger
     if (listen_socket>=0)
@@ -315,9 +320,6 @@ logger_process()
     E(dup2(nullfd, 2), "dup2(nullfd,2)");
     close(nullfd);
 
-    memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "MCCHost logger");
-
     FILE * ilog = fdopen(pipefd[0], "r");
     char logbuf[BUFSIZ];
     while(fgets(logbuf, sizeof(logbuf), ilog)) {
@@ -329,6 +331,16 @@ logger_process()
     if (ferror(ilog))
 	exit(errno);
     exit(0);
+}
+
+void
+check_stdio_fd()
+{
+    // Make sure we have a stdin, stdout and stderr.
+    int fullfd = E(open("/dev/full", O_RDWR), "open(full)");
+    if (fullfd <= 2) fullfd = E(open("/dev/full", O_RDWR), "open(full)");
+    if (fullfd <= 2) fullfd = E(open("/dev/full", O_RDWR), "open(full)");
+    if (fullfd > 2) close(fullfd);
 }
 
 LOCAL void
@@ -667,8 +679,7 @@ start_backup_process()
     }
     if (listen_socket>=0) close(listen_socket);
 
-    memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "MCCHost saver");
+    proctitle("MCCHost saver");
 
     if (trigger_unload)
 	trigger_backup |= scan_and_save_levels(0);
@@ -741,8 +752,7 @@ auto_load_main(int fast_start)
 
     if (listen_socket>=0) close(listen_socket);
 
-    memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "MCCHost load main");
+    proctitle("MCCHost load main");
 
     if (fast_start) msleep(200); else msleep(2000);
 

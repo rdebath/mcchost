@@ -1,4 +1,7 @@
-Files for strting MCChost using systemd.
+Files for strting MCChost using systemd using "socket activation".
+
+The files in this subdirectory allow systemd to use socket
+activation in the style of inetd and cron.
 
 # put in system:
 sudo cp mcchost* /etc/systemd/system/

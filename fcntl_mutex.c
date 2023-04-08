@@ -37,7 +37,7 @@ lock_start(fcntl_filelock_t * ln)
 int lock_start_try(fcntl_filelock_t * ln)
 {
     int fd = open(ln->name, O_RDWR|O_CLOEXEC|O_CREAT, 0600);
-    if (fd <= 0) {
+    if (fd < 0) {
 	perror(ln->name);
 	return 0;
     }

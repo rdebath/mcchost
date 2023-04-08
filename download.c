@@ -69,8 +69,7 @@ http_download(uint8_t * buf, int buflen)
 	return http_error(403);
     }
 
-    memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "%s http download", SWNAME);
+    proctitle("%s http download", SWNAME);
 
     char filename[256];
     saprintf(filename, "texture/%s", fn);

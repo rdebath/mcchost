@@ -125,6 +125,10 @@ char ** program_args = 0;
 int proc_self_exe_ok = 0;
 char * proc_self_exe = 0;
 
+#ifndef __linux__
+time_t proc_start_time = 0;
+#endif
+
 void
 process_args(int argc, char **argv)
 {
@@ -132,7 +136,9 @@ process_args(int argc, char **argv)
     int bc = 1, plen = strlen(argv[0]);
     int port_no = -1;
     int found_dir_arg = 0;
+#ifndef __linux__
     int found_process_start = 0;
+#endif
 
     getprogram(argv[0]);
 
@@ -219,9 +225,14 @@ process_args(int argc, char **argv)
 		    }
 
 		    if (strcmp(argv[ar], "-process-start-time") == 0) {
-			proc_start_time = strtoimax(argv[ar+1], 0, 0);
 			ar++; addarg++;
+			// Can find process start time directly on Linux.
+#ifdef __linux__
+			addarg = 0;
+#else
+			proc_start_time = strtoimax(argv[ar+1], 0, 0);
 			found_process_start = 1;
+#endif
 			break;
 		    }
 		}
@@ -443,13 +454,16 @@ process_args(int argc, char **argv)
 	plen += 5;
     }
 
+#ifndef __linux__
     if (!found_process_start) {
+	if (!proc_start_time) proc_start_time = time(0);
 	program_args[bc++] = strdup("-process-start-time");
 	plen += 30;
 	char buf[sizeof(intmax_t)*3+3];
 	sprintf(buf, "%jd", (intmax_t)proc_start_time);
 	program_args[bc++] = strdup(buf);
     }
+#endif
 
     // Pad the program args so we get some space after a restart.
     // Also we must turn off -detach to keep the same pid.

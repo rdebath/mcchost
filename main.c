@@ -29,22 +29,17 @@ int cpe_extn_remaining = 0;
 int cpe_extn_advertised = 0;
 int protocol_base_version = 7;
 
-char * proc_args_mem = 0;
-int    proc_args_len = 0;
-time_t proc_start_time = 0;
-
 int
 main(int argc, char **argv)
 {
+    check_stdio_fd();
+
     saprintf(program_name, "%s", argv[0]);
-    proc_start_time = time(0);
 
     init_textcolours();
 
+    proctitle_init(argc, argv);
     process_args(argc, argv);
-
-    proc_args_mem = argv[0];
-    proc_args_len = argv[argc-1] + strlen(argv[argc-1]) - argv[0] + 1;
 
     if (*logfile_pattern)
 	set_logfile(logfile_pattern, 0);
@@ -57,8 +52,7 @@ main(int argc, char **argv)
     delete_session_id(0, 0, 0);
 
     if (start_tcp_server) {
-	memset(proc_args_mem, 0, proc_args_len);
-	snprintf(proc_args_mem, proc_args_len, "%s server", SWNAME);
+	proctitle("%s server", SWNAME);
 
 	tcpserver();
     } else {
@@ -106,8 +100,7 @@ process_connection()
 	    disconnect(0, "Banned on this server");
     }
 
-    memset(proc_args_mem, 0, proc_args_len);
-    snprintf(proc_args_mem, proc_args_len, "%s (%s)", SWNAME, user_id);
+    proctitle("%s (%s)", SWNAME, user_id);
 
     user_logged_in = 1; // May not be "authenticated", but they exist.
 

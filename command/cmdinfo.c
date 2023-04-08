@@ -164,7 +164,9 @@ cmd_sinfo(char * UNUSED(cmd), char * UNUSED(arg))
 {
     time_t now = time(0);
     time_t then = process_start_time(alarm_handler_pid);
+#ifndef __linux__
     if (then == 0) then = proc_start_time;
+#endif
 
     printf_chat("About &T%s", server->name);
 

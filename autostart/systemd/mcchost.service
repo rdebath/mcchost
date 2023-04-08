@@ -1,3 +1,7 @@
+# This "unit file" sets up systemd to restart mcchost in a similar fashion
+# to inittab. This is much more verbose than inittab so I'm using that to
+# control the user id and data locations directly from here.
+
 [Unit]
 Description=MCChost Classicube server
 After=network.target
@@ -7,7 +11,7 @@ Type=exec
 ExecStart=-/home/mcchost/bin/mcchost-server -dir /home/mcchost/mcchost -no-detach -port 25568
 ExecReload=kill -HUP $MAINPID
 
-# Run as a other user
+# Run as another user
 User=mcchost
 Group=mcchost
 
