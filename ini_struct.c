@@ -192,6 +192,7 @@ system_x_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAY("UserSuffix", server_ini_tgt->user_id_suffix);
 	INI_BOOLVAL("DisallowIPAdmin", server_ini_tgt->disallow_ip_admin);
 	INI_BOOLVAL("DisallowIPVerify", server_ini_tgt->disallow_ip_verify);
+	INI_BOOLVAL("AdminOnlyLogin", server_ini_tgt->admin_only_login);
 	INI_BOOLVAL("AllowPassVerify", server_ini_tgt->allow_pass_verify);
 	INI_BOOLVAL("VoidForLogin", server_ini_tgt->void_for_login);
 	INI_BOOLVAL("NoMapPadding", server_ini_tgt->no_map_padding);

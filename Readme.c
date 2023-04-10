@@ -15,8 +15,6 @@ Other notes
 */
 
 /*HELP todo
- +) Login Whitelist ?
-    -- Only Admin login ?
 
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
@@ -42,7 +40,6 @@ Other notes
     -- Summon users to new level id
 
  +) /sendcmd
- +) /summon
  +) /clones
  +) /undo, /redo
  +) /fill

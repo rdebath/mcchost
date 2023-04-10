@@ -3,7 +3,7 @@
 
 #if INTERFACE
 #define CMD_SETPERM \
-    {N"setperm", &cmd_setperm, CMD_HELPARG}
+    {N"setperm", &cmd_setperm, CMD_HELPARG, CMD_PERM_LEVEL}
 #endif
 
 /*HELP setperm H_CMD

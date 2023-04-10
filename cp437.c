@@ -230,6 +230,7 @@ emconv_t emconv[] = {
 { "house", 0x7F },
 
 { "perc", '%' }, { "amp", '&' },
+{ "bra", '(' }, { "ket", ')' },
 
 {0,0}
 };

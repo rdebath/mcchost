@@ -189,18 +189,37 @@ Aliases: /cmds /cmdlist
     {N"cmdlist", &cmd_commands, .dup=1}
 #endif
 void
-cmd_commands(char * UNUSED(cmd), char * UNUSED(arg))
+cmd_commands(char * UNUSED(cmd), char * arg)
 {
     char buf[BUFSIZ];
     int len = 0;
 
+    int listid = my_user.user_group;
+    if (perm_is_admin())
+	listid = USER_PERM_ADMIN;
+    else if (perm_level_check(0, 0, 1))
+	listid = USER_PERM_SUPER;
+    if (!arg || !*arg)
+	;
+    else if (strcasecmp(arg, "all") == 0 || strcasecmp(arg, "admin") == 0)
+	listid = USER_PERM_ADMIN;
+    else if (strcasecmp(arg, "level") == 0)
+	listid = USER_PERM_SUPER;
+    else if (strcasecmp(arg, "user") == 0)
+	listid = USER_PERM_USER;
+
     for(int i = 0; command_list[i].name; i++) {
 	if (command_list[i].dup)
 	    continue;
-	if (command_list[i].perm_okay == perm_token_admin &&
-	    !perm_is_admin())
-	    continue;
 	if (command_list[i].perm_okay == perm_token_disabled)
+	    continue;
+	if (command_list[i].perm_okay == perm_token_none)
+	    ;
+	else if (command_list[i].perm_okay == perm_token_admin &&
+	    listid != USER_PERM_ADMIN)
+	    continue;
+	else if (command_list[i].perm_okay == perm_token_level &&
+	    listid == USER_PERM_USER)
 	    continue;
 
 	int l = strlen(command_list[i].name);

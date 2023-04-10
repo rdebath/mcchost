@@ -100,6 +100,9 @@ process_connection()
 	    disconnect(0, "Banned on this server");
     }
 
+    if (ini_settings->admin_only_login && !perm_is_admin())
+	disconnect(0, "Login rejected! Only administrators may connect");
+
     proctitle("%s (%s)", SWNAME, user_id);
 
     user_logged_in = 1; // May not be "authenticated", but they exist.
@@ -577,8 +580,11 @@ login()
     if (!user_authenticated && do_pass(player.mppass, 1))
 	user_authenticated = 1;
 
-    if (!user_authenticated)
+    if (!user_authenticated) {
+	if (ini_settings->admin_only_login)
+	    disconnect(0, "Login failed! Only administrators may connect");
 	printlog("User %s not authenticated with mppass \"%s\"", user_id, player.mppass);
+    }
 }
 
 

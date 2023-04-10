@@ -100,6 +100,8 @@ show_user_info(userrec_t *user)
     char *perm_str = "unknown";
     if (user->user_group >= 0 && user->user_group < USER_PERM_CNT)
 	perm_str = user_perms[user->user_group];
+    if (is_me && perm_is_admin())
+	perm_str = user_perms[0];
 
     printf_chat("; Rank of %s", perm_str);
     printf_chat(", wrote &a%jd&S messages", (intmax_t)user->message_count);
