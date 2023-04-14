@@ -15,6 +15,7 @@ Other notes
 */
 
 /*HELP todo
+ +) 8bit load of 10bit map; set readonly flag.
 
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
@@ -30,6 +31,13 @@ Other notes
     -- /blockprops command aliases ?
     -- /lb command aliases ?
     -- /os command aliases ?
+
+    -- Other command expansion/aliases
+       Which way?
+	 /cuboid-walls <-- /cuboid walls
+	   -- perms can be done on each subcommand
+	 /os map --> /map
+	   -- os is a grouper like "cuboid" above with some short subcmds
 
  +) On /defblk of block used for edge or horizon need to redefine those.
 
@@ -92,20 +100,9 @@ Other notes
     -- Bitmap of allow/deny commands and blocks.
     -- Routine to construct bitmap from "nice" permissions.
     -- Routine takes care of "if has_build_perm(level)"
-    -- /newlvl; No create, create personal, create any.
-    -- Permission for level modifiable by anyone (with /set etc).
-    -- Permissions for levels with multiple owners.
-    -- Permissions for user with any level access (but not server)
-    -- Permissions for /goto
-    -- Permissions for level readonly for "user" but modifiable for "level"
-    -- Visit permission ... via *.ini file for EXTERNAL ONLY level props.
-
- +) Command expansion/aliases
-    Which way?
-      /cuboid-walls <-- /cuboid walls
-        -- perms can be done on each subcommand
-      /os map --> /map
-        -- os is a grouper like "cuboid" above with some short subcmds
+    -- Permission for level owner (users, everyone)
+    -- Permission for level readonly for "user" but modifiable for "level"
+    -- Permission for /goto (in .ini file)
 
  +) NAME: (*) MCCHost
 

@@ -342,10 +342,10 @@ void
 check_stdio_fd()
 {
     // Make sure we have a stdin, stdout and stderr.
-    int fullfd = E(open("/dev/full", O_RDWR), "open(full)");
-    if (fullfd <= 2) fullfd = E(open("/dev/full", O_RDWR), "open(full)");
-    if (fullfd <= 2) fullfd = E(open("/dev/full", O_RDWR), "open(full)");
-    if (fullfd > 2) close(fullfd);
+    int nullfd = E(open("/dev/null", O_RDWR), "open(null)");
+    if (nullfd <= 2) nullfd = E(open("/dev/null", O_RDWR), "open(null)");
+    if (nullfd <= 2) nullfd = E(open("/dev/null", O_RDWR), "open(null)");
+    if (nullfd > 2) close(nullfd);
 }
 
 LOCAL void
