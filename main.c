@@ -159,7 +159,7 @@ complete_connection()
     cmd_help("welcome", 0);
 
     if (!user_authenticated)
-	printf_chat("&WYou need to login with &T/pass");
+	do_pass(0, 0);
     else if (!level_prop)
 	printf_chat("&WMain level failed to load, you are nowhere.");
 }

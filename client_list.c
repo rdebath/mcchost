@@ -670,7 +670,8 @@ delete_session_id(int pid, char * killed_user, int len)
     if (server->max_players > MAX_USER || server->max_players < 0)
 	server->max_players = MAX_USER;
 
-    open_client_list();
+    int flg = (shdat.client == 0);
+    if (flg) open_client_list();
     if (!shdat.client) return 0;
     for(int i=0; i<MAX_USER; i++)
     {
@@ -707,7 +708,7 @@ delete_session_id(int pid, char * killed_user, int len)
 	    if (pid>0) break;
 	}
     }
-    stop_client_list();
+    if (flg) stop_client_list();
     return cleaned;
 }
 

@@ -83,6 +83,11 @@ static char base62[] =
 	}
     }
 
+    if (strcasecmp(passwd, "[password]") == 0 || strcasecmp(passwd, "password") == 0) {
+	printf_chat("&WCome on! NO! That's the top of the bad password list!");
+	return;
+    }
+
     if (!user_authenticated)
 	testing_just_set_password = 1;
 
@@ -131,7 +136,12 @@ do_pass(char * passwd, int quiet)
     char salt[NB_SLEN], hashpw[NB_SLEN];
     readpw_file(user_id, salt, hashpw);
     if (!*salt || !*hashpw){
-	if (!quiet) printf_chat("&WYou need to set a password first with &T/setpass 1234");
+	if (!quiet) printf_chat("&WYou need to set a password first with &T/setpass [password]");
+	return 0;
+    }
+
+    if (!passwd) {
+	if (!quiet) printf_chat("&WYou need to login with &T/pass");
 	return 0;
     }
 

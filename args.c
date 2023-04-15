@@ -329,8 +329,7 @@ process_args(int argc, char **argv)
 		}
 
 		if (strcmp(argv[ar], "-cwd") == 0) {
-		    if (found_dir_arg) addarg = 0;
-		    found_dir_arg = 1; // Disable move to ~/.mcchost
+		    found_dir_arg = 2; // Disable move to ~/.mcchost
 		    break;
 		}
 
@@ -449,8 +448,8 @@ process_args(int argc, char **argv)
 	exit(0);
     }
 
-    // The -dir arg isn't added, make sure we don't go anywhere.
-    if (!found_dir_arg) {
+    // The -dir arg isn't added, make sure we don't go anywhere on restart.
+    if (found_dir_arg == 1) {
 	program_args[bc++] = strdup("-cwd");
 	plen += 5;
     }

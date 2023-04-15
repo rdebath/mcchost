@@ -40,6 +40,8 @@ process_status_message(int status, int pid, char * id)
     *userid = *msgbuf = 0;
     id = id?id:"";
 
+    stop_client_list();
+
     // No complaints on clean exit
     if (WIFEXITED(status)) {
 	if (WEXITSTATUS(status)) {

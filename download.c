@@ -188,7 +188,8 @@ LOCAL int
 check_download_ip()
 {
     int rv = 0;
-    open_client_list();
+    int flg = (shdat.client == 0);
+    if (flg) open_client_list();
     if (!shdat.client) return 0;
     for(int i=0; i<MAX_USER; i++)
     {
@@ -197,7 +198,7 @@ check_download_ip()
 	    rv = 1; break;
 	}
     }
-    stop_client_list();
+    if (flg) stop_client_list();
     return rv;
 }
 

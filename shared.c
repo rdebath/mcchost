@@ -561,6 +561,9 @@ open_system_conf()
     allocate_shared(sharename, sizeof(*server), shdat.dat+SHMID_SYSCONF);
     server = shdat.dat[SHMID_SYSCONF].ptr;
 
+    if (ini_settings != &server_ini_settings)
+	ini_settings = &server->shared_ini_settings;
+
     if (!server) {
 	perror("Opening server.dat file");
 	exit(1);
@@ -571,6 +574,8 @@ void
 stop_system_conf()
 {
     if (server) {
+	if (ini_settings != &server_ini_settings)
+	    ini_settings = 0;
 	deallocate_shared(SHMID_SYSCONF);
 	server = 0;
     }

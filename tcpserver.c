@@ -195,6 +195,8 @@ tcpserver()
 
 		    close_userdb();
 		    close_logfile();
+		    stop_client_list();
+		    stop_system_conf(); open_system_conf(); // Cleanup?
 
 		    int pid = 0;
 		    if (!server_runonce)
@@ -674,7 +676,8 @@ start_backup_process()
 {
     if (backup_pid != 0) return;
 
-    open_client_list();
+    if (shdat.client == 0) open_client_list();
+
     if (alarm_sig)
 	shdat.client->generation++;
 

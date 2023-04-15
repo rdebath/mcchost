@@ -446,11 +446,13 @@ scan_levels()
 {
     int loaded_levels = 0, pinned_levels = 0, rv = 0;
 
-    open_client_list();
+    int flg = (shdat.client == 0);
+    if (flg) open_client_list();
     if (!shdat.client) return 0;
 
     if (shdat.client->cleanup_generation != shdat.client->generation) {
 	shdat.client->cleanup_generation = shdat.client->generation;
+	if (flg) stop_client_list();
 	return 1;
     }
 
@@ -474,6 +476,7 @@ scan_levels()
     if (server->pinned_levels != pinned_levels)
 	server->pinned_levels = pinned_levels;
 
+    if (flg) stop_client_list();
     return rv;
 }
 
