@@ -54,7 +54,7 @@ process_status_message(int status, int pid, char * id)
 	    died_badly = delete_session_id(pid, userid, sizeof(userid));
     }
     if (WIFSIGNALED(status)) {
-#if _POSIX_C_SOURCE >= 200809L
+#if _POSIX_VERSION >= 200809L
 	printlog("Process %d%s was killed by signal %s (%d)%s",
 	    pid, id,
 	    strsignal(WTERMSIG(status)),

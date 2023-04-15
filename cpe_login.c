@@ -326,7 +326,7 @@ process_extentry(pkt_extentry * pkt)
 	char descbuf[4096];
 	strcpy(descbuf, user_id);
 	if (*client_ipv4_str)
-	    sprintf(descbuf+strlen(descbuf), " [%s]", client_ipv4_str);
+	    sprintf(descbuf+strlen(descbuf), " '%s'", client_ipv4_str);
 	strcat(descbuf, " connected");
 	if (*client_software.c)
 	    sprintf(descbuf+strlen(descbuf),

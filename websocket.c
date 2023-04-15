@@ -94,9 +94,9 @@ websocket_startup(uint8_t * buf, int buflen)
 	// See SSL url like this: https://www.classicube.net/server/play/${MD5}/?canProxy=true
 	// Where ${MD5} is the md5 hash of server "ip:port"
 	if (proxy_ip_ptr && (client_ipv4_addr == 0x22DF05FA || client_ipv4_addr == 0x7F000001)) {
-	    char client_ipv4_sav[INET_ADDRSTRLEN+10];
-	    char real_ipv4[INET_ADDRSTRLEN+10];
-	    memcpy(client_ipv4_sav, client_ipv4_str, INET_ADDRSTRLEN+10);
+	    char client_ipv4_sav[IP_ADDRSTRLEN];
+	    char real_ipv4[IP_ADDRSTRLEN];
+	    memcpy(client_ipv4_sav, client_ipv4_str, sizeof(client_ipv4_str));
 
 	    saprintf(real_ipv4, "%.*s", proxy_ip_len, proxy_ip_ptr);
 

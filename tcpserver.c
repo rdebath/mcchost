@@ -12,6 +12,9 @@
 #if INTERFACE
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+// Max of INET6_ADDRSTRLEN and INET_ADDRSTRLEN plus the port number
+#define IP_ADDRSTRLEN	64
 #endif
 
 #ifdef WCOREDUMP
@@ -28,7 +31,7 @@ int heartbeat_pid = 0;
 int backup_pid = 0;
 time_t last_heartbeat = 0;
 
-char client_ipv4_str[INET_ADDRSTRLEN+10];
+char client_ipv4_str[IP_ADDRSTRLEN];
 int client_ipv4_port = 0;
 uint32_t client_ipv4_addr = 0;
 int disable_restart = 0;
@@ -71,16 +74,18 @@ dont_panic()
 int
 read_sock_port_no(int sock_fd)
 {
-    struct sockaddr_in my_addr;
+    struct sockaddr_storage my_addr;
     socklen_t len = sizeof(my_addr);
     if (getsockname(sock_fd, (struct sockaddr *)&my_addr, &len) < 0) {
 	return -1;
     }
 
-    if (my_addr.sin_family == AF_INET)
-	return ntohs(my_addr.sin_port);
-    if (my_addr.sin_family == AF_INET6)
-	return ntohs(my_addr.sin_port);
+    if (my_addr.ss_family == AF_INET)
+	return ntohs(((struct sockaddr_in*)&my_addr)->sin_port);
+#ifdef AF_INET6
+    if (my_addr.ss_family == AF_INET6)
+	return ntohs(((struct sockaddr_in6*)&my_addr)->sin6_port);
+#endif
 
     return -1;
 }
@@ -88,7 +93,7 @@ read_sock_port_no(int sock_fd)
 void
 tcpserver()
 {
-    listen_socket = start_listen_socket("0.0.0.0", tcp_port_no);
+    listen_socket = start_listen_socket("", tcp_port_no);
 
     if (tcp_port_no == 0)
 	tcp_port_no = read_sock_port_no(listen_socket);
@@ -380,7 +385,7 @@ do_restart()
 
     printlog("Restart failed, attempting to continue ...");
 
-    listen_socket = start_listen_socket("0.0.0.0", tcp_port_no);
+    listen_socket = start_listen_socket("", tcp_port_no);
     signal_available = 1;
 
     if (signal(SIGHUP, handle_signal) == SIG_ERR)
@@ -401,18 +406,38 @@ start_listen_socket(char * listen_addr, int port)
 {
     int listen_sock;
     // Obtain a file descriptor for our "listening" socket.
+#if defined(AF_INET6) && !defined(IPV4_ONLY)
+    listen_sock = E(socket(AF_INET6, SOCK_STREAM, 0), "socket");
+
+    struct sockaddr_in6 my_addr;
+    memset(&my_addr, 0, sizeof(my_addr));
+    my_addr.sin6_family = AF_INET6;
+    if (listen_addr && *listen_addr)
+	E(inet_pton (my_addr.sin6_family, listen_addr, my_addr.sin6_addr.s6_addr), "inet_pton");
+    else
+	my_addr.sin6_addr = (struct in6_addr)IN6ADDR_ANY_INIT;
+    my_addr.sin6_port = htons(port);
+
+    // For FreeBSD '/etc/sysctl.conf' must have the line "net.inet6.ip6.v6only=0"
+    // Or this must be set to allow IPv4 too.
+    int flg = 0;
+    E(setsockopt(listen_sock, IPPROTO_IPV6, IPV6_V6ONLY, &flg, sizeof(flg)), "setsockopt ipv6");
+
+#else
     listen_sock = E(socket(AF_INET, SOCK_STREAM, 0), "socket");
 
-    int reuse = 1;
-    E(setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)), "setsockopt");
-
+    if (!listen_addr || !*listen_addr) listen_addr = "0.0.0.0";
     struct sockaddr_in my_addr;
     memset(&my_addr, 0, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
     my_addr.sin_addr.s_addr = inet_addr(listen_addr);
     my_addr.sin_port = htons(port);
+#endif
 
-    E(bind(listen_sock, (struct sockaddr*)&my_addr, sizeof(struct sockaddr)), "bind");
+    int reuse = 1;
+    E(setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)), "setsockopt");
+
+    E(bind(listen_sock, (struct sockaddr*)&my_addr, sizeof(my_addr)), "bind");
 
     // start accept client connections (queue 10)
     E(listen(listen_sock, 10), "listen");
@@ -423,31 +448,65 @@ start_listen_socket(char * listen_addr, int port)
 LOCAL int
 accept_new_connection()
 {
-    struct sockaddr_in client_addr;
+    struct sockaddr_storage client_addr;
     memset(&client_addr, 0, sizeof(client_addr));
     socklen_t client_len = sizeof(client_addr);
     int new_client_sock;
     new_client_sock = E(accept(listen_socket, (struct sockaddr *)&client_addr, &client_len), "accept()");
 
-    inet_ntop(AF_INET, &client_addr.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
-    client_ipv4_port = ntohs(client_addr.sin_port);
-    sprintf(client_ipv4_str+strlen(client_ipv4_str), ":%d", client_ipv4_port);
-
-    int ip_is_local = 0;
-
-    if (client_addr.sin_family == AF_INET)
-    {
-	uint32_t caddr = ntohl(client_addr.sin_addr.s_addr);
-	client_ipv4_addr = caddr;
-	if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost (network)
-	    ip_is_local = 1;
-	if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
-	    ip_is_local = 1;
-    }
-
-    client_trusted = ip_is_local;
+    extract_sockaddr((struct sockaddr *)&client_addr);
 
     return new_client_sock;
+}
+
+void
+extract_sockaddr(void * addr)
+{
+    int ip_is_local = 0;
+    client_ipv4_port = 0;
+    client_ipv4_addr = 0xFFFFFFFF;
+
+    struct sockaddr_in *s4 = addr;
+    struct sockaddr_in6 *s6 = addr;
+
+    strcpy(client_ipv4_str, "socket");
+
+    if (s4->sin_family == AF_INET)
+    {
+	inet_ntop(AF_INET, &s4->sin_addr, client_ipv4_str, sizeof(client_ipv4_str));
+	client_ipv4_port = ntohs(s4->sin_port);
+	sprintf(client_ipv4_str+strlen(client_ipv4_str), ":%d", client_ipv4_port);
+
+	uint32_t caddr = ntohl(s4->sin_addr.s_addr);
+	client_ipv4_addr = caddr;
+    }
+
+#ifdef AF_INET6
+    if (s6->sin6_family == AF_INET6)
+    {
+	char client_ipv6_str[IP_ADDRSTRLEN];
+	inet_ntop(AF_INET6, &s6->sin6_addr, client_ipv6_str, sizeof(client_ipv6_str));
+	client_ipv4_port = ntohs(s6->sin6_port);
+	saprintf(client_ipv4_str, "[%s]:%d", client_ipv6_str, client_ipv4_port);
+
+	if (IN6_IS_ADDR_V4MAPPED(&s6->sin6_addr))
+	    client_ipv4_addr = ntohl(((struct in_addr*)(s6->sin6_addr.s6_addr+12))->s_addr);
+	else if (IN6_IS_ADDR_LOOPBACK(&s6->sin6_addr))
+	    client_ipv4_addr = 0x7F000001; // IPv6 Local -> IPv4
+	if (client_ipv4_addr != 0xFFFFFFFF) {
+	    uint32_t n = htonl(client_ipv4_addr);
+	    inet_ntop(AF_INET, &n, client_ipv6_str, sizeof(client_ipv6_str));
+	    saprintf(client_ipv4_str, "%s:%d", client_ipv6_str, client_ipv4_port);
+	}
+    }
+#endif
+
+    if ((client_ipv4_addr & ~0xFFFFFFU) == 0x7F000000) // Localhost (network)
+	ip_is_local = 1;
+    if ((client_ipv4_addr & localnet_mask) == (localnet_addr & localnet_mask))
+	ip_is_local = 1;
+
+    client_trusted = ip_is_local;
 }
 
 void
@@ -466,7 +525,6 @@ check_inetd_connection()
 
     if (line_ifd < 0) return;
 
-    int ip_is_local = 0;
     client_ipv4_port = -1;
 
     if (isatty(line_ifd))
@@ -475,41 +533,19 @@ check_inetd_connection()
     if (getpeername(line_ifd, (struct sockaddr *)&addr, &client_len) >= 0) {
 
 	strcpy(client_ipv4_str, "socket");
-
-	if (addr.s4.sin_family == AF_INET)
-	{
-	    inet_ntop(AF_INET, &addr.s4.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
-	    client_ipv4_port = ntohs(addr.s4.sin_port);
-	    sprintf(client_ipv4_str+strlen(client_ipv4_str), ":%d", client_ipv4_port);
-
-	    uint32_t caddr = ntohl(addr.s4.sin_addr.s_addr);
-	    client_ipv4_addr = caddr;
-	    if ((caddr & ~0xFFFFFFU) == 0x7F000000) // Localhost (network)
-		ip_is_local = 1;
-	    if ((caddr & localnet_mask) == (localnet_addr & localnet_mask))
-		ip_is_local = 1;
-	}
-
-	if (addr.s6.sin6_family == AF_INET6)
-	{
-	    inet_ntop(AF_INET6, &addr.s6.sin6_addr, client_ipv4_str, INET6_ADDRSTRLEN);
-	    client_ipv4_port = ntohs(addr.s6.sin6_port);
-	    sprintf(client_ipv4_str+strlen(client_ipv4_str), ":%d", client_ipv4_port);
-	}
+	extract_sockaddr((struct sockaddr *)&addr);
     }
-
-    client_trusted = ip_is_local;
 
     // In inetd mode our port is unknown
     tcp_port_no = read_sock_port_no(line_ifd);
 
     if (tcp_port_no > 0)
 	printlog("Inetd connection from %s%s on port %d.",
-	    ip_is_local?"trusted host ":"",
+	    client_trusted?"trusted host ":"",
 	    client_ipv4_str, tcp_port_no);
     else
 	printlog("%sonnection from %s.",
-	    ip_is_local?"Trusted c":"C", client_ipv4_str);
+	    client_trusted?"Trusted c":"C", client_ipv4_str);
 }
 
 void

@@ -520,7 +520,7 @@ getprogram(char * argv0)
 
     // Last try, assume the PATH will get fixed sometime.
     char * p = strrchr(argv0, '/');
-    program_args[0] = p?strdup(p+1):strdup("");
+    program_args[0] = p?strdup(p+1):strdup(argv0);
 }
 
 void
