@@ -74,6 +74,7 @@ The dimensions of a cubic block (usually 0..16)
 &TPlayerUpdateMS&S Minumum period between updates of player positions
 
 &TPrivate&S Set &TTrue&S to hide registration &W**
+&TDisableWebClient&S Disables registration of web client when &TTrue&S &W**
 &THeartbeat&S URL of heartbeat server. &W**
 &TPollHeartbeat&S Enable polling of heartbeat server &W**
 &TUserSuffix&S Added to end of users on this port &W**

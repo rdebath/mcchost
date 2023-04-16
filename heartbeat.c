@@ -53,10 +53,16 @@ send_heartbeat_poll()
     }
 
     char heartbeat_url[1024];
+    int disable_web_client = ini_settings->disable_web_client;
     if (ini_settings->heartbeat_url[0] == 0)
 	strcpy(heartbeat_url, "https://www.classicube.net/server/heartbeat/");
     else
 	strcpy(heartbeat_url, ini_settings->heartbeat_url);
+
+    // No point enabling websocket on these ports.
+    for(int i = 0; browser_blocked_ports[i] != 0 && disable_web_client == 0; i++)
+	if (browser_blocked_ports[i] == tcp_port_no)
+	    disable_web_client = 1;
 
     char urlbuf[4096] = "";
     char postbuf[4096] = "";
@@ -117,7 +123,7 @@ send_heartbeat_poll()
 	    "salt=",secretbuf,
 	    "name=",ccnet_cp437_quoteurl(server->name, namebuf, sizeof(namebuf), 1),
 	    "software=",ccnet_cp437_quoteurl(softwarecons, softwarebuf, sizeof(softwarebuf), 0),
-	    "web=","True"
+	    "web=",disable_web_client?"False":"True"
 	    );
     else
 	saprintf(postbuf,
@@ -130,7 +136,7 @@ send_heartbeat_poll()
 	    "salt=",secretbuf,
 	    "users=",unique_ip_count(),
 	    "software=",ccnet_cp437_quoteurl(softwarecons, softwarebuf, sizeof(softwarebuf), 0),
-	    "web=","True"
+	    "web=",disable_web_client?"False":"True"
 	    );
 
     if ((heartbeat_pid = fork()) == 0) {

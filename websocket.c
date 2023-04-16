@@ -17,6 +17,16 @@
 
 /* TODO: Fragments, PING/PONG */
 
+int browser_blocked_ports[] = {
+    1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53,
+    69, 77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115,
+    117, 119, 123, 135, 137, 139, 143, 161, 179, 389, 427, 465, 512,
+    513, 514, 515, 526, 530, 531, 532, 540, 548, 554, 556, 563, 587,
+    601, 636, 989, 990, 993, 995, 1719, 1720, 1723, 2049, 3659, 4045,
+    5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6697, 10080,
+
+    0 };
+
 int websocket = 0;
 static char mask_value[4] = {0};
 static int mask_id = 0;
@@ -53,9 +63,14 @@ websocket_startup(uint8_t * buf, int buflen)
 	}
 	if (strncasecmp(p+1, "Connection", 10) == 0) {
 	    uint8_t *p2 = p+12;
-	    while (*p2 == ' ' || *p2 == ':') p2++;
-	    if (strncasecmp(p2, "upgrade", 7) == 0 && p2[7] <= ' ')
-		has_stuff |= has_connect;
+	    while (*p2 != '\r' && *p2 != '\n') {
+		while (*p2 == ' ' || *p2 == ':' || *p2 == ',') p2++;
+		if (strncasecmp(p2, "upgrade", 7) == 0 && p2[7] <= ' ') {
+		    has_stuff |= has_connect;
+		    break;
+		}
+		while (*p2 != '\r' && *p2 != '\n' && *p2 != ',') p2++;
+	    }
 	}
 	if (strncasecmp(p+1, "Sec-WebSocket-Key", 17) == 0) {
 	    key_ptr = p+19;
