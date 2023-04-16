@@ -137,9 +137,6 @@ process_args(int argc, char **argv)
     int bc = 1, plen = strlen(argv[0]);
     int port_no = -1;
     int found_dir_arg = 0;
-#ifndef __linux__
-    int found_process_start = 0;
-#endif
 
     getprogram(argv[0]);
 
@@ -225,17 +222,15 @@ process_args(int argc, char **argv)
 			break;
 		    }
 
+#ifndef __linux__
 		    if (strcmp(argv[ar], "-process-start-time") == 0) {
 			ar++; addarg++;
-			// Can find process start time directly on Linux.
-#ifdef __linux__
 			addarg = 0;
-#else
-			proc_start_time = strtoimax(argv[ar+1], 0, 0);
-			found_process_start = 1;
-#endif
+			// Can find process start time directly on Linux.
+			proc_start_time = strtoimax(argv[ar], 0, 0);
 			break;
 		    }
+#endif
 		}
 
 		if (strcmp(argv[ar], "-saveconf") == 0) {
@@ -455,8 +450,8 @@ process_args(int argc, char **argv)
     }
 
 #ifndef __linux__
-    if (!found_process_start) {
-	if (!proc_start_time) proc_start_time = time(0);
+    if (!proc_start_time) proc_start_time = time(0);
+    if (proc_start_time) {
 	program_args[bc++] = strdup("-process-start-time");
 	plen += 30;
 	char buf[sizeof(intmax_t)*3+3];

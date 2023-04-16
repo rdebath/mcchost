@@ -546,6 +546,12 @@ cmdset_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	    if (!st->write || command_list[i].perm_okay != command_list[i].perm_def)
 		INI_INTVAL(command_list[i].name, command_list[i].perm_okay);
+	    else {
+		int x = -1;
+		INI_INTVAL(command_list[i].name, x);
+	    }
+	    if (!st->write && command_list[i].perm_okay == -1)
+		command_list[i].perm_okay = command_list[i].perm_def;
 	}
     }
 

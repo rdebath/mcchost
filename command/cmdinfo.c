@@ -175,15 +175,11 @@ cmd_sinfo(char * UNUSED(cmd), char * UNUSED(arg))
     // &T18&S players total. (&T1&S online)
     // &T51&S levels total (&T2&S loaded).
 
-    if (then == 0)
-	printf_chat(" Server start time not found");
-    else {
-	char timebuf[256];
-	conv_duration(timebuf, now-then);
-	printf_chat("  Been up for&T%s&S, running &T%s %s&f %s",
-	    timebuf, server->software, Version,
-	    "https://github.com/rdebath/mcchost");
-    }
+    char timebuf[256];
+    conv_duration(timebuf, now-then);
+    printf_chat("  Been up for&T%s&S, running &T%s %s&f %s",
+	timebuf, server->software, Version,
+	"https://github.com/rdebath/mcchost");
 
     printf_chat("  Player positions are updated &T%g&S times/second",
 	((int)(10000.0/server->player_update_ms))/10.0);
