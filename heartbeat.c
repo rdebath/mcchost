@@ -20,11 +20,6 @@ static char curlbuf[CURLLEN];
     Failed: "-A", "MCscripts"
     Failed: "-A", "Mozilla/5.0 (X11; Linux x86_64)"
     "--user-agent", "MCGalaxy", // Whitelisted ?
-
-    --> user 'rdebath+', Login failed! Mppass required
-    -- Need to add /pass and /setpass commands.
-    -- Should add mppass as a password. (Doesn't work for betacraft)
-    -- Perhaps add "connect to /void" if not authenticated. (0.30 is buggy tho)
 */
 
 void
@@ -243,8 +238,10 @@ LOCAL char *
 ccnet_cp437_quoteurl(char *s, char *dest, int len, int nocolour)
 {
     char * d = dest;
-    for(; *s && d<dest+len-1; s++) {
 #ifdef ASCII_ONLY
+    char * last_colp = 0;
+    for(; *s && d<dest+len-12; s++) {
+	last_colp = 0;
 	int ch = *s;
 	if (ch & 0x80)
 	    ch = cp437_ascii[ch & 0x7F];
@@ -253,6 +250,15 @@ ccnet_cp437_quoteurl(char *s, char *dest, int len, int nocolour)
 	     (ch >= '0' && ch <= '9') ||
 	     (ch == '-') || (ch == '_') || (ch == '.') || (ch == '~'))
 	    *d++ = ch;
+	else if (ch == '&') {
+	    last_colp = d; // Trim trailing colour code.
+	    char lb[10];
+	    if (s[1] == 0) continue; // Trim trailing ampersand.
+	    sprintf(lb, "%%%02x%%%02x", ch, s[1]);
+	    s++;
+	    for(char *p=lb; *p; p++)
+		*d++ = *p;
+	}
 	else
 	{
 	    if (ch < ' ' || ch > '~')
@@ -264,11 +270,25 @@ ccnet_cp437_quoteurl(char *s, char *dest, int len, int nocolour)
 	    *d++ = lb[0];
 	    *d++ = lb[1];
 	}
+    }
+    if (last_colp) d = last_colp;
 #else
+    char * last_colp = 0;
+    for(; *s && d<dest+len-12; s++) {
+	last_colp = 0;
 	if ( (*s >= 'a' && *s <= 'z') || (*s >= 'A' && *s <= 'Z') ||
 	     (*s >= '0' && *s <= '9') ||
 	     (*s == '-') || (*s == '_') || (*s == '.') || (*s == '~'))
 	    *d++ = *s;
+	else if (ch == '&') {
+	    last_colp = d; // Trim trailing colour code.
+	    char lb[10];
+	    if (s[1] == 0) continue; // Trim trailing ampersand.
+	    sprintf(lb, "%%%02x%%%02x", ch, s[1]);
+	    s++;
+	    for(char *p=lb; *p; p++)
+		*d++ = *p;
+	}
 	else if (*s >= ' ' && (*s & 0x80) == 0) // ASCII
 	{
 	    char lb[4];
@@ -305,8 +325,9 @@ ccnet_cp437_quoteurl(char *s, char *dest, int len, int nocolour)
 	    for(char *p=lb; *p; p++)
 		*d++ = *p;
 	}
-#endif
     }
+    if (last_colp) d = last_colp;
+#endif
     *d = 0;
     return dest;
 }
