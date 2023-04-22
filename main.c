@@ -168,6 +168,10 @@ void
 read_only_message()
 {
     if (!level_prop || !level_prop->readonly) return;
+    if (level_prop->map_load_failure) {
+	printf_chat("&WMap set to read only as load was incomplete");
+	return;
+    }
     if (level_prop->disallowchange && extn_inventory_order && extn_sethotbar) return;
 
     printf_chat("&WLoaded read only map, changes won't be saved.");

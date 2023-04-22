@@ -111,6 +111,7 @@ send_map_file(int reload)
     }
 
     uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
+    if (level_len > 0x80000000U) level_len = 0x80000000U;
 
     send_hack_control();
 
@@ -133,7 +134,7 @@ send_map_file(int reload)
     set_last_block_queue_id(); // Send updates from now.
     if (ini_settings->no_map_padding || (cpe_requested || extn_fastmap ||
 	    ((level_prop->cells_x | level_prop->cells_y | level_prop->cells_z) & 31) == 0))
-	send_block_array();
+	send_block_array(level_len);
     else
 	send_padded_block_array();
 
@@ -243,10 +244,9 @@ send_metadata()
 }
 
 void
-send_block_array()
+send_block_array(uintptr_t level_len)
 {
     int blocks_buffered = 0;
-    uintptr_t level_len = (uintptr_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
     block_t conv_blk[BLOCKMAX];
 
     for(block_t b = 0; b<BLOCKMAX; b++)
@@ -358,9 +358,13 @@ send_padded_block_array()
     int scells_x = level_prop->cells_x;
     int scells_y = level_prop->cells_y;
     int scells_z = level_prop->cells_z;
-    if (scells_x&31) scells_x = ((scells_x+31) & -32);
+
+    if (scells_x&15) scells_x = ((scells_x+15) & -16);
     if (scells_y&15) scells_y = ((scells_y+15) & -16);
-    if (scells_z&31) scells_z = ((scells_z+31) & -32);
+    if (scells_z&15) scells_z = ((scells_z+15) & -16);
+    if (scells_x < 32) scells_x = 32;
+    if (scells_z < 32) scells_z = 32;
+
     uintptr_t slevel_len = (uintptr_t)scells_x * scells_y * scells_z;
     block_t conv_blk[BLOCKMAX];
 

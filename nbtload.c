@@ -89,7 +89,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
 
     int rv = gzclose(ifd);
     if (rv) printlog("Load '%s' failed error (gzclose) Z%d", filename, rv);
-    if (cw_loaded != 1)
+    if (cw_loaded != 1 || !level_prop)
 	return -1;
 
     if (*ini_name) {
@@ -101,7 +101,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
 	}
     }
 
-    if (level_prop && level_prop->time_created == 0) {
+    if (level_prop->time_created == 0) {
 	// Hmm, no creation time, pickup the file modified time.
 	struct stat st;
 	char buf[PATH_MAX];
@@ -115,6 +115,9 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
 	if (level_prop->time_created == 0)
 	    level_prop->time_created = time(0);
     }
+
+    if (level_prop->map_load_failure)
+	level_prop->readonly = 1;
 
     if (!quiet) {
 	struct timeval now;
@@ -191,9 +194,9 @@ read_element(gzFile ifd, int etype)
 	// EOF
     } else if (etype == NBT_I8ARRAY) {
 	int i, ch;
-	int32_t len = 0;
+	uint32_t len = 0;
 
-	/* NB: Only lengths 0 .. 0x7FFFFFFF are valid. */
+	/* NB: Only lengths 0 .. 0x7FFFFFFF are officially valid. */
 	for(i=0; i<4; i++)
 	    len = (len<<8) + (ch = gzgetc(ifd));
 
@@ -359,12 +362,12 @@ read_blockarray(gzFile ifd, uint32_t len)
     // This must be before other block arrays to ensure that the shared
     // memory is the correct size for others and correctly wiped.
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-    if (len>level_prop->total_blocks) {
-	printlog("Too many blocks %jd>%jd (%d,%d,%d) for \"%s\"",
+    if (len!=level_prop->total_blocks) {
+	printlog("Too many blocks %jd!=%jd (%d,%d,%d) for \"%s\"",
 	    (intmax_t)len, (intmax_t)level_prop->total_blocks,
 	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
 	    loading_level_fname);
-	return 0;
+	level_prop->map_load_failure = 1;
     }
 
     if (open_blocks(loading_level_fname) < 0) {
@@ -380,6 +383,8 @@ read_blockarray(gzFile ifd, uint32_t len)
     memcpy((void*)(level_blocks+level_prop->total_blocks),
 	    &test_map, sizeof(map_len_t));
 
+    int xbytes = 0;
+    if (len > level_prop->total_blocks) { xbytes = len - level_prop->total_blocks; len = level_prop->total_blocks; }
     for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) {
@@ -388,17 +393,36 @@ read_blockarray(gzFile ifd, uint32_t len)
 	}
 	level_blocks[i] = (ch&0xFF);
     }
+    while(xbytes>0) {
+	int ch = gzgetc(ifd);
+	if (ch == EOF) return 0;
+	xbytes--;
+    }
     return 1;
 }
 
 LOCAL int
 read_blockarray2(gzFile ifd, uint32_t len)
 {
-    if (level_blocks == 0 || level_prop->total_blocks < len) {
+    if (level_blocks == 0) {
 	printlog("Incorrect BlockArray2 found");
 	return 0;
     }
+    if (len!=level_prop->total_blocks) {
+	printlog("Bad BlockArray2 %jd!=%jd (%d,%d,%d) for \"%s\"",
+	    (intmax_t)len, (intmax_t)level_prop->total_blocks,
+	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
+	    loading_level_fname);
+	level_prop->map_load_failure = 1;
+    }
+    if (len > 0xFFFF0000U) return 1; // Almost certainly negative so skip.
 
+#ifdef EIGHTBITMAP
+    level_prop->map_load_failure = 1;
+#endif
+
+    int xbytes = 0;
+    if (len > level_prop->total_blocks) { xbytes = len - level_prop->total_blocks; len = level_prop->total_blocks; }
     for(int i=0; i<len; i++) {
 	uint32_t ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
@@ -413,17 +437,28 @@ read_blockarray2(gzFile ifd, uint32_t len)
 	level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
 #endif
     }
+    while(xbytes>0) {
+	int ch = gzgetc(ifd);
+	if (ch == EOF) return 0;
+	xbytes--;
+    }
     return 1;
 }
 
 LOCAL int
 read_blockarray3(gzFile ifd, uint32_t len)
 {
-    if (level_blocks == 0 || level_prop->total_blocks < len) {
+    if (level_blocks == 0) {
 	printlog("Incorrect BlockArray3 found");
 	return 0;
     }
+    if (len > 0xFFFF0000U) return 1; // Almost certainly negative so skip.
+#ifdef EIGHTBITMAP
+    level_prop->map_load_failure = 1;
+#endif
 
+    int xbytes = 0;
+    if (len > level_prop->total_blocks) { xbytes = len - level_prop->total_blocks; len = level_prop->total_blocks; }
     for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
@@ -439,16 +474,25 @@ read_blockarray3(gzFile ifd, uint32_t len)
 	level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
 #endif
     }
+    while(xbytes>0) {
+	int ch = gzgetc(ifd);
+	if (ch == EOF) return 0;
+	xbytes--;
+    }
     return 1;
 }
 
 LOCAL int
 read_blockarray_physics(gzFile ifd, uint32_t len)
 {
-    if (level_blocks == 0 || level_prop->total_blocks < len) {
+    if (level_blocks == 0) {
 	printlog("Incorrect BlockArrayPhysics found");
 	return 1;
     }
+    if (len > 0xFFFF0000U) return 1; // Almost certainly negative so skip.
+#ifdef EIGHTBITMAP
+    level_prop->map_load_failure = 1;
+#endif
 
     if (!level_prop->mcg_physics_blocks) {
 	level_prop->mcg_physics_blocks = 1;
@@ -456,6 +500,8 @@ read_blockarray_physics(gzFile ifd, uint32_t len)
 	define_mcg_physics_blocks();
     }
 
+    int xbytes = 0;
+    if (len > level_prop->total_blocks) { xbytes = len - level_prop->total_blocks; len = level_prop->total_blocks; }
     for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
@@ -466,6 +512,11 @@ read_blockarray_physics(gzFile ifd, uint32_t len)
 	if (ch)
 	    level_blocks[i] = ch + MCG_PHYSICS_0FFSET;
 #endif
+    }
+    while(xbytes>0) {
+	int ch = gzgetc(ifd);
+	if (ch == EOF) return 0;
+	xbytes--;
     }
     return 1;
 }
@@ -652,7 +703,6 @@ change_int_value(char * section, char * item, int64_t value)
 	if (strcmp(item, "AllowChange") == 0) level_prop->disallowchange = !value;
 	if (strcmp(item, "DisallowChange") == 0) level_prop->disallowchange = value;
 	if (strcmp(item, "ReadOnly") == 0) level_prop->readonly = value;
-	if (strcmp(item, "ResetHotbar") == 0) level_prop->reset_hotbar = value;
 
     } else if (strcasecmp(section, "MCGalaxy") == 0) {
 

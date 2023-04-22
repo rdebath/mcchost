@@ -23,17 +23,13 @@ save_map_to_file(char * fn, int background)
 {
     if (!fn || *fn == 0) return -1;
 
-    // CC works with 2^^31 blocks (with cosmetic errors) so allow just one byte
-    // over the limit. Note, however, that this does not apply to the CW file.
-    // The last block in the array will thus become Block_Air (or undefined).
+    // Documented limit is 2**31-1 blocks
+    // CC works with 2**31 blocks (with cosmetic errors)
+    // For MCGalaxy the size must not exceed (2**31-2**16) or [4228,128,3968]
 
-    // For MCGalaxy the size must not exceed (2^31-2^16) or [4681,128,3584]
-
-    if (level_prop->total_blocks > 0x7FFFFFFF + (int64_t)1 ) {
-	printlog("Oversized map \"%s\" (%d,%d,%d) failed to save",
-	    fn, level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
-	return -1;
-    }
+    if (level_prop->total_blocks > 0x7FFFFFFF)
+	printlog("Oversized map \"%s\" (%d,%d,%d)", fn,
+	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z);
 
     set_last_block_queue_id();
 
@@ -306,18 +302,18 @@ save_map_to_file(char * fn, int background)
 	bc_end(savefile);
     }
 
-    bc_compound(savefile, "MCCHost");
-    if (level_prop->theme[0] && (!level_prop->software[0] || level_prop->seed[0]))
+    bdopen = 0;
+    if (level_prop->theme[0] && (!level_prop->software[0] || level_prop->seed[0])) {
+	if (!bdopen) bc_compound(savefile, "MCCHost");
 	bc_ent_string(savefile, "Theme", level_prop->theme);
-    if (level_prop->seed[0])
+    }
+    if (level_prop->seed[0]) {
+	if (!bdopen) bc_compound(savefile, "MCCHost");
 	bc_ent_string(savefile, "Seed", level_prop->seed);
+    }
 
-    // These are in the ini file.
-    // bc_ent_int(savefile, "DisallowChange", level_prop->disallowchange);
-    // bc_ent_int(savefile, "ReadOnly", level_prop->readonly);
-    // bc_ent_int(savefile, "ResetHotbar", level_prop->reset_hotbar);
-
-    bc_end(savefile);
+    if (bdopen)
+	bc_end(savefile);
 
     bc_end(savefile);
     bc_end(savefile);
@@ -328,9 +324,9 @@ save_map_to_file(char * fn, int background)
 	int use_mcg_physics = level_prop->mcg_physics_blocks; // Use BA3 or BA_Physics for blocks > 767
 
 	// Save as much as we can, lost blocks would be at the top of the Y axis.
-	int saveable_blocks = level_prop->total_blocks;
-	if (level_prop->total_blocks > 0x7FFFFFFF)
-	    saveable_blocks = 0x7FFFFFFF;
+	uint32_t saveable_blocks = level_prop->total_blocks;
+	if (level_prop->total_blocks > 0xFFFFFFFFU)
+	    saveable_blocks = 0xFFFFFFFFU;
 
 	// Written by CC
 	bc_ent_bytes_header(savefile, "BlockArray", saveable_blocks);

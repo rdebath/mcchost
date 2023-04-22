@@ -47,6 +47,7 @@ struct map_info_t {
     uint8_t readonly;
     uint8_t disallowchange;	// even if readonly, you can change the working map.
     uint8_t no_unload;
+    uint8_t map_load_failure;	// The map wasn't loaded properly; ie: 10bit file with 8bit server
 
     uint8_t dirty_save;
     uint8_t mcg_physics_blocks;

@@ -15,8 +15,6 @@ Other notes
 */
 
 /*HELP todo
- +) 8bit load of 10bit map; set readonly flag.
-
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat ?
