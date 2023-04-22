@@ -59,6 +59,8 @@ init_map_null()
 	    .hacks_jump = -1,
 	};
 
+    init_rand_gen(); // If required
+
     for(int i = 0; i<sizeof(level_prop->uuid); i++)
     {
         int by = bounded_random(256);
@@ -96,12 +98,6 @@ patch_map_nulls(xyzhv_t oldsize)
     }
 
     level_prop->total_blocks = (int64_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z;
-
-    if (level_prop->side_level == INT_MIN)
-	level_prop->side_level = level_prop->cells_y/2;
-
-    if (level_prop->clouds_height == INT_MIN)
-	level_prop->clouds_height = level_prop->cells_y+2;
 
     if (level_prop->spawn.x == INT_MIN)
 	level_prop->spawn.x = level_prop->cells_x/2   *32+16;
@@ -323,7 +319,9 @@ init_level_blocks(uint64_t fallback_seed, int pre_zeroed)
 	}
 
 	// Flat: Edge level is grass, everything below is dirt.
-	y1 = level_prop->side_level-1;
+	y1 = level_prop->side_level;
+	if (y1 == INT_MIN) y1 = level_prop->cells_y/2;
+	y1--;
 	for(y=0; y<level_prop->cells_y; y++) {
 	    block_t b = Block_Air;
 	    if (y>y1) {

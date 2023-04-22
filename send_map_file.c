@@ -552,16 +552,23 @@ send_map_property()
     if (!extn_envmapaspect) return;
 
     if (!classic_limit_blocks) {
+	int side_level = level_prop->side_level;
+	if (side_level == INT_MIN) side_level = level_prop->cells_y/2;
+	int clouds_height = level_prop->clouds_height;
+	if (clouds_height == INT_MIN) clouds_height = level_prop->cells_y+2;
+	int side_offset = level_prop->side_offset;
+	if (side_offset == INT_MIN) side_offset = -2;
+
 	send_setmapproperty_pkt(0, level_prop->side_block);
 	send_setmapproperty_pkt(1, level_prop->edge_block);
-	send_setmapproperty_pkt(2, level_prop->side_level);
-	send_setmapproperty_pkt(3, level_prop->clouds_height);
+	send_setmapproperty_pkt(2, side_level);
+	send_setmapproperty_pkt(3, clouds_height);
 	send_setmapproperty_pkt(4, level_prop->max_fog);
 	send_setmapproperty_pkt(5, level_prop->clouds_speed);
 	send_setmapproperty_pkt(6, level_prop->weather_speed);
 	send_setmapproperty_pkt(7, level_prop->weather_fade);
 	send_setmapproperty_pkt(8, level_prop->exp_fog);
-	send_setmapproperty_pkt(9, level_prop->side_offset);
+	send_setmapproperty_pkt(9, side_offset);
 	send_setmapproperty_pkt(10, level_prop->skybox_hor_speed);
 	send_setmapproperty_pkt(11, level_prop->skybox_ver_speed);
     } else {

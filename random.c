@@ -100,8 +100,8 @@ reinit_rand_gen()
 void
 init_rand_gen()
 {
-    if (rand_init_done) return;
-    rand_init_done = 1;
+    if (rand_init_done == getpid()) return;
+    rand_init_done = getpid();
     struct timeval now;
     gettimeofday(&now, 0);
 

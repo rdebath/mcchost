@@ -245,11 +245,14 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    INI_INTVAL("Size.Z", z);
 	}
 
-	INI_STRARRAYCP437("Motd", tgt->motd);
-	INI_STRARRAYCP437("Name", tgt->name);
-	INI_STRARRAYCP437("Software", tgt->software);
-	INI_STRARRAYCP437("Theme", tgt->theme);
-	INI_STRARRAYCP437("Seed", tgt->seed);
+	if (!st->looped_read) {
+	    INI_STRARRAYCP437("Motd", tgt->motd);
+	    INI_STRARRAYCP437("Name", tgt->name);
+	    INI_STRARRAYCP437("Software", tgt->software);
+	    INI_STRARRAYCP437("Theme", tgt->theme);
+	    INI_STRARRAYCP437("Seed", tgt->seed);
+	    INI_STRARRAYHEX("UUID", tgt->uuid);
+	}
 	if (!st->write)
 	    INI_TIME_T("TimeCreated", tgt->time_created);
 
@@ -279,10 +282,12 @@ level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_INTVAL("SideBlock", tgt->side_block);
 	INI_INTVAL("EdgeBlock", tgt->edge_block);
-	INI_INTVAL("SideLevel", tgt->side_level);
-	INI_INTVAL("SideOffset", tgt->side_offset);
-
-	INI_INTVAL("CloudHeight", tgt->clouds_height);
+	if (!st->write || tgt->side_level != INT_MIN)
+	    INI_INTVAL("SideLevel", tgt->side_level);
+	if (!st->write || tgt->side_offset != INT_MIN)
+	    INI_INTVAL("SideOffset", tgt->side_offset);
+	if (!st->write || tgt->clouds_height != INT_MIN)
+	    INI_INTVAL("CloudHeight", tgt->clouds_height);
 	INI_INTVAL("MaxFog", tgt->max_fog);
 
 	INI_FIXEDP("CloudsSpeed", tgt->clouds_speed, 256);
@@ -824,6 +829,33 @@ ini_read_nbtstr(nbtstr_t * buf, char *value)
     *buf = t;
 }
 
+LOCAL void
+ini_write_bytes(ini_state_t *st, char * section, char *fieldname, char *value, int len)
+{
+    if (!fieldname || !*fieldname) return;
+    ini_write_section(st, section);
+    fprintf(st->fd, "%s =%s", fieldname, *value?" ":"\n");
+    if (*value == 0) return;
+    for(int i=0; i<len; i++)
+	fprintf(st->fd, "%02x", (uint8_t)(*value++));
+    fputc('\n', st->fd);
+}
+
+LOCAL void
+ini_read_bytes(char * buf, int len, char *value)
+{
+    char * vp = value;
+    for(int i=0; i<len; i++) {
+	char vbuf[4] = "00";
+	while (*vp == '-') vp++;
+	if (*vp && vp[1]) {
+	    vbuf[0] = *vp++;
+	    vbuf[1] = *vp++;
+	}
+	buf[i] = strtol(vbuf, 0, 16);
+    }
+}
+
 #if 0
 LOCAL void
 ini_write_strptr(ini_state_t *st, char * section, char *fieldname, char **value)
@@ -1007,6 +1039,18 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
                 ini_read_nbtstr(&(_var), *fieldvalue); \
             else \
                 ini_write_nbtstr(st, section, fld, &(_var)); \
+        } \
+    }while(0)
+
+#define INI_STRARRAYHEX(_field, _var) \
+    do{\
+        fld = _field; \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                ini_read_bytes((_var), sizeof(_var), *fieldvalue); \
+            else \
+                ini_write_bytes(st, section, fld, (_var), sizeof(_var)); \
         } \
     }while(0)
 

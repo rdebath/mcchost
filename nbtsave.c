@@ -127,7 +127,8 @@ save_map_to_file(char * fn, int background)
     bc_compound(savefile, "EnvMapAppearance");
     bc_ent_int8(savefile, "SideBlock", level_prop->side_block);
     bc_ent_int8(savefile, "EdgeBlock", level_prop->edge_block);
-    bc_ent_int16(savefile, "SideLevel", level_prop->side_level);
+    if (level_prop->side_level != INT_MIN)
+	bc_ent_int16(savefile, "SideLevel", level_prop->side_level);
     nbtstr_t b = level_prop->texname;
     bc_ent_string(savefile, "TextureURL", b.c);
     bc_end(savefile);
@@ -145,9 +146,12 @@ save_map_to_file(char * fn, int background)
     bc_compound(savefile, "EnvMapAspect");
     bc_ent_int16(savefile, "EdgeBlock", level_prop->edge_block);
     bc_ent_int16(savefile, "SideBlock", level_prop->side_block);
-    bc_ent_int32(savefile, "EdgeHeight", level_prop->side_level);
-    bc_ent_int32(savefile, "SidesOffset", level_prop->side_offset);
-    bc_ent_int32(savefile, "CloudsHeight", level_prop->clouds_height);
+    if (level_prop->side_level != INT_MIN)
+	bc_ent_int32(savefile, "EdgeHeight", level_prop->side_level);
+    if (level_prop->side_offset != INT_MIN)
+	bc_ent_int32(savefile, "SidesOffset", level_prop->side_offset);
+    if (level_prop->clouds_height != INT_MIN)
+	bc_ent_int32(savefile, "CloudsHeight", level_prop->clouds_height);
 
     bc_ent_float(savefile, "CloudsSpeed", level_prop->clouds_speed/256.0);
     bc_ent_float(savefile, "WeatherSpeed", level_prop->weather_speed/256.0);
@@ -159,14 +163,17 @@ save_map_to_file(char * fn, int background)
     // Not written by CC
     bc_ent_int(savefile, "MapProperty0", level_prop->side_block);
     bc_ent_int(savefile, "MapProperty1", level_prop->edge_block);
-    bc_ent_int(savefile, "MapProperty2", level_prop->side_level);
-    bc_ent_int(savefile, "MapProperty3", level_prop->clouds_height);
+    if (level_prop->side_level != INT_MIN)
+	bc_ent_int(savefile, "MapProperty2", level_prop->side_level);
+    if (level_prop->clouds_height != INT_MIN)
+	bc_ent_int(savefile, "MapProperty3", level_prop->clouds_height);
     bc_ent_int(savefile, "MapProperty4", level_prop->max_fog);
     bc_ent_int(savefile, "MapProperty5", level_prop->clouds_speed);
     bc_ent_int(savefile, "MapProperty6", level_prop->weather_speed);
     bc_ent_int(savefile, "MapProperty7", level_prop->weather_fade);
     bc_ent_int(savefile, "MapProperty8", level_prop->exp_fog);
-    bc_ent_int(savefile, "MapProperty9", level_prop->side_offset);
+    if (level_prop->side_offset != INT_MIN)
+	bc_ent_int(savefile, "MapProperty9", level_prop->side_offset);
     bc_ent_int(savefile, "MapProperty10", level_prop->skybox_hor_speed);
     bc_ent_int(savefile, "MapProperty11", level_prop->skybox_ver_speed);
     bc_end(savefile);

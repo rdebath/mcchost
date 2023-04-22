@@ -40,17 +40,18 @@ gen_plain_map(char * seed)
 
     //printf_chat("Class %s, %s, Flowers 1:%d, trees 1:%d", flattened?"flattened":"hill", land_only?"land":"beach", flowerrate, treerate);
 
+    int side_level = level_prop->side_level == INT_MIN?level_prop->cells_y/2:level_prop->side_level;
     int x, y, z;
 
     for(y=0; y<level_prop->cells_y; y++)
 	for(z=0; z<level_prop->cells_z; z++)
 	    for(x=0; x<level_prop->cells_x; x++)
-	    if (y == 0 && level_prop->side_level > y+3)
+	    if (y == 0 && side_level > y+3)
 		level_blocks[World_Pack(x,y,z)] = Block_Stone;
 	    else
 	    {
 		int y1 = heightmap[x+z*level_prop->cells_x];
-		if (y1>level_prop->side_level-1) {
+		if (y1>side_level-1) {
 		    y1--; // First grass "above" water at water level.
 		    if (y>y1)
 			level_blocks[World_Pack(x,y,z)] = Block_Air;
@@ -62,12 +63,12 @@ gen_plain_map(char * seed)
 			level_blocks[World_Pack(x,y,z)] = Block_Stone;
 
 		} else {
-		    int y2 = level_prop->side_level-1;
+		    int y2 = side_level-1;
 		    if (y>y1 && y>y2)
 			level_blocks[World_Pack(x,y,z)] = Block_Air;
 		    else if (y>y1)
 			level_blocks[World_Pack(x,y,z)] = Block_StillWater;
-		    else if (y > y1-3 && y1<level_prop->side_level-8)
+		    else if (y > y1-3 && y1<side_level-8)
 			level_blocks[World_Pack(x,y,z)] = Block_Gravel;
 		    else if (y > y1-3)
 			level_blocks[World_Pack(x,y,z)] = Block_Sand;
@@ -87,7 +88,7 @@ gen_plain_map(char * seed)
 	    for(x=0; x<level_prop->cells_x; x++)
 	    {
 		int y1 = heightmap[x+z*level_prop->cells_x];
-		if (y1 < level_prop->side_level-land_only) continue;
+		if (y1 < side_level-land_only) continue;
 		if (y1 >= level_prop->cells_y-1) continue;
 		int r = bounded_random_r(rng2, flowerrate);
 		if (r == 1)
@@ -104,7 +105,7 @@ gen_plain_map(char * seed)
 	for(x=0; x<level_prop->cells_x; x++)
 	{
 	    int y1 = heightmap[x+z*level_prop->cells_x];
-	    if (y1>level_prop->side_level-1 || land_only) {
+	    if (y1>side_level-1 || land_only) {
 		heightmap[x+z*level_prop->cells_x]--;
 	    }
 	}
@@ -131,10 +132,11 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
     int rm = level_prop->cells_x>level_prop->cells_z?level_prop->cells_x:level_prop->cells_z;
     rm = rm/2 + 2;
 
-    int h = level_prop->side_level;
+    int side_level = level_prop->side_level == INT_MIN?level_prop->cells_y/2:level_prop->side_level;
+    int h = side_level;
     if (!flattened && !land_only && level_prop->cells_y>15)
 	h += bounded_random_r(srng, 8);
-    if (h >= level_prop->cells_y) h = level_prop->side_level;
+    if (h >= level_prop->cells_y) h = side_level;
     if (h >= level_prop->cells_y) h = level_prop->cells_y/2;
     level_prop->spawn.y = (h+3) *32+16;
 
@@ -193,9 +195,9 @@ gen_plain_heightmap(map_random_t *srng, uint16_t * heightmap, int land_only, int
 		int y1 = heightmap[x+z*level_prop->cells_x];
 		y1 -= 0x7FFF;
 		y1 += h;
-		if (y1<level_prop->side_level)
+		if (y1<side_level)
 		    y1 = heightmap[x+z*level_prop->cells_x] =
-			(level_prop->side_level)*2 - y1;
+			(side_level)*2 - y1;
 		y1 -= h;
 		y1 += 0x7FFF;
 		heightmap[x+z*level_prop->cells_x] = y1;
@@ -301,7 +303,7 @@ linear_tree_planting(map_random_t *rng, uint16_t * heightmap, int treerate)
 	    if (x>=level_prop->cells_x || z>=level_prop->cells_z) continue;
 
 	    int y1 = heightmap[x+z*level_prop->cells_x];
-	    if (y1 <= level_prop->side_level) continue;
+	    if (y1 <= side_level) continue;
 	    if (treerate == 0 ||
 		    y1+7 > level_prop->cells_y ||
 		    bounded_random_r(rng, treerate) != 1) {
@@ -348,8 +350,9 @@ try_plant_tree(map_random_t *rng, uint16_t * heightmap, int treerate, int x, int
     if (x-3 < 0 || x+3 >= level_prop->cells_x ||
 	z-3 < 0 || z+3 >= level_prop->cells_z) return;
 
+    int side_level = level_prop->side_level == INT_MIN?level_prop->cells_y/2:level_prop->side_level;
     int y1 = heightmap[x+z*level_prop->cells_x];
-    if (y1 <= level_prop->side_level) return;
+    if (y1 <= side_level) return;
     if (treerate == 0 || y1 > 0x8000 || bounded_random_r(rng, treerate) != 1)
 	return;
 

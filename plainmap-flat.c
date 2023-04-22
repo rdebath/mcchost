@@ -17,11 +17,13 @@ gen_plain_flat_map(char *seed)
 
     gen_plain_heightmap(rng, heightmap);
 
+    int side_level = level_prop->side_level == INT_MIN?level_prop->cells_y/2:level_prop->side_level;
+
     int x, y, z;
     for(y=0; y<level_prop->cells_y; y++)
 	for(z=0; z<level_prop->cells_z; z++)
 	    for(x=0; x<level_prop->cells_x; x++)
-	    if (y == 0 && level_prop->side_level > y+3)
+	    if (y == 0 && side_level > y+3)
 		level_blocks[World_Pack(x,y,z)] = Block_Stone;
 	    else
 	    {
@@ -37,7 +39,7 @@ gen_plain_flat_map(char *seed)
 			level_blocks[World_Pack(x,y,z)] = Block_Stone;
 
 		} else {
-		    int y2 = level_prop->side_level-1;
+		    int y2 = side_level-1;
 		    if (y>y1 && y>y2)
 			level_blocks[World_Pack(x,y,z)] = Block_Air;
 		    else if (y>y1)
