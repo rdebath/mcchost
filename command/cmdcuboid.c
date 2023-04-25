@@ -5,11 +5,20 @@
 &T/cuboid [mode] [block]
 Modes: solid/hollow/walls/wire
 Draws a cuboid between two points
-Alias: &T/z
+Alias: &T/z, /box, /cw for /z wire, /ch for /z hollow, /Walls for /z walls, /hbox for /z hollow
 */
 
 #if INTERFACE
-#define CMD_CUBOID {N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, .dup=1}
+#define CMD_CUBOID \
+	{N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, .dup=1}, \
+	{N"box", &cmd_cuboid, .dup=1}, \
+	{N"cuboid-wire", &cmd_cuboid, .nodup=1, .dup=1}, \
+	{N"cw", &cmd_cuboid, .dup=1}, \
+	{N"cuboid-hollow", &cmd_cuboid, .nodup=1, .dup=1}, \
+	{N"ch", &cmd_cuboid, .dup=1}, \
+	{N"hbox", &cmd_cuboid, .dup=1}, \
+	{N"cuboid-walls", &cmd_cuboid, .nodup=1, .dup=1}, \
+	{N"walls", &cmd_cuboid, .dup=1}
 #endif
 
 char * cuboids[] = { "solid", "hollow", "walls", "wire", 0 };
@@ -19,16 +28,23 @@ cmd_cuboid(char * cmd, char * arg)
 {
     if (!level_prop || level_prop->disallowchange) { printf_chat("&WLevel cannot be changed"); return; }
 
-    char * p = strchr(arg, ' ');
+    char * p = strchr(arg, ' '), *c;
     if (!p) p = arg+strlen(arg);
     int ctype = 0;
     char * blkname = arg;
-    for(int i = 0; cuboids[i]; i++)
-	if (strncasecmp(cuboids[i], arg, p-arg) == 0) {
-	    ctype = i;
-	    blkname = p;
-	    break;
+    if ((c=strchr(cmd, '-')) != 0) {
+	for(int i = 0; cuboids[i]; i++) {
+	    if (strcasecmp(cuboids[i], c+1) == 0)
+		ctype = i;
 	}
+    } else {
+	for(int i = 0; cuboids[i]; i++)
+	    if (strncasecmp(cuboids[i], arg, p-arg) == 0) {
+		ctype = i;
+		blkname = p;
+		break;
+	    }
+    }
     while(*blkname == ' ') blkname++;
 
     block_t b = block_id(blkname);

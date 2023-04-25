@@ -25,17 +25,8 @@ Other notes
     -- /setvar user username var value ?
     -- /setvar with no section to level and system sections.
 
-    -- /map command aliases ?
-    -- /blockprops command aliases ?
-    -- /lb command aliases ?
-    -- /os command aliases ?
-
-    -- Other command expansion/aliases
-       Which way?
-	 /cuboid-walls <-- /cuboid walls
-	   -- perms can be done on each subcommand
-	 /os map --> /map
-	   -- os is a grouper like "cuboid" above with some short subcmds
+    -- command aliases
+       -- /map /env /blockprops /lb /os
 
  +) On /defblk of block used for edge or horizon need to redefine those.
 

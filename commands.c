@@ -45,6 +45,8 @@ run_command(char * msg)
     if (msg[1] == 0) return; //TODO: Repeat command.
 
     char cmd[NB_SLEN];
+    char cmd2[NB_SLEN];
+
     int l = strcspn(msg+1, " ");
     if (l>=MB_STRLEN) {
 	printf_chat("&SUnknown command; see &T/cmds");
@@ -52,14 +54,31 @@ run_command(char * msg)
     }
     memcpy(cmd, msg+1, l);
     cmd[l] = 0;
+    cmd2[0] = 0;
+
+    for(unsigned char * c = cmd; *c; c++)
+	if (isupper(*c))
+	    *c = tolower(*c);
 
     char * arg = msg+2+l;
     while (*arg == ' ') arg++;
 
-    if (strcasecmp(cmd, "womid") == 0) { player_last_move = time(0); return; }
+    int al = strcspn(arg, " ");
+    if (al + l + 2 < NB_SLEN) {
+	char * a = arg;
+	int al2 = al;
+	if (*a == '-') {al2--; a++;}
+	saprintf(cmd2, "%s-%*s", cmd, al2, arg);
+
+	for(unsigned char * c = cmd2; *c; c++)
+	    if (isupper(*c))
+		*c = tolower(*c);
+    }
+
+    if (strcmp(cmd, "womid") == 0) { player_last_move = time(0); return; }
     if (!user_authenticated) {
-	if (strcasecmp(cmd, "pass") != 0 && strcasecmp(cmd, "setpass") != 0 &&
-	    strcasecmp(cmd, "quit") != 0 && strcasecmp(cmd, "rq") != 0)
+	if (strcmp(cmd, "pass") != 0 && strcmp(cmd, "setpass") != 0 &&
+	    strcmp(cmd, "quit") != 0 && strcmp(cmd, "rq") != 0)
 	{
 	    printf_chat("You must verify using &T/pass [pass]&S first (or &T/rq&S)");
 	    return;
@@ -80,8 +99,14 @@ run_command(char * msg)
 	return;
     }
 
+    int cno = -1;
     for(int i = 0; command_list[i].name; i++) {
-	if (strcasecmp(cmd, command_list[i].name) != 0) continue;
+	if (cmd[0] != command_list[i].name[0]) continue;
+	int is_arg = 0;
+	if (strcmp(cmd, command_list[i].name) != 0) {
+	    is_arg = 1;
+	    if (strcmp(cmd2, command_list[i].name) != 0) continue;
+	}
 
 	int c = i;
 	while(c>0 && command_list[c].dup && !command_list[c].nodup &&
@@ -91,47 +116,52 @@ run_command(char * msg)
 	if (command_list[c].perm_okay == perm_token_disabled)
 	    continue;
 
-	char * ncmd = command_list[c].name;
+	if (cno == -1 || is_arg)
+	    cno = c;
+    }
 
-	if (command_list[c].perm_okay != perm_token_none && user_authenticated) {
-	    if (command_list[c].perm_okay == perm_token_admin) {
-		if (!perm_is_admin()) {
-		    printf_chat("&WPermission denied, only admin can run /%s", ncmd);
-		    fprintf_logfile("%s denied cmd /%s%s%s", user_id, ncmd, *arg?" ":"",arg);
-		    return;
-		}
-	    } else if (command_list[c].perm_okay == perm_token_level) {
-		if (!perm_level_check(0,0,0))
-		    return;
-	    }
-	}
-
-	if (server->flag_log_commands) {
-	    int redact_args = (!strcasecmp(ncmd, "pass") ||
-			       !strcasecmp(ncmd, "setpass"));
-	    if (!server->flag_log_place_commands &&
-		    strcasecmp(ncmd, "place") == 0)
-		;
-	    else if (redact_args)
-		fprintf_logfile("%s used /%s%s", user_id, ncmd, *arg?" <redacted>":"");
-	    else
-		fprintf_logfile("%s used /%s%s%s", user_id, ncmd, *arg?" ":"",arg);
-	}
-
-	if (strcasecmp(ncmd, "afk") != 0)
-	    update_player_move_time();
-
-	if ((!level_prop || !level_blocks) && command_list[c].map)
-	    printf_chat("&WCommand failed, map is not loaded");
-	else
-	if (command_list[c].help_if_no_args && *arg == 0)
-	    cmd_help(0, ncmd);
-	else
-	    command_list[c].function(ncmd, arg);
+    if (cno == -1) {
+	printf_chat("&SUnknown command \"%s&S\" -- see &T/cmds", cmd);
 	return;
     }
 
-    printf_chat("&SUnknown command \"%s&S\" -- see &T/cmds", cmd);
+    char * ncmd = command_list[cno].name;
+
+    if (command_list[cno].perm_okay != perm_token_none && user_authenticated) {
+	if (command_list[cno].perm_okay == perm_token_admin) {
+	    if (!perm_is_admin()) {
+		printf_chat("&WPermission denied, only admin can run /%s", ncmd);
+		fprintf_logfile("%s denied cmd /%s%s%s", user_id, ncmd, *arg?" ":"",arg);
+		return;
+	    }
+	} else if (command_list[cno].perm_okay == perm_token_level) {
+	    if (!perm_level_check(0,0,0))
+		return;
+	}
+    }
+
+    if (server->flag_log_commands) {
+	int redact_args = (!strcmp(ncmd, "pass") ||
+			   !strcmp(ncmd, "setpass"));
+	if (!server->flag_log_place_commands &&
+		strcmp(ncmd, "place") == 0)
+	    ;
+	else if (redact_args)
+	    fprintf_logfile("%s used /%s%s", user_id, ncmd, *arg?" <redacted>":"");
+	else
+	    fprintf_logfile("%s used /%s%s%s", user_id, ncmd, *arg?" ":"",arg);
+    }
+
+    if (strcmp(ncmd, "afk") != 0)
+	update_player_move_time();
+
+    if ((!level_prop || !level_blocks) && command_list[cno].map)
+	printf_chat("&WCommand failed, map is not loaded");
+    else
+    if (command_list[cno].help_if_no_args && *arg == 0)
+	cmd_help(0, ncmd);
+    else
+	command_list[cno].function(ncmd, arg);
     return;
 }
 
@@ -159,7 +189,7 @@ Aliases: /hacks
 */
 #if INTERFACE
 #define CMD_QUITS  {N"quit", &cmd_quit}, \
-    {N"rq", &cmd_quit, .dup=1, .nodup=1 }, \
+    {N"rq", &cmd_quit, .nodup=1 }, \
     {N"hax", &cmd_quit, .dup=1, .nodup=1 }, {N"hacks", &cmd_quit, .dup=1}
 #endif
 

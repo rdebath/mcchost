@@ -1173,7 +1173,8 @@ define_mcg_physics_blocks()
 		    level_prop->blockdef[blk].portal_flag = 1;
 		else if (strstr(namebuf, "_Message") == 0)
 		    level_prop->blockdef[blk].mblock_flag = 1;
-	    }
+	    } else
+		strcpy(level_prop->blockdef[blk].name.c, "unknown");
 	}
     }
 }

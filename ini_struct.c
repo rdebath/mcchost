@@ -716,7 +716,7 @@ ini_extract_section(ini_state_t *st, char *line)
 	    *d++ = *p - 'A' + 'a';
 	    continue;
 	}
-	if ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'z') || *p == '.') {
+	if ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'z') || *p == '.' || *p == '-') {
 	    *d++ = *p;
 	    continue;
 	}
@@ -742,7 +742,7 @@ ini_decode_lable(char **line, char *buf, int len)
 		*d++ = *p - 'A' + 'a';
 	    continue;
 	}
-	if ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'z') || *p == '.') {
+	if ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'z') || *p == '.' || *p == '-') {
 	    if (d<buf+len-1)
 		*d++ = *p;
 	    continue;
