@@ -6,7 +6,7 @@
 &Tid&S is the block number to define
 &TCopyFrom&S is the block to use as the pattern.
 If &TCopyFrom&S is &T-&S the block is not copied or is copied from &TAir&S
-The &T"Name"&S must be enclosed in quotes or skipped.
+The &T"Name"&S must be enclosed in quotes or be "" or '-'.
 See: &T/help defblk flags&S for list of flags.
 */
 
@@ -81,6 +81,7 @@ cmd_defblk(char * UNUSED(cmd), char * arg)
 
     char * blk_str = strarg(arg);
     char * cf_str = strarg(0);
+    char * cname = strarg(0);
     char * val = strarg_rest();
 
     block_t blk = Block_Air, cf_blk = Block_Air;
@@ -100,7 +101,6 @@ cmd_defblk(char * UNUSED(cmd), char * arg)
         printf_chat("&WBlock number '%s' is not a valid source.", blk_str);
         return;
     }
-    while (val && *val == ' ') val++;
 
     if (!level_prop->blockdef[blk].defined && cf_blk == (block_t)-1) {
 	if (blk < 66) cf_blk = blk;
@@ -127,15 +127,12 @@ cmd_defblk(char * UNUSED(cmd), char * arg)
     level_prop->metadata_generation++;
     level_prop->last_modified = time(0);
 
-    if (!val) return;
-    if (*val == '"') {
-	char * cname = strtok(val+1, "\"");
-	val = strtok(0, "");
+    if (cname && *cname && strcmp(cname, "-") != 0) {
 	strncpy(level_prop->blockdef[blk].name.c, cname, MB_STRLEN);
 	level_prop->blockdef[blk].name.c[MB_STRLEN] = 0;
     }
-    if (!val) return;
-    while (*val == ' ') val++;
+
+    if (val) while (*val == ' ') val++;
     if (!val || *val == 0) return;
 
     char * opt = strtok(val, ",");

@@ -115,9 +115,7 @@ cmd_main(char * UNUSED(cmd), char * arg)
             return;
         }
 
-	char buf[128];
-	saprintf(buf, "server main %s", arg);
-	return cmd_setvar(0, buf);
+	return setvar("server", "main", arg);
     }
 
     if (current_level_backup_id == 0 && strcmp(main_level(), current_level_name) == 0) {

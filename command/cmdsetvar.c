@@ -122,7 +122,7 @@ Use &T/set server [varname] [value]&S for each item or alter the server.ini or s
 void
 cmd_setvar(char * UNUSED(cmd), char * arg)
 {
-    char * section = strtok(arg, " ");
+    char * section = strarg(arg);
     char * varname = 0;
     char * value = 0;
     char vbuf[256];
@@ -132,24 +132,28 @@ cmd_setvar(char * UNUSED(cmd), char * arg)
 		strcasecmp(section, "system") == 0 ||
 		strcasecmp(section, "level") == 0 ||
 		strncmp(section, "textcolour", 10) == 0) {
-	    varname = strtok(0, " ");
-	    value = strtok(0, "");
+	    varname = strarg(0);
+	    value = strarg_rest();
+
+	    // Alias
+	    if (strcasecmp(section, "system") == 0) section = "server";
+
 	} else if (strcasecmp(section, "block") == 0) {
-	    char * bno = strtok(0, " ");
+	    char * bno = strarg(0);
 	    saprintf(vbuf, "block.%s", bno);
 	    section = vbuf;
-	    varname = strtok(0, " ");
-	    value = strtok(0, "");
+	    varname = strarg(0);
+	    value = strarg_rest();
 	} else if (strcasecmp(section, "cuboid") == 0) {
-	    char * bno = strtok(0, " ");
+	    char * bno = strarg(0);
 	    saprintf(vbuf, "cuboid.%s", bno);
 	    section = vbuf;
-	    varname = strtok(0, " ");
-	    value = strtok(0, "");
+	    varname = strarg(0);
+	    value = strarg_rest();
 	} else {
 	    varname = section;
 	    section = "level";
-	    value = strtok(0, "");
+	    value = strarg_rest();
 	}
     }
     if (value == 0) value = "";
@@ -159,19 +163,21 @@ cmd_setvar(char * UNUSED(cmd), char * arg)
 	return;
     }
 
+    setvar(section, varname, value);
+}
+
+void
+setvar(char * section, char * varname, char * value)
+{
     ini_state_t stv = {.no_unsafe=1}, *st = &stv;
     st->curr_section = section;
 
-    if (strcasecmp(section, "server") == 0 || strcasecmp(section, "system") == 0 ||
-	    strncmp(section, "textcolour", 10) == 0) {
+    if (strcasecmp(section, "server") == 0 || strncmp(section, "textcolour", 10) == 0) {
 
 	if (!perm_is_admin()) {
 	    printf_chat("&WPermission denied, need to be admin to update system variables");
 	    return;
 	}
-
-	// Alias
-	if (strcasecmp(section, "system") == 0) st->curr_section = "server";
 
 	if (!system_ini_fields(st, varname, &value)) {
 	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
