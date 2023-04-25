@@ -12,8 +12,8 @@
 void
 cmd_cmdset(char * UNUSED(cmd), char * arg)
 {
-    char * str1 = strtok(arg, " ");
-    char * str2 = strtok(0, "");
+    char * str1 = strarg(arg);
+    char * str2 = strarg_rest();
 
     int group = INT_MIN;
     for(int i = 0; i<CMD_PERM_CNT; i++) {

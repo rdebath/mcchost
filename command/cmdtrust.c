@@ -14,7 +14,7 @@ Turns off anti-grief for player.
 void
 cmd_trust(char * UNUSED(cmd), char *arg)
 {
-    char * str1 = strtok(arg, " ");
+    char * str1 = strarg(arg);
 
     int uid = find_online_player(str1, 1, 0);
     if (uid < 0) return;

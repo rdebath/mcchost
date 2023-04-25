@@ -79,9 +79,9 @@ cmd_defblk(char * UNUSED(cmd), char * arg)
     if (!perm_level_check(0, 0, 0))
 	return;
 
-    char * blk_str = strtok(arg, " ");
-    char * cf_str = strtok(0, " ");
-    char * val = strtok(0, "");
+    char * blk_str = strarg(arg);
+    char * cf_str = strarg(0);
+    char * val = strarg_rest();
 
     block_t blk = Block_Air, cf_blk = Block_Air;
 

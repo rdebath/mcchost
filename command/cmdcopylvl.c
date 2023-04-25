@@ -13,8 +13,8 @@ copy a level
 void
 cmd_copylvl(char * UNUSED(cmd), char * arg)
 {
-    char * oldlvlarg = strtok(arg, " ");
-    char * newlvlarg = strtok(0, " ");
+    char * oldlvlarg = strarg(arg);
+    char * newlvlarg = strarg(0);
     if (!oldlvlarg || !newlvlarg) {
 	printf_chat("&WNeed both old and new level names");
 	return;

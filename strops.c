@@ -20,6 +20,75 @@ my_strcasestr(char *haystack, char *needle)
     return 0;
 }
 
+static char * argv = 0;
+static char * rbuf = 0;
+static char * rfree = 0;
+static int buflen = 0;
+
+/* Chops a command line up into arguments. */
+char *
+strarg(char * nargv)
+{
+    if (nargv) {
+	int l = strlen(nargv) + 1;
+	if (l > buflen) {
+	    if (rbuf) free(rbuf);
+	    rbuf = 0; argv = 0; buflen = 0;
+	    if (l < 256) l = 256;
+	    rbuf = malloc(l);
+	    if (!rbuf) return 0;
+	    buflen = l;
+	}
+	argv = nargv;
+	rfree = rbuf;
+    }
+    if (!argv) return 0;
+
+    while(*argv == ' ') argv++;
+    if (*argv == '\0') return argv = 0;
+
+    char * arg = rfree;
+    char * ret = arg;
+    int in_quote = 0;
+    for(;;argv++) {
+	if (*argv == '\0') break;
+	if (*argv == '"') {
+	    if (in_quote && argv[1] == '"') {
+		*arg++ = *argv++;
+	    } else if (arg != rbuf && argv[1] == '"')
+		*arg++ = *argv++;
+	    else
+		in_quote = !in_quote;
+	    continue;
+	}
+	if (*argv == ' ') {
+	    if (in_quote) *arg++ = ' ';
+	    else if (arg == rbuf)
+		continue;
+	    else break;
+	}
+	*arg++ = *argv;
+    }
+    *arg = 0;
+    rfree = arg+1;
+    if (*argv == 0) argv = 0;
+    return ret;
+}
+
+char *
+strarg_rest()
+{
+    if (argv) {
+	while(*argv == ' ') argv++;
+	char * arg = rfree;
+	while(*argv) *arg++ = *argv++;
+	argv = 0;
+	*arg = 0;
+	return rfree;
+    } else
+	return 0;
+}
+
 int
 in_strlist(char * list, char * entry)
 {

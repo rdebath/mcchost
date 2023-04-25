@@ -18,7 +18,7 @@ cmd_reachdist(char * cmd, char *arg)
 {
     if (!cpe_support(cmd, extn_clickdistance)) return;
 
-    char * str1 = strtok(arg, " ");
+    char * str1 = strarg(arg);
 
     int rd = strtol(str1, 0, 0);
     if (rd > 1023) rd = 1023;

@@ -19,11 +19,11 @@
 void
 cmd_textcolour(char * UNUSED(cmd), char *arg)
 {
-    char * subcmd = strtok(arg, " ");
-    char * txcode = strtok(0, " ");
-    char * txname = strtok(0, " ");
-    char * txfallback = strtok(0, " ");
-    char * txcolour = strtok(0, " ");
+    char * subcmd = strarg(arg);
+    char * txcode = strarg(0);
+    char * txname = strarg(0);
+    char * txfallback = strarg(0);
+    char * txcolour = strarg(0);
 
     if (strcasecmp(subcmd, "remove") == 0 || strcasecmp(subcmd, "rm") == 0 ||
 	    strcasecmp(subcmd, "del") == 0) {

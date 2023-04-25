@@ -45,11 +45,11 @@ cmd_tp(char * cmd, char *arg)
 	return;
     }
 
-    char * str1 = strtok(arg, " ");
-    char * str2 = strtok(0, " ");
-    char * str3 = strtok(0, " ");
-    char * str4 = strtok(0, " ");
-    char * str5 = strtok(0, " ");
+    char * str1 = strarg(arg);
+    char * str2 = strarg(0);
+    char * str3 = strarg(0);
+    char * str4 = strarg(0);
+    char * str5 = strarg(0);
 
     if (str1 != 0 && str2 == 0) {
 	int uid = find_online_player(str1, 0, 0);

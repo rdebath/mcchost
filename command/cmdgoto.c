@@ -44,7 +44,7 @@ cmd_goto(char * cmd, char * arg)
     while (*arg == ' ') arg++;
     int l = strlen(arg);
     // A quoted name is used exactly.
-    if (l>2 && arg[0] == '"' && arg[l-1] == '"') {
+    if (l>1 && arg[0] == '"' && arg[l-1] == '"') {
 	arg[l-1] = 0;
 	arg++;
 	fix_fname(fixedname, sizeof(fixedname), arg);

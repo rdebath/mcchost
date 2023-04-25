@@ -15,8 +15,7 @@ Summon the player here.
 void
 cmd_summon(char * UNUSED(cmd), char *arg)
 {
-    char * str1 = strtok(arg, " ");
-    // char * str2 = strtok(0, "");
+    char * str1 = strarg(arg);
 
     int uid = find_online_player(str1, 0, 0);
     if (uid < 0) return;

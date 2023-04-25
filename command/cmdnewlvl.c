@@ -41,12 +41,12 @@ lvltheme_t themelist[] = {
 void
 cmd_newlvl(char * UNUSED(cmd), char * arg)
 {
-    char * lvlarg = strtok(arg, " ");
-    char * sx = strtok(0, " ");
-    char * sy = strtok(0, " ");
-    char * sz = strtok(0, " ");
-    char * th = strtok(0, " ");
-    char * se = strtok(0, "");
+    char * lvlarg = strarg(arg);
+    char * sx = strarg(0);
+    char * sy = strarg(0);
+    char * sz = strarg(0);
+    char * th = strarg(0);
+    char * se = strarg_rest();
 
     if (!lvlarg || (sx && !sz)) {
 	printf_chat("&WNeed more arguments to specify level size");

@@ -18,8 +18,8 @@ Use "del" to remove the user from list
 void
 cmd_setperm(char * UNUSED(cmd), char *arg)
 {
-    char * rank = strtok(arg, " ");
-    char * user = strtok(0, " ");
+    char * rank = strarg(arg);
+    char * user = strarg(0);
 
     cmd_payload_t msg = {0};
     msg.cmd_token = cmd_token_loaduser;

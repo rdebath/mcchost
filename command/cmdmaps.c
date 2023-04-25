@@ -61,7 +61,7 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 
     if (!arg || *arg == 0) start = 1;
     else {
-	ar1 = strtok(arg, " "); ar2 = strtok(0, "");
+	ar1 = strarg(arg); ar2 = strarg_rest();
 	if (strcasecmp(ar1, "all") == 0) start = 0;
 	else if (strcasecmp(ar1, "backup") == 0) {
 	    backups = 1;

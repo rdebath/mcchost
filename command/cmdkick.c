@@ -17,8 +17,8 @@ The player name may be any unique substring
 void
 cmd_kick(char * UNUSED(cmd), char *arg)
 {
-    char * str1 = strtok(arg, " ");
-    char * str2 = strtok(0, "");
+    char * str1 = strarg(arg);
+    char * str2 = strarg_rest();
 
     int uid = find_online_player(str1, 0, 0);
     if (uid < 0) return;
@@ -40,8 +40,8 @@ Use &T/Unban [player]&S to undo this.
 void
 cmd_ban(char * UNUSED(cmd), char *arg)
 {
-    char * str1 = strtok(arg, " ");
-    char * str2 = strtok(0, "");
+    char * str1 = strarg(arg);
+    char * str2 = strarg_rest();
 
     cmd_payload_t msg = {0};
     saprintf(msg.arg.c, "by %s%s%s", user_id, str2?": &f":"", str2?str2:"");
@@ -70,7 +70,7 @@ cmd_ban(char * UNUSED(cmd), char *arg)
 void
 cmd_unban(char * UNUSED(cmd), char *arg)
 {
-    char * str1 = strtok(arg, " ");
+    char * str1 = strarg(arg);
     userrec_t user_rec;
 
     char user_name[128];

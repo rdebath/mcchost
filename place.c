@@ -104,7 +104,7 @@ cmd_place(char * UNUSED(cmd), char * arg)
     char * ar = arg;
     if (ar)
 	for(int i = 0; i<8; i++) {
-	    char * p = strtok(ar, " "); ar = 0;
+	    char * p = strarg(ar); ar = 0;
 	    if (p == 0) break;
 	    if (i == 0) {
 		args[i] = block_id(p);
@@ -272,7 +272,7 @@ void show_marks_message()
 void
 cmd_mode(char * cmd, char * arg)
 {
-    char * block = strtok(arg, " ");
+    char * block = strarg(arg);
     if (cmd && (strcasecmp(cmd, "abort") == 0 || strcasecmp(cmd, "a") == 0)) {
 	printf_chat("&SToggles and pending actions cleared.");
 	player_mode_mode = -1;
@@ -471,7 +471,7 @@ cmd_mark(char * cmd, char * arg)
     }
     if (ar)
 	for(int i = 0; i<3; i++) {
-	    char * p = strtok(ar, " "); ar = 0;
+	    char * p = strarg(ar); ar = 0;
 	    if (p == 0) break;
 	    if (p[0] == '~') {has_offset[i] = 1; p++;}
 	    args[i] = atoi(p);

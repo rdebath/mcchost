@@ -30,7 +30,7 @@ find_online_player(char * user_txt, int allow_self, int quiet)
 	if (mode == 1 && ucount == 0) break;
 	if (mode == 1 && ucount > 1) {
 	    if (!quiet)
-		printf_chat("&WCan't identify user \"%s\" that matches %d users", user_txt, ucount);
+		printf_chat("&WCan't identify user \"%s\" the pattern matches %d users", user_txt, ucount);
 	    return -1;
 	}
     }
