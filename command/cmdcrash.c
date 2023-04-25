@@ -19,8 +19,7 @@ Crash the server, default is a fatal() error.
 &T/crash 646&S Client crash for Java 0.30
 */
 #if INTERFACE
-#define UCMD_CRASH \
-    {N"crash", &cmd_crash,CMD_HELPARG}, {N"servercrash", &cmd_quit, CMD_ALIAS}
+#define UCMD_CRASH {N"crash", &cmd_crash,CMD_HELPARG}
 #endif
 
 int *crash_ptr = 0;
@@ -73,13 +72,13 @@ cmd_crash(char * UNUSED(cmd), char * arg)
 #else
     assert(strcmp(crash_type, "666"));
 
-    if (crash_type && strcmp(crash_type, "696") == 0)
+    if (strcmp(crash_type, "696") == 0)
 	kill(getpid(), SIGKILL);
     else if (strcmp(crash_type, "616") == 0)
 	exit(EXIT_FAILURE);
     else if (strcmp(crash_type, "606") == 0)
 	printf_chat("Value should fail %d", *crash_ptr);
-    else if (crash_type)
+    else
 	fatal_f("Server crash! Error code %s", crash_type);
 #endif
 }

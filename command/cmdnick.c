@@ -3,10 +3,11 @@
 
 #if INTERFACE
 #define UCMD_NICK \
-    {N"nick", &cmd_nick}, {N"xnick", &cmd_nick, CMD_ALIAS, .nodup=1 }
+    {N"nick", &cmd_nick}, \
+    {N"xnick", &cmd_xnick, CMD_ALIAS}, {N"nick", &cmd_xnick, CMD_ALIAS}
 #endif
 
-/*HELP nick H_CMD
+/*HELP nick,xnick H_CMD
 &T/Nick [Player] Nickname
 /Nick [player] [nick]
 Sets the nick of that player.
@@ -15,34 +16,23 @@ Shortcuts: &T/xnick&S for &T/Nick -own
 */
 
 void
-cmd_nick(char * cmd, char *arg)
+cmd_xnick(char * UNUSED(cmd), char *arg)
 {
-    char *str1, *str2;
+    if (arg && *arg)
+	printf_chat("Changed your nick to %s", arg);
+    else
+	printf_chat("Removed your nick");
+    do_cmd_nick(arg?arg:"");
+}
 
-    if (strcasecmp(cmd, "xnick") == 0) {
-	str1 = "-own";
-	str2 = strtok(arg, "");
-    } else {
-	if (arg) {
-	    str1 = strtok(arg, " ");
-	    str2 = strtok(0, "");
-	} else str1=str2=0;
-	if (str1 && strcasecmp(str1, "-own") == 0)
-	    ;
-	else if (str2 == 0) {str2 = str1; str1 = 0;}
-    }
+void
+cmd_nick(char * UNUSED(cmd), char *arg)
+{
+    char * str1 = strarg(arg);
+    char * str2 = strarg_rest();
 
     if (str2 && strlen(str2) > MB_STRLEN/4) {
 	printf_chat("&WThe nick name cannot be longer than %d characters", MB_STRLEN/4);
-	return;
-    }
-
-    if (str1 == 0 || strcmp(str1, "") == 0 || strcasecmp(str1, "-own") == 0) {
-	if (str2)
-	    printf_chat("Changed your nick to %s", str2);
-	else
-	    printf_chat("Removed your nick");
-	do_cmd_nick(str2?str2:"");
 	return;
     }
 

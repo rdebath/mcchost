@@ -3,10 +3,11 @@
 
 #if INTERFACE
 #define UCMD_SKIN \
-    {N"skin", &cmd_skin}
+    {N"skin", &cmd_skin}, \
+    {N"xskin", &cmd_xskin, CMD_ALIAS}, {N"skin-own", &cmd_xskin, CMD_ALIAS}
 #endif
 
-/*HELP skin H_CMD
+/*HELP skin,xskin H_CMD
 &T/Skin [player] skin
 [skin] can be:
  - a ClassiCube player's name (e.g Hetal)
@@ -16,43 +17,47 @@ Direct url skins also apply to non human models (e.g pig)
 */
 
 void
-cmd_skin(char * cmd, char *arg)
+cmd_xskin(char * UNUSED(cmd), char *arg)
 {
-    char *str1, *str2;
-
-    if (strcasecmp(cmd, "xskin") == 0) {
-	str1 = "-own";
-	str2 = strtok(arg, "");
-    } else {
-	if (arg) {
-	    str1 = strtok(arg, " ");
-	    str2 = strtok(0, "");
-	} else str1=str2=0;
-	if (str1 && strcasecmp(str1, "-own") == 0)
-	    ;
-	else if (str2 == 0) {str2 = str1; str1 = 0;}
+    char sbuf[256];
+    if (arg) {
+	int v = skin_trans(sbuf, arg);
+	if (v<0) return;
+	if (v==1) arg = sbuf;
     }
+    printf_chat("Changed your skin to %s", arg?arg:user_id);
+    do_cmd_skin(arg?arg:user_id);
+}
+
+int
+skin_trans(char * sbuf, char * name)
+{
+    if (strlen(name) > MB_STRLEN) {
+	printf_chat("&WThe skin name cannot be longer than %d characters", MB_STRLEN);
+	return -1;
+    }
+    if (name[0] == '+') {
+	sprintf(sbuf, "https://minotar.net/skin/%s.png", name+1);
+	return 1;
+    } else if (*name && name[strlen(name)-1] == '+') {
+	name[strlen(name)-1] = 0;
+	sprintf(sbuf, "https://minotar.net/skin/%s.png", name);
+	return 1;
+    }
+    return 0;
+}
+
+void
+cmd_skin(char * UNUSED(cmd), char *arg)
+{
+    char * str1 = strarg(arg);
+    char * str2 = strarg_rest();
 
     char sbuf[256];
     if (str2) {
-	if (str2[0] == '+') {
-	    saprintf(sbuf, "https://minotar.net/skin/%s.png", str2+1);
-	    str2 = sbuf;
-	} else if (*str2 && str2[strlen(str2)-1] == '+') {
-	    str2[strlen(str2)-1] = 0;
-	    saprintf(sbuf, "https://minotar.net/skin/%s.png", str2);
-	    str2 = sbuf;
-	}
-	if (strlen(str2) > MB_STRLEN) {
-	    printf_chat("&WThe skin name cannot be longer than %d characters", MB_STRLEN);
-	    return;
-	}
-    }
-
-    if (str1 == 0 || strcmp(str1, "") == 0 || strcasecmp(str1, "-own") == 0) {
-	printf_chat("Changed your skin to %s", str2?str2:user_id);
-	do_cmd_skin(str2?str2:user_id);
-	return;
+	int v = skin_trans(sbuf, str2);
+	if (v<0) return;
+	if (v==1) str2 = sbuf;
     }
 
     int uid = find_online_player(str1, 1, 0);

@@ -3,10 +3,11 @@
 
 #if INTERFACE
 #define UCMD_MODEL \
-    {N"model", &cmd_model}, {N"xmodel", &cmd_model, CMD_ALIAS, .nodup=1}
+    {N"model", &cmd_model}, \
+    {N"xmodel", &cmd_xmodel, CMD_ALIAS}, {N"model-own", &cmd_xmodel, CMD_ALIAS}
 #endif
 
-/*HELP model H_CMD
+/*HELP model,xmodel H_CMD
 &T/Model [player] model
 /Model [name] [model] - Sets the model of that player.
 Use /Help Model models for a list of models.
@@ -22,28 +23,18 @@ For a scaled model, put "|[scale]" after the model name.
 */
 
 void
-cmd_model(char * cmd, char *arg)
+cmd_xmodel(char * UNUSED(cmd), char *arg)
 {
-    char *str1, *str2;
+    char * str2 = strarg(arg);
+    printf_chat("Changed your model to a %s", str2?str2:"humanoid");
+    do_cmd_model(str2);
+}
 
-    if (strcasecmp(cmd, "xmodel") == 0) {
-	str1 = "-own";
-	str2 = strtok(arg, "");
-    } else {
-	if (arg) {
-	    str1 = strtok(arg, " ");
-	    str2 = strtok(0, "");
-	} else str1=str2=0;
-	if (str1 && strcasecmp(str1, "-own") == 0)
-	    ;
-	else if (str2 == 0) {str2 = str1; str1 = 0;}
-    }
-
-    if (str1 == 0 || strcmp(str1, "") == 0 || strcasecmp(str1, "-own") == 0) {
-	printf_chat("Changed your model to a %s", str2?str2:"humanoid");
-	do_cmd_model(str2);
-	return;
-    }
+void
+cmd_model(char * UNUSED(cmd), char *arg)
+{
+    char * str1 = strarg(arg);
+    char * str2 = strarg(0);
 
     int uid = find_online_player(str1, 1, 0);
     if (uid < 0) return;

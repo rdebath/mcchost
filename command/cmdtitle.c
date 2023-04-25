@@ -3,10 +3,11 @@
 
 #if INTERFACE
 #define UCMD_TITLE \
-    {N"title", &cmd_title}, {N"xtitle", &cmd_title, CMD_ALIAS, .nodup=1 }
+    {N"title", &cmd_title}, \
+    {N"xtitle", &cmd_xtitle, CMD_ALIAS}, {N"title-own", &cmd_xtitle, CMD_ALIAS}
 #endif
 
-/*HELP title H_CMD
+/*HELP title,xtitle H_CMD
 &T/Title [Player] Title
 Sets the title of [player]
   If [title] is not given, removes [player]'s title.
@@ -14,34 +15,23 @@ Shortcuts: &T/XTitle for /Title -own
 */
 
 void
-cmd_title(char * cmd, char *arg)
+cmd_xtitle(char * UNUSED(cmd), char *arg)
 {
-    char *str1, *str2;
+    if (arg && *arg)
+	printf_chat("Changed your title to %s", arg);
+    else
+	printf_chat("Removed your title");
+    do_cmd_title(arg?arg:"");
+}
 
-    if (strcasecmp(cmd, "xtitle") == 0) {
-	str1 = "-own";
-	str2 = strtok(arg, "");
-    } else {
-	if (arg) {
-	    str1 = strtok(arg, " ");
-	    str2 = strtok(0, "");
-	} else str1=str2=0;
-	if (str1 && strcasecmp(str1, "-own") == 0)
-	    ;
-	else if (str2 == 0) {str2 = str1; str1 = 0;}
-    }
+void
+cmd_title(char * UNUSED(cmd), char *arg)
+{
+    char * str1 = strarg(arg);
+    char * str2 = strarg_rest();
 
     if (str2 && strlen(str2) > MB_STRLEN/4) {
 	printf_chat("&WThe title cannot be longer than %d characters", MB_STRLEN/4);
-	return;
-    }
-
-    if (str1 == 0 || strcmp(str1, "") == 0 || strcasecmp(str1, "-own") == 0) {
-	if (str2)
-	    printf_chat("Changed your title to %s", str2);
-	else
-	    printf_chat("Removed your title");
-	do_cmd_title(str2?str2:"");
 	return;
     }
 

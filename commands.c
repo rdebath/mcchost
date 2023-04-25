@@ -8,7 +8,7 @@ enum perm_token { perm_token_none, perm_token_admin, perm_token_level, perm_toke
 #define CMD_PERM_ADMIN  .perm_def=perm_token_admin		/* System admin */
 #define CMD_PERM_LEVEL  .perm_def=perm_token_level		/* Level owner */
 #define CMD_HELPARG	.help_if_no_args=1
-#define CMD_ALIAS	.alias=1
+#define CMD_ALIAS	.alias=1				/* Hide from /cmds */
 
 typedef void (*cmd_func_t)(char * cmd, char * arg);
 typedef struct command_t command_t;
@@ -18,7 +18,7 @@ struct command_t {
     enum perm_token perm_okay;
     enum perm_token perm_def;
     uint8_t alias;		// Don't show on /cmds (usually a duplicate)
-    uint8_t nodup;		// No a dup, don't use previous.
+    uint8_t nodup;		// This is a subcommand, keep cmd name
     uint8_t help_if_no_args;
     uint8_t map;		// Error if no map
 };
@@ -69,7 +69,10 @@ run_command(char * msg)
 	char * a = arg;
 	int al2 = al;
 	if (*a == '-') {al2--; a++;}
-	saprintf(cmd2, "%s-%*s", cmd, al2, a);
+	if (al2 <= 0)
+	    saprintf(cmd2, "%s-(none)", cmd);
+	else
+	    saprintf(cmd2, "%s-%.*s", cmd, al2, a);
 
 	for(unsigned char * c = cmd2; *c; c++)
 	    if (isupper(*c))
@@ -203,7 +206,9 @@ Aliases: /hacks
 #if INTERFACE
 #define UCMD_QUITS  {N"quit", &cmd_quit}, \
     {N"rq", &cmd_quit, .nodup=1 }, \
-    {N"hax", &cmd_quit, CMD_ALIAS, .nodup=1 }, {N"hacks", &cmd_quit, CMD_ALIAS}
+    {N"hax", &cmd_quit, CMD_ALIAS, .nodup=1 }, {N"hacks", &cmd_quit, CMD_ALIAS}, \
+    {N"crashserver", &cmd_quit, CMD_ALIAS, .nodup=1}, \
+    {N"servercrash", &cmd_quit, CMD_ALIAS}
 #endif
 
 void
@@ -211,8 +216,11 @@ cmd_quit(char * cmd, char * arg)
 {
     if (strcasecmp(cmd, "rq") == 0) logout("RAGEQUIT!!");
 
-    if (strcasecmp(cmd, "hax") == 0 || strcasecmp(cmd, "hacks") == 0)
+    if (strcasecmp(cmd, "hax") == 0)
 	logout("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
+
+    if (strcasecmp(cmd, "crashserver") == 0)
+	logout("Server crash! Error code 0xD482776B");
 
     if (arg&&*arg)
 	logout_f("Left the game: %s", arg);

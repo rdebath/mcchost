@@ -43,6 +43,7 @@ Alias: &T/b
 		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, CMD_ALIAS}, \
 		   {N"markall", &cmd_mark, CMD_ALIAS, .nodup=1}, \
 		   {N"ma", &cmd_mark, CMD_ALIAS}, \
+		   {N"mark-all", &cmd_mark, CMD_ALIAS}, \
 		   {N"about", &cmd_about}, {N"b", &cmd_about, CMD_ALIAS}
 #endif
 
@@ -262,9 +263,12 @@ void show_marks_message()
 	printf_chat("(12)&fMark #1: &S(Waiting)");
 
     if (marks[0].valid || player_mark_mode >= 2) {
-	if (marks[1].valid)
+	if (marks[1].valid) {
 	    printf_chat("(11)&fMark #2: &S(%d,%d,%d)", marks[1].x, marks[1].y, marks[1].z);
-	else
+	    if (marks[2].valid) {
+		printf_chat("(13)&fExtra Mark: &S(%d,%d,%d)", marks[2].x, marks[2].y, marks[2].z);
+	    }
+	} else
 	    printf_chat("(11)&fMark #2: &S(Waiting)");
     }
 }
@@ -459,7 +463,7 @@ cmd_mark(char * cmd, char * arg)
     int has_offset[3] = {0};
     int cnt = 0;
     char * ar = arg?arg:"";
-    if (strcasecmp(cmd, "markall") == 0 || strcasecmp(ar, "all") == 0) {
+    if (strcasecmp(cmd, "markall") == 0) {
 	char buf[] = "0";
 	cmd_mark("m", buf);
 	ar = 0; cnt = 3;
@@ -472,7 +476,7 @@ cmd_mark(char * cmd, char * arg)
     if (ar)
 	for(int i = 0; i<3; i++) {
 	    char * p = strarg(ar); ar = 0;
-	    if (p == 0) break;
+	    if (p == 0 || *p == '\0') break;
 	    if (p[0] == '~') {has_offset[i] = 1; p++;}
 	    args[i] = atoi(p);
 	    cnt = i+1;
@@ -486,23 +490,6 @@ cmd_mark(char * cmd, char * arg)
     }
 
     if (cnt != 3) {
-	if (cnt == 0) {
-	    if (marks[0].valid) {
-		if (player_mark_mode) {
-		    int l = sizeof(marks)/sizeof(*marks);
-		    for(int i = 0; i<l; i++)
-			if (marks[i].valid)
-			    player_mark_mode++;
-		}
-		memset(marks, 0, sizeof(marks));
-		if (player_mark_mode)
-		    printf_chat("&SMarks cleared, please reenter.");
-		else
-		    printf_chat("&SMarks cleared");
-		show_marks_message();
-		return;
-	    }
-	}
 	printf_chat("&SUsage: &T/mark [x y z]&S");
 	return;
     }
@@ -514,12 +501,6 @@ cmd_mark(char * cmd, char * arg)
     int l = sizeof(marks)/sizeof(*marks);
     int v = 0;
     while(v<l && marks[v].valid) v++;
-    if (v>=l) { // Too many? Discard oldest
-	printf_chat("&SNote: removed mark (%d,%d,%d)", marks[0].x, marks[0].y, marks[0].z);
-	for (int i=1; i<l; i++)
-	    marks[i-1] = marks[i];
-	v--;
-    }
     if (v<l) {
 	marks[v].valid = 1;
 	marks[v].x = args[0];
@@ -527,8 +508,10 @@ cmd_mark(char * cmd, char * arg)
 	marks[v].z = args[2];
 	if (!extn_messagetypes)
 	    printf_chat("&SMarked position (%d,%d,%d)", args[0], args[1], args[2]);
-    } else
-	printf_chat("&WToo many marks");
+    } else {
+	printf_chat("&WToo many marks -- cleared");
+	clear_pending_marks();
+    }
 
     show_marks_message();
     if (player_mark_mode) {
