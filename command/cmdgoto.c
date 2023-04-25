@@ -19,10 +19,12 @@ Set the system main level to "level"
 */
 
 #if INTERFACE
-#define CMD_GOTOMAIN \
-    {N"goto", &cmd_goto}, {N"g", &cmd_goto, .dup=1}, \
-    {N"gotorandom", &cmd_goto, .dup=1, .nodup=1}, {N"gr", &cmd_goto, .dup=1}, \
-    {N"main", &cmd_main}, {N"void", &cmd_void, .dup=1}
+#define UCMD_GOTOMAIN \
+    {N"goto", &cmd_goto, CMD_HELPARG}, {N"g", &cmd_goto, CMD_ALIAS}, \
+    {N"gotorandom", &cmd_goto, CMD_ALIAS, .nodup=1}, \
+    {N"goto-random", &cmd_goto, CMD_ALIAS}, \
+    {N"gr", &cmd_goto, CMD_ALIAS}, \
+    {N"main", &cmd_main}, {N"void", &cmd_void, CMD_ALIAS}
 #endif
 
 void
@@ -32,8 +34,7 @@ cmd_goto(char * cmd, char * arg)
     if (!arg && strcmp(cmd, "gotorandom") != 0) { cmd_help(0,"goto"); return; }
     if (!arg) arg = "";
 
-    if (strcasecmp(arg, "-random") == 0)
-	return run_command("/gotorandom");
+    if (strcasecmp(arg, "-random") == 0) {cmd = "/gotorandom"; arg = "";}
 
     if (player_lockout>0 || level_loader_pid > 0) {
 	printf_chat("Cannot use /%s, already joining a map.", cmd);
@@ -109,9 +110,14 @@ void
 cmd_main(char * UNUSED(cmd), char * arg)
 {
     if (arg && *arg) {
+        if (!perm_is_admin()) {
+            printf_chat("&WPermission denied, need to be admin to update system variables");
+            return;
+        }
+
 	char buf[128];
-	saprintf(buf, "/set server main %s", arg);
-	return run_command(buf);
+	saprintf(buf, "server main %s", arg);
+	return cmd_setvar(0, buf);
     }
 
     if (current_level_backup_id == 0 && strcmp(main_level(), current_level_name) == 0) {

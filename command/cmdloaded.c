@@ -8,7 +8,7 @@ Show all loaded (unpacked) levels
 */
 
 #if INTERFACE
-#define CMD_LOADED {N"loaded", &cmd_loaded}
+#define UCMD_LOADED {N"loaded", &cmd_loaded}
 #endif
 
 void

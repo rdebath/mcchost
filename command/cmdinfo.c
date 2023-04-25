@@ -17,10 +17,10 @@ Alias: &S/ServerInfo
 */
 
 #if INTERFACE
-#define CMD_INFO \
-    {N"info", &cmd_info}, {N"i", &cmd_info, .dup=1}, \
-    {N"minfo", &cmd_minfo}, {N"mi", &cmd_minfo, .dup=1}, \
-    {N"sinfo", &cmd_sinfo}, {N"serverinfo", &cmd_sinfo, .dup=1}
+#define UCMD_INFO \
+    {N"info", &cmd_info}, {N"i", &cmd_info, CMD_ALIAS}, \
+    {N"minfo", &cmd_minfo}, {N"mi", &cmd_minfo, CMD_ALIAS}, \
+    {N"sinfo", &cmd_sinfo}, {N"serverinfo", &cmd_sinfo, CMD_ALIAS}
 #endif
 
 void

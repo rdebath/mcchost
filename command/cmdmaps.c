@@ -17,9 +17,9 @@ and visited using &T/museum directory/level 1&S
 */
 
 #if INTERFACE
-#define CMD_MAPS \
-    {N"maps", &cmd_maps}, {N"levels", &cmd_maps, .dup=1}, \
-    {N"worlds", &cmd_maps, .dup=1}, {N"unloaded", &cmd_maps, .dup=1}
+#define UCMD_MAPS \
+    {N"maps", &cmd_maps}, {N"levels", &cmd_maps, CMD_ALIAS}, \
+    {N"worlds", &cmd_maps, CMD_ALIAS}, {N"unloaded", &cmd_maps, CMD_ALIAS}
 
 typedef struct maplist_entry_t maplist_entry_t;
 struct maplist_entry_t {

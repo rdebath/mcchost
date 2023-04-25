@@ -161,22 +161,22 @@ process_ipc_cmd(cmd_payload_t *msg)
 	banned(msg->arg.c);
 	break;
     case cmd_token_changemodel:
-#ifdef CMD_MODEL
+#ifdef UCMD_MODEL
 	do_cmd_model(msg->arg.c);
 #endif
 	break;
     case cmd_token_changeskin:
-#ifdef CMD_SKIN
+#ifdef UCMD_SKIN
 	do_cmd_skin(msg->arg.c);
 #endif
 	break;
     case cmd_token_changenick:
-#ifdef CMD_NICK
+#ifdef UCMD_NICK
 	do_cmd_nick(msg->arg.c);
 #endif
 	break;
     case cmd_token_changetitle:
-#ifdef CMD_TITLE
+#ifdef UCMD_TITLE
 	do_cmd_title(msg->arg.c);
 #endif
 	break;

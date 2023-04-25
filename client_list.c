@@ -262,7 +262,7 @@ check_user()
 	else if (shdat.client->levels[my_level].force_unload) go_main = 1;
 
 	if (go_main) {
-#ifdef CMD_GOTOMAIN
+#ifdef UCMD_GOTOMAIN
 	    if (strcmp(shdat.client->levels[my_level].level.c, main_level()) != 0)
 	    {
 		printf_chat("You are being moved to main as %s was unloaded",

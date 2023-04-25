@@ -8,7 +8,7 @@ Save a level to it's compressed format and unload it.
 */
 
 #if INTERFACE
-#define CMD_UNLOADLVL {N"unload", &cmd_unload}
+#define UCMD_UNLOADLVL {N"unload", &cmd_unload}
 #endif
 
 void

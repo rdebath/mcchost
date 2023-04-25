@@ -6,7 +6,7 @@
 */
 
 #if INTERFACE
-#define CMD_CMDSET  {N"cmdset", &cmd_cmdset, CMD_PERM_ADMIN,CMD_HELPARG}
+#define UCMD_CMDSET  {N"cmdset", &cmd_cmdset, CMD_PERM_ADMIN,CMD_HELPARG}
 #endif
 
 void
@@ -37,8 +37,7 @@ cmd_cmdset(char * UNUSED(cmd), char * arg)
         if (strcasecmp(str1, command_list[i].name) != 0) continue;
 
         int c = i;
-        while(c>0 && command_list[c].dup && !command_list[c].nodup &&
-            command_list[c].function == command_list[c-1].function)
+        while(c>0 && command_list[c].function == command_list[c-1].function)
             c--;
 
 	command_list[c].perm_okay = group;

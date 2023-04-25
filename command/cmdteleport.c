@@ -2,10 +2,10 @@
 #include "cmdteleport.h"
 
 #if INTERFACE
-#define CMD_TP \
+#define UCMD_TP \
     {N"tp", &cmd_tp}, \
-    {N"move", &cmd_tp, .dup=1}, \
-    {N"teleport", &cmd_tp, .dup=1}, \
+    {N"move", &cmd_tp, CMD_ALIAS}, \
+    {N"teleport", &cmd_tp, CMD_ALIAS}, \
     {N"spawn", &cmd_spawn}
 #endif
 

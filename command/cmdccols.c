@@ -2,10 +2,10 @@
 #include "cmdccols.h"
 
 #if INTERFACE
-#define CMD_TEXTCOLOUR \
+#define UCMD_TEXTCOLOUR \
     {N"ccols", &cmd_textcolour, CMD_PERM_ADMIN, CMD_HELPARG}, \
-    {N"CustomColors", &cmd_textcolour, .dup=1}, \
-    {N"CustomColours", &cmd_textcolour, .dup=1}
+    {N"CustomColors", &cmd_textcolour, CMD_ALIAS}, \
+    {N"CustomColours", &cmd_textcolour, CMD_ALIAS}
 
 #endif
 

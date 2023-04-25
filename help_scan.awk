@@ -5,7 +5,7 @@
 # Currently used for:
 # "HELP" comments to convert to C strings for the help command.
 #
-#  CMD_XXXXX defines to construct the list of available commands.
+#  UCMD_XXXXX defines to construct the list of available commands.
 #
 
 BEGIN{
@@ -36,7 +36,7 @@ ifzero { next; }
 }
 /^\/\*HELP/ {next;}
 
-/^#define *CMD_[A-Z0-9]*[	 ]*[\\{]/ {
+/^#define *UCMD_[A-Z0-9]*[	 ]*[\\{]/ {
     cmdlist = cmdlist "#ifdef " $2 "\n"
     cmdlist = cmdlist "    " $2 ",\n"
     cmdlist = cmdlist "#endif\n"

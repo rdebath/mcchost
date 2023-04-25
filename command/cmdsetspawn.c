@@ -2,7 +2,7 @@
 #include "cmdsetspawn.h"
 
 #if INTERFACE
-#define CMD_SETSPAWN {N"setspawn", &cmd_setspawn, .map=1, CMD_PERM_LEVEL}
+#define UCMD_SETSPAWN {N"setspawn", &cmd_setspawn, .map=1, CMD_PERM_LEVEL}
 #endif
 
 /*HELP setspawn H_CMD

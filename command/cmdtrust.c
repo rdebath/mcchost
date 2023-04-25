@@ -2,7 +2,7 @@
 #include "cmdtrust.h"
 
 #if INTERFACE
-#define CMD_TRUST \
+#define UCMD_TRUST \
     {N"trust", &cmd_trust,CMD_HELPARG}
 #endif
 

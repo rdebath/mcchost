@@ -7,7 +7,7 @@ Goto a backup of a level.
 */
 
 #if INTERFACE
-#define CMD_MUSEUM \
+#define UCMD_MUSEUM \
     {N"museum", &cmd_museum, CMD_HELPARG}
 #endif
 

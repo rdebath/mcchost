@@ -2,8 +2,8 @@
 #include "cmdnick.h"
 
 #if INTERFACE
-#define CMD_NICK \
-    {N"nick", &cmd_nick}, {N"xnick", &cmd_nick, .dup=1, .nodup=1 }
+#define UCMD_NICK \
+    {N"nick", &cmd_nick}, {N"xnick", &cmd_nick, CMD_ALIAS, .nodup=1 }
 #endif
 
 /*HELP nick H_CMD

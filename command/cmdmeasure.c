@@ -10,8 +10,8 @@ Aliases: /ms
 */
 
 #if INTERFACE
-#define CMD_MEASURE \
-    {N"measure", &cmd_measure, .map=1}, {N"ms", &cmd_measure, .dup=1}
+#define UCMD_MEASURE \
+    {N"measure", &cmd_measure, .map=1}, {N"ms", &cmd_measure, CMD_ALIAS}
 #endif
 
 void

@@ -21,10 +21,10 @@ Aliases: &T/inishow
 */
 
 #if INTERFACE
-#define CMD_INILOAD \
-    {N"iniload", &cmd_iload, .map=1, CMD_PERM_LEVEL,CMD_HELPARG}, {N"iload", &cmd_iload, .dup=1}, \
-    {N"inisave", &cmd_isave, .map=1, CMD_HELPARG}, {N"isave", &cmd_isave, .dup=1}, \
-    {N"inishow", &cmd_ishow, .map=1, CMD_HELPARG}, {N"ishow", &cmd_ishow, .dup=1}
+#define UCMD_INILOAD \
+    {N"iniload", &cmd_iload, .map=1, CMD_PERM_LEVEL,CMD_HELPARG}, {N"iload", &cmd_iload, CMD_ALIAS}, \
+    {N"inisave", &cmd_isave, .map=1, CMD_HELPARG}, {N"isave", &cmd_isave, CMD_ALIAS}, \
+    {N"inishow", &cmd_ishow, .map=1, CMD_HELPARG}, {N"ishow", &cmd_ishow, CMD_ALIAS}
 #endif
 
 void

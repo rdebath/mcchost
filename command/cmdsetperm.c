@@ -2,7 +2,7 @@
 #include "cmdsetperm.h"
 
 #if INTERFACE
-#define CMD_SETPERM \
+#define UCMD_SETPERM \
     {N"setperm", &cmd_setperm, CMD_HELPARG, CMD_PERM_LEVEL}
 #endif
 

@@ -9,8 +9,8 @@ Aliases: /fg
 */
 
 #if INTERFACE
-#define CMD_FIXGRASS \
-    {N"fixgrass", &cmd_fixgrass, .map=1}, {N"fg", &cmd_fixgrass, .dup=1}
+#define UCMD_FIXGRASS \
+    {N"fixgrass", &cmd_fixgrass, .map=1}, {N"fg", &cmd_fixgrass, CMD_ALIAS}
 #endif
 
 void

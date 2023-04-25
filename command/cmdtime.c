@@ -2,8 +2,8 @@
 #include "cmdtime.h"
 
 #if INTERFACE
-#define CMD_TIME \
-    {N"time", &cmd_time}, {N"ti", &cmd_time, .dup=1}
+#define UCMD_TIME \
+    {N"time", &cmd_time}, {N"ti", &cmd_time, CMD_ALIAS}
 #endif
 
 /*HELP time,ti H_CMD

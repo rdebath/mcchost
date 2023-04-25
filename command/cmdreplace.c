@@ -18,9 +18,9 @@ Aliases: /ra
 */
 
 #if INTERFACE
-#define CMD_REPLACE \
-    {N"replace", &cmd_replace, .map=1}, {N"r", &cmd_replace, .dup=1}, \
-    {N"replaceall", &cmd_replaceall, .map=1, CMD_PERM_LEVEL}, {N"ra", &cmd_replaceall, .dup=1}
+#define UCMD_REPLACE \
+    {N"replace", &cmd_replace, .map=1}, {N"r", &cmd_replace, CMD_ALIAS}, \
+    {N"replaceall", &cmd_replaceall, .map=1, CMD_PERM_LEVEL}, {N"ra", &cmd_replaceall, CMD_ALIAS}
 #endif
 
 void

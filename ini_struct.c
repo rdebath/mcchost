@@ -546,8 +546,7 @@ cmdset_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
 	for(int i = 0; command_list[i].name; i++) {
-	    if(i>0 && command_list[i].dup && !command_list[i].nodup &&
-		command_list[i].function == command_list[i-1].function)
+	    if(i>0 && command_list[i].function == command_list[i-1].function)
 		continue;
 
 	    if (!st->write || command_list[i].perm_okay != command_list[i].perm_def)

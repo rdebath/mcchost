@@ -32,8 +32,8 @@ Try again or contact the OPs to reset it
 /* NOTE: To reset a password delete the secret/${user}.pwl file */
 
 #if INTERFACE
-#define CMD_PASS \
-    {N"pass", &cmd_pass, CMD_HELPARG}, {N"setpass", &cmd_pass, .nodup=1, .dup=1, CMD_HELPARG}
+#define UCMD_PASS \
+    {N"pass", &cmd_pass, CMD_HELPARG}, {N"setpass", &cmd_pass, .nodup=1, CMD_ALIAS, CMD_HELPARG}
 #endif
 
 static int testing_just_set_password = 0;

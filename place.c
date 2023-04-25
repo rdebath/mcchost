@@ -36,14 +36,14 @@ Alias: &T/b
 */
 
 #if INTERFACE
-#define CMD_PLACE  {N"place", &cmd_place, CMD_HELPARG}, {N"pl", &cmd_place, .dup=1}, \
-                   {N"paint", &cmd_paint}, {N"p", &cmd_paint, .dup=1}, \
-                   {N"mode", &cmd_mode}, \
-                   {N"abort", &cmd_abort}, {N"a", &cmd_abort, .dup=1}, \
-		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, .dup=1}, \
-		   {N"markall", &cmd_mark, .dup=1, .nodup=1}, \
-		   {N"ma", &cmd_mark, .dup=1}, \
-                   {N"about", &cmd_about}, {N"b", &cmd_about, .dup=1}
+#define UCMD_PLACE  {N"place", &cmd_place, CMD_HELPARG}, {N"pl", &cmd_place, CMD_ALIAS}, \
+		   {N"paint", &cmd_paint}, {N"p", &cmd_paint, CMD_ALIAS}, \
+		   {N"mode", &cmd_mode}, \
+		   {N"abort", &cmd_abort}, {N"a", &cmd_abort, CMD_ALIAS}, \
+		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, CMD_ALIAS}, \
+		   {N"markall", &cmd_mark, CMD_ALIAS, .nodup=1}, \
+		   {N"ma", &cmd_mark, CMD_ALIAS}, \
+		   {N"about", &cmd_about}, {N"b", &cmd_about, CMD_ALIAS}
 #endif
 
 int player_mode_paint = 0;

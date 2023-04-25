@@ -7,9 +7,9 @@ List out the connected users
 */
 
 #if INTERFACE
-#define CMD_WHO \
-    {N"who", &cmd_who}, {N"players", &cmd_who, .dup=1}, \
-    {N"pclients", &cmd_clients}, {N"clients", &cmd_clients, .dup=1}
+#define UCMD_WHO \
+    {N"who", &cmd_who}, {N"players", &cmd_who, CMD_ALIAS}, \
+    {N"pclients", &cmd_clients}, {N"clients", &cmd_clients, CMD_ALIAS}
 #endif
 
 void

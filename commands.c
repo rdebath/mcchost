@@ -8,6 +8,7 @@ enum perm_token { perm_token_none, perm_token_admin, perm_token_level, perm_toke
 #define CMD_PERM_ADMIN  .perm_def=perm_token_admin		/* System admin */
 #define CMD_PERM_LEVEL  .perm_def=perm_token_level		/* Level owner */
 #define CMD_HELPARG	.help_if_no_args=1
+#define CMD_ALIAS	.alias=1
 
 typedef void (*cmd_func_t)(char * cmd, char * arg);
 typedef struct command_t command_t;
@@ -16,10 +17,10 @@ struct command_t {
     cmd_func_t function;
     enum perm_token perm_okay;
     enum perm_token perm_def;
-    int dup;		// Don't show on /cmds (usually a duplicate)
-    int nodup;		// No a dup, don't use previous.
-    int help_if_no_args;
-    int map;		// Error if no map
+    uint8_t alias;		// Don't show on /cmds (usually a duplicate)
+    uint8_t nodup;		// No a dup, don't use previous.
+    uint8_t help_if_no_args;
+    uint8_t map;		// Error if no map
 };
 
 typedef struct command_limit_t command_limit_t;
@@ -60,7 +61,7 @@ run_command(char * msg)
 	if (isupper(*c))
 	    *c = tolower(*c);
 
-    char * arg = msg+2+l;
+    char * arg = msg+1+l, *arg2 = "";
     while (*arg == ' ') arg++;
 
     int al = strcspn(arg, " ");
@@ -68,11 +69,14 @@ run_command(char * msg)
 	char * a = arg;
 	int al2 = al;
 	if (*a == '-') {al2--; a++;}
-	saprintf(cmd2, "%s-%*s", cmd, al2, arg);
+	saprintf(cmd2, "%s-%*s", cmd, al2, a);
 
 	for(unsigned char * c = cmd2; *c; c++)
 	    if (isupper(*c))
 		*c = tolower(*c);
+
+	arg2 = arg+al;
+	while (*arg2 == ' ') arg2++;
     }
 
     if (strcmp(cmd, "womid") == 0) { player_last_move = time(0); return; }
@@ -100,6 +104,8 @@ run_command(char * msg)
     }
 
     int cno = -1;
+    uint8_t help_if_no_args = 1;
+    char * ncmd = 0;
     for(int i = 0; command_list[i].name; i++) {
 	if (cmd[0] != command_list[i].name[0]) continue;
 	int is_arg = 0;
@@ -109,23 +115,30 @@ run_command(char * msg)
 	}
 
 	int c = i;
-	while(c>0 && command_list[c].dup && !command_list[c].nodup &&
+	while(c>0 && command_list[c].alias && !command_list[c].nodup &&
 	    command_list[c].function == command_list[c-1].function)
 	    c--;
 
-	if (command_list[c].perm_okay == perm_token_disabled)
-	    continue;
+	if (cno == -1 || is_arg) {
+	    // Official cmd name
+	    ncmd = command_list[c].name;
+	    help_if_no_args = command_list[c].help_if_no_args;
 
-	if (cno == -1 || is_arg)
+	    while(cno>0 && command_list[cno].function == command_list[cno-1].function)
+		cno--;
+
+	    if (command_list[c].perm_okay == perm_token_disabled)
+		continue;
+
 	    cno = c;
+	    if (is_arg) arg = arg2;
+	}
     }
 
     if (cno == -1) {
 	printf_chat("&SUnknown command \"%s&S\" -- see &T/cmds", cmd);
 	return;
     }
-
-    char * ncmd = command_list[cno].name;
 
     if (command_list[cno].perm_okay != perm_token_none && user_authenticated) {
 	if (command_list[cno].perm_okay == perm_token_admin) {
@@ -158,7 +171,7 @@ run_command(char * msg)
     if ((!level_prop || !level_blocks) && command_list[cno].map)
 	printf_chat("&WCommand failed, map is not loaded");
     else
-    if (command_list[cno].help_if_no_args && *arg == 0)
+    if (help_if_no_args && *arg == 0)
 	cmd_help(0, ncmd);
     else
 	command_list[cno].function(ncmd, arg);
@@ -188,9 +201,9 @@ Perform various server hacks, OPERATORS ONLY!
 Aliases: /hacks
 */
 #if INTERFACE
-#define CMD_QUITS  {N"quit", &cmd_quit}, \
+#define UCMD_QUITS  {N"quit", &cmd_quit}, \
     {N"rq", &cmd_quit, .nodup=1 }, \
-    {N"hax", &cmd_quit, .dup=1, .nodup=1 }, {N"hacks", &cmd_quit, .dup=1}
+    {N"hax", &cmd_quit, CMD_ALIAS, .nodup=1 }, {N"hacks", &cmd_quit, CMD_ALIAS}
 #endif
 
 void
@@ -213,10 +226,10 @@ List all available commands
 Aliases: /cmds /cmdlist
 */
 #if INTERFACE
-#define CMD_COMMANDS \
+#define UCMD_COMMANDS \
     {N"cmds", &cmd_commands}, \
-    {N"commands", &cmd_commands, .dup=1}, \
-    {N"cmdlist", &cmd_commands, .dup=1}
+    {N"commands", &cmd_commands, CMD_ALIAS}, \
+    {N"cmdlist", &cmd_commands, CMD_ALIAS}
 #endif
 void
 cmd_commands(char * UNUSED(cmd), char * arg)
@@ -239,7 +252,7 @@ cmd_commands(char * UNUSED(cmd), char * arg)
 	listid = USER_PERM_USER;
 
     for(int i = 0; command_list[i].name; i++) {
-	if (command_list[i].dup)
+	if (command_list[i].alias)
 	    continue;
 	if (command_list[i].perm_okay == perm_token_disabled)
 	    continue;

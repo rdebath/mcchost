@@ -8,10 +8,10 @@ Alias &T/shb
 */
 
 #if INTERFACE
-#define CMD_SHB \
-    {N"sethotbar", &cmd_sethotbar}, {N"shb", &cmd_sethotbar, .dup=1}, \
-    {N"clearhotbar", &cmd_sethotbar, .dup=1, .nodup=1}, \
-    {N"chb", &cmd_sethotbar, .dup=1}
+#define UCMD_SHB \
+    {N"sethotbar", &cmd_sethotbar}, {N"shb", &cmd_sethotbar, CMD_ALIAS}, \
+    {N"clearhotbar", &cmd_sethotbar, CMD_ALIAS, .nodup=1}, \
+    {N"chb", &cmd_sethotbar, CMD_ALIAS}
 #endif
 
 void

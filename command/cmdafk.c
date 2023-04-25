@@ -7,7 +7,7 @@ Mark yourself AFK with a message
 */
 
 #if INTERFACE
-#define CMD_AFK \
+#define UCMD_AFK \
     {N"afk", &cmd_afk}
 #endif
 

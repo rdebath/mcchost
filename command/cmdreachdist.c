@@ -2,8 +2,8 @@
 #include "cmdreachdist.h"
 
 #if INTERFACE
-#define CMD_REACHDIST \
-    {N"reachdistance", &cmd_reachdist,CMD_HELPARG}, {N"reach", &cmd_reachdist, .dup=1}
+#define UCMD_REACHDIST \
+    {N"reachdistance", &cmd_reachdist,CMD_HELPARG}, {N"reach", &cmd_reachdist, CMD_ALIAS}
 #endif
 
 /*HELP reachdistance,reach H_CMD

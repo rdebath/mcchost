@@ -2,7 +2,7 @@
 #include "cmdkick.h"
 
 #if INTERFACE
-#define CMD_KICK \
+#define UCMD_KICK \
     {N"kick", &cmd_kick, CMD_PERM_ADMIN,CMD_HELPARG}, \
     {N"ban", &cmd_ban, CMD_PERM_ADMIN,CMD_HELPARG}, \
     {N"unban", &cmd_unban, CMD_PERM_ADMIN,CMD_HELPARG}

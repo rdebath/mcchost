@@ -2,8 +2,8 @@
 #include "cmdtitle.h"
 
 #if INTERFACE
-#define CMD_TITLE \
-    {N"title", &cmd_title}, {N"xtitle", &cmd_title, .dup=1, .nodup=1 }
+#define UCMD_TITLE \
+    {N"title", &cmd_title}, {N"xtitle", &cmd_title, CMD_ALIAS, .nodup=1 }
 #endif
 
 /*HELP title H_CMD

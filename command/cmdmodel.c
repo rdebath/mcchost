@@ -2,8 +2,8 @@
 #include "cmdmodel.h"
 
 #if INTERFACE
-#define CMD_MODEL \
-    {N"model", &cmd_model}, {N"xmodel", &cmd_model, .dup=1, .nodup=1}
+#define UCMD_MODEL \
+    {N"model", &cmd_model}, {N"xmodel", &cmd_model, CMD_ALIAS, .nodup=1}
 #endif
 
 /*HELP model H_CMD

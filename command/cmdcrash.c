@@ -19,8 +19,8 @@ Crash the server, default is a fatal() error.
 &T/crash 646&S Client crash for Java 0.30
 */
 #if INTERFACE
-#define CMD_CRASH \
-    {N"crash", &cmd_crash,CMD_HELPARG}, {N"servercrash", &cmd_quit, .dup=1}
+#define UCMD_CRASH \
+    {N"crash", &cmd_crash,CMD_HELPARG}, {N"servercrash", &cmd_quit, CMD_ALIAS}
 #endif
 
 int *crash_ptr = 0;

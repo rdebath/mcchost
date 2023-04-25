@@ -147,7 +147,7 @@ complete_connection()
 
     open_main_level();
 
-#ifdef CMD_TEXTCOLOUR
+#ifdef UCMD_TEXTCOLOUR
     send_textcolours();
 #endif
 

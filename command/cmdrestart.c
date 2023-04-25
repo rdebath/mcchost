@@ -4,7 +4,7 @@
 #include "cmdrestart.h"
 
 #if INTERFACE
-#define CMD_RESTART {N"restart", &cmd_restart, CMD_PERM_ADMIN}
+#define UCMD_RESTART {N"restart", &cmd_restart, CMD_PERM_ADMIN}
 #endif
 
 /*HELP restart H_CMD

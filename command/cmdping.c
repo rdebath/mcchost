@@ -7,7 +7,7 @@ Display ping status
 */
 
 #if INTERFACE
-#define CMD_PING \
+#define UCMD_PING \
     {N"ping", &cmd_ping}
 #endif
 

@@ -2,9 +2,9 @@
 #include "cmdsummon.h"
 
 #if INTERFACE
-#define CMD_SUMMON \
+#define UCMD_SUMMON \
     {N"summon", &cmd_summon, CMD_PERM_ADMIN,CMD_HELPARG}, \
-    {N"s", &cmd_summon, .dup=1}
+    {N"s", &cmd_summon, CMD_ALIAS}
 #endif
 
 /*HELP summon H_CMD

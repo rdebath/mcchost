@@ -7,7 +7,7 @@ delete a level
 */
 
 #if INTERFACE
-#define CMD_DELETELVL {N"deletelvl", &cmd_deletelvl,CMD_HELPARG}
+#define UCMD_DELETELVL {N"deletelvl", &cmd_deletelvl,CMD_HELPARG}
 #endif
 
 void

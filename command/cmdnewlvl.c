@@ -13,7 +13,7 @@ Seed is:
 */
 
 #if INTERFACE
-#define CMD_NEWLVL {N"newlvl", &cmd_newlvl, CMD_HELPARG}
+#define UCMD_NEWLVL {N"newlvl", &cmd_newlvl, CMD_HELPARG}
 
 typedef struct lvltheme_t lvltheme_t;
 struct lvltheme_t {

@@ -8,8 +8,8 @@ Alias &T/an
 */
 
 #if INTERFACE
-#define CMD_ANNOUNCE \
-    {N"announce", &cmd_announce, CMD_HELPARG}, {N"an", &cmd_announce, .dup=1}
+#define UCMD_ANNOUNCE \
+    {N"announce", &cmd_announce, CMD_HELPARG}, {N"an", &cmd_announce, CMD_ALIAS}
 #endif
 
 void

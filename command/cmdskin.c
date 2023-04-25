@@ -2,7 +2,7 @@
 #include "cmdskin.h"
 
 #if INTERFACE
-#define CMD_SKIN \
+#define UCMD_SKIN \
     {N"skin", &cmd_skin}
 #endif
 

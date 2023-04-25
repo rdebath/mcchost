@@ -8,7 +8,7 @@
 &T/reload classic&S -- Reloads your session in classic mode.
 */
 #if INTERFACE
-#define CMD_RELOAD  {N"reload", &cmd_reload}
+#define UCMD_RELOAD  {N"reload", &cmd_reload}
 #endif
 void
 cmd_reload(char * UNUSED(cmd), char * arg)

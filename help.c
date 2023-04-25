@@ -33,11 +33,11 @@ Other help files: license, chars, inifile, edlin, ...
 
 #define H_CMD	1	// Help for a command
 
-#define CMD_HELP \
+#define UCMD_HELP \
     {N"help", &cmd_help}, \
-    {N"faq", &cmd_help, .dup=1, .nodup=1}, \
-    {N"news", &cmd_help, .dup=1, .nodup=1}, \
-    {N"clear", &cmd_clear}, {N"cls", &cmd_clear, .dup=1}
+    {N"faq", &cmd_help, CMD_ALIAS, .nodup=1}, \
+    {N"news", &cmd_help, CMD_ALIAS, .nodup=1}, \
+    {N"clear", &cmd_clear}, {N"cls", &cmd_clear, CMD_ALIAS}
 #endif
 
 void

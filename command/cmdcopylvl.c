@@ -7,7 +7,7 @@ copy a level
 */
 
 #if INTERFACE
-#define CMD_COPYLVL {N"copylvl", &cmd_copylvl, CMD_PERM_ADMIN, CMD_HELPARG}
+#define UCMD_COPYLVL {N"copylvl", &cmd_copylvl, CMD_PERM_ADMIN, CMD_HELPARG}
 #endif
 
 void
