@@ -88,7 +88,7 @@ cmd_defblk(char * UNUSED(cmd), char * arg)
 
     blk = atoi(blk_str?blk_str:"");
     if (blk <= 0 || blk >= BLOCKMAX) {
-	printf_chat("&WBlock number '%s' must be an integer int 1..max", blk_str);
+	printf_chat("&WBlock number '%s' must be an integer between 1 and %d", blk_str, BLOCKMAX-1);
 	return;
     }
     if (cf_str) {
@@ -102,26 +102,8 @@ cmd_defblk(char * UNUSED(cmd), char * arg)
         return;
     }
 
-    if (!level_prop->blockdef[blk].defined && cf_blk == (block_t)-1) {
-	if (blk < 66) cf_blk = blk;
-	else cf_blk = Block_Air;
-    }
+    copy_blk_def(cf_blk, blk);
 
-    if (cf_blk < BLOCKMAX) {
-	if (cf_blk < Block_CPE) {
-	    // Always use unmodified when copy from std.
-	    level_prop->blockdef[blk] = default_blocks[cf_blk];
-	} else if (cf_blk < BLOCKMAX) {
-	    if (!level_prop->blockdef[cf_blk].defined) {
-		printf_chat("&WBlock '%s' is not defined", blk_str);
-		return;
-	    }
-	    level_prop->blockdef[blk] = level_prop->blockdef[cf_blk];
-	}
-	level_prop->blockdef[blk].defined = 1;
-	level_prop->blockdef[blk].fallback = cf_blk;
-	level_prop->blockdef[blk].inventory_order = blk;
-    }
     level_prop->blockdef_generation++;
     level_prop->dirty_save = 1;
     level_prop->metadata_generation++;
@@ -136,22 +118,58 @@ cmd_defblk(char * UNUSED(cmd), char * arg)
     if (!val || *val == 0) return;
 
     char * opt = strtok(val, ",");
+    char * a2 = strtok(0, ",");
+    char * a3 = strtok(0, ",");
     do
     {
 	char * v = strchr(opt, '=');
 	if (!v) v = "";
 	else { *v = 0; v++; }
-	set_block_opt(blk, opt, v);
+	int rv = set_block_opt(blk, opt, v, a2, a3);
+	if (rv == 3) {
+	    opt = strtok(0, ",");
+	    a2 = strtok(0, ",");
+	    a3 = strtok(0, ",");
+	} else {
+	    opt = a2;
+	    a2 = a3;
+	    a3 = strtok(0, ",");
+	}
     }
-    while ((opt = strtok(0, ",")) != 0);
+    while (opt != 0);
 
     return;
 }
 
-LOCAL void
-set_block_opt(block_t bno, char * varname, char * value)
+void
+copy_blk_def(block_t cf_blk, block_t blk)
 {
-    if (!varname || !*varname) return;
+    if (!level_prop->blockdef[blk].defined && cf_blk == (block_t)-1) {
+	if (blk < 66) cf_blk = blk;
+	else cf_blk = Block_Air;
+    }
+
+    if (cf_blk < BLOCKMAX) {
+	if (cf_blk < Block_CPE) {
+	    // Always use unmodified when copy from std.
+	    level_prop->blockdef[blk] = default_blocks[cf_blk];
+	} else if (cf_blk < BLOCKMAX) {
+	    if (!level_prop->blockdef[cf_blk].defined) {
+		printf_chat("&WBlock '%d' is not defined", cf_blk);
+		return;
+	    }
+	    level_prop->blockdef[blk] = level_prop->blockdef[cf_blk];
+	}
+	level_prop->blockdef[blk].defined = 1;
+	level_prop->blockdef[blk].fallback = cf_blk;
+	level_prop->blockdef[blk].inventory_order = blk;
+    }
+}
+
+int
+set_block_opt(block_t bno, char * varname, char * value, char * v2, char * v3)
+{
+    if (!varname || !*varname) return 0;
 
     char vbuf[256];
     saprintf(vbuf, "block.%d", bno);
@@ -159,14 +177,19 @@ set_block_opt(block_t bno, char * varname, char * value)
     st->curr_section = vbuf;
     if (!value) value = "";
 
-    if (extra_block_prop(st, varname, value))
-	return;
-    if (!level_ini_fields(st, varname, &value))
+    int rv;
+    if ((rv = extra_block_prop(st, varname, value, v2, v3)) != 0)
+	return rv;
+
+    if (!level_ini_fields(st, varname, &value)) {
 	printf_chat("&WOption %s not found", varname);
+	return 0;
+    }
+    return 1;
 }
 
 int
-extra_block_prop(ini_state_t *st, char * varname, char * value)
+extra_block_prop(ini_state_t *st, char * varname, char * value, char * v2, char * v3)
 {
     char nbuf[256], tbuf[256];
     for(int op = 0; extra_props[op].alias; op++) {
@@ -187,8 +210,8 @@ extra_block_prop(ini_state_t *st, char * varname, char * value)
 	    return 1;
 	case ep_xyz:
 	    {
-		char * y = strtok(0, ","); // EVIL!
-		char * z = strtok(0, ",");
+		char * y = v2;
+		char * z = v3;
 		saprintf(nbuf, "%s.X", extra_props[op].name);
 		level_ini_fields(st, nbuf, &value);
 		saprintf(nbuf, "%s.Y", extra_props[op].name);
@@ -197,7 +220,7 @@ extra_block_prop(ini_state_t *st, char * varname, char * value)
 		saprintf(nbuf, "%s.Z", extra_props[op].name);
 		if (z)
 		    level_ini_fields(st, nbuf, &z);
-		return 1;
+		return 3;
 	    }
 	case ep_toggle:
 	    {

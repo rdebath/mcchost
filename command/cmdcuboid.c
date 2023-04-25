@@ -10,7 +10,7 @@ Alias: &T/z, /box, /cw for /z wire, /ch for /z hollow, /Walls for /z walls, /hbo
 
 #if INTERFACE
 #define UCMD_CUBOID \
-	{N"cuboid", &cmd_cuboid}, {N"z", &cmd_cuboid, CMD_ALIAS}, \
+	{N"cuboid", &cmd_cuboid, .map=1}, {N"z", &cmd_cuboid, CMD_ALIAS}, \
 	{N"box", &cmd_cuboid, CMD_ALIAS}, \
 	{N"cuboid-wire", &cmd_cuboid, .nodup=1, CMD_ALIAS}, \
 	{N"cw", &cmd_cuboid, CMD_ALIAS}, \
