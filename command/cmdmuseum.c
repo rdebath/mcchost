@@ -14,33 +14,30 @@ Goto a backup of a level.
 void
 cmd_museum(char * UNUSED(cmd), char * arg)
 {
-    char * lvl = 0, *levelid = 0;
-    char * p = arg+strlen(arg);
-    while (p>arg && p[-1] == ' ') *--p = 0;
-    while (p>arg && p[-1] != ' ') --p;
-
+    char * lvl = strarg(arg);
+    char * levelid = strarg(0);
     char * e = 0;
-    int backup_id = strtol(p, &e, 10);
-    if (!e || *e != 0) {
-	backup_id = 1;
-	levelid = "1";
-    } else {
-	levelid = p;
-	while (p>arg && p[-1] == ' ') *--p = 0;
+    int backup_id = 0;
+
+    if (levelid == 0 && lvl != 0) {
+	 backup_id = strtol(lvl, &e, 10);
+	 if (backup_id > 0 && *e == 0) {
+	    levelid = lvl;
+	    lvl = 0;
+	 }
+    } else if (levelid) {
+	backup_id = strtol(levelid, &e, 10);
+	if (*e != 0 && lvl) {
+	    int try2 = strtol(lvl, &e, 10);
+	    if (*e == 0) {
+		char * t = levelid; levelid = lvl; lvl = t;
+		backup_id = try2;
+	    }
+	}
     }
 
-    lvl = arg;
-    while (lvl && *lvl == ' ') lvl++;
-    if (lvl == levelid) lvl = 0;
-
-    if (lvl) {
-	int l = strlen(lvl);
-	// A quoted name is used exactly, including spaces.
-	if (l>2 && lvl[0] == '"' && lvl[l-1] == '"') {
-	    lvl[l-1] = 0;
-	    lvl++;
-	}
-    } else
+    if (backup_id <= 0) backup_id = 1;
+    if (!lvl)
 	lvl = current_level_name;
 
     direct_teleport(lvl, backup_id, 0);
