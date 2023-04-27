@@ -13,6 +13,7 @@
 #define LEVEL_PROPS_NAME "level/%s.props"
 #define LEVEL_BLOCKS_NAME "level/%s.blocks"
 #define LEVEL_QUEUE_NAME "level/%s.queue"
+#define LEVEL_TMPBLOCKS_NAME "level/%s.tmpblk"
 
 #define LEVEL_MAP_DIR_NAME "map"
 #define LEVEL_CW_NAME LEVEL_MAP_DIR_NAME "/%s.cw"

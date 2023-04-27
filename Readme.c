@@ -30,7 +30,6 @@ Other notes
 
  +) On /defblk of block used for edge or horizon need to redefine those.
 
- +) /resizelvl
  +) /sendcmd
  +) /clones
  +) /undo, /redo

@@ -279,7 +279,7 @@ scan_and_save_levels(int do_timed_save)
 		!restart_on_unload;
 
 	    if (level_prop->dirty_save) {
-		int do_save = do_timed_save;
+		int do_save = do_timed_save || shdat.client->levels[lvid].force_unload;
 		if (server->no_save_inuse && user_count && no_unload)
 		    do_save = 0; // Don't save while players actually on level.
 

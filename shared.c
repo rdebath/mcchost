@@ -31,7 +31,8 @@
 #define SHMID_CMD	4
 #define SHMID_CLIENTS	5
 #define SHMID_SYSCONF	6
-#define SHMID_COUNT	7
+#define SHMID_TMPBLOCKS	7
+#define SHMID_COUNT	8
 
 typedef struct shmem_t shmem_t;
 struct shmem_t {
@@ -296,6 +297,37 @@ stop_shared_lock(void)
 {
     lock_stop(level_lock);
     if (level_lock->name) { free(level_lock->name); level_lock->name = 0; }
+}
+
+int
+open_tmp_blocks(char * levelname, int cells_x, int cells_y, int cells_z)
+{
+    char sharename[256];
+
+    deallocate_shared(SHMID_TMPBLOCKS);
+
+    if(*levelname == 0) return -1;
+    sprintf(sharename, LEVEL_TMPBLOCKS_NAME, levelname);
+    int64_t l = (int64_t)cells_x * cells_y * cells_z * sizeof(*level_blocks) + sizeof(map_len_t);
+
+    if((uintptr_t)l != l || (off_t)l != l || (size_t)l != l) {
+	errno = EINVAL;
+	perror("Server address space too small for this map");
+	printf_chat("Map \"%s\" is too large (%d,%d,%d) -> %jd cells",
+	    levelname, cells_x, cells_y, cells_z, (intmax_t)cells_x * cells_y * cells_z);
+	return -1;
+    }
+    if (allocate_shared(sharename, l, shdat.dat+SHMID_TMPBLOCKS) < 0)
+	return -1;
+
+    //level_tmpblocks = shdat.dat[SHMID_TMPBLOCKS].ptr;
+    return 0;
+}
+
+void
+stop_tmp_blocks(void)
+{
+    deallocate_shared(SHMID_TMPBLOCKS);
 }
 
 void

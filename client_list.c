@@ -259,11 +259,12 @@ check_user()
     if (my_level >= 0 && my_level < MAX_LEVEL) {
 	int go_main = 0;
 	if (!shdat.client->levels[my_level].loaded) go_main = 1;
-	else if (shdat.client->levels[my_level].force_unload) go_main = 1;
+	else if (shdat.client->levels[my_level].force_unload)
+	    go_main = shdat.client->levels[my_level].force_unload;
 
 	if (go_main) {
 #ifdef UCMD_GOTOMAIN
-	    if (strcmp(shdat.client->levels[my_level].level.c, main_level()) != 0)
+	    if (go_main == 1 && strcmp(shdat.client->levels[my_level].level.c, main_level()) != 0)
 	    {
 		printf_chat("You are being moved to main as %s was unloaded",
 		    shdat.client->levels[my_level].level.c);
@@ -272,8 +273,9 @@ check_user()
 	    else
 #endif
 	    {
-		printf_chat("You have fallen into the void as %s was unloaded",
-		    shdat.client->levels[my_level].level.c);
+		if (go_main <= 1)
+		    printf_chat("You have fallen into the void as %s was unloaded",
+			shdat.client->levels[my_level].level.c);
 		cmd_void(0,0);
 	    }
 	    if (alarm_handler_pid != 0)

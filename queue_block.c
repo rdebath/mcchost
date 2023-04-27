@@ -287,6 +287,7 @@ void
 send_queued_blocks()
 {
     if (reload_pending) {
+	if (!level_block_queue) { reload_pending = 0; return; }
 	if (bytes_queued_to_send()) return;
 
 	// reload_pending contains centiseconds till reload, but we adjust.
