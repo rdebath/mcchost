@@ -65,6 +65,9 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 	if (strcasecmp(ar1, "all") == 0) start = 0;
 	else if (strcasecmp(ar1, "backup") == 0) {
 	    backups = 1;
+	} else if (strcasecmp(ar1, "backups") == 0) {
+	    backups = 2;
+	    if (ar2 == 0) ar2 = current_level_name;
 	} else {
 	    start = atoi(ar1);
 	    if (start <= 0) {
@@ -103,7 +106,7 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 	if (flg == 0) {
 	    DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
 	    if (directory) {
-		read_maps(&maps, 1, directory, ar2);
+		read_maps(&maps, backups, directory, ar2);
 		closedir(directory);
 	    }
 	}
@@ -119,13 +122,18 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 
     if (!maps.count) {
 	if (!filtered)
-	    printf_chat("&WNo levels have been saved yet");
+	    printf_chat("&WNo %s have been saved yet", backups?"backups":"levels");
 	else
-	    printf_chat("&WNo levels match your filter");
+	    printf_chat("&WNo %s match \"%s\"", backups?"backups":"levels", ar2);
 	return;
     }
 
-    printf_chat("&SShowing levels %d-%d (out of %d)", start+1,end,maps.count);
+    if (!backups)
+	printf_chat("&SShowing levels %d-%d (out of %d)", start+1,end,maps.count);
+    else if (backups == 2)
+	printf_chat("&SShowing %d backups for %s", maps.count, ar2);
+    else
+	printf_chat("&SShowing %d backups", maps.count);
     for(int i = start; i<end; i++) {
 	char * s = maps.entry[i].name;
 	int l = strlen(s), l0=l;
@@ -178,6 +186,7 @@ void
 read_maps(maplist_t * maps, int is_backup, DIR *directory, char * matchstr)
 {
     struct dirent *entry;
+    int matchstr_len = matchstr?strlen(matchstr):0;
 
     while( (entry=readdir(directory)) )
     {
@@ -223,9 +232,14 @@ read_maps(maplist_t * maps, int is_backup, DIR *directory, char * matchstr)
 	l = strlen(nbuf2);
 	if (l>MAXLEVELNAMELEN) continue;
 
-	if (matchstr != 0 && *matchstr) {
-	    if (my_strcasestr(nbuf2, matchstr) == 0)
-		continue;
+	if (matchstr_len != 0) {
+	    if (is_backup != 2) {
+		if (my_strcasestr(nbuf2, matchstr) == 0)
+		    continue;
+	    } else {
+		if (strcasecmp(nbuf2, matchstr) != 0)
+		    continue;
+	    }
 	}
 
 	if (maps->count >= maps->size) {
