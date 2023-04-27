@@ -42,6 +42,10 @@ Other notes
  +) /fill
  +) /tree -- Only Notch variant ?
 
+ +) Command line to send HUP to server; for non-Linux updates.
+    -- Or just time on exe ?
+    -- Time on system.ini ?
+
  +) Exponential backups. (Delete old backups using +50% rule)
     for i in 2^k ; if file$i and file$(i*1.5) exist rm file $i
 

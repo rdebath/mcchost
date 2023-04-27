@@ -5,6 +5,7 @@ int
 find_online_player(char * user_txt, int allow_self, int quiet)
 {
     int ucount = 0;
+    if (!user_txt || !*user_txt) return -1;
     for(int mode = 0; mode < 3; mode++) {
 	for(int i = 0; i < MAX_USER; i++)
 	{

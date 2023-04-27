@@ -11,23 +11,33 @@
     {N"lb-list", &cmd_levelblock_list, CMD_ALIAS}
 #endif
 
-void
-set_dirty_blockdef()
-{
-    level_prop->blockdef_generation++;
-    level_prop->dirty_save = 1;
-    level_prop->metadata_generation++;
-    level_prop->last_modified = time(0);
-}
+#define TOKEN_LIST(Mac) \
+    Mac(edit) Mac(remove) Mac(copy) Mac(list) Mac(info) Mac(copyall) Mac(add)
+
+#define GEN_TOK_STRING(NAME) #NAME,
+#define GEN_TOK_ENUM(NAME) token_ ## NAME,
+enum token { TOKEN_LIST(GEN_TOK_ENUM) token_count};
+const char* tokennames[] = { TOKEN_LIST(GEN_TOK_STRING) 0};
 
 void
 cmd_levelblock(char * UNUSED(cmd), char * arg)
 {
-    char * subcmd = strarg(arg);
+    char * sub_cmd = strarg(arg);
     char * blk_str = strarg(0);
+    enum token subcmd = -1;
 
-    if (strcasecmp(subcmd, "copyall") == 0) {
-	printf_chat("&W/lb copyall not implemented yet");
+    for(int i = 0; i < token_count; i++) {
+	if (strcasecmp(sub_cmd, tokennames[i]) == 0) {
+	    subcmd = i;
+	    break;
+	}
+    }
+
+    if (subcmd == -1 || subcmd == token_copyall || subcmd == token_add) {
+	if (subcmd == -1)
+	    printf_chat("&WUnknown subcommand /lb %s", sub_cmd);
+	else
+	    printf_chat("&W/lb %s not implemented", sub_cmd);
 	return;
     }
 
@@ -38,7 +48,7 @@ cmd_levelblock(char * UNUSED(cmd), char * arg)
     if (blk_str && (p=strchr(blk_str, '-')) != 0)
 	to_blk = atoi(p+1);
 
-    if (strcasecmp(subcmd, "copy") == 0) {
+    if (subcmd == token_copy) {
 	min_block = 0;
 	if (blk == to_blk) {
 	    char * s = strarg(0);
@@ -54,20 +64,20 @@ cmd_levelblock(char * UNUSED(cmd), char * arg)
 	return;
     }
 
-    if (strcasecmp(subcmd, "remove") == 0) {
+    if (subcmd == token_remove) {
 	for(block_t b = blk; b <= to_blk; b++)
 	    set_block_opt(b, "defined", "0", 0, 0);
 	set_dirty_blockdef();
 	return;
     }
 
-    if (strcasecmp(subcmd, "copy") == 0) {
+    if (subcmd == token_copy) {
 	copy_blk_def(blk, to_blk);
 	set_dirty_blockdef();
 	return;
     }
 
-    if (strcasecmp(subcmd, "edit") == 0) {
+    if (subcmd == token_edit) {
 	char * propname = strarg(0);
 	char * propval = 0, *propval2 = 0, *propval3 = 0;
 
@@ -93,7 +103,16 @@ cmd_levelblock(char * UNUSED(cmd), char * arg)
 	return;
     }
 
-    printf_chat("&W/lb %s not implemented", subcmd);
+    printf_chat("&W/lb %s not implemented", sub_cmd);
+}
+
+void
+set_dirty_blockdef()
+{
+    level_prop->blockdef_generation++;
+    level_prop->dirty_save = 1;
+    level_prop->metadata_generation++;
+    level_prop->last_modified = time(0);
 }
 
 void

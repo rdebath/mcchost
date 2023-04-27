@@ -36,6 +36,8 @@ cmd_nick(char * UNUSED(cmd), char *arg)
 	return;
     }
 
+    if (str2 == 0 && find_online_player(str1, 1, 1) < 0) return cmd_xnick(0, arg);
+
     int uid = find_online_player(str1, 1, 0);
     if (uid < 0) return;
 

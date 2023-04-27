@@ -36,6 +36,8 @@ cmd_model(char * UNUSED(cmd), char *arg)
     char * str1 = strarg(arg);
     char * str2 = strarg(0);
 
+    if (str2 == 0 && find_online_player(str1, 1, 1) < 0) return cmd_xmodel(0, arg);
+
     int uid = find_online_player(str1, 1, 0);
     if (uid < 0) return;
 

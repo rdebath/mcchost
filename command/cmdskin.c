@@ -60,6 +60,8 @@ cmd_skin(char * UNUSED(cmd), char *arg)
 	if (v==1) str2 = sbuf;
     }
 
+    if (str2 == 0 && find_online_player(str1, 1, 1) < 0) return cmd_xskin(0, arg);
+
     int uid = find_online_player(str1, 1, 0);
     if (uid < 0) return;
 
