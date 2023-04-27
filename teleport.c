@@ -3,67 +3,28 @@
 
 #include "teleport.h"
 
+#if INTERFACE
+typedef struct summon_list_t summon_list_t;
+struct summon_list_t {
+    nbtstr_t name;
+    uint8_t active;
+    int player_id;
+    int on_level;
+    xyzhv_t posn;
+};
+#endif
+
 pid_t level_loader_pid = 0;
 
 int
 direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 {
-    char fixedname[MAXLEVELNAMELEN*4];
     char cw_pathname[PATH_MAX];
     char levelname[MAXLEVELNAMELEN+1];
     char levelstdname[MAXLEVELNAMELEN*4];
 
-    fix_fname(fixedname, sizeof(fixedname), level);
-
-    if (backup_id)
-	saprintf(levelstdname, "%s.%d", fixedname, backup_id);
-    else
-	strcpy(levelstdname, fixedname);
-
-    if (backup_id == 0) {
-	if (!check_level(level, fixedname)) {
-	    unfix_fname(levelname, sizeof(levelname), fixedname);
-	    printf_chat("&WLevel &S%s&W is not available.", levelname);
-	    return 0;
-	}
-
-        saprintf(cw_pathname, LEVEL_CW_NAME, fixedname);
-        if (access(cw_pathname, F_OK) != 0) {
-            printf_chat("&SLevel \"%s\" does not exist", level);
-            return 0;
-        }
-
-    } else if (backup_id > 0) {
-
-	saprintf(cw_pathname, LEVEL_BACKUP_NAME, fixedname, backup_id);
-	int flg = 1;
-	// Normal name
-	if (access(cw_pathname, F_OK) == 0) flg = 0;
-	// Try no .N suffix for N==1
-	if (flg && backup_id == 1) {
-	    saprintf(cw_pathname, LEVEL_BACKUP_NAME_1, fixedname);
-	    if (access(cw_pathname, F_OK) == 0) flg = 0;
-	}
-	if (flg) flg = !find_alt_museum_file(cw_pathname, sizeof(cw_pathname), level, backup_id);
-	if (flg) {
-	    saprintf(cw_pathname, LEVEL_BACKUP_NAME, fixedname, backup_id);
-	    printlog("Backup file \"%s\" does not exist.", cw_pathname);
-	    printf_chat("&SBackup %d for level \"%s\" does not exist", backup_id, level);
-	    return 0;
-	}
-
-    } else
+    if (!choose_level_files(level, backup_id, cw_pathname, levelname, levelstdname))
 	return 0;
-
-    unfix_fname(levelname, sizeof(levelname), fixedname);
-    if (*levelname == 0) {
-	fprintf_logfile("Error on map name in direct_teleport \"%s\" file:\"%s\"", level, fixedname);
-	if (*level && !*fixedname)
-	    printf_chat("&SNo levels match \"%s\"", level);
-	else
-	    printf_chat("&SCould not load level file \"%s\"", fixedname);
-	return 0;
-    }
 
     if (level_prop) {
 	// Check to see if the level is loaded; return of 1 if it's gonna
@@ -116,6 +77,66 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
 }
 
 int
+choose_level_files(char *level, int backup_id, char *cw_pathname, char *levelname, char *levelstdname)
+{
+    char fixedname[MAXLEVELNAMELEN*4];
+
+    fix_fname(fixedname, sizeof(fixedname), level);
+
+    if (backup_id)
+	snprintf(levelstdname, MAXLEVELNAMELEN*4, "%s.%d", fixedname, backup_id);
+    else
+	strcpy(levelstdname, fixedname);
+
+    if (backup_id == 0) {
+	if (!check_level(level, fixedname)) {
+	    unfix_fname(levelname, MAXLEVELNAMELEN+1, fixedname);
+	    printf_chat("&WLevel &S%s&W is not available.", levelname);
+	    return 0;
+	}
+
+        snprintf(cw_pathname, PATH_MAX, LEVEL_CW_NAME, fixedname);
+        if (access(cw_pathname, F_OK) != 0) {
+            printf_chat("&SLevel \"%s\" does not exist", level);
+            return 0;
+        }
+
+    } else if (backup_id > 0) {
+
+	snprintf(cw_pathname, PATH_MAX, LEVEL_BACKUP_NAME, fixedname, backup_id);
+	int flg = 1;
+	// Normal name
+	if (access(cw_pathname, F_OK) == 0) flg = 0;
+	// Try no .N suffix for N==1
+	if (flg && backup_id == 1) {
+	    snprintf(cw_pathname, PATH_MAX, LEVEL_BACKUP_NAME_1, fixedname);
+	    if (access(cw_pathname, F_OK) == 0) flg = 0;
+	}
+	if (flg) flg = !find_alt_museum_file(cw_pathname, PATH_MAX, level, backup_id);
+	if (flg) {
+	    snprintf(cw_pathname, PATH_MAX, LEVEL_BACKUP_NAME, fixedname, backup_id);
+	    printlog("Backup file \"%s\" does not exist.", cw_pathname);
+	    printf_chat("&SBackup %d for level \"%s\" does not exist", backup_id, level);
+	    return 0;
+	}
+
+    } else
+	return 0;
+
+    unfix_fname(levelname, MAXLEVELNAMELEN+1, fixedname);
+    if (*levelname == 0) {
+	fprintf_logfile("Error on map name in direct_teleport \"%s\" file:\"%s\"", level, fixedname);
+	if (*level && !*fixedname)
+	    printf_chat("&SNo levels match \"%s\"", level);
+	else
+	    printf_chat("&SCould not load level file \"%s\"", fixedname);
+	return 0;
+    }
+
+    return 1;
+}
+
+int
 find_alt_museum_file(char * cw_pathname, int len, char * level, int backup_id)
 {
     char fixedname_dir[MAXLEVELNAMELEN*4];
@@ -155,7 +176,7 @@ find_alt_museum_file(char * cw_pathname, int len, char * level, int backup_id)
 int
 preload_level(char *levelname, int backup_id, char * levelstdname, char * cw_pathname)
 {
-    if (backup_id < 0 || my_user_no < 0) return -1;
+    if (backup_id < 0) return -1;
 
     int level_id = -1;
     nbtstr_t level = {0};
@@ -183,42 +204,8 @@ preload_level(char *levelname, int backup_id, char * levelstdname, char * cw_pat
 	*current_level_name = 0;
 	current_level_backup_id = -1;
 
-	open_level_files(levelname, backup_id, cw_pathname, levelstdname, 0);
-	if (!level_prop) {
-	    printf_chat("Level \"%s\" load failed", levelname);
-	    exit(0);
-	}
-
-	lock_fn(system_lock);
-
-	level_id = -1;
-	for(int i=0; i<MAX_LEVEL; i++) {
-            if (!shdat.client->levels[i].loaded) {
-                if (level_id == -1) level_id = i;
-                continue;
-            }
-            nbtstr_t n = shdat.client->levels[i].level;
-            if (strcmp(n.c, level.c) == 0 && shdat.client->levels[i].backup_id == backup_id) {
-                level_id = i;
-                break;
-            }
-        }
-
-        if (level_id >= 0 && !shdat.client->levels[level_id].loaded) {
-            client_level_t t = {0};
-            t.level = level;
-            t.loaded = 1;
-            t.backup_id = backup_id;
-            shdat.client->levels[level_id] = t;
-            server->loaded_levels++;
-        }
-
-	shdat.client->user[my_user_no].summon_level_id = level_id;
-	shdat.client->user[my_user_no].summon_posn = level_prop->spawn;
-
-	unlock_fn(system_lock);
+	direct_load_level(levelname, backup_id, levelstdname, cw_pathname, 0);
 	stop_shared();
-
 	exit(0);
     }
     if (level_loader_pid<0) {
@@ -229,3 +216,141 @@ preload_level(char *levelname, int backup_id, char * levelstdname, char * cw_pat
 
     return 1;
 }
+
+LOCAL void
+direct_load_level(char *levelname, int backup_id, char * levelstdname, char * cw_pathname, summon_list_t * users_on)
+{
+    open_level_files(levelname, backup_id, cw_pathname, levelstdname, 0);
+    if (!level_prop) {
+	printf_chat("Level \"%s\" load failed", levelname);
+	exit(0);
+    }
+
+    lock_fn(system_lock);
+
+    int level_id = -1;
+    nbtstr_t level = {0};
+    strcpy(level.c, levelname);
+
+    for(int i=0; i<MAX_LEVEL; i++) {
+	if (!shdat.client->levels[i].loaded) {
+	    if (level_id == -1) level_id = i;
+	    continue;
+	}
+	nbtstr_t n = shdat.client->levels[i].level;
+	if (strcmp(n.c, level.c) == 0 && shdat.client->levels[i].backup_id == backup_id) {
+	    level_id = i;
+	    break;
+	}
+    }
+
+    if (level_id >= 0 && !shdat.client->levels[level_id].loaded) {
+	client_level_t t = {0};
+	t.level = level;
+	t.loaded = 1;
+	t.backup_id = backup_id;
+	shdat.client->levels[level_id] = t;
+	server->loaded_levels++;
+    }
+
+    if (users_on)
+	summon_userlist(users_on, level_id);
+    else if (my_user_no >= 0) {
+	shdat.client->user[my_user_no].summon_level_id = level_id;
+	shdat.client->user[my_user_no].summon_posn = level_prop->spawn;
+    }
+
+    unlock_fn(system_lock);
+}
+
+void
+wait_for_forced_unload(char * lvlname, summon_list_t * users_on)
+{
+    lock_fn(system_lock);
+    int level_id = -1;
+
+    for(int lvid=0; lvid<MAX_LEVEL; lvid++) {
+	if (!shdat.client->levels[lvid].loaded) continue;
+	nbtstr_t lv = shdat.client->levels[lvid].level;
+	if (strcmp(lv.c, lvlname) == 0) {
+	    level_id = lvid;
+	    break;
+	}
+    }
+
+    if (level_id < 0) {
+	unlock_fn(system_lock);
+	return;
+    }
+
+    if (users_on) {
+	int uid = 0;
+	for(int i=0; i<MAX_USER; i++)
+	{
+	    client_entry_t c = shdat.client->user[i];
+	    if (!c.active) continue;
+	    if (c.on_level != level_id) continue;
+	    if (c.level_bkp_id != 0) continue;
+
+	    users_on[uid].player_id = i;
+	    users_on[uid].name = c.name;
+	    users_on[uid].active = c.active;
+	    users_on[uid].on_level = c.on_level;
+	    users_on[uid].posn = c.posn;
+	    if (users_on[uid].active)
+		uid++;
+	}
+    }
+
+    printf_chat("&SLevel '%s' is unloading", lvlname);
+    shdat.client->levels[level_id].force_unload = 1;
+    shdat.client->generation++;
+
+    unlock_fn(system_lock);
+
+    while(shdat.client->levels[level_id].loaded && shdat.client->levels[level_id].force_unload)
+	msleep(100);
+}
+
+void
+return_users_to_level(char * level, summon_list_t * users_on)
+{
+    char fixedname[MAXLEVELNAMELEN*4];
+    char cw_pathname[PATH_MAX];
+    char levelname[MAXLEVELNAMELEN+1];
+    char levelstdname[MAXLEVELNAMELEN*4];
+
+    fix_fname(fixedname, sizeof(fixedname), level);
+    strcpy(levelstdname, fixedname);
+
+    saprintf(cw_pathname, LEVEL_CW_NAME, fixedname);
+    if (access(cw_pathname, F_OK) != 0) {
+        printf_chat("&SLevel \"%s\" does not exist", level);
+        return;
+    }
+
+    unfix_fname(levelname, sizeof(levelname), fixedname);
+
+    direct_load_level(levelname, 0, levelstdname, cw_pathname, users_on);
+}
+
+LOCAL void
+summon_userlist(summon_list_t * users_on, int new_level_id)
+{
+    int locked = 0;
+    for(int uid = 0; uid < MAX_USER; uid++)
+    {
+        if (!users_on[uid].active) break;
+        if (!locked) { locked = 1; lock_fn(system_lock); }
+
+        int id = users_on[uid].player_id;
+        if (!shdat.client->user[id].active) continue;
+        if (strcmp(shdat.client->user[id].name.c, users_on[uid].name.c) != 0)
+            continue;
+
+        shdat.client->user[id].summon_level_id = new_level_id>=0?new_level_id:users_on[uid].on_level;
+        shdat.client->user[id].summon_posn = users_on[uid].posn;
+    }
+    if (locked) unlock_fn(system_lock);
+}
+

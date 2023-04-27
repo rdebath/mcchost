@@ -26,16 +26,11 @@ Other notes
     -- /setvar with no section to level and system sections.
 
     -- command aliases
-       -- /map /env /blockprops /lb /os
+       -- /map /env /blockprops /os
 
  +) On /defblk of block used for edge or horizon need to redefine those.
 
- +) /restore /resizelvl
-    -- Backup overwritten level (if dirty)
-    -- Create as new map so I don't have to do read locks.
-    -- Process is done by forked process
-    -- Summon users to new level id
-
+ +) /resizelvl
  +) /sendcmd
  +) /clones
  +) /undo, /redo

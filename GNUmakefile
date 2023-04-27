@@ -140,7 +140,7 @@ rebuild:
 vps: ${PROG}
 	rsync -Pax ${PROG} vps-mcc:bin/${INAME}
 
-ZIPF1=LICENSE Makefile help_scan.awk
+ZIPF1=LICENSE GNUmakefile Makefile help_scan.awk version.sh
 ZIPF2=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html
 ZIPF=${ZIPF1} ${ALLSRC} ${ZIPF2}
 

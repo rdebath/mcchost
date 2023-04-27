@@ -9,6 +9,8 @@
 #define WCOREDUMP_X(X) 0
 #endif
 
+pid_t level_processor_pid = 0;
+
 void
 check_waitpid()
 {
@@ -23,6 +25,7 @@ check_waitpid()
 	}
 
 	if (pid == level_loader_pid) level_loader_pid = 0;
+	if (pid == level_processor_pid) level_processor_pid = 0;
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 	    process_status_message(status, pid, 0);
