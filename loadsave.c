@@ -152,27 +152,37 @@ move_file_to_backups(char * bak_fn, char * level_fname, char * level_name)
 void
 next_backup_filename(char * bk_name, int bk_len, char * fixedname)
 {
-    int backup_id = 1;
+    int backup_id = 0;
+    char path[MAXLEVELNAMELEN*4];
 
-    // Find the next unused number
-    struct dirent *entry;
-    DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
-    if (directory) {
-	int l = strlen(fixedname);
-	while( (entry=readdir(directory)) )
-	{
-	    if (strncmp(entry->d_name, fixedname, l) == 0
-		&& entry->d_name[l] == '.') {
-		char * s = entry->d_name+l+1;
-		int v = 0;
-		while(*s>='0' && *s<='9') { v=v*10+(*s-'0'); s++; }
-		if (v>=backup_id && strcmp(s, ".cw") == 0) {
-		    backup_id = v+1;
+    for(int i = 0; i<2 && backup_id == 0; i++) {
+	// Find the next unused number
+	struct dirent *entry;
+	DIR *directory = 0;
+	if (i == 0)
+	    directory = opendir(LEVEL_BACKUP_DIR_NAME);
+	else {
+	    snprintf(path, sizeof(path), LEVEL_BACKUP_DIR_NAME "/%s", fixedname);
+	    directory = opendir(path);
+	}
+	if (directory) {
+	    int l = strlen(fixedname);
+	    while( (entry=readdir(directory)) )
+	    {
+		if (strncmp(entry->d_name, fixedname, l) == 0
+		    && entry->d_name[l] == '.') {
+		    char * s = entry->d_name+l+1;
+		    int v = 0;
+		    while(*s>='0' && *s<='9') { v=v*10+(*s-'0'); s++; }
+		    if (v>=backup_id && strcmp(s, ".cw") == 0) {
+			backup_id = v+1;
+		    }
 		}
 	    }
+	    closedir(directory);
 	}
-	closedir(directory);
     }
+    if (backup_id <= 0) backup_id = 1;
 
     snprintf(bk_name, bk_len, LEVEL_BACKUP_NAME, fixedname, backup_id);
 }
