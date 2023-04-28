@@ -547,6 +547,8 @@ login()
 	char proto[30] = "";
 	if (protocol_base_version != 7)
 	    sprintf(proto, " (protocol %d)", player.protocol);
+	else if (!cpe_requested)
+	    sprintf(proto, " (no cpe)");
 	printlog("Logging in%s user%s '%s' from %s",
 	    cpe_requested&&!server->cpe_disabled?"":" classic",
 	    proto, user_id, client_ipv4_str);
