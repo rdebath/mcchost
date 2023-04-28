@@ -75,12 +75,12 @@ ifneq ($(MAKECMDGOALS),zip)
 ifneq ($(MAKECMDGOALS),clean)
 include $(shell \
     echo ${SRC} | tr ' ' '\012' |\
-    sed -E 's@(.*/)?([^\/ ]*)\.c@${ODIR}/\2.o: \1\2.c include/\2.h@' > tmp.mk ;\
+    sed 's@\(.*/\)\?\([^\/ ]*\)\.c@${ODIR}/\2.o: \1\2.c include/\2.h@' > tmp.mk ;\
     echo tmp.mk )
 endif
 endif
 
-MKHDRARG:=$(shell echo ${SRC} lib_text.c |tr ' ' '\012' | sed -E 's@(.*/)?([^\/ ]*)\.c@\1\2.c:include/\2.h@' )
+MKHDRARG:=$(shell echo ${SRC} lib_text.c |tr ' ' '\012' | sed 's@\(.*/\)\?\([^\/ ]*\)\.c@\1\2.c:include/\2.h@' )
 
 makeheaders: ${ODIR}/makeheaders
 	@echo "awk -f help_scan.awk \$${ALLSRC} > tmp.c"
@@ -140,7 +140,7 @@ rebuild:
 vps: ${PROG}
 	rsync -Pax ${PROG} vps-mcc:bin/${INAME}
 
-ZIPF1=LICENSE GNUmakefile Makefile help_scan.awk version.sh
+ZIPF1=LICENSE LICENSE.mcchost GNUmakefile Makefile help_scan.awk version.sh
 ZIPF2=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html
 ZIPF=${ZIPF1} ${ALLSRC} ${ZIPF2}
 

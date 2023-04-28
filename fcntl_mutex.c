@@ -34,6 +34,10 @@ lock_start(fcntl_filelock_t * ln)
 }
 #endif
 
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
 int lock_start_try(fcntl_filelock_t * ln)
 {
     int fd = open(ln->name, O_RDWR|O_CLOEXEC|O_CREAT, 0600);

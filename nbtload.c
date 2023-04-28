@@ -144,6 +144,9 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name, char * cw_filenam
 	    gzungetc(ch, ifd);
 	    ch = 0;
 	} else {
+#ifdef CHECK_FOR_SHORT_NBT_LABEL
+	    // NB: This needs more than one char in gzungetc();
+	    // That's usually fine; unless you have a very old zlib (1.2.3)
 	    int ch2 = gzgetc(ifd);
 	    gzungetc(ch2, ifd);
 	    gzungetc(ch1, ifd);
@@ -151,6 +154,9 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name, char * cw_filenam
 		gzungetc(ch, ifd);
 		ch = 0xFF;
 	    }
+#else
+	    gzungetc(ch1, ifd);
+#endif
 	}
     } else
 	gzungetc(ch, ifd);

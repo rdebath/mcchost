@@ -173,8 +173,8 @@ send_void_map()
 	0xd7, 0xf5, 0xde, 0x0e, 0x70, 0x71, 0x00, 0xe3, 0xce, 0x1f, 0xb6, 0x04,
 	0x40, 0x00, 0x00
     };
-    send_lvlinit_pkt(2);
     if (!cpe_requested) {
+	send_lvlinit_pkt(32*16*32);
 	// Beware, 0.30 can't do a 1x2x1 map, so give them 32x16x32
 	// In fact the real map should always be a multiple of 16x16x16 of
 	// that size or larger
@@ -185,6 +185,7 @@ send_void_map()
 	player_posn.x = player_posn.z = 16*32; player_posn.y = 320;
 	player_posn.v = player_posn.h = 0; player_posn.valid = 1;
     } else {
+	send_lvlinit_pkt(2);
 	if (extn_fastmap)
 	    send_lvldata_pkt(empty_zlib, 4, 0);
 	else
@@ -248,6 +249,9 @@ send_block_array(uintptr_t level_len)
 {
     int blocks_buffered = 0;
     block_t conv_blk[BLOCKMAX];
+
+    struct timeval sync_time;
+    gettimeofday(&sync_time, 0);
 
     for(block_t b = 0; b<BLOCKMAX; b++)
 	conv_blk[b] = block_convert(b);
@@ -332,7 +336,11 @@ send_block_array(uintptr_t level_len)
 		    percent = (int64_t)level_blocks_used * 100 / level_len;
 
 		blocks_buffered ++;
-		if (blocks_buffered > 64) {
+		struct timeval now;
+		gettimeofday(&now, 0);
+		double ms = (now.tv_sec-sync_time.tv_sec)*1000.0+(now.tv_usec-sync_time.tv_usec)/1000.0;
+		if (blocks_buffered > 256 || ms > 1000.0) {
+		    sync_time = now;
 		    flush_to_remote();
 		    blocks_buffered = 0;
 		}
@@ -377,6 +385,9 @@ send_padded_block_array()
 
     uintptr_t blocks_sent = 0;
     unsigned char blockbuffer[65536];
+
+    struct timeval sync_time;
+    gettimeofday(&sync_time, 0);
 
     if (!extn_fastmap) {
 	blockbuffer[0] = (slevel_len>>24);
@@ -462,7 +473,11 @@ send_padded_block_array()
 	    percent = (int64_t)level_blocks_used * 100 / slevel_len;
 
 	    blocks_buffered ++;
-	    if (blocks_buffered > 64) {
+	    struct timeval now;
+	    gettimeofday(&now, 0);
+	    double ms = (now.tv_sec-sync_time.tv_sec)*1000.0+(now.tv_usec-sync_time.tv_usec)/1000.0;
+	    if (blocks_buffered > 64 || ms > 1000.0) {
+		sync_time = now;
 		flush_to_remote();
 		blocks_buffered = 0;
 	    }

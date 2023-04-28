@@ -136,6 +136,14 @@ init_block_file(uint64_t fallback_seed, int pre_zeroed)
     }
 }
 
+// These flags are not strictly required, but probably a good idea
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0
+#endif
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
 /* Check the file
  */
 void

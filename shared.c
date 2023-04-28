@@ -63,6 +63,8 @@ struct shared_data_t {
 
 #if _POSIX_VERSION >= 200112L && _POSIX_ADVISORY_INFO >= 200112L
 #define USE_POSIXALLOC
+#else
+#warning posix_fallocate not available, using fallback
 #endif
 
 #define level_block_queue_len shdat.dat[SHMID_BLOCKQ].len
@@ -642,29 +644,33 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
     shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW|O_CLOEXEC, 0600);
     if (shared_fd < 0) { perror(share_name); return -1; }
 
+    // Ensure the file is the right size and allocated.
     {
 	struct stat st;
 	if (fstat(shared_fd, &st) == 0 && st.st_size == 0)
 	    shm->zeroed = 1;	// System will do this.
-    }
 
-    {
 	int p = sysconf(_SC_PAGESIZE);
 	sz = share_size;
 	sz += p - 1;
 	sz -= sz % p;
-    }
 
+	if (st.st_size != sz)
+	{
+	    // On a current local Linux (filesystem) this is always fast.
+	    // Others (Network and non-Linux fs) might take a while.
 #ifdef USE_POSIXALLOC
-    // Weeeeeird calling process
-    if ((errno = posix_fallocate(shared_fd, 0, sz)) != 0)
+	    // Weeeeeird calling process
+	    if ((errno = posix_fallocate(shared_fd, 0, sz)) != 0)
 #else
-    if (ftruncate(shared_fd, sz) < 0)
+	    if (ftruncate(shared_fd, sz) < 0)
 #endif
-    {
-	perror("fallocate/ftruncate");
-	close(shared_fd);
-        return -1;
+	    {
+		perror("fallocate/ftruncate");
+		close(shared_fd);
+		return -1;
+	    }
+	}
     }
 
     shm_p = (void*) mmap(0,

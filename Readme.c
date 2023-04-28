@@ -48,6 +48,7 @@ Other notes
  +) /newlvl, more "nice" levels?
     -- Perlin based nature, with caves.
     -- Sub-themes, fcraft?
+    -- Fork off a background process to run the generate?
 
  +) Run external command ...
     -- stdin == /dev/null
