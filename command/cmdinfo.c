@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <sys/utsname.h>
 
 #include "cmdinfo.h"
 
@@ -181,6 +182,14 @@ cmd_sinfo(char * UNUSED(cmd), char * UNUSED(arg))
     printf_chat("  Been up for&T%s&S, running &T%s %s&f %s",
 	timebuf, server->software, Version,
 	"https://github.com/rdebath/mcchost");
+
+    // for i in s m r v ; do echo "$i: $(uname -$i)"; done
+    struct utsname name;
+    if (uname (&name) != -1) {
+	printf_chat("  OS Name: &T%s&S, Machine: &T%s", name.sysname, name.machine);
+	printf_chat("  OS Release: &T%s", name.release);
+	printf_chat("  OS Version: &T%s", name.version);
+    }
 
     printf_chat("  Player positions are updated &T%g&S times/second",
 	((int)(10000.0/server->player_update_ms))/10.0);
