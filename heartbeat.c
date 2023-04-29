@@ -143,52 +143,41 @@ send_heartbeat_poll()
 	char dumpbuf[256];
 	sprintf(dumpbuf, "log/curl-%d-h.txt", tcp_port_no);
 
+	char *a[32];
+	int i = 0;
+	a[i++] = "curl"; // SHUT UP CURL!!
+	a[i++] = "-s";	// -s   Complete silence ... WTF
+	a[i++] = "-S";	// -S   Okay yes, show error message
+			// -f   Yes, and error messages from the web server to stderr.
+	a[i++] = "-4";	// -4   Only use IPv4
+	if (ini_settings->use_http_0_9_arg)
+	    a[i++] = "--http0.9";
+	a[i++] = "-o"; a[i++] = logbuf;
+	a[i++] = "-D"; a[i++] = dumpbuf;
 	if (!ini_settings->use_http_post) {
-	    FILE * fd = fopen(cmdfilebuf, "w");
-	    if (fd) {
-		fprintf(fd, "curl ... %s\n", urlbuf);
-		fclose(fd);
-	    }
-
-	    // SHUT UP CURL!!
-	    // -s   Complete silence ... WTF
-	    // -S   Okay yes, show error message
-	    // -f   Yes, and error messages from the web server to stderr.
-	    if (execlp("curl", "curl",
-		    "-s", "-S", "-4",
-		    "-o", logbuf,
-		    "-D", dumpbuf,
-		    urlbuf,
-		    (char*)0) < 0)
-		perror("execlp(\"curl\"...)");
-
-	    // Note: Returned string is web client URL, but the last
-	    //       path part can be used to query the api; it's
-	    //       the ip and port in ASCII hashed with MD5.
-	    //       eg: echo -n 8.8.8.8:25565 | md5sum
+	    a[i++] = urlbuf;
 	} else {
-	    FILE * fd = fopen(cmdfilebuf, "w");
-	    if (fd) {
-		fprintf(fd, "curl ...\\\n  --data-binary %s \\\n  %s\n",
-		    postbuf, heartbeat_url);
-		fclose(fd);
-	    }
-
-	    // SHUT UP CURL!!
-	    // -s   Complete silence ... WTF
-	    // -S   Okay yes, show error message
-	    // -f   Yes, and error messages from the web server to stderr.
-	    if (execlp("curl", "curl",
-		    "-s", "-S", "-4",
-		    "-o", logbuf,
-		    "-D", dumpbuf,
-		    "-H", "Accept:",
-		    "-H", "User-Agent:",
-		    "--data-binary", postbuf,
-		    heartbeat_url,
-		    (char*)0) < 0)
-		perror("execlp(\"curl\"...)");
+	    a[i++] = "-H"; a[i++] = "Accept:";
+	    a[i++] = "-H"; a[i++] = "User-Agent:";
+	    a[i++] = "--data-binary"; a[i++] = postbuf;
+	    a[i++] = heartbeat_url;
 	}
+	a[i] = 0;
+
+	FILE * fd = fopen(cmdfilebuf, "w");
+	if (fd) {
+	    for(int j = 0; a[j]; j++)
+		fprintf(fd, "%s\n", a[j]);
+	    fclose(fd);
+	}
+
+	if (execvp("curl", a) < 0)
+	    perror("execvp(\"curl\"...)");
+
+	// Note: For classicube.net the returned string is web client
+	//	 URL, but the last path part can be used to query the
+	//	 api; it's the ip and port in ASCII hashed with MD5.
+	//	 eg: echo -n 8.8.8.8:25565 | md5sum
 	exit(127);
     }
     if (heartbeat_pid<0) {

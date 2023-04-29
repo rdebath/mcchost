@@ -187,6 +187,7 @@ system_x_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAY("Heartbeat", server_ini_tgt->heartbeat_url);
 	INI_BOOLVAL("PollHeartbeat", server_ini_tgt->enable_heartbeat_poll);
 	INI_BOOLVAL("UseHttpPost", server_ini_tgt->use_http_post);
+	INI_BOOLVAL("UseHttp09Arg", server_ini_tgt->use_http_0_9_arg);
 	INI_BOOLVAL("OmitSoftwareVersion", server_ini_tgt->omit_software_version);
 	INI_BOOLVAL("Private", server_ini_tgt->private);
 	INI_BOOLVAL("DisableWebClient", server_ini_tgt->disable_web_client);

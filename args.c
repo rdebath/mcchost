@@ -87,6 +87,7 @@ struct server_ini_t {
     char heartbeat_url[1024];
     char user_id_suffix[NB_SLEN];
     int use_http_post;
+    int use_http_0_9_arg;
     int omit_software_version;
     int private;
     int disable_web_client;
@@ -521,13 +522,12 @@ save_system_ini_file()
 {
     ini_settings->start_tcp_server = start_tcp_server;
     ini_settings->tcp_port_no = tcp_port_no;
-    ini_settings->enable_heartbeat_poll = enable_heartbeat_poll;
-    ini_settings->server_runonce = server_runonce;
 
     // Only change these if we are specifically saving the config.
     if (save_conf) {
 	// This will be overridded when the server is restarted.
 	ini_settings->detach_tcp_server = detach_tcp_server;
+	ini_settings->enable_heartbeat_poll = enable_heartbeat_poll;
     }
 
     // Only reasonable from command line

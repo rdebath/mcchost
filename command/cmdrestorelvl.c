@@ -62,7 +62,7 @@ cmd_restorelvl(char * UNUSED(cmd), char * arg)
     char levelstdname[MAXLEVELNAMELEN*4];
 
     if (!choose_level_files(lvl, backup_id, cw_pathname, levelname, levelstdname))
-	return printf_chat("&WBackup %d of \"%s\" does not exist", backup_id, lvl);
+	return;
 
     restore_backup_file(lvl, backup_id, cw_pathname);
 }
