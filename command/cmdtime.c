@@ -70,7 +70,7 @@ detect_timezone()
 	*buf = 0;
 	int cc = fread(buf, 1, sizeof(buf)-1, fd);
 	pclose(fd);
-	buf[cc] = 0;
+	buf[cc>0?cc:0] = 0;
 	if ((buf[0] == '+' || buf[0] == '-') && strlen(buf) >= 5) {
 	    if (buf[0] == '+') buf[0] = '-'; else buf[0] = '+';
 	    sprintf(my_user.timezone, "UTC%c%.2s:%.2s", buf[0], buf+1, buf+3);

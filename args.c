@@ -127,9 +127,7 @@ char ** program_args = 0;
 int proc_self_exe_ok = 0;
 char * proc_self_exe = 0;
 
-#ifndef __linux__
 time_t proc_start_time = 0;
-#endif
 
 void
 process_args(int argc, char **argv)
@@ -450,8 +448,8 @@ process_args(int argc, char **argv)
 	plen += 5;
     }
 
-#ifndef __linux__
     if (!proc_start_time) proc_start_time = time(0);
+#ifndef __linux__
     if (proc_start_time) {
 	program_args[bc++] = strdup("-process-start-time");
 	plen += 30;

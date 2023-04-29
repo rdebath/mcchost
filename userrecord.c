@@ -268,7 +268,7 @@ match_user_name(char * partname, char * namebuf, int l, int quiet, int *skip_cou
 	}
     }
     if (n != MDB_SUCCESS && n != MDB_NOTFOUND) {
-	if (!quiet) printf_chat("&WSearch of user index failed");
+	printf_chat("&WSearch of user index failed");
         mdb_txn_abort(txn);
         return -1;
     }

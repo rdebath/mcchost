@@ -27,7 +27,7 @@
 #define LEVEL_BACKUP_NAME_1 LEVEL_BACKUP_DIR_NAME "/%s.cw"
 
 #define USER_DIR "user"
-#define USER_INI_NAME "user/%s.ini"
+#define USER_INI_NAME USER_DIR "/%s.ini"
 
 #define SECRET_DIR "secret"
 #define SECRET_PW_NAME "secret/%s.pwl"

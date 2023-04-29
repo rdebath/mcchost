@@ -15,6 +15,9 @@ Other notes
 */
 
 /*HELP todo
+ +) | curl: option --http0.9: is unknown
+    | curl: try 'curl --help' or 'curl --manual' for more information
+
  +) Add walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat ?

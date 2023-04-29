@@ -74,6 +74,7 @@ write_current_user(int when)
     }
 
     if (when == 1) {
+	login_time = now;
 	if (!my_user.first_logon) my_user.first_logon = time(0);
 	my_user.last_logon = now;
 	my_user.time_of_last_save = now;

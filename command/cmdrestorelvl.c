@@ -8,7 +8,7 @@ Restores a previous backup for the level.
 
 #if INTERFACE
 #define UCMD_RESTORE \
-    {N"restore", &cmd_restorelvl, CMD_PERM_ADMIN}, \
+    {N"restore", &cmd_restorelvl}, \
     {N"restorelvl", &cmd_restorelvl, CMD_ALIAS}
 #endif
 
@@ -48,6 +48,9 @@ cmd_restorelvl(char * UNUSED(cmd), char * arg)
     if (backup_id <= 0) backup_id = 1;
     if (!lvl)
         lvl = current_level_name;
+
+    if (!perm_level_check(lvl, 1, 0))
+        return;
 
     if (level_processor_pid != 0) {
 	printf_chat("&WYou are already processing a level; please try later");

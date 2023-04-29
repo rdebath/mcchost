@@ -116,7 +116,10 @@ show_user_info(userrec_t *user)
     conv_duration(timebuf, user->time_online_secs);
 
     time_t logged = 0;
-    if (is_me) logged = process_start_time(0);
+    if (is_me) {
+	logged = process_start_time(0);
+	if (!logged) logged = login_time;
+    }
     if (logged) {
 	char timebuf2[256] = "";
 	logged = time(0) - logged;
@@ -166,9 +169,7 @@ cmd_sinfo(char * UNUSED(cmd), char * UNUSED(arg))
 {
     time_t now = time(0);
     time_t then = process_start_time(alarm_handler_pid);
-#ifndef __linux__
     if (then == 0) then = proc_start_time;
-#endif
 
     printf_chat("About &T%s", server->name);
 
@@ -328,7 +329,7 @@ time_t
 process_start_time(int pid)
 {
     int stat_fd;
-    char stat_buf[2048];
+    char stat_buf[8192];
     ssize_t read_result;
 
     long jiffies_per_second = sysconf(_SC_CLK_TCK);
@@ -361,8 +362,9 @@ process_start_time(int pid)
     if(read_result<0) { fprintf(stderr,"/proc/stat read() failed\n"); return 0; }
     stat_buf[read_result] = 0;
 
-    char * p = strstr(stat_buf,"btime ") + 6;
-    if (!p) { fprintf(stderr, "Boot time not found\n"); return 0; }
+    char * p = strstr(stat_buf,"btime ");
+    if (!p) { fprintf(stderr, "Boot time not found '%s'\n", stat_buf); return 0; }
+    p += 6;
 
     time_t process_start_time;
     uintmax_t boot_time = strtoimax(p, 0, 0);

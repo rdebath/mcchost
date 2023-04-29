@@ -20,20 +20,24 @@ DBGSRC=-fwrapv -fdebug-prefix-map='$(shell pwd)'=src
 # WTH is the point of the "truncation" warnings!
 WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation
 # For Clang? -Wno-unknown-warning-option
-CFLAGS=-Iinclude -O2 -g3 ${PTHREAD} ${WARN} ${DEFS} ${HEADER} ${DBGSRC}
-LIBLMDB=-llmdb
+CFLAGS=-Iinclude -O2 -g3 ${PTHREAD} ${LIBLMDBDEF} ${WARN} ${DEFS} ${HEADER} ${DBGSRC}
 PTHREAD=-pthread
-LDFLAGS=-lz -lm ${LIBLMDB}
-HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
+LIBLMDB=-llmdb
 
 # May be needed for older systems (eg: Debian Etch on x86)
 # CC=c99 -D_GNU_SOURCE
-# Also: DEFS=-DDISABLE_LMDB LIBLMDB=
+# Also: LIBLMDB=
 
 # Pick one for cross compile, use ODIR and PROG for out of tree binaries.
 #TARGET_ARCH=-m64
 #TARGET_ARCH=-mx32
 #TARGET_ARCH=-m32
+
+ifeq ($(LIBLMDB),)
+LIBLMDBDEF=-DDISABLE_LMDB
+endif
+LDFLAGS=-lz -lm ${LIBLMDB}
+HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
 
 ALLSRC=$(wildcard *.c command/*.c)
 SRC:=$(filter-out lib_%.c,${ALLSRC} )
@@ -75,12 +79,12 @@ ifneq ($(MAKECMDGOALS),zip)
 ifneq ($(MAKECMDGOALS),clean)
 include $(shell \
     echo ${SRC} | tr ' ' '\012' |\
-    sed 's@\(.*/\)\?\([^\/ ]*\)\.c@${ODIR}/\2.o: \1\2.c include/\2.h@' > tmp.mk ;\
+    sed 's@\(.*/\)\{0,1\}\([^\/ ]*\)\.c@${ODIR}/\2.o: \1\2.c include/\2.h@' > tmp.mk ;\
     echo tmp.mk )
 endif
 endif
 
-MKHDRARG:=$(shell echo ${SRC} lib_text.c |tr ' ' '\012' | sed 's@\(.*/\)\?\([^\/ ]*\)\.c@\1\2.c:include/\2.h@' )
+MKHDRARG:=$(shell echo ${SRC} lib_text.c |tr ' ' '\012' | sed 's@\(.*/\)\{0,1\}\([^\/ ]*\)\.c@\1\2.c:include/\2.h@' )
 
 makeheaders: ${ODIR}/makeheaders
 	@echo "awk -f help_scan.awk \$${ALLSRC} > tmp.c"

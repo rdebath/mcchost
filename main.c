@@ -28,6 +28,7 @@ int cpe_pending = 0;	// Currently running ExtInfo process.
 int cpe_extn_remaining = 0;
 int cpe_extn_advertised = 0;
 int protocol_base_version = 7;
+time_t login_time = 0;
 
 int
 main(int argc, char **argv)

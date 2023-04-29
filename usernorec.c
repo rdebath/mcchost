@@ -55,10 +55,63 @@ read_userrec(userrec_t * rec_buf, char * user_id, int UNUSED(load_ini))
 }
 
 int
-match_user_name(char * UNUSED(partname), char * UNUSED(namebuf), int UNUSED(l), int quiet, int * UNUSED(skip_count))
+match_user_name(char * partname, char * namebuf, int nlen, int quiet, int * skip_count)
 {
-    if (!quiet) printf_chat("&WUser database missing, try full user name");
-    return -1;
+    if (!partname || !*partname || strlen(partname) > nlen) {
+        if (!quiet) printf_chat("The user pattern given is invalid.");
+        return -1;
+    }
+
+    int found = 0, skipped = 0;
+    DIR *directory = 0;
+    struct dirent *entry;
+    directory = opendir(USER_DIR);
+    if (directory) {
+	while( (entry=readdir(directory)) )
+	{
+	    char *p, file_name[NB_SLEN*4];
+	    if (strlen(entry->d_name) > sizeof(file_name)-4) continue;
+	    strcpy(file_name, entry->d_name);
+	    if ((p=strrchr(file_name, '.')) == 0) continue;
+	    if (strcmp(p, ".ini") != 0) continue;
+	    *p = 0;
+	    char user_name[NB_SLEN];
+	    decode_user_key(file_name, user_name, sizeof(user_name));
+	    if (strcasecmp(user_name, partname) == 0) {
+		// "Exact" match.
+		snprintf(namebuf, nlen, "%s", user_name);
+		found = 1;
+		break;
+	    } else if (my_strcasestr(user_name, partname)) {
+		if (found == 0)
+		    snprintf(namebuf, nlen, "%s", user_name);
+		else if (strlen(namebuf) + strlen(user_name) + 3 < nlen) {
+		    strcat(namebuf, ", ");
+		    strcat(namebuf, user_name);
+		} else
+		    skipped++;
+		found++;
+	    }
+	}
+	closedir(directory);
+
+    } else {
+	printf_chat("&WSearch of user directory failed");
+	return -1;
+    }
+
+    if (!quiet) {
+	if (found>1) {
+            if (skipped)
+                printf_chat("The id \"%s\" matches %d users including %s", partname, found, namebuf);
+            else
+                printf_chat("The id \"%s\" matches %d users; %s", partname, found, namebuf);
+	} else if (found != 1)
+	    printf_chat("User \"%s\" not found.", partname);
+    }
+
+    if (skip_count) *skip_count = skipped;
+    return found;
 }
 
 void

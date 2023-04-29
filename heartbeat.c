@@ -156,7 +156,6 @@ send_heartbeat_poll()
 	    // -f   Yes, and error messages from the web server to stderr.
 	    if (execlp("curl", "curl",
 		    "-s", "-S", "-4",
-		    "--http0.9",
 		    "-o", logbuf,
 		    "-D", dumpbuf,
 		    urlbuf,
@@ -181,7 +180,6 @@ send_heartbeat_poll()
 	    // -f   Yes, and error messages from the web server to stderr.
 	    if (execlp("curl", "curl",
 		    "-s", "-S", "-4",
-		    "--http0.9",
 		    "-o", logbuf,
 		    "-D", dumpbuf,
 		    "-H", "Accept:",
