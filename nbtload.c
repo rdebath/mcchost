@@ -35,7 +35,27 @@ static char * loading_level_fname = 0;
 #if INTERFACE
 #define MCG_PHYSICS_0FFSET CPELIMIT	//768
 #endif
-uint8_t mcg_physics[256];
+
+// MCGalaxy physics block fallback and visual representations.
+uint8_t mcg_physics[256] = {
+  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+ 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+ 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+ 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+ 64, 65,  0,  0,  0,  0, 39, 36, 36, 10, 46, 21, 22, 22, 22, 22,
+  4,  0, 22, 21,  0, 22, 23, 24, 22, 26, 27, 28, 30, 31, 32, 33,
+ 34, 35, 36, 22, 20, 49, 45,  1,  4,  0,  9, 11,  4, 19,  5, 17,
+ 10, 49, 20,  1, 18, 12,  5, 25, 46, 44, 17, 49, 20,  1, 18, 12,
+  5, 25, 36, 34,  0,  9, 11, 46, 44,  0,  9, 11,  8, 10, 22, 27,
+ 22,  8, 10, 28, 17, 49, 20,  1, 18, 12,  5, 25, 46, 44, 11,  9,
+  0,  9, 11, 22,  0,  0,  9, 11,  0,  0,  0,  0,  0,  0,  0, 28,
+ 22, 21, 11,  0,  0,  0, 46, 46, 10, 10, 46, 20, 41, 42, 11,  9,
+  0,  8, 10, 10,  8,  0, 22, 22,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0, 21, 10,  0,  0,  0,  0,  0, 22, 22, 42,  3,  2, 29,
+ 47,  0,  0,  0,  0,  0, 27, 46, 48, 24, 22, 36, 34,  8, 10, 21,
+ 29, 22, 10, 22, 22, 41, 19, 35, 21, 29, 49, 34, 16, 41,  0, 22
+};
+
 static char mcgalaxy_names[];
 
 int
@@ -502,7 +522,6 @@ read_blockarray_physics(gzFile ifd, uint32_t len)
 
     if (!level_prop->mcg_physics_blocks) {
 	level_prop->mcg_physics_blocks = 1;
-	init_mcg_physics();
 	define_mcg_physics_blocks();
     }
 
@@ -714,10 +733,8 @@ change_int_value(char * section, char * item, int64_t value)
 
 	if (strcasecmp(item, "PhysicsBlocks") == 0) {
 	    level_prop->mcg_physics_blocks = value;
-	    if (level_prop->mcg_physics_blocks) {
-		init_mcg_physics();
+	    if (level_prop->mcg_physics_blocks)
 		define_mcg_physics_blocks();
-	    }
 	}
 
     } else if (strncmp(section, "Block", 5) == 0) {
@@ -955,189 +972,6 @@ cpy_nstr(char *buf, int buflen, char *str)
 	if (d == buf+buflen) break;
     }
     *d = 0;
-}
-
-LOCAL void
-init_mcg_physics()
-{
-    if (mcg_physics[1] == 1) return; // Done already
-
-    // MCGalaxy physics block fallback and visual representations.
-    for(int i = 0; i<256; i++)
-	if (i<66) mcg_physics[i] = i;
-	else mcg_physics[i] = Block_Orange;
-
-    mcg_physics[66] = 0;
-    mcg_physics[67] = 0;
-    mcg_physics[68] = 0;
-    mcg_physics[69] = 0;
-    mcg_physics[71] = 36;
-    mcg_physics[72] = 36;
-    mcg_physics[73] = 10;
-    mcg_physics[74] = 46;
-    mcg_physics[75] = 21;
-    mcg_physics[80] = 4;
-    mcg_physics[81] = 0;
-    mcg_physics[83] = 21;
-    mcg_physics[84] = 0;
-    mcg_physics[85] = 22;
-    mcg_physics[86] = 23;
-    mcg_physics[87] = 24;
-    mcg_physics[89] = 26;
-    mcg_physics[90] = 27;
-    mcg_physics[91] = 28;
-    mcg_physics[92] = 30;
-    mcg_physics[93] = 31;
-    mcg_physics[94] = 32;
-    mcg_physics[95] = 33;
-    mcg_physics[96] = 34;
-    mcg_physics[97] = 35;
-    mcg_physics[98] = 36;
-    mcg_physics[100] = 20;
-    mcg_physics[101] = 49;
-    mcg_physics[102] = 45;
-    mcg_physics[103] = 1;
-    mcg_physics[104] = 4;
-    mcg_physics[105] = 0;
-    mcg_physics[106] = 9;
-    mcg_physics[107] = 11;
-    mcg_physics[108] = 4;
-    mcg_physics[109] = 19;
-    mcg_physics[110] = 5;
-    mcg_physics[111] = 17;
-    mcg_physics[112] = 10;
-    mcg_physics[113] = 49;
-    mcg_physics[114] = 20;
-    mcg_physics[115] = 1;
-    mcg_physics[116] = 18;
-    mcg_physics[117] = 12;
-    mcg_physics[118] = 5;
-    mcg_physics[119] = 25;
-    mcg_physics[120] = 46;
-    mcg_physics[121] = 44;
-    mcg_physics[122] = 17;
-    mcg_physics[123] = 49;
-    mcg_physics[124] = 20;
-    mcg_physics[125] = 1;
-    mcg_physics[126] = 18;
-    mcg_physics[127] = 12;
-    mcg_physics[128] = 5;
-    mcg_physics[129] = 25;
-    mcg_physics[130] = 36;
-    mcg_physics[131] = 34;
-    mcg_physics[132] = 0;
-    mcg_physics[133] = 9;
-    mcg_physics[134] = 11;
-    mcg_physics[135] = 46;
-    mcg_physics[136] = 44;
-    mcg_physics[137] = 0;
-    mcg_physics[138] = 9;
-    mcg_physics[139] = 11;
-    mcg_physics[140] = 8;
-    mcg_physics[141] = 10;
-    mcg_physics[143] = 27;
-    mcg_physics[144] = 22;
-    mcg_physics[145] = 8;
-    mcg_physics[146] = 10;
-    mcg_physics[147] = 28;
-    mcg_physics[148] = 17;
-    mcg_physics[149] = 49;
-    mcg_physics[150] = 20;
-    mcg_physics[151] = 1;
-    mcg_physics[152] = 18;
-    mcg_physics[153] = 12;
-    mcg_physics[154] = 5;
-    mcg_physics[155] = 25;
-    mcg_physics[156] = 46;
-    mcg_physics[157] = 44;
-    mcg_physics[158] = 11;
-    mcg_physics[159] = 9;
-    mcg_physics[160] = 0;
-    mcg_physics[161] = 9;
-    mcg_physics[162] = 11;
-    mcg_physics[164] = 0;
-    mcg_physics[165] = 0;
-    mcg_physics[166] = 9;
-    mcg_physics[167] = 11;
-    mcg_physics[168] = 0;
-    mcg_physics[169] = 0;
-    mcg_physics[170] = 0;
-    mcg_physics[171] = 0;
-    mcg_physics[172] = 0;
-    mcg_physics[173] = 0;
-    mcg_physics[174] = 0;
-    mcg_physics[175] = 28;
-    mcg_physics[176] = 22;
-    mcg_physics[177] = 21;
-    mcg_physics[178] = 11;
-    mcg_physics[179] = 0;
-    mcg_physics[180] = 0;
-    mcg_physics[181] = 0;
-    mcg_physics[182] = 46;
-    mcg_physics[183] = 46;
-    mcg_physics[184] = 10;
-    mcg_physics[185] = 10;
-    mcg_physics[186] = 46;
-    mcg_physics[187] = 20;
-    mcg_physics[188] = 41;
-    mcg_physics[189] = 42;
-    mcg_physics[190] = 11;
-    mcg_physics[191] = 9;
-    mcg_physics[192] = 0;
-    mcg_physics[193] = 8;
-    mcg_physics[194] = 10;
-    mcg_physics[195] = 10;
-    mcg_physics[196] = 8;
-    mcg_physics[197] = 0;
-    mcg_physics[200] = 0;
-    mcg_physics[201] = 0;
-    mcg_physics[202] = 0;
-    mcg_physics[203] = 0;
-    mcg_physics[204] = 0;
-    mcg_physics[205] = 0;
-    mcg_physics[206] = 0;
-    mcg_physics[207] = 0;
-    mcg_physics[208] = 0;
-    mcg_physics[209] = 0;
-    mcg_physics[210] = 0;
-    mcg_physics[211] = 21;
-    mcg_physics[212] = 10;
-    mcg_physics[213] = 0;
-    mcg_physics[214] = 0;
-    mcg_physics[215] = 0;
-    mcg_physics[216] = 0;
-    mcg_physics[217] = 0;
-    mcg_physics[220] = 42;
-    mcg_physics[221] = 3;
-    mcg_physics[222] = 2;
-    mcg_physics[223] = 29;
-    mcg_physics[224] = 47;
-    mcg_physics[225] = 0;
-    mcg_physics[226] = 0;
-    mcg_physics[227] = 0;
-    mcg_physics[228] = 0;
-    mcg_physics[229] = 0;
-    mcg_physics[230] = 27;
-    mcg_physics[231] = 46;
-    mcg_physics[232] = 48;
-    mcg_physics[233] = 24;
-    mcg_physics[235] = 36;
-    mcg_physics[236] = 34;
-    mcg_physics[237] = 8;
-    mcg_physics[238] = 10;
-    mcg_physics[239] = 21;
-    mcg_physics[240] = 29;
-    mcg_physics[242] = 10;
-    mcg_physics[245] = 41;
-    mcg_physics[246] = 19;
-    mcg_physics[247] = 35;
-    mcg_physics[248] = 21;
-    mcg_physics[249] = 29;
-    mcg_physics[250] = 49;
-    mcg_physics[251] = 34;
-    mcg_physics[252] = 16;
-    mcg_physics[253] = 41;
-    mcg_physics[254] = 0;
 }
 
 LOCAL void

@@ -141,9 +141,6 @@ rebuild:
 	$(MAKE) clean
 	$(MAKE) $(PROG) -j$$(nproc)
 
-vps: ${PROG}
-	rsync -Pax ${PROG} vps-mcc:bin/${INAME}
-
 ZIPF1=LICENSE LICENSE.mcchost GNUmakefile Makefile help_scan.awk version.sh
 ZIPF2=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html
 ZIPF=${ZIPF1} ${ALLSRC} ${ZIPF2}

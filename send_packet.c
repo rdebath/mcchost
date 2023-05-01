@@ -5,6 +5,15 @@
 static inline int
 fix_player_id(int * pplayer_id)
 {
+    // For now if it's a classic user with an ID over 127 don't show
+    // them any of the other users.
+    if (my_user_no > max_proto_player_id) {
+	if (*pplayer_id == -1) return 1;
+	if (*pplayer_id != my_user_no) return 0;
+	*pplayer_id = 1;
+	return 1;
+    }
+
     if ((*pplayer_id < 0 || *pplayer_id > max_proto_player_id) && *pplayer_id != -1) return 0;
 
     if (*pplayer_id == 255) *pplayer_id = my_user_no;
