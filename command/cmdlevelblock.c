@@ -64,6 +64,8 @@ cmd_levelblock(char * UNUSED(cmd), char * arg)
 	return;
     }
 
+    if (blk != to_blk) level_prop->edgedef_generation ++;
+
     if (subcmd == token_remove) {
 	for(block_t b = blk; b <= to_blk; b++)
 	    set_block_opt(b, "defined", "0", 0, 0);
@@ -93,6 +95,8 @@ cmd_levelblock(char * UNUSED(cmd), char * arg)
 	    propval = strarg_rest();
 
 	set_dirty_blockdef();
+	if (blk == level_prop->side_block || blk == level_prop->edge_block)
+	    level_prop->edgedef_generation ++;
 
 	for(block_t b = blk; b <= to_blk; b++) {
 	    if (!level_prop->blockdef[b].defined)

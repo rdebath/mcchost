@@ -26,7 +26,7 @@ direct_teleport(char *level, int backup_id, xyzhv_t *npos)
     if (!choose_level_files(level, backup_id, cw_pathname, levelname, levelstdname))
 	return 0;
 
-    if (level_prop) {
+    if (level_prop && !server_runonce) {
 	// Check to see if the level is loaded; return of 1 if it's gonna
 	// happen in the background.
 	if (preload_level(levelname, backup_id, levelstdname, cw_pathname) == 1)

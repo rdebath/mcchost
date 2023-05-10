@@ -39,6 +39,7 @@ block_t proto_conversion[] = {
 
 static uint32_t metadata_generation = 0;
 static uint32_t blockdef_generation = 0;
+static uint32_t edgedef_generation = 0;
 static block_t max_defined_block = 0;
 
 int reset_hotbar_on_mapload = 0;
@@ -145,6 +146,7 @@ send_map_file(int reload)
 	strcpy(announce, level_prop->motd);
 	// Usual to try to hide -hax headings.
 	if ((p = strstr(announce, "&0")) != 0) *p = 0;
+	else if ((p = strstr(announce, "-hax")) != 0) *p = 0;
 	printf_chat("~(100)%s", announce);
     }
 
@@ -233,6 +235,9 @@ send_metadata()
     send_hack_control();
     send_env_colours();
     send_map_appearance();
+    if (edgedef_generation != level_prop->edgedef_generation)
+	reset_edge_property();
+    edgedef_generation = level_prop->edgedef_generation;
     send_map_property();
     send_cuboids();
     send_weather();
@@ -563,6 +568,14 @@ reset_textureurl()
 
     nbtstr_t nil = {0};
     send_textureurl_pkt(&nil);
+}
+
+void
+reset_edge_property()
+{
+    if (!extn_envmapaspect) return;
+    send_setmapproperty_pkt(0, 0);
+    send_setmapproperty_pkt(1, 0);
 }
 
 void

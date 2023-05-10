@@ -15,9 +15,7 @@ Other notes
 */
 
 /*HELP todo
- +) Add walkthrough for default server setup. (Readme.md)
-    -- Including setting user to Admin with remote GUI.
-    -- Include mini_chat ?
+ +) /museum to allow case insensitive matching.
 
  +) Message blocks and portals don't need physics process.
 
@@ -28,17 +26,23 @@ Other notes
     -- command aliases
        -- /map /env /blockprops /os
 
- +) On /defblk of block used for edge or horizon need to redefine those.
-
- +) /sendcmd
  +) /clones
- +) /undo, /redo
- +) /fill
  +) /tree -- Only Notch variant ?
+ +) /renamelvl, /copylvl
+ +) /fill
+ +) /undo, /redo
+ +) /sendcmd
+
+ +) In EIGHTBITMODE check if mcg_physics can be in 66..254
+    -- Need bitmap of useable (named?) physics blocks.
 
  +) Command line to send HUP to server; for non-Linux updates.
     -- Or just time on exe ?
     -- Time on system.ini ?
+
+ +) Update walkthrough for default server setup. (Readme.md)
+    -- Including setting user to Admin with remote GUI.
+    -- Include mini_chat for localhost processing.
 
  +) Exponential backups. (Delete old backups using +50% rule)
     for i in 2^k ; if file$i and file$(i*1.5) exist rm file $i
@@ -193,8 +197,6 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
     -- Options --inetd and --tcp at same time?
     -- No advantage over --net --> Runs register every 30 seconds.
     -- No advantage over normal inetd mode --> connections are rare.
- +) Slow map loads; do I need to poll client chat?
-    -- Background _load_ of maps as well as saves?
  +) Merge ini and nbt processing ?
     -- Names are too random
  +) Config paths for "backup" and "map" directories ?
@@ -239,113 +241,6 @@ mcchost-server -pipe
     Mostly identical to -inetd, but -pipe is assumed to be trusted.
 
     eg: socat TCP-LISTEN:25565,reuseaddr EXEC:'mcchost-server -pipe',pipes
-
-*/
-
-/*HELP todo_cmds
-Blocks      : Yes -- Special help pages (Dynamic ?)
-Center      : Likely -- Drawing
-Clones      : Yes -- List on same IP
-Delete      : Yes -- Delete mode (physics blocks)
-DoNotMark   : Yes -- Click to mark toggle (/dm)
-Ignore      : Yes -- Remove chat's from some users
-Loaded      : Yes -- Listing levels
-Map         : Yes -- Map creation etc
-Me          : Yes -- Chat hacks
-MessageBlock: Yes
-Top         : Likely
-ViewRanks   : Likely
-WhoNick     : Likely
-
-Inbox       : Maybe -- Email like thing
-LastCmd     : Maybe -- Userstats
-Location    : Maybe -- http://ipinfo.io/" + ip + "/geo  -- Returns json
-Redo        : Maybe -- BlockDB
-Undo        : Maybe -- BlockDB
-Whisper     : Maybe -- Chat hacks; All chat is @user
-
-8ball       : Maybe -- Random ***
-AdminChat   : Maybe -- Talk only to "Admin" aka SuperOP
-Back        : Maybe -- Reverse last teleport
-BanInfo     : Maybe -- Kick and ban records.
-Calculate   : Maybe -- Very primitive calculator.
-Color       : Maybe -- Sets Nick colour of player
-Eat         : Maybe -- Random ***
-Emote       : Maybe -- "Enables or disables emoticon parsing"
-High5       : Maybe -- Chat hacks
-Hug         : Maybe -- Chat hacks
-LoginMessage: Maybe -- Chat hacks
-MyNotes     : Maybe -- Kick and ban records.
-OpChat      : Maybe -- Talk only to "Operator"
-OpRules     : Maybe -- Text rules for "Operator"
-OpStats     : Maybe -- Stats on bans/kicks
-Report      : Maybe -- Kick/ban request mesg
-Roll        : Maybe -- Random ***
-Seen        : Maybe -- Player records 1st/last seen
-Send        : Maybe -- Email like thing
-TPA         : Maybe -- Teleport
-Warp        : Maybe -- Named TP locations
-ZoneList    : Maybe -- Permission zones
-ZoneMark    : Maybe -- Permission zones
-ZoneTest    : Maybe -- Permission zones
-
-AFK         : Done
-Abort       : Done
-About       : Done
-Clear       : Done
-Commands    : Done
-CrashServer : Done
-FAQ         : Done
-Goto        : Done -- Need fuzzy (strcase437str()) match
-Hacks       : Done
-Help        : Done
-Levels      : Done -- Listing levels
-Main        : Done -- need change main level
-MapInfo     : Done -- Map creation etc
-Mark        : Done -- For extra drawing etc.
-Measure     : Done -- Nice stats
-Mode        : Done -- Non-selectable blocks
-Model       : Done -- CPE Extension control
-Museum      : Done
-News        : Done
-Nick        : Done
-PClients    : Done -- User stats.
-Paint       : Done
-Ping        : Done
-Place       : Done (Needs block names)
-Players     : Done -- Server side user list "/who"
-Quit        : Done
-RageQuit    : Done
-Reload      : Done
-Rules       : Done
-ServerInfo  : Done
-SetSpawn    : Done -- Levels
-Skin        : Done -- CPE Extension control
-Spawn       : Done -- Levels
-TP          : Done -- Teleport
-Time        : Done -- Random ***
-Title       : Done
-View        : Done -- Add auto list??
-WhoIs       : Done -- /Info
-
-AKA         : No -- Zombie Game
-Awards      : No -- Games
-Balance     : No -- Money system
-Buy         : No -- Money system
-CTF         : No -- CTF Game
-CountDown   : No -- Countdown Game
-Delay       : No -- Runs in message box only.
-Economy     : No -- Money system
-Fly         : No -- server side fly hack
-HasIRC      : No -- IRC Bridge
-LavaSurvival: No -- Lava Game
-Pay         : No -- Money system
-Ride        : No -- Physics block
-Store       : No -- Money system
-Team        : No -- Games
-TntWars     : No -- TNT Game
-Vote        : No -- Lava Game (&Zombie?)
-ZombieSurvi : No -- Zombie Game
 
 */
 

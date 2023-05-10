@@ -141,26 +141,33 @@ rebuild:
 	$(MAKE) clean
 	$(MAKE) $(PROG) -j$$(nproc)
 
-ZIPF1=LICENSE LICENSE.mcchost GNUmakefile Makefile help_scan.awk version.sh
-ZIPF2=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html
-ZIPF=${ZIPF1} ${ALLSRC} ${ZIPF2}
+#
+# Make zip and tgz files with full test compile in i86 and x64.
+# Note: This needs libraries for BOTH 64 bit and 32 bit.
+#
+ZIPF1=LICENSE LICENSE.mcchost GNUmakefile
+ZIPF2=Makefile help_scan.awk version.sh include/version.h
+ZIPF3=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html
+ZIPF=${ZIPF1} ${ALLSRC} ${ZIPF2} ${ZIPF3}
 
 zip:
-	-rm -rf tmp.tgz tmp.d
+	-@rm -rf tmp.tgz tmp.d
 	@:
-	tar cf tmp.tgz -I 'gzip -9' ${ZIPF}
-	mkdir -p tmp.d
+	@echo 'tar cf tmp.tgz -I "gzip -9" $${ZIPF}'
+	@tar cf tmp.tgz -I "gzip -9" ${ZIPF}
+	@mkdir -p tmp.d
 	cd tmp.d ; tar xf ../tmp.tgz
 	cd tmp.d ; make -j$$(nproc) -s TARGET_ARCH=-m64 ODIR=obj64 PROG=obj64/server
-	-rm -rf tmp.d
+	-@rm -rf tmp.d
 	@:
-	zip -9q tmp.zip ${ZIPF}
-	mkdir -p tmp.d
+	@echo 'zip -9q tmp.zip $${ZIPF}'
+	@zip -9q tmp.zip ${ZIPF}
+	@mkdir -p tmp.d
 	cd tmp.d ; unzip -q ../tmp.zip
 	cd tmp.d ; make -j$$(nproc) -s TARGET_ARCH=-m32 ODIR=obj32 PROG=obj32/server
-	-rm -rf tmp.d
+	-@rm -rf tmp.d
 	@:
-	mkdir -p zip
-	echo \* > zip/.gitignore
+	@mkdir -p zip
+	@echo \* > zip/.gitignore
 	mv tmp.tgz zip/mcchost.tgz
 	mv tmp.zip zip/mcchost.zip

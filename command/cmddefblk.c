@@ -107,6 +107,8 @@ cmd_defblk(char * UNUSED(cmd), char * arg)
     level_prop->blockdef_generation++;
     level_prop->dirty_save = 1;
     level_prop->metadata_generation++;
+    if (blk == level_prop->side_block || blk == level_prop->edge_block)
+	level_prop->edgedef_generation ++;
     level_prop->last_modified = time(0);
 
     if (cname && *cname && strcmp(cname, "-") != 0) {

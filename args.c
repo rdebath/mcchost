@@ -384,6 +384,7 @@ process_args(int argc, char **argv)
 		    .chat_spam_interval = 5,
 		    .chat_spam_ban = 10,
 		    .ip_connect_delay = 5,
+		    .shared_ini_settings.use_http_post = 1,
 		};
 
 	    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);

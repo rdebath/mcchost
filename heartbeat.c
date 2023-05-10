@@ -41,11 +41,7 @@ send_heartbeat_poll()
 	server->last_heartbeat_port = tcp_port_no;
     }
 
-    if (heartbeat_pid) {
-	kill(heartbeat_pid, SIGALRM);	// Timeout!
-	heartbeat_pid = 0;
-	return;
-    }
+    if (heartbeat_pid) return;
 
     char heartbeat_url[1024];
     int disable_web_client = ini_settings->disable_web_client;
@@ -154,6 +150,7 @@ send_heartbeat_poll()
 	    a[i++] = "--http0.9";
 	a[i++] = "-o"; a[i++] = logbuf;
 	a[i++] = "-D"; a[i++] = dumpbuf;
+	a[i++] = "-m"; a[i++] = "15";
 	if (!ini_settings->use_http_post) {
 	    a[i++] = urlbuf;
 	} else {

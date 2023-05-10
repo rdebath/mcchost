@@ -382,7 +382,7 @@ process_player_setblock(pkt_setblock pkt)
     }
 
     // Classic mode can't place Grass.
-    if (!cpe_enabled && !server->cpe_disabled && pkt.block == Block_Grass)
+    if (!cpe_enabled && pkt.block == Block_Grass)
 	pkt.block = Block_Dirt;
 
     if (player_mode_mode >= 0 && pkt.mode) {
