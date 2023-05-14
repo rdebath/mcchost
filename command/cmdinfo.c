@@ -105,6 +105,7 @@ show_user_info(userrec_t *user)
 	perm_str = user_perms[0];
 
     printf_chat("; Rank of %s", perm_str);
+    if (user->banned) printf_chat("; (banned)");
     printf_chat(", wrote &a%jd&S messages", (intmax_t)user->message_count);
 
     printf_chat(" Modified &a%jd&S\377blocks, &a%jd&S\377placed, &a%jd&S\377drawn, &a%jd&S\377deleted",

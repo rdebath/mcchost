@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#include "usernorec.h"
+#include "usertxtrec.h"
 
 /*
  * User details -- fallback.
@@ -22,6 +22,9 @@ write_userrec(userrec_t * userrec, int UNUSED(ini_too))
 
     char userini[PATH_MAX];
     saprintf(userini, USER_INI_NAME, user_key);
+
+    if (userrec->user_no == 0)
+	userrec->user_no = scan_user_dir() + 1;
 
     user_ini_tgt = userrec;
     save_ini_file(user_ini_fields, userini);
@@ -118,5 +121,38 @@ void
 close_userdb()
 {
     // No database to close
+}
+
+// Find the highest user_no in all the user files.
+// TODO: Save an number->name translation array?
+LOCAL int
+scan_user_dir()
+{
+    struct dirent *entry;
+    DIR *directory = opendir(USER_DIR);
+    if (!directory) return 0;
+
+    int maxno = 0;
+
+    while( (entry=readdir(directory)) )
+    {
+	int l = strlen(entry->d_name);
+	if (l<=4 || strcmp(entry->d_name+l-4, ".ini") != 0) continue;
+	entry->d_name[l-4] = 0;
+
+	char nbuf[MAXLEVELNAMELEN*4];
+	saprintf(nbuf, USER_INI_NAME, entry->d_name);
+
+	userrec_t rec_buf[1] = {0};
+	user_ini_tgt = rec_buf;
+	load_ini_file(user_ini_fields, nbuf, 1, 0);
+	user_ini_tgt = 0;
+	if (rec_buf->user_no == 0) continue;
+	if (rec_buf->user_id[0] == 0) continue;
+
+	if (rec_buf->user_no > maxno) maxno = rec_buf->user_no;
+    }
+    closedir(directory);
+    return maxno;
 }
 #endif

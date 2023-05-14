@@ -506,8 +506,14 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    }
 	}
 	INI_INTVAL("UserGroup", user_ini_tgt->user_group);
-	if (user_ini_tgt->user_group < 0 || !st->write)
+	INI_INTVAL("Banned", user_ini_tgt->banned);
+	if (user_ini_tgt->user_group < 0 || user_ini_tgt->banned || !st->write)
 	    INI_STRARRAYCP437("BanMessage", user_ini_tgt->ban_message);
+	if (user_ini_tgt->user_group < 0) {
+	    user_ini_tgt->user_group = 1;
+	    user_ini_tgt->banned = 1;
+	    user_ini_tgt->ini_dirty = 1;
+	}
 	INI_STRARRAYCP437("Nick", user_ini_tgt->nick);
 	INI_STRARRAYCP437("Colour", user_ini_tgt->colour);
 	INI_STRARRAYCP437("Skin", user_ini_tgt->skin);

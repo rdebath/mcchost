@@ -94,7 +94,7 @@ process_connection()
 
     write_current_user(1);
 
-    if (my_user.user_group < 0) {
+    if (my_user.banned) {
 	if (my_user.ban_message[0])
 	    disconnect(0, my_user.ban_message);
 	else
@@ -243,7 +243,7 @@ banned(char * emsg)
     *d = 0;
     my_user.kick_count++;
     my_user.dirty = 1;
-    my_user.user_group = -1;
+    my_user.banned = 1;
     strncpy(my_user.ban_message, kbuf, MB_STRLEN);
     my_user.ini_dirty = 1;
     disconnect(0, kbuf);

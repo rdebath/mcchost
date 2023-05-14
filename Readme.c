@@ -26,7 +26,7 @@ Other notes
     -- command aliases
        -- /map /env /blockprops /os
 
- +) /clones
+ +) /clones (/alts)
  +) /tree -- Only Notch variant ?
  +) /renamelvl, /copylvl
  +) /fill
