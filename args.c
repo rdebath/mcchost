@@ -88,6 +88,7 @@ struct server_ini_t {
     char user_id_suffix[NB_SLEN];
     int use_http_post;
     int use_http_0_9_arg;
+    int use_ipv6;
     int omit_software_version;
     int private;
     int disable_web_client;

@@ -80,14 +80,19 @@ The dimensions of a cubic block (usually 0..16)
 &TUserSuffix&S Added to end of users on this port &W**
 &TDisallowIPAdmin&S Set if Localhost is not an admin &W**
 &TDisallowIPVerify&S Set if Localhost must verify &W**
-&TAllowPassVerify&S Set to allow password for verification &W**
+&TAllowPassVerify&S Allow password for verification &W**
+&TUseHttpPost&S Use POST on reg server &W**
+&TUseHttp09Arg&S Allow curl to use http0.9&W**
+&TUseIPv6&S Use IPv6 on reg server &W**
+&TOmitSoftwareVersion&S Do not add version to end of software name &W**
 
 &W**&S Per port configuration. (&T/help per port&S)
 See &T/help betacraft&S to configure for that.
 */
 
 /*HELP per_port
-Create an empty file "server.[portno].ini" for each port you wish to configure and start a server for each one. You'll probably want to configure the options with a text editor in each before starting the service.
+Create an empty file "server.[portno].ini" for each port you wish to configure and start a server for each one.
+You'll probably want to configure the options with a text editor in each before starting the service.
 */
 
 /*HELP betacraft

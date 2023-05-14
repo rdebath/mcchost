@@ -145,7 +145,10 @@ send_heartbeat_poll()
 	a[i++] = "-s";	// -s   Complete silence ... WTF
 	a[i++] = "-S";	// -S   Okay yes, show error message
 			// -f   Yes, and error messages from the web server to stderr.
-	a[i++] = "-4";	// -4   Only use IPv4
+	if (!ini_settings->use_ipv6)
+	    a[i++] = "-4";	// -4   Only use IPv4
+	else
+	    a[i++] = "-6";	// -6   Only use IPv6
 	if (ini_settings->use_http_0_9_arg)
 	    a[i++] = "--http0.9";
 	a[i++] = "-o"; a[i++] = logbuf;
