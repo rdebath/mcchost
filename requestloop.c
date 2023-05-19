@@ -23,6 +23,10 @@ int last_ping_ms = -1;
 int max_ping_ms = -1;
 int min_ping_ms = -1;
 int avg_ping_ms = -1;
+int idle_ticks = 0;
+
+#define TICK_INTERVAL	10000/*us*/
+#define TICK_SECS(S) (S*1000000/TICK_INTERVAL)
 
 time_t last_user_write = 0;
 
@@ -109,7 +113,7 @@ do_select()
 
     if( ttl_start != ttl_end ) FD_SET(line_ofd, &wfds);
 
-    tv.tv_sec = 0; tv.tv_usec = 10000;
+    tv.tv_sec = 0; tv.tv_usec = TICK_INTERVAL;
     rv = select(max_fd+1, &rfds, &wfds, &efds, &tv);
     if (rv < 0 && errno == EINTR) {
 	return 0;
@@ -190,11 +194,18 @@ do_select()
 void
 on_select_timeout()
 {
+    // 0.30 leaves just over 50ms between position updates.
+    // Classicube is around 60ms.
+    if (++idle_ticks > TICK_SECS(60) && !cpe_pending)
+	logout("disconnected");
+    else if (idle_ticks == TICK_SECS(10))
+	printlog("User %s: connection issue -- long idle", user_id);
+
     time_t now;
     int tc = cpe_pending?60:5; // Not while CPE pending
 
     // If a packet has not been received in full expect the rest soon.
-    if (in_rcvd>0 && ++ticks_with_pending_bytes > 1500) // Should be 15 seconds
+    if (in_rcvd>0 && ++ticks_with_pending_bytes > TICK_SECS(15))
 	fatal("Broken packet received -- protocol failure");
 
     if (player_lockout>0) player_lockout--;
@@ -244,6 +255,8 @@ remote_received(char *str, int len)
     int i, cmd, clen;
     if (!extn_pingpong)
 	time(&last_ping);
+
+    idle_ticks = 0;
 
     if (!in_rcvd) {
 	cmd = (*str & 0xFF);

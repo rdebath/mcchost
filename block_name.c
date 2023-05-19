@@ -9,16 +9,16 @@ block_name(block_t block)
     static char name[BBUFLEN][NB_SLEN];
     char * n = 0;
     if (block >= BLOCKMAX || (server->cpe_disabled && block >= Block_CP))
-	return "Invalid Block";
+	n = "";
+    else {
+	if (level_prop && level_prop->blockdef[block].defined)
+	    if (level_prop->blockdef[block].name.c[0])
+		n = level_prop->blockdef[block].name.c;
 
-    if (level_prop && level_prop->blockdef[block].defined)
-	if (level_prop->blockdef[block].name.c[0])
-	    n = level_prop->blockdef[block].name.c;
-
-    if (n == 0 && block < Block_CPE)
-	if (default_blocks[block].name.c[0])
-	    n = default_blocks[block].name.c;
-
+	if (n == 0 && block < Block_CPE)
+	    if (default_blocks[block].name.c[0])
+		n = default_blocks[block].name.c;
+    }
     bid++; if (bid>=BBUFLEN) bid = 0;
     char *d = name[bid];
     if (n)
@@ -26,7 +26,7 @@ block_name(block_t block)
 	    *d++ = *n++;
     *d = 0;
     if (!name[bid][0])
-	snprintf(name[bid], NB_SLEN, "@%d", block);
+	snprintf(name[bid], NB_SLEN, "Invalid block @%d", block);
     return name[bid];
 }
 
