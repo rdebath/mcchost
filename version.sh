@@ -6,19 +6,21 @@ main() {
 
     git_describe
 
-    if [ "$VER" != '' ]||[ ! -s "$1" ]
-    then {
-	echo "#define VERSION          \"$VER\""
-	echo "#define VERSION_MAJOR    $MAJOR"
-	echo "#define VERSION_MINOR    $MINOR"
-	echo "#define VERSION_BUILD    $BUILD"
-	echo "#define VERSION_HASH    \"$HASH\""
-	[ "$GITHASH" != "" ] && echo "#define GITHASH $GITHASH"
-	[ "$GITTIME" != "" ] && echo "#define GITTIME $GITTIME"
-	[ "$GITDECO" != "" ] && echo "#define GITDECO $GITDECO"
-	} > "$1"
+    if [ "$1" != '' ]
+    then
+	if [ "$VER" != '' ]||[ ! -s "$1" ]
+	then {
+	    echo "#define VERSION          \"$VER\""
+	    echo "#define VERSION_MAJOR    $MAJOR"
+	    echo "#define VERSION_MINOR    $MINOR"
+	    echo "#define VERSION_BUILD    $BUILD"
+	    echo "#define VERSION_HASH    \"$HASH\""
+	    [ "$GITHASH" != "" ] && echo "#define GITHASH $GITHASH"
+	    [ "$GITTIME" != "" ] && echo "#define GITTIME $GITTIME"
+	    [ "$GITDECO" != "" ] && echo "#define GITDECO $GITDECO"
+	    } > "$1"
+	fi
     fi
-
     :
 }
 
@@ -57,6 +59,7 @@ git_describe() {
 
     # Number of modified files.
     MOD=`git status --porc . | grep "^ M" | wc -l`
+    DIFF=$((DIFF)) ; MOD=$((MOD))
 
     # Commentary.
     echo Origin ver: $MAJOR.$MINOR.$BUILD, Local commits: $DIFF, Local edits: $MOD 1>&2
