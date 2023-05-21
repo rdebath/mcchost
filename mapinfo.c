@@ -225,6 +225,9 @@ struct blockdef_t {
 #define Block_Aqua 27
 #define Block_Cyan 28
 #define Block_Blue 29
+#define Block_Indigo 30
+#define Block_Violet 31
+#define Block_Magenta 32
 #define Block_Pink 33
 #define Block_Black 34
 #define Block_Grey 35
@@ -238,7 +241,9 @@ struct blockdef_t {
 #define Block_DoubleSlab 43
 #define Block_Slab 44
 #define Block_Brick 45
+#define Block_TNT 46
 #define Block_Bookshelf 47
+#define Block_MossyRocks 48
 #define Block_Obsidian 49
 #define Block_CobbleSlab 50
 #define Block_Rope 51
