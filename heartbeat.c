@@ -131,7 +131,7 @@ send_heartbeat_poll()
 	    );
 
     if ((heartbeat_pid = fork()) == 0) {
-	if (listen_socket>=0) close(listen_socket);
+	if (listen_socket>=0) { close(listen_socket); listen_socket = -1; }
 	char cmdfilebuf[256];
 	sprintf(cmdfilebuf, "log/curl-%d-c.txt", tcp_port_no);
 	char logbuf[256];

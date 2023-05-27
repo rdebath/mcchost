@@ -217,6 +217,7 @@ tcpserver()
 			(void)signal(SIGINT, SIG_DFL);
 			signal_available = 0;
 			E(close(listen_socket), "close(listen)");
+			listen_socket = -1;
 			line_ofd = 1; line_ifd = 0;
 			E(dup2(socket, line_ifd), "dup2(S,0)");
 			E(dup2(socket, line_ofd), "dup2(S,1)");
@@ -312,6 +313,8 @@ logger_process()
 	return;
     }
 
+    if (listen_socket>=0) { close(listen_socket); listen_socket = -1; }
+
     // No longer needed -- we have one job.
     stop_system_conf();
     stop_client_list();
@@ -319,8 +322,6 @@ logger_process()
     proctitle("MCCHost logger");
 
     // Logger
-    if (listen_socket>=0)
-	E(close(listen_socket), "close(listen)");
     E(close(pipefd[1]), "close(pipe)");
     if (pipefd[0] != 0) {
 	E(dup2(pipefd[0], 0), "dup2(pipefd[0],0)");
@@ -439,7 +440,18 @@ start_listen_socket(char * listen_addr, int port)
     int reuse = 1;
     E(setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)), "setsockopt");
 
-    E(bind(listen_sock, (struct sockaddr*)&my_addr, sizeof(my_addr)), "bind");
+    // Allow this to retry because of possible issues on restart.
+    int c = 0;
+    for(;;) {
+	int n = bind(listen_sock, (struct sockaddr*)&my_addr, sizeof(my_addr));
+	if (n != -1) break;
+	if (errno != EADDRINUSE || ++c == 6) {
+	    perror("bind");
+	    exit(1);
+	}
+	if (c == 1) perror("bind listen retrying");
+	msleep(500);
+    }
 
     // start accept client connections (queue 10)
     E(listen(listen_sock, 10), "listen");
@@ -721,7 +733,7 @@ start_backup_process()
 	trigger_backup = trigger_unload = 0;
 	return;
     }
-    if (listen_socket>=0) close(listen_socket);
+    if (listen_socket>=0) { close(listen_socket); listen_socket = -1; }
 
     proctitle("MCCHost saver");
 
@@ -794,7 +806,7 @@ auto_load_main(int fast_start)
 	enable_coredump();
 #endif
 
-    if (listen_socket>=0) close(listen_socket);
+    if (listen_socket>=0) { close(listen_socket); listen_socket = -1; }
 
     proctitle("MCCHost load main");
 

@@ -152,7 +152,10 @@ complete_connection()
     send_textcolours();
 #endif
 
-    printf_chat("&SWelcome %s", player_list_name.c);
+    if (my_user.logon_count > 1)
+	printf_chat("&SWelcome back %s&S! You've been here %d times!", player_list_name.c, (int)my_user.logon_count);
+    else
+	printf_chat("&SWelcome %s", player_list_name.c);
     printf_chat("@&a+ %s &Sconnected", player_list_name.c);
 
     read_only_message();

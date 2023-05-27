@@ -69,10 +69,9 @@ can_place_block(block_t blk)
         return 0;
     }
     if (server->cpe_disabled) {
-	if (blk == Block_Grass || blk == Block_DoubleSlab || blk >= Block_CP)
-	    return 0;
 	if (!server->op_flag && !perm_is_admin() &&
-	    (blk == Block_Bedrock || blk == Block_ActiveWater || blk == Block_ActiveLava))
+	    (blk == Block_Bedrock || blk == Block_ActiveWater ||
+	     blk == Block_ActiveLava || blk >= Block_CP))
 	    return 0;
     }
     return 1;
@@ -381,9 +380,13 @@ process_player_setblock(pkt_setblock pkt)
 	pkt.mode = 2;
     }
 
-    // Classic mode can't place Grass.
-    if (!cpe_enabled && pkt.block == Block_Grass)
-	pkt.block = Block_Dirt;
+    // Classic 0.30 can't place Grass; CC doesn't do this right.
+    if (!cpe_requested) {
+	if (pkt.block == Block_Grass)
+	    pkt.block = Block_Dirt;
+	else if (pkt.block == Block_DoubleSlab)
+	    pkt.block = Block_Slab;
+    }
 
     if (player_mode_mode >= 0 && pkt.mode) {
 	pkt.block = player_mode_mode;
