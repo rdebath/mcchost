@@ -24,7 +24,8 @@ cmd_museum(char * UNUSED(cmd), char * arg)
 	 if (backup_id > 0 && *e == 0) {
 	    levelid = lvl;
 	    lvl = 0;
-	 }
+	 } else
+	    backup_id = 1;
     } else if (levelid) {
 	backup_id = strtol(levelid, &e, 10);
 	if (*e != 0 && lvl) {
@@ -36,9 +37,47 @@ cmd_museum(char * UNUSED(cmd), char * arg)
 	}
     }
 
-    if (backup_id <= 0) backup_id = 1;
-    if (!lvl)
-	lvl = current_level_name;
+    if (!lvl) lvl = current_level_name;
 
+    // If backup 1 exists for this name assume the user has used an exact name.
+    if (check_museum_name(lvl, backup_id) ||
+	    (backup_id != 1 && check_museum_name(lvl, 1))) {
+	direct_teleport(lvl, backup_id, 0);
+	return;
+    }
+
+    // No exact match, see if it matches a level name.
+    char fixedname[MAXLEVELNAMELEN*4], levelname[MAXLEVELNAMELEN];
+    fix_fname(fixedname, sizeof(fixedname), lvl);
+
+    // This matches LEVEL names not backup names.
+    char * newfixed = find_file_match(fixedname, lvl);
+
+    if (newfixed != 0) {
+	unfix_fname(levelname, sizeof(levelname), newfixed);
+	lvl = levelname;
+	free(newfixed);
+    } else
+	return;
+
+    // Try with the new level name.
     direct_teleport(lvl, backup_id, 0);
+}
+
+int
+check_museum_name(char * level, int backup_id)
+{
+    char cw_pathname[PATH_MAX];
+    char fixedname[MAXLEVELNAMELEN*4];
+    fix_fname(fixedname, sizeof(fixedname), level);
+
+    snprintf(cw_pathname, PATH_MAX, LEVEL_BACKUP_NAME, fixedname, backup_id);
+    int flg = 1;
+    // Normal name
+    if (access(cw_pathname, F_OK) == 0) flg = 0;
+
+    // Other names
+    if (flg) flg = !find_alt_museum_file(cw_pathname, PATH_MAX, level, backup_id);
+
+    return !flg;
 }

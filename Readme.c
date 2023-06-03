@@ -15,8 +15,6 @@ Other notes
 */
 
 /*HELP todo
- +) /museum to allow case insensitive matching.
-
  +) Message blocks and portals don't need physics process.
 
  +) Improve the /setvar command, more help, option lists.

@@ -107,11 +107,7 @@ choose_level_files(char *level, int backup_id, char *cw_pathname, char *levelnam
 	int flg = 1;
 	// Normal name
 	if (access(cw_pathname, F_OK) == 0) flg = 0;
-	// Try no .N suffix for N==1
-	if (flg && backup_id == 1) {
-	    snprintf(cw_pathname, PATH_MAX, LEVEL_BACKUP_NAME_1, fixedname);
-	    if (access(cw_pathname, F_OK) == 0) flg = 0;
-	}
+	// Other names
 	if (flg) flg = !find_alt_museum_file(cw_pathname, PATH_MAX, level, backup_id);
 	if (flg) {
 	    snprintf(cw_pathname, PATH_MAX, LEVEL_BACKUP_NAME, fixedname, backup_id);
@@ -120,8 +116,10 @@ choose_level_files(char *level, int backup_id, char *cw_pathname, char *levelnam
 	    return 0;
 	}
 
-    } else
+    } else {
+	printf_chat("&SVirtual level \"%s\" does not exist", level);
 	return 0;
+    }
 
     unfix_fname(levelname, MAXLEVELNAMELEN+1, fixedname);
     if (*levelname == 0) {
@@ -139,8 +137,16 @@ choose_level_files(char *level, int backup_id, char *cw_pathname, char *levelnam
 int
 find_alt_museum_file(char * cw_pathname, int len, char * level, int backup_id)
 {
-    char fixedname_dir[MAXLEVELNAMELEN*4];
     char fixedname_file[MAXLEVELNAMELEN*4];
+    fix_fname(fixedname_file, sizeof(fixedname_file), level);
+
+    // Try no .N suffix for N==1
+    if (*fixedname_file && backup_id == 1) {
+	snprintf(cw_pathname, len, LEVEL_BACKUP_NAME_1, fixedname_file);
+	if (access(cw_pathname, F_OK) == 0) return 1;
+    }
+
+    char fixedname_dir[MAXLEVELNAMELEN*4];
 
     char * sub = strchr(level, '/');
     if (sub == 0) {
