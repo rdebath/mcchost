@@ -18,6 +18,11 @@ Alias: &T/p
 Always place &TBlockNo&S rather than your held block.
 Useful for hidden block types.
 */
+/*HELP hold,holdthis H_CMD
+&T/hold
+Shows information about a block location
+Alias: &T/holdthis
+*/
 /*HELP mark H_CMD
 &T/Mark <x y z>&S - Places a marker for selections, e.g for /z
 Use ~ before a coordinate to mark relative to current position
@@ -39,6 +44,7 @@ Alias: &T/b
 #define UCMD_PLACE  {N"place", &cmd_place, CMD_HELPARG}, {N"pl", &cmd_place, CMD_ALIAS}, \
 		   {N"paint", &cmd_paint}, {N"p", &cmd_paint, CMD_ALIAS}, \
 		   {N"mode", &cmd_mode}, \
+		   {N"hold", &cmd_hold, CMD_HELPARG}, {N"holdthis", &cmd_hold, CMD_ALIAS}, \
 		   {N"abort", &cmd_abort}, {N"a", &cmd_abort, CMD_ALIAS}, \
 		   {N"mark", &cmd_mark}, {N"m", &cmd_mark, CMD_ALIAS}, \
 		   {N"markall", &cmd_mark, CMD_ALIAS, .nodup=1}, \
@@ -73,6 +79,11 @@ can_place_block(block_t blk)
 	    (blk == Block_Bedrock || blk == Block_ActiveWater ||
 	     blk == Block_ActiveLava || blk >= Block_CP))
 	    return 0;
+    }
+    if (blk >= Block_CPE && !level_prop->blockdef[blk].defined) {
+	if (perm_level_check(0, 0, 1))
+	    return 1;
+	return 0;
     }
     return 1;
 }
@@ -300,6 +311,34 @@ cmd_mode(char * cmd, char * arg)
 	player_mode_mode = b;
 	printf_chat("&SPlayer /mode set to block &T%s", block_name(player_mode_mode));
     }
+}
+
+void
+cmd_hold(char * UNUSED(cmd), char * arg)
+{
+    if (!extn_heldblock) {
+	printf_chat("&SYour client doesn't support changing your held block.");
+	return;
+    }
+
+    char * block = strarg(arg);
+    char * flag = strarg(0);
+
+    block_t b = block_id(block);
+    if (b == BLOCKNIL) {
+	printf_chat("&WUnknown block '%s'", block?block:"");
+	return;
+    }
+    if (complain_bad_block(b)) return;
+    int f = flag?ini_read_bool(flag):0;
+
+    if (b >= client_block_limit) {
+	printf_chat("&SYour client doesn't support block &T%s.", block_name(b));
+	return;
+    }
+
+    printf_chat("&SSet your held block to &T%s", block_name(b));
+    send_holdthis_pkt(b, f);
 }
 
 void
