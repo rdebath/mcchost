@@ -344,6 +344,10 @@ init_level_blocks(uint64_t fallback_seed, int pre_zeroed)
 	}
     }
 
+    // This assumes we always want to overwrite the ASCII format cw file.
+    // If this line is removed we only do it for random seeds.
+    level_prop->dirty_save = 1;
+
     saprintf(level_prop->software, "%s %s", SWNAME, Version);
 
     if (!quiet) {

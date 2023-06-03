@@ -333,11 +333,11 @@ save_map_to_file(char * fn, int background)
 
 	for (intptr_t i = 0; i<saveable_blocks; i++) {
 	    int b = level_blocks[i];
-	    if (use_mcg_physics && b>MCG_PHYSICS_0FFSET && b<MCG_PHYSICS_0FFSET+255) {
+	    if (use_mcg_physics && IsMCGPhysics(b)) {
 		gzputc(savefile, mcg_physics[b&0xFF]);
 		set_ba_ph = 1;
 	    } else {
-		if (b>=CPELIMIT) {set_ba3 = 1; b &= 0xFF; }
+		if (b >= CPELIMIT) {set_ba3 = 1; b &= 0xFF; }
 		gzputc(savefile, b & 0xFF);
 		set_ba2 |= (b>0xFF);
 	    }
@@ -350,12 +350,10 @@ save_map_to_file(char * fn, int background)
 
 	    for (intptr_t i = 0; i<saveable_blocks; i++) {
 		int b = level_blocks[i];
-		if (use_mcg_physics && b>MCG_PHYSICS_0FFSET && b<MCG_PHYSICS_0FFSET+255)
+		if ((use_mcg_physics && IsMCGPhysics(b)) || b >= CPELIMIT)
 		    gzputc(savefile, 0);
-		else {
-		    if (b>=CPELIMIT) b &= 0xFF;
+		else
 		    gzputc(savefile, b>>8);
-		}
 	    }
 	}
 
@@ -371,20 +369,19 @@ save_map_to_file(char * fn, int background)
 
 	    for (intptr_t i = 0; i<saveable_blocks; i++) {
 		int b = level_blocks[i];
-		// if (b>=BLOCKMAX) b=BLOCKMAX-1;
-		if (b>=CPELIMIT)
+		if (b >= CPELIMIT && !(use_mcg_physics && IsMCGPhysics(b)))
 		    gzputc(savefile, b>>8);
 		else
 		    gzputc(savefile, 0);
 	    }
 	}
 	// Not written by CC
-	if (set_ba_ph) {
+	if (set_ba_ph) { // && use_mcg_physics
 	    bc_ent_bytes_header(savefile, "BlockArrayPhysics", saveable_blocks);
 
 	    for (intptr_t i = 0; i<saveable_blocks; i++) {
 		int b = level_blocks[i];
-		if (b>MCG_PHYSICS_0FFSET && b<MCG_PHYSICS_0FFSET+255)
+		if (IsMCGPhysics(b))
 		    gzputc(savefile, b);
 		else
 		    gzputc(savefile, 0);

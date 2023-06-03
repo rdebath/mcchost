@@ -33,9 +33,6 @@ Other notes
  +) /undo, /redo
  +) /sendcmd
 
- +) In EIGHTBITMODE check if mcg_physics can be in 66..254
-    -- Need bitmap of useable (named?) physics blocks.
-
  +) Command line to send HUP to server; for non-Linux updates.
     -- Or just time on exe ?
     -- Time on system.ini ?
@@ -84,8 +81,20 @@ Other notes
 
  +) Block/User history records.
     -- Stored in a ${level} file normally.
-    -- Only saved into a compressed file on level unload
-       -- NoUnload ? -- Or no users on level ?
+
+    -- block-log directory.
+    -- Has ${level}.${UTCDate}.23-59-59.blk{,.gz} files.
+    -- UTCDate in ISO format.
+    -- Datetime is last time in file.
+    -- Current file is renamed if level size changes; to current time.
+    -- Max file size (approx?) limit also renames file.
+    -- Old files are gzipped after midnight.
+    -- Level unload does not touch file.
+    -- Level deletes ?
+    -- Level rename ?
+    -- Level copy ?
+    -- Point in time restore ?
+
 
  +) Permissions
     -- Need enum of permit flags.

@@ -33,7 +33,12 @@ static int curr_x, curr_y, curr_z;
 static char * loading_level_fname = 0;
 
 #if INTERFACE
+#ifdef EIGHTBITMAP
+#define MCG_PHYSICS_0FFSET 0
+#else
 #define MCG_PHYSICS_0FFSET CPELIMIT	//768
+#endif
+#define IsMCGPhysics(bno) (bno>=Block_CPE && bno>MCG_PHYSICS_0FFSET && bno < MCG_PHYSICS_0FFSET+255)
 #endif
 
 // MCGalaxy physics block fallback and visual representations.
@@ -454,10 +459,11 @@ read_blockarray2(gzFile ifd, uint32_t len)
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
 #ifdef EIGHTBITMAP
 	block_t b = (level_blocks[i] & 0x00FF) + (ch<<8);
-	if (b > 255 && b < BLOCKMAX) {
+	if (b > 255 && b < BLOCKMAX && level_prop->blockdef[b].defined) {
 	    block_t nb = level_prop->blockdef[b].fallback;
 	    if (nb < 255) b = nb; else b = Block_Bedrock;
 	}
+	if ((b > 255 && b < 767) || b >= 1023) b = Block_Bedrock;
 	level_blocks[i] = b;
 #else
 	level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
@@ -491,10 +497,11 @@ read_blockarray3(gzFile ifd, uint32_t len)
 	if (ch == 0) continue;
 #ifdef EIGHTBITMAP
 	block_t b = (level_blocks[i] & 0x00FF) + (ch<<8);
-	if (b > 255 && b < BLOCKMAX) {
+	if (b > 255 && b < BLOCKMAX && level_prop->blockdef[b].defined) {
 	    block_t nb = level_prop->blockdef[b].fallback;
 	    if (nb < 255) b = nb; else b = Block_Bedrock;
 	}
+	if ((b > 255 && b < 767) || b >= 1023) b = Block_Bedrock;
 	level_blocks[i] = b;
 #else
 	level_blocks[i] = (level_blocks[i] & 0x00FF) + (ch<<8);
@@ -516,23 +523,39 @@ read_blockarray_physics(gzFile ifd, uint32_t len)
 	return 1;
     }
     if (len > 0xFFFF0000U) return 1; // Almost certainly negative so skip.
-#ifdef EIGHTBITMAP
-    level_prop->map_load_failure = 1;
-#endif
-
-    if (!level_prop->mcg_physics_blocks) {
-	level_prop->mcg_physics_blocks = 1;
-	define_mcg_physics_blocks();
-    }
 
     int xbytes = 0;
     if (len > level_prop->total_blocks) { xbytes = len - level_prop->total_blocks; len = level_prop->total_blocks; }
+
+#ifdef EIGHTBITMAP
+    int load_failure = 0;
+    for(int i = 0; i<len; i++) {
+	if (level_blocks[i] >= Block_CPE) {
+	    load_failure = 1;
+	    break;
+	}
+    }
+
+    if (load_failure)
+	level_prop->map_load_failure = 1;
+    else
+#endif
+
+	if (!level_prop->mcg_physics_blocks) {
+	    level_prop->mcg_physics_blocks = 1;
+	    define_mcg_physics_blocks();
+	}
+
     for(uint32_t i=0; i<len; i++) {
 	int ch;
 	if ((ch = gzgetc(ifd)) == EOF) return 0;
 #ifdef EIGHTBITMAP
-	if (ch)
-	    level_blocks[i] = mcg_physics[ch];
+	if (ch) {
+	    if (level_prop->mcg_physics_blocks)
+		level_blocks[i] = ch + MCG_PHYSICS_0FFSET;
+	    else
+		level_blocks[i] = mcg_physics[ch];
+	}
 #else
 	if (ch)
 	    level_blocks[i] = ch + MCG_PHYSICS_0FFSET;
@@ -731,11 +754,13 @@ change_int_value(char * section, char * item, int64_t value)
 
     } else if (strcasecmp(section, "MCGalaxy") == 0) {
 
+#ifndef EIGHTBITMAP
 	if (strcasecmp(item, "PhysicsBlocks") == 0) {
 	    level_prop->mcg_physics_blocks = value;
 	    if (level_prop->mcg_physics_blocks)
 		define_mcg_physics_blocks();
 	}
+#endif
 
     } else if (strncmp(section, "Block", 5) == 0) {
 	if (strcmp(item, "ID2") == 0) {
@@ -991,7 +1016,9 @@ define_mcg_physics_blocks()
 	    } else
 		start = e;
 	}
-	if (!level_prop->blockdef[blk].defined) {
+
+	if (blk <= 0) continue;
+	if (!level_prop->blockdef[blk].defined && blk >= Block_CPE) {
 	    level_prop->blockdef[blk] = level_prop->blockdef[mcg_physics[i]];
 	    level_prop->blockdef[blk].defined = 1;
 	    level_prop->blockdef[blk].no_save = 1;

@@ -157,4 +157,6 @@ cmd_newlvl(char * UNUSED(cmd), char * arg)
     fclose(ofd);
 
     printf_chat("&SLevel '%s' created", levelname);
+
+    direct_teleport(levelname, 0, 0);
 }

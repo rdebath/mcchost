@@ -153,6 +153,7 @@ void
 next_backup_filename(char * bk_name, int bk_len, char * fixedname)
 {
     int backup_id = 0;
+    int use_subdir = 0;
     char path[MAXLEVELNAMELEN*4];
 
     for(int i = 0; i<2 && backup_id == 0; i++) {
@@ -176,6 +177,7 @@ next_backup_filename(char * bk_name, int bk_len, char * fixedname)
 		    while(*s>='0' && *s<='9') { v=v*10+(*s-'0'); s++; }
 		    if (v>=backup_id && strcmp(s, ".cw") == 0) {
 			backup_id = v+1;
+			use_subdir = i;
 		    }
 		}
 	    }
@@ -184,7 +186,11 @@ next_backup_filename(char * bk_name, int bk_len, char * fixedname)
     }
     if (backup_id <= 0) backup_id = 1;
 
-    snprintf(bk_name, bk_len, LEVEL_BACKUP_NAME, fixedname, backup_id);
+    if (use_subdir)
+	snprintf(bk_name, bk_len, LEVEL_BACKUP_DIR_NAME "/%s/%s.%d.cw",
+	    fixedname, fixedname, backup_id);
+    else
+	snprintf(bk_name, bk_len, LEVEL_BACKUP_NAME, fixedname, backup_id);
 }
 
 int
