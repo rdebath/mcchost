@@ -142,7 +142,7 @@ cmd_main(char * UNUSED(cmd), char * arg)
 
 /* This only finds ASCII case insensitive, not CP437. This is probably fine.
  */
-#define NMATCH 4
+#define NMATCH 20
 char *
 find_file_match(char * fixedname, char * levelname)
 {
@@ -217,16 +217,22 @@ find_file_match(char * fixedname, char * levelname)
 	printf_chat("&SNo levels match \"%s\"", levelname);
 	return 0;
     }
-    if (matchcount > NMATCH)
+
+    int l = 0, use_count = 0;
+    for(int i = 0; i<NMATCH && i<matchcount; i++) {
+	int n = strlen(match[i]) + 3;
+	if (l>0 && l+n > 60) break;
+	l += n; // fixed names may be longer, so ok.
+	use_count++;
+    }
+
+    if (matchcount > use_count)
 	printf_chat("&S%d levels match \"%s\" including ...", matchcount, levelname);
     else
 	printf_chat("&S%d levels match \"%s\"", matchcount, levelname);
 
-    int l = 0;
-    for(int i = 0; i<NMATCH && i<matchcount; i++)
-	l += strlen(match[i]) + 3; // fixed names are longer, so ok.
     char * line = calloc(l, 1);
-    for(int i = 0; i<NMATCH && i<matchcount; i++) {
+    for(int i = 0; i<NMATCH && i<use_count; i++) {
 	if (i) strcat(line, ", ");
 	char lvlname[MAXLEVELNAMELEN+1];
 	unfix_fname(lvlname, sizeof(lvlname), match[i]);
