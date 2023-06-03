@@ -308,8 +308,12 @@ wait_for_forced_unload(char * lvlname, summon_list_t * users_on)
 	}
     }
 
-    printf_chat("&SLevel '%s' is being unloaded", lvlname);
-    shdat.client->levels[level_id].force_unload = 2;
+    // printf_chat("&SLevel '%s' is being unloaded", lvlname);
+
+    if (users_on)
+	shdat.client->levels[level_id].force_unload = 2;
+    else
+	shdat.client->levels[level_id].force_unload = 1;
     shdat.client->generation++;
 
     unlock_fn(system_lock);

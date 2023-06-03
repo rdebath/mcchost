@@ -33,7 +33,7 @@ cmd_copylvl(char * UNUSED(cmd), char * arg)
 
     saprintf(buf2, LEVEL_CW_NAME, fixedname);
     if (access(buf2, F_OK) != 0) {
-	char * newfixed = find_file_match(fixedname, arg);
+	char * newfixed = find_file_match(fixedname, oldlvlarg);
 
 	if (newfixed != 0) {
 	    saprintf(fixedname, "%s", newfixed);

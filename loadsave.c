@@ -31,11 +31,8 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	return 0;
     }
 
-    if (save_bkp == 2)
-	fprintf_logfile("Saving \"%s\" as backup only to delete level.", level_name);
-    else
-	fprintf_logfile("Saving \"%s\" to map directory%s",
-	    level_name, save_bkp && cw_ok?" with backup of previous":"");
+    fprintf_logfile("Saving \"%s\" to map directory%s",
+	level_name, save_bkp && cw_ok?" with backup of previous":"");
 
     lock_fn(level_save_lock);	// Only one save at a time.
 
@@ -51,7 +48,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	return -1;
     }
 
-    if (save_bkp && save_bkp != 2) {
+    if (save_bkp) {
 	if (access(map_fn, F_OK) == 0) {
 	    // Do anything else on backup failure?
 	    if (link(map_fn, bak_fn) < 0) backup_ok = 0;
@@ -67,15 +64,6 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	return -1;
     }
 
-    if (save_bkp == 2) {
-	if (rename(map_fn, bak_fn) < 0) {
-	    perror("backup rename failed");
-	    int e = errno;
-	    unlock_fn(level_save_lock);
-	    errno = e;
-	    return -1;
-	}
-    }
     level_prop->dirty_save = 0;
     unlock_fn(level_save_lock);
 
@@ -86,12 +74,7 @@ save_level(char * level_fname, char * level_name, int save_bkp)
 	move_file_to_backups(bak_fn, level_fname, level_name);
     }
 
-    if (save_bkp == 2) {
-	char buf3[256];
-	saprintf(buf3, LEVEL_INI_NAME, level_fname);
-	(void)unlink(buf3); // Remove additional data file.
-    } else
-	save_level_ini(level_fname); // Incl last modified time
+    save_level_ini(level_fname); // Incl last modified time
     return 0;
 }
 
@@ -200,8 +183,6 @@ scan_and_save_levels(int do_timed_save)
     int loaded_levels = 0;
     int check_again = 0;
     int trigger_full_run = 0;
-    int level_deleted = 0;
-    nbtstr_t deleted_level = {0};
     int level_saved = 0;
     nbtstr_t saved_level = {0};
     int level_unloaded = 0;
@@ -234,9 +215,6 @@ scan_and_save_levels(int do_timed_save)
 
 	    if (level_in_use && !shdat.client->levels[lvid].force_backup)
 		continue;
-
-	    if (shdat.client->levels[lvid].delete_on_unload)
-		trigger_full_run = 1;
 	}
 
 	if (shdat.client->levels[lvid].backup_id == 0)
@@ -261,12 +239,6 @@ scan_and_save_levels(int do_timed_save)
 	    shdat.client->levels[lvid].no_unload = level_prop->no_unload;
 	    set_level_in_use_flag(lvid, &user_count);
 	    level_in_use = shdat.client->levels[lvid].in_use;
-
-	    int force_backup = 0; // And delete
-	    if (shdat.client->levels[lvid].delete_on_unload) {
-		level_prop->dirty_save = 1;
-		force_backup = 1;
-	    }
 
 	    int preserve_current = 0;
 	    if (shdat.client->levels[lvid].force_backup) {
@@ -293,7 +265,6 @@ scan_and_save_levels(int do_timed_save)
 		time_t now = time(0), last_backup = level_prop->last_backup;
 		if (last_backup == 0) last_backup = level_prop->time_created;
 		int do_bkp = (now - server->backup_interval >= last_backup);
-		if (force_backup) do_bkp = 2; // NB: Saves delete time too.
 		if (do_bkp && do_timed_save) do_save = 1;
 
 		if (do_save) {
@@ -353,10 +324,7 @@ scan_and_save_levels(int do_timed_save)
 		// unload.
 		nbtstr_t lv = shdat.client->levels[lvid].level;
 		level_name = lv.c;
-		if (shdat.client->levels[lvid].delete_on_unload) {
-		    deleted_level = lv;
-		    level_deleted = 1;
-		} else if (shdat.client->levels[lvid].force_unload) {
+		if (shdat.client->levels[lvid].force_unload) {
 		    unloaded_level = lv;
 		    level_unloaded = 1;
 		}
@@ -398,13 +366,6 @@ scan_and_save_levels(int do_timed_save)
     }
 
     if (check_again) shdat.client->generation++;
-
-    if (level_deleted) {
-	// Do this outside the system lock.
-	level_deleted = 0;
-	printf_chat("@Level %s deleted", deleted_level.c);
-	stop_chat_queue();
-    }
 
     if (level_saved) {
 	// Do this outside the system lock.
@@ -519,8 +480,7 @@ set_level_in_use_flag(int lvid, int * users_on_level)
     // Main and other normal levels may be held open.
     if (shdat.client->levels[lvid].backup_id == 0
 	&& !restart_on_unload && !term_sig
-	&& !shdat.client->levels[lvid].force_unload
-	&& !shdat.client->levels[lvid].delete_on_unload)
+	&& !shdat.client->levels[lvid].force_unload)
     {
 	if (shdat.client->levels[lvid].no_unload) level_in_use = 1;
 	if (this_is_main && !level_in_use) {

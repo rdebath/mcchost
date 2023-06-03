@@ -193,7 +193,6 @@ On Block queue, if user count < 2 && no-physics don't use queue ?
 /*
  Rejects ...
 
- +) Don't save a clean loaded map on delete.
  +) Allow more commands to be run without /pass set?
     -- /goto ?
  +) inetd-tcp-wait mode; passes listening socket to process when there

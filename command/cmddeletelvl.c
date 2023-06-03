@@ -20,7 +20,9 @@ cmd_deletelvl(char * UNUSED(cmd), char * arg)
     if (!perm_level_check(levelname, 1, 0))
         return;
 
-    char fixedname[MAXLEVELNAMELEN*4], buf2[256], buf3[256], lvlname[MAXLEVELNAMELEN+1];
+    char fixedname[MAXLEVELNAMELEN*4], buf2[256], lvlname[MAXLEVELNAMELEN+1];
+
+    // Note: Only EXACT names allowed.
 
     fix_fname(fixedname, sizeof(fixedname), levelname);
     unfix_fname(lvlname, sizeof(lvlname), fixedname);
@@ -34,28 +36,38 @@ cmd_deletelvl(char * UNUSED(cmd), char * arg)
 	return;
     }
 
+    if (do_direct_delete(levelname) == 0)
+	return;
+
+    do_deletelvl(levelname);
+}
+
+int
+do_direct_delete(char * levelname)
+{
     lock_fn(system_lock);
+
+    for(int lvid=0; lvid<MAX_LEVEL; lvid++) {
+        if (!shdat.client->levels[lvid].loaded) continue;
+        nbtstr_t lv = shdat.client->levels[lvid].level;
+        if (strcmp(lv.c, levelname) == 0) {
+            unlock_fn(system_lock);
+	    return -1;
+        }
+    }
+
+    char fixedname[MAXLEVELNAMELEN*4], buf2[256], buf3[256];
+    fix_fname(fixedname, sizeof(fixedname), levelname);
+    saprintf(buf2, LEVEL_CW_NAME, fixedname);
 
     char hst_fn[256];
     next_backup_filename(hst_fn, sizeof(hst_fn), fixedname);
-
-    for(int lvid=0; lvid<MAX_LEVEL; lvid++) {
-	if (!shdat.client->levels[lvid].loaded) continue;
-	nbtstr_t lv = shdat.client->levels[lvid].level;
-	if (strcmp(lv.c, levelname) == 0) {
-	    printf_chat("&SLevel '%s' is currently loaded, unloading and deleting", levelname);
-	    shdat.client->levels[lvid].force_unload = 1;
-	    shdat.client->levels[lvid].delete_on_unload = 1;
-	    unlock_fn(system_lock);
-	    return;
-	}
-    }
 
     if (rename(buf2, hst_fn) < 0) {
 	perror("Delete rename failed");
 	unlock_fn(system_lock);
 	printf_chat("&WLevel '%s' failed to delete", levelname);
-	return;
+	return -1;
     }
 
     saprintf(buf3, LEVEL_INI_NAME, fixedname);
@@ -64,4 +76,30 @@ cmd_deletelvl(char * UNUSED(cmd), char * arg)
     unlock_fn(system_lock);
 
     printf_chat("&SLevel '%s' deleted", levelname);
+    return 0;
+}
+
+int
+do_deletelvl(char * levelname)
+{
+    if (level_processor_pid || current_level_backup_id != 0) return -1;
+    if ((level_processor_pid = fork()) != 0) {
+        if (level_processor_pid<0) {
+            level_processor_pid = 0;
+            perror("fork()");
+            return -1;
+        }
+        return 1;
+    }
+
+    if (line_ofd >= 0) close(line_ofd);
+    if (line_ifd >= 0 && line_ofd != line_ifd) close(line_ifd);
+    line_ifd = line_ofd = -1;
+
+    wait_for_forced_unload(levelname, 0);
+
+    if (do_direct_delete(levelname) != 0)
+	printf_chat("&WLevel '%s' failed to delete", levelname);
+
+    exit(0);
 }
