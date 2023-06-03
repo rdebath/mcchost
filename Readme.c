@@ -26,7 +26,6 @@ Other notes
 
  +) /clones (/alts)
  +) /tree -- Only Notch variant ?
- +) /renamelvl, /copylvl
  +) /fill
  +) /undo, /redo
  +) /sendcmd
