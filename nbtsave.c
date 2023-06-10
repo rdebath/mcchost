@@ -1,5 +1,6 @@
 #include <math.h>
 #include <zlib.h>
+#include <fcntl.h>
 
 #include "nbtsave.h"
 
@@ -33,12 +34,21 @@ save_map_to_file(char * fn, int background)
 
     set_last_block_queue_id();
 
-    gzFile savefile = gzopen(fn, "w9");
-
-    if (!savefile) {
+    // I can't get the fd from zlib, so I have to open the file myself
+    int savefd = open(fn, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
+    if (savefd < 0) {
+	perror(fn);
 	if (!background)
 	    printf_chat("&WMap save failed with error %d", errno);
+    }
+
+    errno = 0;
+    gzFile savefile = gzdopen(savefd, "w9");
+
+    if (!savefile) {
 	perror(fn);
+	if (!background)
+	    printf_chat("&WMap save failed with error %d", errno);
 	return -1;
     }
 
@@ -393,15 +403,20 @@ save_map_to_file(char * fn, int background)
 
     bc_end(savefile);
 
-    int rv = gzclose(savefile);
-    if (rv) {
+    int rv = gzflush(savefile, Z_FINISH);
+    if (rv != Z_OK)
+	printlog("gzflush('%s') failed, error %d", fn, rv);
+
+    (void)fsync(savefd);
+    int rv2 = gzclose(savefile);
+    if (rv2) {
 	if (background)
 	    printlog("gzclose('%s') failed, error %d", fn, rv);
 	else
 	    printf_chat("&WSave failed error Z%d", rv);
     }
 
-    if (rv) return -1;
+    if (rv != Z_OK || rv2 != Z_OK) return -1;
     return 0;
 }
 

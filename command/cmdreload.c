@@ -1,14 +1,15 @@
 
 #include "cmdreload.h"
 
-/*HELP reload H_CMD
+/*HELP reload,rd,rejoin H_CMD
 &T/reload [all]
 &T/reload&S -- Reloads your session
 &T/reload all&S -- Reloads everybody on this level
 &T/reload classic&S -- Reloads your session in classic mode.
 */
 #if INTERFACE
-#define UCMD_RELOAD  {N"reload", &cmd_reload}
+#define UCMD_RELOAD {N"reload", &cmd_reload}, \
+    {N"rd", &cmd_reload, CMD_ALIAS}, {N"rejoin", &cmd_reload, CMD_ALIAS}
 #endif
 void
 cmd_reload(char * UNUSED(cmd), char * arg)
