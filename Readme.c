@@ -15,6 +15,8 @@ Other notes
 */
 
 /*HELP todo
+ +) /mi needs to look in backup subdirs.
+
  +) Message blocks and portals don't need physics process.
 
  +) Improve the /setvar command, more help, option lists.
@@ -101,6 +103,10 @@ Other notes
     -- Permission for level owner (users, everyone)
     -- Permission for level readonly for "user" but modifiable for "level"
     -- Permission for /goto (in .ini file)
+
+ +) IRC Chat bridge
+    -- Default server and channel sourced from website (Option for none).
+    -- Web site failure --> what sort of fallback?
 
  +) NAME: (*) MCCHost
 

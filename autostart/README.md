@@ -1,3 +1,13 @@
+Starting from a script
+---
+
+The deamon can be started from any script or the command line; it will detach from the current session and stay active until terminated.
+
+`mcchost-server -port 25565 -net -detach`
+
+The `-detach` argument is essential to ensure that the script is not blocked. If the port is already in use the startup will be paused for a few seconds before a retry, but if the retry fails it will give a prompt failure exit.
+
+
 Starting from inittab
 ---
 

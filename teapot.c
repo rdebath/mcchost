@@ -12,6 +12,7 @@ teapot(uint8_t * buf, int len)
     int send_logout = 0;
     int send_tls_fail = 0;
     int send_http_error = 0;
+    int send_teapot = 1;
 
     int is_ascii = 1;
     for(int i = 0; is_ascii && i<len; i++)
@@ -59,6 +60,16 @@ teapot(uint8_t * buf, int len)
 		"Using a Minecraft protocol.");
 	    fm = rv = dump_it = 0;
 	    send_logout = 1;
+
+	} else if (len > 74 && buf[0] == 0 && buf[65] == 8 && buf[66] == 0xFF) {
+	    char nbuf[256] = "";
+	    uint8_t * p = buf+1;
+	    int i = 0;
+	    while(p<buf+len && *p > ' ' && *p < '~') {
+                nbuf[i++] = *p++; nbuf[i] = 0;
+            }
+            printlog("Failed connect from %s, v0.15 for \"%s\"", client_ipv4_str, nbuf);
+            send_teapot = fm = rv = dump_it = 0;
 
 	} else if (len > 12 && buf[0] < 4 && buf[3] > 1 && buf[3]*2+5 < len && buf[3] <= 16 &&
 	    buf[buf[3]*2+4] == 0 && buf[buf[3]*2+5] < 16 &&
@@ -151,7 +162,7 @@ teapot(uint8_t * buf, int len)
 	    write_to_remote(msg, sizeof(msg));
 	} else
 
-	{
+	if (send_teapot) {
 	    unsigned char msg[] = "418 This is a classic (0.30) minecraft server with CPE\r\n";
 	    write_to_remote(msg, sizeof(msg)-1);
 	}

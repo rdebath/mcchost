@@ -1,4 +1,4 @@
-FROM alpine:3.13
+FROM alpine:3.18
 # Manually create the mount path because Docker can't do it right.
 # It will copy these perms to a new volume, but not to a new host
 # directory.
