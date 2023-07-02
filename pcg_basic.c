@@ -160,6 +160,7 @@ inline static uint32_t pcg32_random()
 
 inline static uint32_t pcg32_boundedrand_r(pcg32_random_t* rng, uint32_t bound)
 {
+#if 0
     // To avoid bias, we need to make the range of the RNG a multiple of
     // bound, which we do by dropping output less than a threshold.
     // A naive scheme to calculate the threshold would be to do
@@ -188,6 +189,20 @@ inline static uint32_t pcg32_boundedrand_r(pcg32_random_t* rng, uint32_t bound)
         if (r >= threshold)
             return r % bound;
     }
+
+#endif
+
+    // Alternate version that doesn't use DIV on the normal path.
+    uint64_t r;
+    for(;;)
+    {
+        r = (uint64_t)bound * pcg32_random_r(rng);
+        uint32_t l = r;
+        if (l >= bound) break;
+        uint32_t threshold = -bound % bound;
+        if (l >= threshold) break;
+    }
+    return r >> 32;
 }
 
 

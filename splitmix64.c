@@ -51,12 +51,15 @@ inline static uint64_t splitmix64_ctr(uint64_t seed, uint64_t jump) {
 
 // See pcg_basic.c:pcg32_boundedrand_r for design of this function.
 inline static uint32_t splitmix64_bounded_r(uint64_t *rng, uint32_t bound) {
-    uint32_t threshold = -bound % bound;
-    for (;;) {
-        uint32_t r = (uint32_t) splitmix64_r(rng);
-        if (r >= threshold)
-            return r % bound;
+    uint64_t r;
+    for(;;) {
+        r = (uint64_t)bound * (uint32_t)splitmix64_r(rng);
+        uint32_t l = r;
+        if (l >= bound) break;
+        uint32_t threshold = -bound % bound;
+        if (l >= threshold) break;
     }
+    return r >> 32;
 }
 #endif
 

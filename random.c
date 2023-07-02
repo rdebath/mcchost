@@ -21,12 +21,16 @@ struct unx_random_t {
 };
 
 inline static uint32_t
-bounded_random(int mod_r)
+bounded_random(int range)
 {
 #ifdef USE_MIXED
-    return pcg32_boundedrand(mod_r);
+    return pcg32_boundedrand(range);
 #else
-    return random() % mod_r; // Yes, it's biased
+    // Divide by RAND_MAX+1 to put the value into [0..1) then
+    // multiply by the requested range (wait .. flip that)
+    // GCC makes the division a shift even in -O0
+    // Yes, it's still biased, by less than 0.0001% for small ranges.
+    return ((uint64_t)range*random()) / (RAND_MAX+(uint64_t)1);
 #endif
 }
 
@@ -36,13 +40,13 @@ bounded_random(int mod_r)
 #define map_random_t mcc_random_t
 typedef struct mcc_random_t mcc_random_t;
 struct mcc_random_t {
-    int rtype;
+    int rtype, ktype;
     union {
-	pcg32_random_t pcg[1];		// rtype == 0
-	uint64_t seed64;		// rtype == 1
-	struct unx_random_t random_r;	// rtype == 2
-	uint16_t state48[3];		// rtype == 3
-	struct {			// rtype == default
+	pcg32_random_t pcg[1];		// ktype == 0
+	uint64_t seed64;		// ktype == 1
+	struct unx_random_t random_r;	// ktype == 2
+	uint16_t state48[3];		// ktype == 3
+	struct {			// ktype == 4
 	    uint32_t seed32;
 	    uint32_t seed32b;
 	};
@@ -55,7 +59,7 @@ struct mcc_random_t {
 // Standard Unix rand() implementation; note 2**15-1 max and 32 bit seed.
 // The seed must be twos complement or unsigned.
 // NB: Current POSIX requires "a period of at least 2^32"
-// Generates visible artifacts in B/W version of "rainbow"
+// Generates visible artifacts in B/W version of "rainbow" (with % bound)
 #define randr(_seed) (((_seed = _seed*1103515245 + 12345)>>16) & 0x7FFF)
 
 // RANDU -- "a truly horrible random number generator" -- Knuth
@@ -66,7 +70,7 @@ struct mcc_random_t {
 // SVID UNIX rand48() functions are a 48bit LCG usually with
 // a = 0x5DEECE66D, c = 11, as 11 is relativly prime to 2**48 and 'a-1' is
 // divisible by four this is a maximum period LCG.
-// This PRNG shows artifacts on a "BW" map
+// This PRNG shows artifacts on a "BW" map from the low bits
 
 // The BSD random() functions seem to be a better generator, but they use
 // a static pointer to the state storage and so POSIX does not support
@@ -76,6 +80,7 @@ struct mcc_random_t {
 
 // Lehmer generator with constants from Park & Miller
 // Seed is a positive int32_t and must not be zero or 0x7fffffff.
+// Also used in C++11's minstd_rand (minstd_rand0 uses 16807 in place of 48271)
 #define lehmer_pm(_seed) (_seed = (uint64_t)_seed * 48271 % 0x7fffffff)
 
 // Lehmer generator with constants from the Sinclair zx81 (Only 64k cycle)
@@ -213,14 +218,26 @@ map_init_rng(map_random_t *rng, char * seed)
 #if defined(USE_PCG32) || defined(USE_MIXED)
 #ifdef USE_MIXED
     rng->rtype = 0;
-    if (*sseed == '!') {
+    if (*sseed == '!' && (sseed[2] == '/' || sseed[3] == '/')) {
 	sseed++;
 	if (*sseed >= '0' && *sseed <= '9' && sseed[1] == '/') {
 	    rng->rtype = *sseed - '0';
 	    sseed+=2;
+	} else if (*sseed >= '0' && *sseed <= '9' && sseed[1] >= '0' && sseed[1] <= '9') {
+	    rng->rtype = *sseed - '0';
+	    rng->rtype *= 10;
+	    rng->rtype += sseed[1] - '0';
+	    sseed+=3;
 	}
     }
-    if (rng->rtype == 0)
+    if (rng->rtype > 9) rng->rtype = 9;
+    switch(rng->rtype) {
+	case 0: case 9: rng->ktype = 0; break;
+	case 1: case 2: case 3: rng->ktype = rng->rtype; break;
+	default: rng->ktype = 4; break;
+    }
+
+    if (rng->ktype == 0)
 #endif
     {
 	uint64_t v1, v2;
@@ -276,16 +293,16 @@ map_init_rng(map_random_t *rng, char * seed)
 	    else
 		printlog("Seed = \"%s\" -> Converted R%d = 0x%jx", seed, rng->rtype, v1);
 	}
-	if (rng->rtype == 1) {
+	if (rng->ktype == 1) {
 	    rng->seed64 = v1;
-	} else if (rng->rtype == 2) {
-	    map_random_t t = {.rtype = 2};
+	} else if (rng->ktype == 2) {
+	    map_random_t t = {.rtype = rng->rtype, .ktype = rng->ktype};
 	    *rng = t;
 	    char * gblstate =
 		initstate((unsigned int)(v1^(v1>>32)), rng->random_r.statebuf, sizeof(rng->random_r.statebuf));
 	    setstate(gblstate);
 	    // printlog("Seed = %s, Rng = 0x%x", seed, (unsigned int)v1);
-	} else if (rng->rtype == 3) {
+	} else if (rng->ktype == 3) {
 	    rng->state48[0] = 0x330E;
 	    rng->state48[1] = (v1 & 0xFFFF);
 	    rng->state48[2] = (v1 >> 16);
@@ -311,14 +328,24 @@ bounded_random_r(map_random_t *rng, int mod_r)
     char * gblstate = setstate(rng->statebuf);
     res = random();
     setstate(gblstate);
-    return res % mod_r; // Yes, it's biased
+
+    // Rescale so we can use fast 2^N division.
+    return ((uint64_t)mod_r*res) / (RAND_MAX+(uint64_t)1);
 #else
     switch(rng->rtype)
     {
     case 0:
-	return pcg32_boundedrand_r(rng->pcg, mod_r);
+    {
+	uint32_t bound = mod_r;
+	uint32_t threshold = -bound % bound;
+	for (;;) {
+	    uint32_t r = pcg32_random_r(rng->pcg);
+	    if (r >= threshold)
+		return r % bound;
+	}
+    }
     case 1:
-	return splitmix64_r(&rng->seed64) % mod_r;
+	return splitmix64_bounded_r(&rng->seed64, mod_r);
 
     case 2:
     {
@@ -326,24 +353,51 @@ bounded_random_r(map_random_t *rng, int mod_r)
 	char * gblstate = setstate(rng->random_r.statebuf);
 	res = random();
 	setstate(gblstate);
-	return res % mod_r; // Yes, it's biased
+
+	// Rescale so we can use fast 2^N division.
+	return ((uint64_t)mod_r*res) / (RAND_MAX+(uint64_t)1);
     }
     case 3:
-	return nrand48(rng->state48) % mod_r;
+	// Range 0..0x7fffffff or -0x8000000..0x7fffffff
+	// High bits are better than low bits.
+	return ((uint64_t)mod_r * (uint32_t)jrand48(rng->state48)) >> 32;
 
     case 4:
+	// Range 1..0x7ffffffe
 	return lehmer_pm(rng->seed32) % mod_r;
     case 5:
+	// Range 0..0xffff
 	return lehmer_81(rng->seed32) % mod_r;
-
     case 6:
-	return randr(rng->seed32) % mod_r;
+	// Range 0..0x7fff
+	return ((uint64_t)mod_r * (uint32_t)randr(rng->seed32)) >> 15;
+
     case 7:
-	return (randu(rng->seed32) >> 16) % mod_r;
+	// Range 1..0x7fffffff .. We must use the high bits
+	// This gets results that don't actually *look* like junk,
+	// but it's a slow 64bit div and a mult
+	return ((uint64_t)mod_r * (randu(rng->seed32)-1)) / 0x7fffffff;
+
     case 8:
-	return (rng->seed32 += 1) % mod_r;		// 314159, 73939133
-    default:
-	return rng->seed32b % mod_r;
+	// Some incs: 362437, 314159, 73939133
+	return (rng->seed32 += 362437) % mod_r;
+
+    case 9:
+    {
+        uint64_t r;
+	uint32_t bound = mod_r;
+	for(;;)
+	{
+	    r = (uint64_t)bound * pcg32_random_r(rng->pcg);
+	    uint32_t l = r;
+	    if (l >= bound) break;
+	    uint32_t threshold = -bound % bound;
+	    if (l >= threshold) break;
+	}
+	return r >> 32;
+    }
+
+    default: return 0;
     }
 #endif
 }
@@ -370,14 +424,16 @@ seed_rng(map_random_t *rng, map_random_t *new_rng)
     }
 #else
     new_rng->rtype = rng->rtype;
-    if (rng->rtype == 0)
+    new_rng->ktype = rng->ktype;
+    if (rng->ktype == 0)
 	return PCG_seed_rng(rng->pcg, new_rng->pcg);
     *new_rng = *rng;
-    if (new_rng->rtype == 1) { // splitmix64
+    if (new_rng->ktype == 1) {
+	// Use splitmix64 to make a 64 bit key.
 	// This simply takes the next value from the source rng as the seed
 	// for the new one. This relies on the hash.
 	new_rng->seed64 = splitmix64_r(&rng->seed64);
-    } else if (rng->rtype == 2) {
+    } else if (rng->ktype == 2) {
 	char * gblstate = setstate(rng->random_r.statebuf);
 	uint32_t res;
 	res = random();
@@ -387,10 +443,20 @@ seed_rng(map_random_t *rng, map_random_t *new_rng)
 
 	initstate((unsigned int)(v1^(v1>>32)), new_rng->random_r.statebuf, sizeof(new_rng->random_r.statebuf));
 	setstate(gblstate);
-    } else if (new_rng->rtype == 3) {
-	// Todo?
+    } else if (new_rng->ktype == 3) {
+	// Just throw this in here for now.
+	uint64_t v1 = (uint32_t)jrand48(rng->state48);
+	new_rng->state48[0] = 0x330E;
+	new_rng->state48[1] = (v1 & 0xFFFF);
+	new_rng->state48[2] = (v1 >> 16);
+	if (v1 >= 0x100000000)
+	    new_rng->state48[0] = (v1 >> 32);
     } else {
-	new_rng->seed32++;
+	(void) bounded_random_r(rng, 1);
+	rng->seed32b ^= rng->seed32;
+
+	new_rng->seed32 = rng->seed32b;
+	new_rng->seed32b = ~new_rng->seed32;
 	if (new_rng->seed32 == 0 || new_rng->seed32 == 0x7fffffff)
 	    new_rng->seed32 = 1;
     }
