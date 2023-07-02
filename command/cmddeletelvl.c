@@ -61,7 +61,7 @@ do_direct_delete(char * levelname)
     saprintf(buf2, LEVEL_CW_NAME, fixedname);
 
     char hst_fn[256];
-    next_backup_filename(hst_fn, sizeof(hst_fn), fixedname);
+    current_backup_file(hst_fn, sizeof(hst_fn), fixedname, 0);
 
     if (rename(buf2, hst_fn) < 0) {
 	perror("Delete rename failed");
@@ -75,6 +75,8 @@ do_direct_delete(char * levelname)
 
     unlock_fn(system_lock);
 
+    fprintf_logfile("Deleted level %s", levelname);
+    printlog("Saved deleted level to %s", hst_fn);
     printf_chat("&SLevel '%s' deleted", levelname);
     return 0;
 }

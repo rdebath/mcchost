@@ -252,7 +252,7 @@ cmd_minfo(char * UNUSED(cmd), char * arg)
     {
 	char fixname[MAXLEVELNAMELEN*4];
 	fix_fname(fixname, sizeof(fixname), level_name);
-	last_bkp = find_recent_backup(fixname, &last_backup_time);
+	last_bkp = current_backup_file(0, 0, fixname, &last_backup_time);
     }
     char bkp_msg[512];
     if (last_bkp <= 0) strcpy(bkp_msg, "no backups yet");
@@ -381,66 +381,4 @@ process_start_time(int pid)
     process_start_time = boot_time + process_start_time_since_boot / jiffies_per_second;
 
     return process_start_time;
-}
-
-int
-find_recent_backup(char * matchstr, time_t * mtimep)
-{
-    struct dirent *entry;
-    DIR *directory = opendir(LEVEL_BACKUP_DIR_NAME);
-    if (!directory) return -1;
-
-    int max_backup_id = -1;
-    int mlen = 0;
-    if (matchstr && *matchstr) mlen = strlen(matchstr);
-
-    char bkpfname[MAXLEVELNAMELEN*4+sizeof(int)*3+9];
-
-    while( (entry=readdir(directory)) )
-    {
-#if defined(_DIRENT_HAVE_D_TYPE) && defined(DT_REG) && defined(DT_UNKNOWN)
-	if (entry->d_type != DT_REG && entry->d_type != DT_UNKNOWN)
-	    continue;
-#endif
-	int l = strlen(entry->d_name);
-	if (l<=3 || strcmp(entry->d_name+l-3, ".cw") != 0) continue;
-
-	char nbuf[MAXLEVELNAMELEN*4+sizeof(int)*3+3];
-	char nbuf2[MAXLEVELNAMELEN+1];
-	int backup_id = 0;
-
-	l -= 3;
-	if (l>sizeof(nbuf)-2) continue;
-	memcpy(nbuf, entry->d_name, l);
-	nbuf[l] = 0;
-
-	char * p = strrchr(nbuf, '.');
-	if (p == 0) continue;
-	backup_id = atoi(p+1);
-	if (backup_id<=0) continue;
-	*p = 0;
-
-	unfix_fname(nbuf2, sizeof(nbuf2), nbuf);
-	if (*nbuf2 == 0) continue;
-	l = strlen(nbuf2);
-	if (l>MAXLEVELNAMELEN) continue;
-
-	if (mlen)
-	    if (strcmp(matchstr, nbuf2) != 0) continue;
-
-	if (backup_id > max_backup_id) {
-	    max_backup_id = backup_id;
-	    strcpy(bkpfname, entry->d_name);
-	}
-    }
-    closedir(directory);
-    if (mtimep) {
-        struct stat st;
-	char buf[PATH_MAX];
-	strcpy(buf, LEVEL_BACKUP_DIR_NAME);
-	strcat(buf, "/");
-	strcat(buf, bkpfname);
-        if (stat(buf, &st) >= 0) *mtimep = st.st_mtime;
-    }
-    return max_backup_id;
 }

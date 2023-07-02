@@ -84,7 +84,7 @@ move_file_to_backups(char * bak_fn, char * level_fname, char * level_name)
     if (access(bak_fn, F_OK) != 0) return;
 
     char hst_fn[256];
-    next_backup_filename(hst_fn, sizeof(hst_fn), level_fname);
+    current_backup_file(hst_fn, sizeof(hst_fn), level_fname, 0);
 
     // rename or copy/del bak_fn to hst_fn
     if (rename(bak_fn, hst_fn) < 0) {
@@ -132,9 +132,10 @@ move_file_to_backups(char * bak_fn, char * level_fname, char * level_name)
     }
 }
 
-void
-next_backup_filename(char * bk_name, int bk_len, char * fixedname)
+int
+current_backup_file(char * bk_name, int bk_len, char * fixedname, time_t * mtimep)
 {
+    int backup_id_found = 0;
     int backup_id = 0;
     int use_subdir = 0;
     char path[MAXLEVELNAMELEN*4];
@@ -161,6 +162,16 @@ next_backup_filename(char * bk_name, int bk_len, char * fixedname)
 		    if (v>=backup_id && strcmp(s, ".cw") == 0) {
 			backup_id = v+1;
 			use_subdir = i;
+			backup_id_found = v;
+
+			if (mtimep) {
+			    struct stat st;
+			    char buf[PATH_MAX*5];
+			    strcpy(buf, path);
+			    strcat(buf, "/");
+			    strcat(buf, entry->d_name);
+			    if (stat(buf, &st) >= 0) *mtimep = st.st_mtime;
+			}
 		    }
 		}
 	    }
@@ -169,11 +180,15 @@ next_backup_filename(char * bk_name, int bk_len, char * fixedname)
     }
     if (backup_id <= 0) backup_id = 1;
 
-    if (use_subdir)
-	snprintf(bk_name, bk_len, LEVEL_BACKUP_DIR_NAME "/%s/%s.%d.cw",
-	    fixedname, fixedname, backup_id);
-    else
-	snprintf(bk_name, bk_len, LEVEL_BACKUP_NAME, fixedname, backup_id);
+    if (bk_name && bk_len) {
+	if (use_subdir)
+	    snprintf(bk_name, bk_len, LEVEL_BACKUP_DIR_NAME "/%s/%s.%d.cw",
+		fixedname, fixedname, backup_id);
+	else
+	    snprintf(bk_name, bk_len, LEVEL_BACKUP_NAME, fixedname, backup_id);
+    }
+
+    return backup_id_found;
 }
 
 int
