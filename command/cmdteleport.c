@@ -6,6 +6,7 @@
     {N"tp", &cmd_tp}, \
     {N"move", &cmd_tp, CMD_ALIAS}, \
     {N"teleport", &cmd_tp, CMD_ALIAS}, \
+    {N"back", &cmd_back}, \
     {N"spawn", &cmd_spawn}
 #endif
 
@@ -25,6 +26,13 @@ Shortcuts: &T/Move, /Teleport
 Teleports you to the spawn location of the level.
 */
 
+/*HELP back H_CMD
+&T/Back
+Takes you back to the position you were before the last teleportation.
+*/
+
+xyzhv_t player_back_posn = {0};
+
 void
 cmd_spawn(char * UNUSED(cmd), char *UNUSED(arg))
 {
@@ -35,6 +43,23 @@ cmd_spawn(char * UNUSED(cmd), char *UNUSED(arg))
 
     send_posn_pkt(-1, &player_posn, level_prop->spawn);
     player_posn = level_prop->spawn;
+}
+
+void
+cmd_back(char * UNUSED(cmd), char *UNUSED(arg))
+{
+    if (!level_prop || (level_prop->hacks_flags & 8)) {
+	printf_chat("&cTeleport is currently disabled");
+	return;
+    }
+
+    if (!player_back_posn.valid) {
+	printf_chat("You have not teleported anywhere yet");
+	return;
+    }
+
+    send_posn_pkt(-1, &player_posn, player_back_posn);
+    player_posn = player_back_posn;
 }
 
 void
@@ -93,6 +118,7 @@ cmd_tp(char * cmd, char *arg)
 	int v = str5?atoi(str5)*256/360:player_posn.v;
 
 	xyzhv_t newposn = {x,y,z,h,v,1};
+	player_back_posn = player_posn;
 
 	send_posn_pkt(-1, &player_posn, newposn);
 	player_posn = newposn;
