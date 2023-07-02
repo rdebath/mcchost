@@ -102,6 +102,10 @@ send_heartbeat_poll()
 	    saprintf(softwarecons, "%s %s", SWNAME, Version);
     }
 
+    // Occasionally wobble the user count to work around a bug in the
+    // registration server.
+    int users = unique_ip_count()+(bounded_random(60) == 1);
+
     if (!ini_settings->use_http_post)
 	saprintf(urlbuf,
 	    "%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s&%s%s",
@@ -110,7 +114,7 @@ send_heartbeat_poll()
 	    "max=",server->max_players,
 	    "public=",ini_settings->private||term_sig?"False":"True",
 	    "version=",7,
-	    "users=",unique_ip_count(),
+	    "users=",users,
 	    "salt=",secretbuf,
 	    "name=",ccnet_cp437_quoteurl(server->name, namebuf, sizeof(namebuf), 1),
 	    "software=",ccnet_cp437_quoteurl(softwarecons, softwarebuf, sizeof(softwarebuf), 0),
@@ -125,7 +129,7 @@ send_heartbeat_poll()
 	    "public=",ini_settings->private||term_sig?"False":"True",
 	    "version=",7,
 	    "salt=",secretbuf,
-	    "users=",unique_ip_count(),
+	    "users=",users,
 	    "software=",ccnet_cp437_quoteurl(softwarecons, softwarebuf, sizeof(softwarebuf), 0),
 	    "web=",disable_web_client?"False":"True"
 	    );

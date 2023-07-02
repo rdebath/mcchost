@@ -15,8 +15,6 @@ Other notes
 */
 
 /*HELP todo
- +) /mi needs to look in backup subdirs.
-
  +) Message blocks and portals don't need physics process.
 
  +) Improve the /setvar command, more help, option lists.
@@ -85,14 +83,43 @@ Other notes
     -- Has ${level}.${UTCDate}.23-59-59.blk{,.gz} files.
     -- UTCDate in ISO format.
     -- Datetime is last time in file.
+    -- File created on first modification within timespan.
     -- Current file is renamed if level size changes; to current time.
     -- Max file size (approx?) limit also renames file.
     -- Old files are gzipped after midnight.
     -- Level unload does not touch file.
-    -- Level deletes ?
-    -- Level rename ?
-    -- Level copy ?
-    -- Point in time restore ?
+    -- Level deletes renames file to current time.
+    -- Level rename leaves this behind like backups.
+    -- Level copy leaves this behind like backups.
+
+    -- Point in time restore ...
+    -- File contains both before and after so can go forwards or backwards.
+	(use forward scan mode though)
+
+    -- Format same as MCG ??
+	NO -- Physics blocks have IDs >767; I can support 16bit blocks.
+
+	MCG_CHUNK_SZ 16
+	int32 Player ID
+	int32 Timestamp
+	int32 Block offset
+	int:10 Oldblock
+	int:10 Newblock
+	int:12 Update type --> 11 types.
+
+	For MCC format place a 64 bit timestamp at start of file.
+	Timestamps within file are 16.4 bits (one day).
+	Block offset must be uint32
+
+	int32 PlayerID
+	uint32 Block Offset
+	int16 Oldblock
+	int16 Newblock
+	int:17 Timestamp
+	int:4 Update type --> 15 types
+
+	int:11 Todo
+
 
 
  +) Permissions
