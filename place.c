@@ -29,6 +29,11 @@ Use ~ before a coordinate to mark relative to current position
 If no coordinates are given, marks at where you are standing
 If only x coordinate is given, it is used for y and z too
 */
+/*HELP donotmark,dnm,dm H_CMD
+&T/DoNotMark
+Toggles whether clicking blocks adds a marker to a selection. (e.g. /cuboid)
+Shortcuts: &T/dnm&S, &T/dm
+*/
 /*HELP abort,a H_CMD
 &T/Abort
 Turns off modes, toggles and pending operations.
@@ -50,6 +55,7 @@ Alias: &T/b
 		   {N"markall", &cmd_mark, CMD_ALIAS, .nodup=1}, \
 		   {N"ma", &cmd_mark, CMD_ALIAS}, \
 		   {N"mark-all", &cmd_mark, CMD_ALIAS}, \
+		   {N"donotmark", &cmd_dontmark}, {N"dnm", &cmd_dontmark, CMD_ALIAS}, {N"dm", &cmd_dontmark, CMD_ALIAS}, \
 		   {N"about", &cmd_about}, {N"b", &cmd_about, CMD_ALIAS}
 #endif
 
@@ -58,7 +64,7 @@ int player_mode_mode = -1;
 time_t player_block_message_time = 0;
 
 xyzhv_t marks[3] = {0};
-uint8_t player_mark_mode = 0;
+uint8_t player_mark_mode = 0, player_dnm = 0;
 char marking_for[NB_SLEN];
 cmd_func_t mark_for_cmd = 0;
 char * mark_cmd_cmd = 0;
@@ -385,7 +391,7 @@ process_player_setblock(pkt_setblock pkt)
     if (pkt.coord.y < 0 || pkt.coord.y >= level_prop->cells_y) do_revert = 1;
     if (pkt.coord.z < 0 || pkt.coord.z >= level_prop->cells_z) do_revert = 1;
 
-    if (!do_revert && player_mark_mode) {
+    if (!do_revert && player_mark_mode && !player_dnm) {
 	int l = sizeof(marks)/sizeof(*marks);
 	int v = 0;
 	while(v<l && marks[v].valid) v++;
@@ -566,6 +572,13 @@ cmd_mark(char * cmd, char * arg)
 	    }
 	}
     }
+}
+
+void
+cmd_dontmark(char * UNUSED(cmd), char * UNUSED(arg))
+{
+    player_dnm = !player_dnm;
+    printf_chat("Click blocks to &T/mark&S: %s", player_dnm?"&4OFF":"&2ON");
 }
 
 void
