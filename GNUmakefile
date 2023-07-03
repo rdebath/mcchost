@@ -39,10 +39,9 @@ endif
 LDFLAGS=-lz -lm ${LIBLMDB}
 HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
 
-ALLSRC=$(wildcard *.c command/*.c)
-SRC:=$(filter-out lib_%.c,${ALLSRC} )
-OBJ:=$(patsubst %.c,${ODIR}/%.o,$(shell echo ${SRC} | sed 's@[^ ]*/@@g')) ${ODIR}/lib_md5.o
-OBJGEN=${ODIR}/lib_text.o
+SRC=$(wildcard *.c command/*.c)
+OBJ:=$(patsubst %.c,${ODIR}/%.o,$(shell echo ${SRC} | sed 's@[^ ]*/@@g'))
+OBJADD=${ODIR}/lib_text.o ${ODIR}/lib_md5.o
 
 # We like a longer name so the command line is bigger for our argv mangling.
 INAME=mcchost-server
@@ -50,13 +49,13 @@ INSTDIR=${HOME}/bin
 # Use rsync so the executable isn't touched when it's the same bytes.
 INSTALLER=rsync -Pax
 
-${PROG}: ${OBJ} ${OBJGEN}
+${PROG}: ${OBJ} ${OBJADD}
 ifeq ($(findstring s,$(MFLAGS)),)
 	@echo "$(CC) \$${CFLAGS} -o ${PROG} \$${OBJLIST} \$${LDFLAGS}"
 endif
-	@$(CC) -o ${PROG} $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) ${OBJ} ${OBJGEN} $(LDFLAGS)
+	@$(CC) -o ${PROG} $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) ${OBJ} ${OBJADD} $(LDFLAGS)
 
-.PHONY: install clean makeheaders lib_text zip
+.PHONY: install clean makeheaders zip
 
 install: ${PROG}
 	${INSTALLER} ${PROG} "${INSTDIR}/${INAME}"
@@ -65,7 +64,7 @@ ifeq ($(MAKECMDGOALS),clean)
 clean:
 	-rm -f ${PROG} lib/makeheaders
 	-rm -rf ${ODIR} include
-	-rm -f lib_text.c ${ODIR}/build-opts.* tmp.mk
+	-rm -f lib/lib_text.c ${ODIR}/build-opts.* tmp.mk
 else
 ifneq ($(findstring clean,$(MAKECMDGOALS)),)
 clean:
@@ -84,18 +83,19 @@ include $(shell \
 endif
 endif
 
-MKHDRARG:=$(shell echo ${SRC} lib_text.c |tr ' ' '\012' | sed 's@\(.*/\)\{0,1\}\([^\/ ]*\)\.c@\1\2.c:include/\2.h@' )
+MKHDRARG:=$(shell echo ${SRC} lib/lib_text.c |tr ' ' '\012' | sed 's@\(.*/\)\{0,1\}\([^\/ ]*\)\.c@\1\2.c:include/\2.h@' )
 
 makeheaders: ${ODIR}/makeheaders
-	@echo "awk -f help_scan.awk \$${ALLSRC} > tmp.c"
-	@awk -f help_scan.awk ${ALLSRC} > tmp.c
-	cmp -s tmp.c lib_text.c || mv tmp.c lib_text.c
-	-@rm -f tmp.c
+	-@rm -f lib_text.c
+	@echo "awk -f help_scan.awk \$${SRC} > tmp.h"
+	@awk -f help_scan.awk ${SRC} > tmp.h
+	cmp -s tmp.h lib/lib_text.c || mv tmp.h lib/lib_text.c
+	-@rm -f tmp.h
 	@:
 	@mkdir -p include
 	@sh version.sh include/version.h
-	${ODIR}/makeheaders lib_md5.c:include/lib_md5.h
-	${ODIR}/makeheaders -H >include/md5.h lib_md5.c
+	${ODIR}/makeheaders lib/lib_md5.c:include/lib_md5.h
+	${ODIR}/makeheaders -H >include/md5.h lib/lib_md5.c
 ifeq ($(findstring s,$(MFLAGS)),)
 	@echo "${ODIR}/makeheaders \$${FILES} include/md5.h include/version.h"
 endif
@@ -105,7 +105,8 @@ ${ODIR}/makeheaders: lib/makeheaders.c
 	@mkdir -p ${ODIR}
 	$(CC) -O -o $@ $<
 
-${ODIR}/lib_text.o: lib_text.c include/lib_text.h
+${ODIR}/lib_text.o: lib/lib_text.c include/lib_text.h
+${ODIR}/lib_md5.o: lib/lib_md5.c include/lib_md5.h
 
 .SUFFIXES:
 
@@ -127,11 +128,14 @@ ${ODIR}/%.o: %.c
 ${ODIR}/%.o: command/%.c
 	$(comp_c)
 
+${ODIR}/%.o: lib/%.c
+	$(comp_c)
+
 export TARGET_ARCH DEFS LDFLAGS
 
 BUILDOPT=$(CC) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(TARGET_ARCH)
 BUILDFLG :=${ODIR}/build-opts.$(shell echo '$(BUILDOPT)' | sum | tr -d '\040\055' )
-$(PROG) ${OBJ} ${OBJGEN}: $(BUILDFLG)
+$(PROG) ${OBJ} ${OBJADD}: $(BUILDFLG)
 $(BUILDFLG):
 	@mkdir -p ${ODIR} include
 	-@rm -f ${ODIR}/build-opts.*
@@ -147,8 +151,8 @@ rebuild:
 #
 ZIPF1=LICENSE LICENSE.mcchost GNUmakefile
 ZIPF2=Makefile help_scan.awk version.sh include/version.h
-ZIPF3=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html
-ZIPF=${ZIPF1} ${ALLSRC} ${ZIPF2} ${ZIPF3}
+ZIPF3=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html lib/lib_md5.c
+ZIPF=${ZIPF1} ${SRC} ${ZIPF2} ${ZIPF3}
 
 zip:
 	-@rm -rf tmp.tgz tmp.d
