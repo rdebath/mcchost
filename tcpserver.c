@@ -795,7 +795,7 @@ check_new_exe()
 }
 
 void
-auto_load_main(int fast_start)
+auto_load_main(int user_load)
 {
     int autoload_pid = fork();
     if (autoload_pid < 0) perror("fork() for load of main");
@@ -810,16 +810,21 @@ auto_load_main(int fast_start)
 
     proctitle("MCCHost load main");
 
-    if (fast_start) msleep(200); else msleep(2000);
+    // If "user_load" the client usually loads the map first.
+    if (user_load) msleep(200); else msleep(2000);
 
     open_client_list();
 
-    // Open level mmap files.
-    char fixname[MAXLEVELNAMELEN*4];
-    fix_fname(fixname, sizeof(fixname), main_level());
-    if (!start_level(main_level(), 0)) exit(1);
+    // If not user_load we load the map to ensure it's ok and unload
+    // it only if NoUnloadMain is unset.
+    if (!user_load || current_user_count() > 0) {
+	// Open level mmap files.
+	char fixname[MAXLEVELNAMELEN*4];
+	fix_fname(fixname, sizeof(fixname), main_level());
+	if (!start_level(main_level(), 0)) exit(1);
 
-    open_level_files(main_level(), 0, 0, fixname, 0);
+	open_level_files(main_level(), 0, 0, fixname, 0);
+    }
 
     stop_client_list();
     msleep(1000);

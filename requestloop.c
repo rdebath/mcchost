@@ -25,8 +25,10 @@ int min_ping_ms = -1;
 int avg_ping_ms = -1;
 int idle_ticks = 0;
 
+#if INTERFACE
 #define TICK_INTERVAL	10000/*us*/
 #define TICK_SECS(S) (S*1000000/TICK_INTERVAL)
+#endif
 
 time_t last_user_write = 0;
 
@@ -130,21 +132,6 @@ do_select()
     if( FD_ISSET(line_ofd, &efds) )
 	return -1;
 
-#if 0
-    if( FD_ISSET(tty_ifd, &rfds) ) {
-	{
-	    char txbuf[2048];
-	    rv = read(tty_ifd, txbuf, sizeof(txbuf));
-	    if ( rv > 0 )
-		received_from_tty(txbuf, rv);
-	    else if (rv < 0)
-		fatal("read tty_ifd syscall");
-	    else if (rv == 0)
-		return -1;
-	}
-    }
-#endif
-
     if( FD_ISSET(line_ofd, &wfds) )
     {
 	int tosend = ttl_end-ttl_start;
@@ -201,6 +188,8 @@ on_select_timeout()
     else if (idle_ticks == TICK_SECS(10))
 	printlog("User %s: connection issue -- long idle", user_id);
 
+    update_player_packet_idle();
+
     time_t now;
     int tc = cpe_pending?60:5; // Not while CPE pending
 
@@ -247,6 +236,8 @@ on_select_timeout()
 	write_current_user(0);
 	last_user_write = now;
     }
+
+    run_delay_task();
 }
 
 void
@@ -257,6 +248,7 @@ remote_received(char *str, int len)
 	time(&last_ping);
 
     idle_ticks = 0;
+    update_player_packet_idle();
 
     if (!in_rcvd) {
 	cmd = (*str & 0xFF);

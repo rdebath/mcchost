@@ -199,7 +199,7 @@ load_cwfile(gzFile ifd, char * level_fname, char * level_name, char * cw_filenam
 	    fprintf_logfile("Level \"%s\" incorrect NBT schema label \"%s\".", level_name, last_lbl);
 	    return -1;
 	}
-	printlog("Loading %s map into \"%s\" from \"%s\"", last_lbl, level_fname, cw_filename);
+	printlog("Loading %s map into \"%s\" from \"%s\" (%d)", last_lbl, level_fname, cw_filename, getpid());
 	create_property_file(level_name, level_fname);
 	init_map_null();
 	if (!read_element(ifd, ch))

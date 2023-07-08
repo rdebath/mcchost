@@ -50,6 +50,7 @@ struct client_entry_t {
     uint8_t client_dup;
     uint8_t authenticated;
     uint8_t trusted;
+    uint8_t packet_idle;
     pid_t session_id;
 };
 
@@ -399,6 +400,14 @@ update_player_move_time()
 }
 
 void
+update_player_packet_idle()
+{
+    if (my_user_no < 0 || my_user_no >= MAX_USER) return;
+    if (!shdat.client) return;
+    shdat.client->user[my_user_no].packet_idle = (idle_ticks >= TICK_SECS(10));
+}
+
+void
 update_player_software(char * sw)
 {
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
@@ -496,7 +505,7 @@ start_user()
 		if (new_one == -1) new_one = i;
 		continue;
 	    }
-	    if (!user_authenticated)
+	    if (!user_authenticated && !shdat.client->user[i].packet_idle)
 		disconnect_f(0, "User %s is already logged in!", user_id);
 	    shdat.client->user[i].active = 0;
 	    kicked++;

@@ -133,7 +133,9 @@ Other notes
 
  +) IRC Chat bridge
     -- Default server and channel sourced from website (Option for none).
-    -- Web site failure --> what sort of fallback?
+    -- Web site failure --> what sort of fallback? --> /etc/irc/servers ?
+    -- http://www.ulduzsoft.com/libircclient/ ?
+    -- Should this be an IRC server?
 
  +) NAME: (*) MCCHost
 

@@ -35,9 +35,14 @@ char * eightballlist[] = {
     0
 };
 
+static int eightball_selection = 0;
+static time_t blocking_til = 0;
+
 void
 cmd_eightball(char * UNUSED(cmd), char * arg)
 {
+    // Todo check for file
+
     MD5_CTX mdContext;
     MD5Init (&mdContext);
     time_t today = time(0) / 86400;
@@ -47,15 +52,25 @@ cmd_eightball(char * UNUSED(cmd), char * arg)
     MD5Update (&mdContext, arg, strlen(arg));
     MD5Final (&mdContext);
 
-    // Todo check for file
-    // Todo 10 seconds between questions.
-    // "The 8-Ball is still recharging, wait another %d seconds"
+    time_t now = time(0);
+    if (now < blocking_til) {
+	printf_chat("The 8-Ball is still recharging, wait another %d second%s",
+	    (int)(blocking_til-now), blocking_til-now==1?"":"s");
+	return;
+    }
 
     int c;
     for(c = 0; eightballlist[c]; c++);
     c = (mdContext.digest[0]*256 + mdContext.digest[1]) % c;
 
     printf_chat("@&7%s&S asked the &b8-Ball:&f %s", user_id, arg);
-    msleep(750);
-    printf_chat("@&SThe &b8-Ball&S says:&f %s", eightballlist[c]);
+    eightball_selection = c;
+    schedule_task(2, say_eightball_selection);
+    blocking_til = now+12;
+}
+
+void
+say_eightball_selection()
+{
+    printf_chat("@&SThe &b8-Ball&S says:&f %s", eightballlist[eightball_selection]);
 }
