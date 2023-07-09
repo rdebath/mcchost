@@ -13,9 +13,9 @@ ARG EPACKS=
 
 RUN set -eu;_() { echo "$@";};(\
 _ 'apk add --no-cache -t build-packages build-base gdb git \';\
-_ '    curl tini zlib-dev lmdb-dev units $EPACKS';\
+_ '    curl tini zlib-dev lmdb-dev $EPACKS';\
 _ 'apk add --no-cache -t run-packages --repositories-file /dev/null \';\
-_ '    curl tini zlib lmdb units $EPACKS';\
+_ '    curl tini zlib lmdb $EPACKS';\
 _ '';\
 _ 'git clone https://github.com/rdebath/mcchost.git mcchost';\
 _ 'make -j -C mcchost INSTALLER=install INSTDIR=/usr/local/bin install';\
