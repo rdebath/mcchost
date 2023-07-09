@@ -6,9 +6,15 @@
 
 #include "cmdinfo.h"
 
-/*HELP info H_CMD
+/*HELP info,whois,whowas,i H_CMD
 &T/info [Userid]
 Show information about a user, default to yourself.
+Aliases: &T/WhoWas, /WhoIs, /i
+*/
+
+/*HELP where H_CMD
+&T/Where [name]
+Displays level, position, and orientation of that player.
 */
 
 /*HELP sinfo,serverinfo H_CMD
@@ -20,6 +26,8 @@ Alias: &S/ServerInfo
 #if INTERFACE
 #define UCMD_INFO \
     {N"info", &cmd_info}, {N"i", &cmd_info, CMD_ALIAS}, \
+    {N"whois", &cmd_info, CMD_ALIAS}, {N"whowas", &cmd_info, CMD_ALIAS}, \
+    {N"where", &cmd_where}, \
     {N"minfo", &cmd_minfo}, {N"mi", &cmd_minfo, CMD_ALIAS}, \
     {N"sinfo", &cmd_sinfo}, {N"serverinfo", &cmd_sinfo, CMD_ALIAS}
 #endif
@@ -46,63 +54,19 @@ cmd_info(char * UNUSED(cmd), char * arg)
 void
 show_user_info(userrec_t *user)
 {
-    int is_me = 0, is_level_adm = 0;
-    if (strcmp(user->user_id, user_id) == 0) {
-	is_me = 1;
-	if (perm_level_check(0, 0, 1))
-	    is_level_adm = 1;
-	if (current_level_backup_id == 0)
-	    printf_chat("%s is on %s at &a(%d,%d,%d)%s",
-		user->user_id, current_level_name,
-		player_posn.x/32, player_posn.y/32, player_posn.z/32,
-		is_level_adm?"&S, level admin":"");
-	else if (current_level_backup_id>0)
-	    printf_chat("%s is on museum &a%d&S of %s at &a(%d,%d,%d)%s",
-		user->user_id, current_level_backup_id, current_level_name,
-		player_posn.x/32, player_posn.y/32, player_posn.z/32,
-		is_level_adm?"&S, level admin":"");
-	else
-	    printf_chat("%s is nowhere.", user->user_id);
-    } else {
-	int uid = -1, bkp_id = -1, level_id = -1;
-	xyzhv_t posn;
-	nbtstr_t level;
-	if (shdat.client) {
-	    for(int i=0; i<MAX_USER; i++) {
-		if (!shdat.client->user[i].active) continue;
-		if (strcmp(user->user_id, shdat.client->user[i].name.c) != 0)
-		    continue;
+    int is_me = (strcmp(user->user_id, user_id) == 0);
 
-		uid = i;
-		level_id = shdat.client->user[i].on_level;
-		bkp_id = shdat.client->user[i].level_bkp_id;
-		posn = shdat.client->user[i].posn;
-		if (level_id >= 0 && level_id < MAX_LEVEL)
-		    level = shdat.client->levels[level_id].level;
-		break;
-	    }
-	}
-
-	if (uid < 0)
-	    printf_chat("%s is not logged on", user->user_id);
-	else {
-	    if (bkp_id == 0 && level_id >= 0)
-		printf_chat("%s is on %s at &a(%d,%d,%d)",
-		    user->user_id, level.c, posn.x/32, posn.y/32, posn.z/32);
-	    else if (level_id >= 0 && bkp_id >0)
-		printf_chat("%s is on museum &a%d&S of %s at &a(%d,%d,%d)",
-		    user->user_id, bkp_id, level.c,
-		    posn.x/32, posn.y/32, posn.z/32);
-	    else
-		printf_chat("%s is nowhere.", user->user_id);
-	}
-    }
+    display_location(user->user_id);
 
     char *perm_str = "unknown";
     if (user->user_group >= 0 && user->user_group < USER_PERM_CNT)
 	perm_str = user_perms[user->user_group];
-    if (is_me && perm_is_admin())
-	perm_str = user_perms[0];
+    if (is_me) {
+	if (perm_is_admin())
+	    perm_str = user_perms[0];
+	else if (perm_level_check(0, 0, 1))
+	    perm_str = "level admin";
+    }
 
     printf_chat("; Rank of %s", perm_str);
     if (user->banned) printf_chat("; (banned)");
@@ -164,6 +128,70 @@ show_user_info(userrec_t *user)
 
     if (perm_is_admin())
 	printf_chat(" IP address of &a%s", user->last_ip);
+}
+
+void
+display_location(char * user_name)
+{
+    if (strcmp(user_name, user_id) == 0) {
+	if (current_level_backup_id == 0)
+	    printf_chat("%s is on %s at &a(%d,%d,%d)",
+		user_id, current_level_name,
+		player_posn.x/32, player_posn.y/32, player_posn.z/32);
+	else if (current_level_backup_id>0)
+	    printf_chat("%s is on museum &a%d&S of %s at &a(%d,%d,%d)",
+		user_id, current_level_backup_id, current_level_name,
+		player_posn.x/32, player_posn.y/32, player_posn.z/32);
+	else
+	    printf_chat("%s is nowhere.", user_id);
+    } else {
+	int uid = -1, bkp_id = -1, level_id = -1;
+	xyzhv_t posn;
+	nbtstr_t level;
+	if (shdat.client) {
+	    for(int i=0; i<MAX_USER; i++) {
+		if (!shdat.client->user[i].active) continue;
+		if (strcmp(user_name, shdat.client->user[i].name.c) != 0)
+		    continue;
+
+		uid = i;
+		user_name = shdat.client->user[i].name.c;
+		level_id = shdat.client->user[i].on_level;
+		bkp_id = shdat.client->user[i].level_bkp_id;
+		posn = shdat.client->user[i].posn;
+		if (level_id >= 0 && level_id < MAX_LEVEL)
+		    level = shdat.client->levels[level_id].level;
+		break;
+	    }
+	}
+
+	if (uid < 0)
+	    printf_chat("%s is not logged on", user_name);
+	else {
+	    if (bkp_id == 0 && level_id >= 0)
+		printf_chat("%s is on %s at &a(%d,%d,%d)",
+		    user_name, level.c, posn.x/32, posn.y/32, posn.z/32);
+	    else if (level_id >= 0 && bkp_id >0)
+		printf_chat("%s is on museum &a%d&S of %s at &a(%d,%d,%d)",
+		    user_name, bkp_id, level.c,
+		    posn.x/32, posn.y/32, posn.z/32);
+	    else
+		printf_chat("%s is nowhere.", user_name);
+	}
+    }
+}
+
+void
+cmd_where(char * UNUSED(cmd), char * arg)
+{
+    if (*arg == 0)
+        return display_location(user_id);
+
+    char user_name[128];
+    int i = find_player(arg, user_name, sizeof(user_name), 1, 0);
+    if (i<0) return;
+
+    display_location(user_name);
 }
 
 void
