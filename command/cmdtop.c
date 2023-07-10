@@ -282,11 +282,12 @@ pusertableentrycmp(const void *p1, const void *p2)
 {
     userrec_t *e1 = (userrec_t *)p1;
     userrec_t *e2 = (userrec_t *)p2;
+    int r = 0;
 
     switch(user_table_sort) {
     default:
 	{
-	    int r = strnatcasecmp(e1->user_id, e2->user_id);
+	    r = strnatcasecmp(e1->user_id, e2->user_id);
 	    if (r) return r;
 	    /* If we get name duplicates, this stabilises the final order. */
 	    r = strcmp(e1->user_id, e2->user_id);
@@ -294,31 +295,47 @@ pusertableentrycmp(const void *p1, const void *p2)
 	}
 
     case s_logins:
-	return UNWRAP(e2->logon_count, e1->logon_count);
+	r = UNWRAP(e2->logon_count, e1->logon_count);
+	break;
     case s_deaths:
-	return UNWRAP(e2->death_count, e1->death_count);
+	r = UNWRAP(e2->death_count, e1->death_count);
+	break;
     case s_oldest:
-	return UNWRAP(e1->first_logon, e2->first_logon);
+	r = UNWRAP(e1->first_logon, e2->first_logon);
+	break;
     case s_newest:
-	return UNWRAP(e2->first_logon, e1->first_logon);
+	r = UNWRAP(e2->first_logon, e1->first_logon);
+	break;
     case s_recent:
-	return UNWRAP(e2->last_logon, e1->last_logon);
+	r = UNWRAP(e2->last_logon, e1->last_logon);
+	break;
     case s_leastrecent:
-	return UNWRAP(e1->last_logon, e2->last_logon);
+	r = UNWRAP(e1->last_logon, e2->last_logon);
+	break;
     case s_kicked:
-	return UNWRAP(e2->kick_count, e1->kick_count);
+	r = UNWRAP(e2->kick_count, e1->kick_count);
+	break;
     case s_modified:
-	return UNWRAP(e2->blocks_drawn+e2->blocks_placed+e2->blocks_deleted,
+	r = UNWRAP(e2->blocks_drawn+e2->blocks_placed+e2->blocks_deleted,
 	              e1->blocks_drawn+e1->blocks_placed+e1->blocks_deleted);
+	break;
     case s_drawn:
-	return UNWRAP(e2->blocks_drawn, e1->blocks_drawn);
+	r = UNWRAP(e2->blocks_drawn, e1->blocks_drawn);
+	break;
     case s_placed:
-	return UNWRAP(e2->blocks_placed, e1->blocks_placed);
+	r = UNWRAP(e2->blocks_placed, e1->blocks_placed);
+	break;
     case s_deleted:
-	return UNWRAP(e2->blocks_deleted, e1->blocks_deleted);
+	r = UNWRAP(e2->blocks_deleted, e1->blocks_deleted);
+	break;
     case s_timespent:
-	return UNWRAP(e2->time_online_secs, e1->time_online_secs);
+	r = UNWRAP(e2->time_online_secs, e1->time_online_secs);
+	break;
     case s_messages:
-	return UNWRAP(e2->message_count, e1->message_count);
+	r = UNWRAP(e2->message_count, e1->message_count);
+	break;
     }
+
+    if (r == 0) r = UNWRAP(e1->user_no, e2->user_no);
+    return r;
 }
