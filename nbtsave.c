@@ -312,19 +312,17 @@ save_map_to_file(char * fn, int background)
 	bc_end(savefile);
     }
 
-    bdopen = 0;
+    bc_compound(savefile, "MCCHost");
     if (level_prop->theme[0] && (!level_prop->software[0] || level_prop->seed[0])) {
-	if (!bdopen) bc_compound(savefile, "MCCHost");
 	bc_ent_string(savefile, "Theme", level_prop->theme);
     }
     if (level_prop->seed[0]) {
-	if (!bdopen) bc_compound(savefile, "MCCHost");
 	bc_ent_string(savefile, "Seed", level_prop->seed);
     }
 
-    if (bdopen)
-	bc_end(savefile);
+    bc_ent_int8(savefile, "OnlyBlockArraysFollow", 1);
 
+    bc_end(savefile);
     bc_end(savefile);
     bc_end(savefile);
 

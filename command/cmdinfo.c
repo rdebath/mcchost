@@ -134,16 +134,20 @@ void
 display_location(char * user_name)
 {
     if (strcmp(user_name, user_id) == 0) {
+	if (my_user_no >= 128)
+	    printf_chat("; %s &W[%d]&S is ", user_name, my_user_no);
+	else
+	    printf_chat("; %s is ", user_name);
 	if (current_level_backup_id == 0)
-	    printf_chat("%s is on %s at &a(%d,%d,%d)",
-		user_id, current_level_name,
+	    printf_chat("on %s at &a(%d,%d,%d)",
+		current_level_name,
 		player_posn.x/32, player_posn.y/32, player_posn.z/32);
 	else if (current_level_backup_id>0)
-	    printf_chat("%s is on museum &a%d&S of %s at &a(%d,%d,%d)",
-		user_id, current_level_backup_id, current_level_name,
+	    printf_chat("on museum &a%d&S of %s at &a(%d,%d,%d)",
+		current_level_backup_id, current_level_name,
 		player_posn.x/32, player_posn.y/32, player_posn.z/32);
 	else
-	    printf_chat("%s is nowhere.", user_id);
+	    printf_chat("nowhere.");
     } else {
 	int uid = -1, bkp_id = -1, level_id = -1;
 	xyzhv_t posn;
@@ -165,18 +169,19 @@ display_location(char * user_name)
 	    }
 	}
 
+	printf_chat("; %s is ", user_name);
 	if (uid < 0)
-	    printf_chat("%s is not logged on", user_name);
+	    printf_chat("not logged on");
 	else {
 	    if (bkp_id == 0 && level_id >= 0)
-		printf_chat("%s is on %s at &a(%d,%d,%d)",
-		    user_name, level.c, posn.x/32, posn.y/32, posn.z/32);
+		printf_chat("on %s at &a(%d,%d,%d)",
+		    level.c, posn.x/32, posn.y/32, posn.z/32);
 	    else if (level_id >= 0 && bkp_id >0)
-		printf_chat("%s is on museum &a%d&S of %s at &a(%d,%d,%d)",
-		    user_name, bkp_id, level.c,
+		printf_chat("on museum &a%d&S of %s at &a(%d,%d,%d)",
+		    bkp_id, level.c,
 		    posn.x/32, posn.y/32, posn.z/32);
 	    else
-		printf_chat("%s is nowhere.", user_name);
+		printf_chat("nowhere.");
 	}
     }
 }

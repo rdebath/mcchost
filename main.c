@@ -42,8 +42,7 @@ main(int argc, char **argv)
     proctitle_init(argc, argv);
     process_args(argc, argv);
 
-    if (*logfile_pattern)
-	set_logfile(logfile_pattern, 0);
+    set_logfile(logfile_pattern, 0);
 
     lock_start(system_lock);
 

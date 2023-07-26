@@ -15,6 +15,9 @@ Other notes
 */
 
 /*HELP todo
+ +) Use "OnlyBlockArraysFollow" tag to allow early exit on load.
+    eg: /mapinfo cwfile
+
  +) Message blocks and portals don't need physics process.
 
  +) Improve the /setvar command, more help, option lists.
@@ -31,7 +34,6 @@ Other notes
 
  +) Command line to send HUP to server; for non-Linux updates.
     -- Or just time on exe ?
-    -- Time on system.ini ?
 
  +) Update walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.

@@ -44,6 +44,7 @@ volatile int term_sig = 0;
 static int signal_available = 0;
 int restart_on_unload = 0, restart_needed = 0;
 static time_t last_execheck = 0;
+static time_t last_inicheck = 0;
 static int trigger_backup = 0, trigger_unload = 0;
 
 pid_t alarm_handler_pid = 0;
@@ -236,6 +237,8 @@ tcpserver()
 	}
 
 	check_new_exe();
+
+	check_system_ini_time();
 
 	if (restart_sig)
 	    do_restart();
@@ -792,6 +795,17 @@ check_new_exe()
 	restart_needed = 1;
 
     unlock_fn(system_lock);
+}
+
+void
+check_system_ini_time()
+{
+    // Normally check FREQUENT_CHECK seconds
+    time_t now = time(0);
+    if (now-last_inicheck <= FREQUENT_CHECK)
+	return;
+    last_inicheck = now;
+    check_reload_server_ini();
 }
 
 void

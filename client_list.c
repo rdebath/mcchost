@@ -5,11 +5,11 @@
 #include "client_list.h"
 
 /* Note: I've made the choice to have one table for all users, not one
- * per level. That sets the maximum allowed number of users to 128/255.
+ * per level. That sets the maximum allowed number of users to 128/256.
  *
  * The first 128 will be visible on a level.
- * The first 255 will be shown in the player list
- * If the client looks like ClassiCube visible players are first 255
+ * The first 256 will be shown in the player list
+ * If the client looks like ClassiCube visible players are first 256
  *
  * For a reasonable display if this increased, the list sent to the client
  * will have to be renumbered.
@@ -18,7 +18,7 @@
 #if INTERFACE
 #include <sys/types.h>
 
-#define MAX_USER	256
+#define MAX_USER	288
 #define MAX_LEVEL	256
 
 #define TY_MAGIC2    0x557FFF00
@@ -85,7 +85,7 @@ static client_entry_t myuser[MAX_USER];
 static struct timeval last_check;
 
 xyzhv_t player_posn = {0};
-block_t player_held_block = -1;
+block_t player_held_block = 1;
 time_t player_last_move;
 int player_on_new_level = 1;
 int player_is_afk = 0;
@@ -363,7 +363,8 @@ update_player_pos(pkt_player_posn pkt)
     if (shdat.client)
 	shdat.client->user[my_user_no].authenticated = user_authenticated;
 
-    player_held_block = pkt.held_block;
+    if (pkt.held_block < BLOCKMAX)
+	player_held_block = pkt.held_block;
 
     // No movement, ignore
     xyzhv_t p1 = pkt.pos;

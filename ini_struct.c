@@ -89,9 +89,9 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	server_ini_tgt = 0;
 
 	INI_INTVAL("MaxPlayers", server->max_players);
-	INI_STRARRAY(WC2(!*localnet_cidr, "Localnet"), localnet_cidr);
+	INI_STRARRAY("Localnet", localnet_cidr);
 
-	INI_STRARRAY(WC2(!*logfile_pattern, "Logfile"), logfile_pattern);
+	INI_STRARRAY("Logfile", logfile_pattern);
 
 	INI_DURATION("SaveInterval", server->save_interval);
 	INI_DURATION("BackupInterval", server->backup_interval);

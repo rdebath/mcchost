@@ -27,7 +27,11 @@
 
 #if defined(__GNUC__) && __GNUC__ > 5
 // How can I concisely tell this compiler that truncation is the whole damn point!
-#define saprintf(array, ...) (void)(snprintf(array, sizeof(array), __VA_ARGS__)?({asm("");}):0)
+// Also as I have to do this, I've added a static assert so that it is known to
+// be a large array not just a pointer
+#define saprintf(array, ...) (void)(\
+    ({enum{_x=1/(sizeof(array)-sizeof(char*))};}),\
+    snprintf(array, sizeof(array), __VA_ARGS__)?({asm("");}):0)
 #else
 #define saprintf(array, ...) (void)snprintf(array, sizeof(array), __VA_ARGS__)
 #endif

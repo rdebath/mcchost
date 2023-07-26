@@ -1,3 +1,4 @@
+#include <sys/stat.h>
 
 #include "args.h"
 
@@ -111,6 +112,7 @@ server_t *server = 0;
 // Commandline overrides this
 server_ini_t server_ini_settings = {0};
 server_ini_t * ini_settings = &server_ini_settings;
+time_t last_serv_ini_mod = 0;
 
 // GBL for above shared ram
 filelock_t system_lock[1] = {{.name = SYS_LOCK_NAME}};
@@ -118,7 +120,6 @@ filelock_t system_lock[1] = {{.name = SYS_LOCK_NAME}};
 // Copied from ini_settings
 int start_tcp_server = 0;
 int detach_tcp_server = 0;
-int log_to_stderr = 0;
 int tcp_port_no = 25565;
 int enable_heartbeat_poll = 1;
 int server_runonce = 0;
@@ -544,4 +545,36 @@ save_system_ini_file()
 
 	save_ini_file(system_x_ini_fields, buf);
     }
+}
+
+void
+check_reload_server_ini()
+{
+    struct stat st = {0};
+    if (stat(SERVER_CONF_NAME, &st) < 0) return;
+    if (last_serv_ini_mod == 0)
+	last_serv_ini_mod = st.st_mtim.tv_sec;
+    if (last_serv_ini_mod == st.st_mtim.tv_sec) return;
+    last_serv_ini_mod = st.st_mtim.tv_sec;
+
+    printlog("Reloading %s", SERVER_CONF_NAME);
+
+    server_ini_t saved = *ini_settings;
+    load_ini_file(system_ini_fields, SERVER_CONF_NAME, 1, 0);
+
+    if (server_ini_settings.use_port_specific_file) {
+	char buf[256];
+	saprintf(buf, SERVER_CONF_PORT, tcp_port_no);
+	if (access(buf, F_OK) == 0) {
+	    load_ini_file(system_x_ini_fields, buf, 1, 0);
+	    ini_settings = &server_ini_settings;
+	}
+    }
+
+    // Restore settings that we don't want overridden.
+    ini_settings->tcp_port_no = saved.tcp_port_no;
+    ini_settings->start_tcp_server = saved.start_tcp_server;
+    ini_settings->detach_tcp_server = saved.detach_tcp_server;
+    ini_settings->server_runonce = saved.server_runonce;
+    ini_settings->inetd_mode = saved.inetd_mode;
 }

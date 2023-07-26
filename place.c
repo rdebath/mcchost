@@ -2,10 +2,8 @@
 #include "place.h"
 
 /*HELP place,pl H_CMD
-&T/place b [x y z] [X Y Z]
+&T/place [b] [x y z]
 Places the Block &Tb&S at your feet or at &T[x y z]&S
-With both &T[x y z]&S and &T[X Y Z]&S it places a
-cuboid between those points.
 Alias: &T/pl
 */
 /*HELP paint,p H_CMD
@@ -133,9 +131,18 @@ cmd_place(char * UNUSED(cmd), char * arg)
 		args[i] = atoi(p);
 	    cnt = i+1;
 	}
-    if (cnt != 1 && cnt != 4) {
-	printf_chat("&WUsage: /place b [x y z]");
+    if (cnt != 1 && cnt != 3 && cnt != 4) {
+	printf_chat("&WUsage: /place [b] [x y z]");
 	return;
+    }
+    if (cnt == 3) {
+	args[3] = args[2]; args[2] = args[1]; args[1] = args[0];
+	args[0] = player_held_block;
+	if (args[0] >= BLOCKMAX) args[0] = 1;
+	cnt++;
+    } else if (cnt == 0) {
+	args[cnt++] = player_held_block;
+	if (args[0] >= BLOCKMAX) args[0] = 1;
     }
 
     if (!level_block_queue || !level_blocks) return;
@@ -322,11 +329,6 @@ cmd_mode(char * cmd, char * arg)
 void
 cmd_hold(char * UNUSED(cmd), char * arg)
 {
-    if (!extn_heldblock) {
-	printf_chat("&SYour client doesn't support changing your held block.");
-	return;
-    }
-
     char * block = strarg(arg);
     char * flag = strarg(0);
 
@@ -337,6 +339,13 @@ cmd_hold(char * UNUSED(cmd), char * arg)
     }
     if (complain_bad_block(b)) return;
     int f = flag?ini_read_bool(flag):0;
+
+    player_held_block = b;
+
+    if (!extn_heldblock) {
+	printf_chat("&SYour held block for &T/place&S is &T%s", block_name(b));
+	return;
+    }
 
     if (b >= client_block_limit) {
 	printf_chat("&SYour client doesn't support block &T%s.", block_name(b));

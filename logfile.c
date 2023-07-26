@@ -12,26 +12,32 @@
  * The printlog function does NOT do any conversion.
  */
 
+#define DEFAULT_LOGFILE "log/%s.log"
+
 static FILE * logfile = 0;
 static int logfile_raw;
-static char * file_name = "log/%s.log";
+static char * file_name = 0;
 static struct tm file_tm;
+int log_to_stderr = 0;
 
 void
 set_logfile(char * logfile_name, int israw)
 {
+    close_logfile();
     file_name = logfile_name;
-    if (file_name && *file_name == 0) file_name = 0;
     logfile_raw = israw;
 }
 
 LOCAL void
 open_logfile()
 {
-    if (log_to_stderr || !file_name) { logfile = stderr; return; }
+    if (log_to_stderr) { logfile = stderr; return; }
 
-    char * fname = malloc(strlen(file_name) + 16);
-    strcpy(fname, file_name);
+    char * fn = file_name;
+    if (!fn || !*fn) fn = DEFAULT_LOGFILE;
+
+    char * fname = malloc(strlen(fn) + 16);
+    strcpy(fname, fn);
     char * p = strstr(fname, "%s");
     if (p) {
 	time_t now;
@@ -41,7 +47,7 @@ open_logfile()
 	sprintf(p, "%04d-%02d-%02d",
 	    file_tm.tm_year+1900, file_tm.tm_mon+1, file_tm.tm_mday);
 
-	strcat(fname, file_name+(p-fname)+2);
+	strcat(fname, fn+(p-fname)+2);
     }
 
     if (logfile) fclose(logfile);
@@ -76,7 +82,7 @@ check_reopen_logfile(struct tm * tm)
 void
 close_logfile()
 {
-    if (log_to_stderr || !file_name) return;
+    if (log_to_stderr) return;
 
     if (logfile)
 	fclose(logfile);
