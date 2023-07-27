@@ -161,6 +161,12 @@ init_dirs()
 	    // Just complain as later processes will error.
 	}
     }
+
+    FILE * fd = fopen("Readme.txt", "w");
+    if (fd) {
+	fprintf(fd, "%s version: %s\n%s", SWNAME, Version, directory_readme);
+	fclose(fd);
+    }
 }
 
 /*
@@ -269,3 +275,63 @@ unfix_fname(char *buf, int len, char *s)
 #endif
 
 #endif
+
+char directory_readme[] =
+"\n"	"Contents of working directory."
+"\n"
+"\n"	"help:"
+"\n"	"    Contains files displayed by the \"/help\",\"/faq\" and \"/news\" commands."
+"\n"
+"\n"	"    News is stored in the \"news.txt\" file and any file matching"
+"\n"	"    \"news_*.txt\".  Similarly for the \"/faq\" command.  The \"/help\" command"
+"\n"	"    picks up \"help.txt\" by default and any argments given show a file"
+"\n"	"    matching that name. Filenames are always in lowercase and spaces"
+"\n"	"    (and other problematic characters) are replaced by \"_\". The file"
+"\n"	"    that any particular help command fails to find will be logged."
+"\n"
+"\n"	"map:"
+"\n"	"    This is where currently saved versions of all maps are stored."
+"\n"	"    Note: level names are remapped to UTF-8 file names so any in game"
+"\n"	"    character can be used in a filename, but some of the translations"
+"\n"	"    may not be as expected for safety reasons."
+"\n"
+"\n"	"level:"
+"\n"	"    Contains files for currently \"loaded\" or \"unpacked\" levels. Data in"
+"\n"	"    here is the most current version of the level before any official"
+"\n"	"    \"save\" function. This directory must be on a fast local filesystem."
+"\n"	"    This directory is usually saved on clean shutdown, however, any"
+"\n"	"    unpacked levels will be considered newer than the map directory."
+"\n"
+"\n"	"backup:"
+"\n"	"    Level backups are stored here. This directory can be safely moved"
+"\n"	"    by replacing it with a symbolic link which can point to local remote"
+"\n"	"    or various virtual filesystem. If access to the filesystem fails it"
+"\n"	"    will be retried."
+"\n"
+"\n"	"user:"
+"\n"	"    The user configuration data (except passwords) is stored here."
+"\n"
+"\n"	"secret:"
+"\n"	"    User passwords for the \"/pass\" and \"/setpass\" commands are stored"
+"\n"	"    here; passwords are hashed, but keep then safe anyway."
+"\n"
+"\n"	"system:"
+"\n"	"    Data for internal communications and indexing.  If the server is"
+"\n"	"    shutdown this directory contains no unique data and may be deleted."
+"\n"	"    This directory must be on a fast local filesystem."
+"\n"
+"\n"	"ini:"
+"\n"	"    Files for the \"/inisave\" and \"/iniload\" commands. These command can"
+"\n"	"    be used to export/import map settings."
+"\n"
+"\n"	"texture:"
+"\n"	"    This directory contains files served by the built in silly little"
+"\n"	"    web server."
+"\n"
+"\n"	"server.ini and server.25565.ini:"
+"\n"	"    Server wide settings."
+"\n"
+"\n"	"cmdset.ini:"
+"\n"	"    Define primary security level for all commands, including disabled."
+
+;

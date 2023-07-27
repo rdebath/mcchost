@@ -154,15 +154,15 @@ display_location(char * user_name)
 	nbtstr_t level;
 	if (shdat.client) {
 	    for(int i=0; i<MAX_USER; i++) {
-		if (!shdat.client->user[i].active) continue;
+		if (!shdat.client->user[i].state.active) continue;
 		if (strcmp(user_name, shdat.client->user[i].name.c) != 0)
 		    continue;
 
 		uid = i;
 		user_name = shdat.client->user[i].name.c;
-		level_id = shdat.client->user[i].on_level;
+		level_id = shdat.client->user[i].state.on_level;
 		bkp_id = shdat.client->user[i].level_bkp_id;
-		posn = shdat.client->user[i].posn;
+		posn = shdat.client->user[i].state.posn;
 		if (level_id >= 0 && level_id < MAX_LEVEL)
 		    level = shdat.client->levels[level_id].level;
 		break;

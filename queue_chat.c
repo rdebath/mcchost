@@ -81,11 +81,11 @@ send_queued_chats(int flush)
 {
     if (last_id < 0) return; // Hmmm.
 
-    int my_level = shdat.client->user[my_user_no].on_level;
+    int my_level = shdat.client->user[my_user_no].state.on_level;
     int filter_level = 0;
 
     if (shdat.client && my_user_no >= 0 && my_user_no < MAX_USER)
-	my_level = shdat.client->user[my_user_no].on_level;
+	my_level = shdat.client->user[my_user_no].state.on_level;
     if (my_level >= MAX_LEVEL)
 	my_level = -1;
 

@@ -5,7 +5,7 @@
 
 #if INTERFACE
 #define UCMD_SETVAR \
-    {N"set", &cmd_setvar, CMD_HELPARG}, {N"setvar", &cmd_setvar, CMD_ALIAS}
+    {N"setvar", &cmd_setvar, CMD_HELPARG}, {N"set", &cmd_setvar, CMD_ALIAS}
 #endif
 
 /*HELP setvar,set H_CMD

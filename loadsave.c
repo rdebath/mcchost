@@ -324,8 +324,8 @@ scan_and_save_levels(int do_timed_save)
 	user_count = 0;
 	for(int uid=0; uid<MAX_USER; uid++)
 	{
-	    if (shdat.client->user[uid].active != 1) continue;
-	    if (lvid == shdat.client->user[uid].on_level ||
+	    if (shdat.client->user[uid].state.active != 1) continue;
+	    if (lvid == shdat.client->user[uid].state.on_level ||
 		lvid == shdat.client->user[uid].summon_level_id)
 		user_count++;
 	}
@@ -417,9 +417,9 @@ ignore_broken_level(int lvid, int *loaded_levels)
     int user_count = 0;
     for(int uid=0; uid<MAX_USER; uid++)
     {
-	if (shdat.client->user[uid].active != 1) continue;
+	if (shdat.client->user[uid].state.active != 1) continue;
 	// NB: Only unload main when the _total_ user count hits zero.
-	if (lvid == shdat.client->user[uid].on_level ||
+	if (lvid == shdat.client->user[uid].state.on_level ||
 	    lvid == shdat.client->user[uid].summon_level_id)
 	    user_count++;
     }
@@ -483,9 +483,9 @@ set_level_in_use_flag(int lvid, int * users_on_level)
     int user_count = 0, other_users = 0, level_in_use = 0;
     for(int uid=0; uid<MAX_USER; uid++)
     {
-	if (shdat.client->user[uid].active != 1) continue;
+	if (shdat.client->user[uid].state.active != 1) continue;
 	// NB: Only unload main when the _total_ user count hits zero.
-	if (lvid == shdat.client->user[uid].on_level ||
+	if (lvid == shdat.client->user[uid].state.on_level ||
 	    lvid == shdat.client->user[uid].summon_level_id) {
 	    user_count++;
 	    level_in_use = 1;

@@ -41,7 +41,7 @@ cmd_title(char * UNUSED(cmd), char *arg)
     if (uid < 0) return;
 
     client_entry_t c = shdat.client->user[uid];
-    if (!c.active) return;
+    if (!c.state.active) return;
 
     cmd_payload_t msg = {0};
     if (str2 && strcmp(str2, "-") != 0) saprintf(msg.arg.c, "%s", str2);

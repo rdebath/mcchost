@@ -42,7 +42,7 @@ cmd_model(char * UNUSED(cmd), char *arg)
     if (uid < 0) return;
 
     client_entry_t c = shdat.client->user[uid];
-    if (!c.active) return;
+    if (!c.state.active) return;
 
     printf_chat("@Changed &T%s&S's model to a %s", c.name.c, str2?str2:"humanoid");
     cmd_payload_t msg = {0};

@@ -113,7 +113,7 @@ log_chat_message(char * str, int len, int where, int to_id, int type)
     if (type == -1)
 	fprintf(logfile, "%s couldn't say: ", user_id);
     if (where == 1 && to_id >= 0 && to_id < MAX_USER) {
-	if (shdat.client && shdat.client->user[to_id].active)
+	if (shdat.client && shdat.client->user[to_id].state.active)
 	    fprintf(logfile, "@%s ", shdat.client->user[to_id].name.c);
     }
 

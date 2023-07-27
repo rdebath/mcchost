@@ -21,13 +21,13 @@ cmd_who(char * UNUSED(cmd), char * UNUSED(arg))
     {
 	client_entry_t c = shdat.client->user[i];
 	if (i == my_user_no) continue;
-	if (!c.active) continue;
+	if (!c.state.active) continue;
 	users++;
 
 	char nbuf[256];
-	saprintf(nbuf, "%s&S%s", c.listname.c, c.is_afk?" (AFK)":"");
+	saprintf(nbuf, "%s&S%s", c.listname.c, c.state.is_afk?" (AFK)":"");
 
-	int level_id = c.on_level;
+	int level_id = c.state.on_level;
 	if (level_id<0)
 	    printf_chat("\\%s is between levels", nbuf);
 	else if (shdat.client->levels[level_id].backup_id>0)
@@ -35,11 +35,11 @@ cmd_who(char * UNUSED(cmd), char * UNUSED(arg))
 		nbuf,
 		shdat.client->levels[level_id].backup_id,
 		shdat.client->levels[level_id].level.c,
-		c.posn.x/32, c.posn.y/32, c.posn.z/32);
+		c.state.posn.x/32, c.state.posn.y/32, c.state.posn.z/32);
 	else if (shdat.client->levels[level_id].backup_id==0)
 	    printf_chat("\\%s is on %s at (%d,%d,%d)",
 		nbuf, shdat.client->levels[level_id].level.c,
-		c.posn.x/32, c.posn.y/32, c.posn.z/32);
+		c.state.posn.x/32, c.state.posn.y/32, c.state.posn.z/32);
 	else
 	    printf_chat("\\%s is in the void", nbuf);
     }
@@ -72,11 +72,11 @@ cmd_clients(char * UNUSED(cmd), char * UNUSED(arg))
         shdat.client->user[i].client_dup = 0;
 
     for(int i=0; i<MAX_USER; i++) {
-        if (shdat.client->user[i].active == 1) {
+        if (shdat.client->user[i].state.active == 1) {
             users ++;
             if (shdat.client->user[i].client_dup == 0) {
                 for(int j = i+1; j<MAX_USER; j++) {
-                    if (shdat.client->user[j].active == 1 &&
+                    if (shdat.client->user[j].state.active == 1 &&
                         strcmp(shdat.client->user[i].client_software.c,
                         shdat.client->user[j].client_software.c) == 0)
                     {
@@ -90,14 +90,14 @@ cmd_clients(char * UNUSED(cmd), char * UNUSED(arg))
     for(int j = 0; j<MAX_USER; j++)
     {
 	client_entry_t c1 = shdat.client->user[j];
-	if (!c1.active) continue;
+	if (!c1.state.active) continue;
 	if (c1.client_dup) continue;
 
 	int l = snprintf(linebuf, sizeof(linebuf), "%s: &f%s", c1.client_software.c, c1.name.c);
 	for(int i=j; i<MAX_USER; i++)
 	{
 	    client_entry_t c = shdat.client->user[i];
-	    if (!c.active || !c.client_dup) continue;
+	    if (!c.state.active || !c.client_dup) continue;
 	    if (strcmp(c1.client_software.c, c.client_software.c) != 0)
 		continue;
 

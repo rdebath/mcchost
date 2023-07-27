@@ -193,7 +193,7 @@ check_download_ip()
     if (!shdat.client) return 0;
     for(int i=0; i<MAX_USER; i++)
     {
-	if (!shdat.client->user[i].active) continue;
+	if (!shdat.client->user[i].state.active) continue;
 	if (shdat.client->user[i].ip_address == client_ipv4_addr) {
 	    rv = 1; break;
 	}

@@ -28,6 +28,8 @@ struct nbtstr_t { char c[NB_SLEN]; };
 #define BLK_NUM_FOG	4
 #define BLK_NUM_COORD	6
 
+#define TY_LVERSION  0x00000100
+
 typedef struct map_info_t map_info_t;
 struct map_info_t {
     int64_t magic_no;

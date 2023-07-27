@@ -20,7 +20,7 @@ cmd_summon(char * UNUSED(cmd), char *arg)
     int uid = find_online_player(str1, 0, 0);
     if (uid < 0) return;
 
-    int on_level = shdat.client->user[my_user_no].on_level;
+    int on_level = shdat.client->user[my_user_no].state.on_level;
     if (on_level < 0 || on_level >= MAX_LEVEL || !player_posn.valid || player_on_new_level) {
 	printf_chat("&SI can't find you");
 	return;

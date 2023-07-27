@@ -60,7 +60,7 @@ process_chat_message(int message_type, char * msg)
 	for(int i=0; i<MAX_USER; i++)
 	{
 	    client_entry_t c = shdat.client->user[i];
-	    if (!c.active) continue;
+	    if (!c.state.active) continue;
 	    if (strcmp(c.name.c, user) == 0) {
 		to_user = i; break;
 	    }
@@ -107,7 +107,7 @@ convert_inbound_chat(int to_user, char * msg)
     int to_level = -1;
     if (level_prop && level_prop->level_chat) {
 	if (shdat.client && my_user_no >= 0 && my_user_no < MAX_USER)
-	    to_level = shdat.client->user[my_user_no].on_level;
+	    to_level = shdat.client->user[my_user_no].state.on_level;
 	if (to_level >= MAX_LEVEL)
 	    to_level = -1;
     }

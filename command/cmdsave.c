@@ -18,7 +18,7 @@ cmd_save(char * UNUSED(cmd), char * UNUSED(arg))
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
 
     lock_fn(system_lock);
-    int my_level = shdat.client->user[my_user_no].on_level;
+    int my_level = shdat.client->user[my_user_no].state.on_level;
 
     if (my_level < 0 || my_level >= MAX_LEVEL ||
 	    shdat.client->levels[my_level].backup_id < 0 ||

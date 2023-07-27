@@ -4,7 +4,6 @@
 #include <sys/select.h>
 #endif
 
-int64_t bytes_sent;
 static char *ttl_buf = 0;		/* Buffer for line output */
 static int ttl_start = 0;
 static int ttl_end = 0;
@@ -52,7 +51,8 @@ void write_to_remote(uint8_t * str, int len)
 
     if (!extn_pingpong)
 	time(&last_ping);
-    bytes_sent += len;
+
+    if(server) { server->packets_sent++; server->bytes_sent += len; }
 
     while (ttl_end+len+sizeof(wbuf) >= ttl_size) { // Padding needed for websocket
 	int nsz = ttl_size ? ttl_size*2 : 2048;
@@ -225,7 +225,8 @@ on_select_timeout()
     }
     if (cpe_pending) return;
 
-    check_user();
+    check_other_users();
+    check_this_user();
     check_metadata_update();
     process_queued_cmds();
     send_queued_chats(0);
@@ -309,6 +310,8 @@ sanitise_nbstring(char *buf, char *str, int printable)
 void
 process_client_message(int cmd, char * pktbuf)
 {
+    if(server) { server->packets_rcvd++; server->bytes_rcvd += msglen[cmd]; }
+
     // During the initial startup ignore (almost) everything.
     if (cpe_pending) {
 	if (cmd != PKID_EXTINFO && cmd != PKID_EXTENTRY && cmd != PKID_CUSTBLOCK)

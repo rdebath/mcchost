@@ -23,7 +23,7 @@
 
 #define TY_MAGIC2    0x557FFF00
 #define TY_MAGIC3    ((int)(sizeof(client_data_t)+sizeof(server_t)))
-#define TY_VERSION   0x00000100
+#define TY_CVERSION  0x00000200
 
 typedef struct client_entry_t client_entry_t;
 struct client_entry_t {
@@ -32,26 +32,21 @@ struct client_entry_t {
     nbtstr_t listname;
     nbtstr_t skinname;
     nbtstr_t modelname;
-    char name_colour;
-    int on_level;
+    client_state_entry_t state;
     int level_bkp_id;
-    xyzhv_t posn;
     int summon_level_id;
     xyzhv_t summon_posn;
-    uint8_t active;
-    uint8_t visible;
-    uint8_t look_update_counter;
-    uint8_t ip_dup;
-    uint32_t ip_address;
     time_t last_move;
-    uint8_t is_afk;
+    pid_t session_id;
+    uint32_t ip_address;
+    uint8_t ip_dup;
+    char name_colour;
     uint8_t client_proto_ver;
     uint8_t client_cpe;
     uint8_t client_dup;
     uint8_t authenticated;
     uint8_t trusted;
     uint8_t packet_idle;
-    pid_t session_id;
 };
 
 typedef struct client_level_t client_level_t;
@@ -78,10 +73,21 @@ struct client_data_t {
     int magic2;
     int version;
 };
+
+typedef struct client_state_entry_t client_state_entry_t;
+struct client_state_entry_t {
+    uint8_t active;
+    uint8_t visible;
+    uint8_t is_afk;
+    uint8_t look_update_counter;
+    uint8_t model_set;
+    int on_level;
+    xyzhv_t posn;
+};
 #endif
 
 int my_user_no = -1;
-static client_entry_t myuser[MAX_USER];
+static client_state_entry_t myuser[MAX_USER];
 static struct timeval last_check;
 
 xyzhv_t player_posn = {0};
@@ -99,7 +105,7 @@ nbtstr_t player_list_name;	// Name with &Colour
 nbtstr_t player_group_name;
 
 void
-check_user()
+check_other_users()
 {
     if (my_user_no < 0 || my_user_no >= MAX_USER || !shdat.client) return;
 
@@ -108,10 +114,10 @@ check_user()
         || shdat.client->magic_no != TY_MAGIC
 	|| shdat.client->magic_sz != TY_MAGIC3
 	|| shdat.client->magic2 != TY_MAGIC2
-	|| shdat.client->version != TY_VERSION)
+	|| shdat.client->version != TY_CVERSION)
 	fatal("Session upgrade failure, please reconnect");
 
-    if (!shdat.client->user[my_user_no].active) {
+    if (!shdat.client->user[my_user_no].state.active) {
 	shdat.client->user[my_user_no].session_id = 0;
 	logout("(Connecting on new session)");
     }
@@ -120,7 +126,7 @@ check_user()
 	xyzhv_t tp = shdat.client->user[my_user_no].summon_posn, t={0};
 
 	// Just on the same level ?
-	if (shdat.client->user[my_user_no].summon_level_id == shdat.client->user[my_user_no].on_level) {
+	if (shdat.client->user[my_user_no].summon_level_id == shdat.client->user[my_user_no].state.on_level) {
 
 	    shdat.client->user[my_user_no].summon_level_id = -1;
 	    shdat.client->user[my_user_no].summon_posn = t;
@@ -158,7 +164,7 @@ check_user()
 	return;
     last_check = now;
 
-    int my_level = shdat.client->user[my_user_no].on_level;
+    int my_level = shdat.client->user[my_user_no].state.on_level;
     if (my_level == -1) my_level = -2; //NOPE
 
     for(int i=0; i<MAX_USER; i++)
@@ -170,27 +176,27 @@ check_user()
 	int is_dirty = 0;
 
 	// Is this user visible.
-	c.visible = (c.active && c.authenticated && c.posn.valid &&
-		c.on_level == my_level && c.level_bkp_id >= 0);
+	c.state.visible = (c.state.active && c.authenticated && c.state.posn.valid &&
+		c.state.on_level == my_level && c.level_bkp_id >= 0);
 
-	if (c.visible && !myuser[i].visible)
+	if (c.state.visible && !myuser[i].visible)
 	    myuser[i].look_update_counter--;
 
 	if (extn_extplayerlist) {
-	    if (!c.active && myuser[i].active) {
+	    if (!c.state.active && myuser[i].active) {
 		if (i>=0 && i<255)
 		    send_removeplayername_pkt(i);
 		myuser[i].active = 0;
 		is_dirty = 1;
-	    } else if (c.active &&
+	    } else if (c.state.active &&
 		    (!myuser[i].active ||
-		    myuser[i].look_update_counter != c.look_update_counter ||
-		    myuser[i].on_level != c.on_level ||
-		    myuser[i].is_afk != c.is_afk) ) {
+		    myuser[i].look_update_counter != c.state.look_update_counter ||
+		    myuser[i].on_level != c.state.on_level ||
+		    myuser[i].is_afk != c.state.is_afk) ) {
 
 		char groupname[256] = "Nowhere";
-		if (c.on_level >= 0 && c.on_level < MAX_LEVEL) {
-		    int l = c.on_level;
+		if (c.state.on_level >= 0 && c.state.on_level < MAX_LEVEL) {
+		    int l = c.state.on_level;
 		    nbtstr_t n = shdat.client->levels[l].level;
 		    if (shdat.client->levels[l].loaded) {
 			if (shdat.client->levels[l].backup_id == 0)
@@ -201,7 +207,7 @@ check_user()
 		}
 
 		char listname[256] = "";
-		saprintf(listname, "%s%s", c.listname.c, c.is_afk?" &7(AFK)":"");
+		saprintf(listname, "%s%s", c.listname.c, c.state.is_afk?" &7(AFK)":"");
 
 		send_addplayername_pkt(i, c.name.c, listname, groupname, 0);
 
@@ -209,13 +215,13 @@ check_user()
 	    }
 	}
 
-	int upd_flg = (c.look_update_counter != myuser[i].look_update_counter);
-	if (upd_flg || (!c.visible && myuser[i].visible)) {
+	int upd_flg = (c.state.look_update_counter != myuser[i].look_update_counter);
+	if (upd_flg || (!c.state.visible && myuser[i].visible)) {
 	    // User gone.
 	    send_despawn_pkt(i);
 	    is_dirty = 1;
 	}
-	if ((upd_flg && c.visible) || (c.visible && !myuser[i].visible)) {
+	if ((upd_flg && c.state.visible) || (c.state.visible && !myuser[i].visible)) {
 	    // New user.
 	    char * skin = c.name.c;
 	    if (c.skinname.c[0]) skin = c.skinname.c;
@@ -223,35 +229,45 @@ check_user()
 	    if (c.name_colour) saprintf(namebuf, "&%c%s", c.name_colour, c.name.c);
 	    else saprintf(namebuf, "&7%s", c.name.c);
 	    revert_amp_to_perc(namebuf);
-	    send_addentity_pkt(i, namebuf, skin, c.posn);
-	    send_posn_pkt(i, 0, c.posn);
+	    send_addentity_pkt(i, namebuf, skin, c.state.posn);
+	    send_posn_pkt(i, 0, c.state.posn);
 	    is_dirty = 1;
-	} else if (c.visible) {
+	} else if (c.state.visible) {
 	    // Update user
-	    send_posn_pkt(i, &myuser[i].posn, c.posn);
+	    send_posn_pkt(i, &myuser[i].posn, c.state.posn);
 	    is_dirty = 1;
 	}
 	if (upd_flg) {
-	    if ((c.modelname.c[0] != 0) || (myuser[i].modelname.c[0] != 0)) {
+	    c.state.model_set = (c.modelname.c[0] != 0);
+	    if (c.state.model_set || myuser[i].model_set) {
 		send_changemodel_pkt(i, c.modelname.c);
 		is_dirty = 1;
 	    }
 	}
 	if (is_dirty)
-	    myuser[i] = c;
+	    myuser[i] = c.state;
     }
+}
+
+void
+check_this_user()
+{
+    if (my_user_no < 0 || my_user_no >= MAX_USER || !shdat.client) return;
+
+    int my_level = shdat.client->user[my_user_no].state.on_level;
+    time_t now = time(0);
 
     if (server->afk_kick_interval > 60)
-	if (player_last_move + server->afk_kick_interval < now.tv_sec) {
+	if (player_last_move + server->afk_kick_interval < now) {
 	    my_user.dirty = 1;
 	    my_user.kick_count++;
 	    logout("Auto-kick, AFK");
 	}
 
     if (!player_is_afk && server->afk_interval >= 60) {
-	if (player_last_move + server->afk_interval < now.tv_sec) {
+	if (player_last_move + server->afk_interval < now) {
 	    player_is_afk = 1;
-	    shdat.client->user[my_user_no].is_afk = 1;
+	    shdat.client->user[my_user_no].state.is_afk = 1;
 
 	    printf_chat("@&S-%s&S- &Sis AFK auto", player_list_name.c);
 	}
@@ -308,7 +324,7 @@ reset_player_list()
 	myuser[i].visible = 0;
 	myuser[i].posn.valid = 0;
 	if (shdat.client)
-	    myuser[i].look_update_counter = shdat.client->user[i].look_update_counter;
+	    myuser[i].look_update_counter = shdat.client->user[i].state.look_update_counter;
     }
 
     reset_player_skinname();
@@ -322,7 +338,7 @@ reset_player_list()
 	player_posn.valid = 1;
 	myuser[my_user_no].posn = player_posn;
 	if (shdat.client)
-	    shdat.client->user[my_user_no].posn = player_posn;
+	    shdat.client->user[my_user_no].state.posn = player_posn;
     }
 
     last_check.tv_sec = 1;
@@ -375,7 +391,7 @@ update_player_pos(pkt_player_posn pkt)
 
     myuser[my_user_no].posn = pkt.pos;
     if (shdat.client)
-	shdat.client->user[my_user_no].posn = pkt.pos;
+	shdat.client->user[my_user_no].state.posn = pkt.pos;
 
     // Allow for pushing
     if ( abs(p1.x-p2.x)>2 || abs(p1.y-p2.y)>32 || abs(p1.z-p2.z)>2 ||
@@ -392,7 +408,7 @@ update_player_move_time()
     player_last_move = time(0);
     if (!shdat.client) return;
     shdat.client->user[my_user_no].last_move = player_last_move;
-    shdat.client->user[my_user_no].is_afk = 0;
+    shdat.client->user[my_user_no].state.is_afk = 0;
 
     if (player_is_afk) {
 	printf_chat("@&a-&7%s&a- &Sis no longer AFK", user_id);
@@ -433,7 +449,7 @@ update_player_look()
 	    t->name_colour = '2';
     }
     if (oc != t->name_colour)
-	t->look_update_counter ++;
+	t->state.look_update_counter ++;
 
     int c = t->name_colour;
     nbtstr_t namebuf;
@@ -458,19 +474,19 @@ update_player_look()
 
     if (strcmp(namebuf.c, t->listname.c) != 0) {
 	t->listname = namebuf;
-	t->look_update_counter ++;
+	t->state.look_update_counter ++;
     }
 
     saprintf(namebuf.c, "%s", my_user.skin);
     if (strcmp(namebuf.c, t->skinname.c) != 0) {
 	t->skinname = namebuf;
-	t->look_update_counter ++;
+	t->state.look_update_counter ++;
     }
 
     saprintf(namebuf.c, "%s", my_user.model);
     if (strcmp(namebuf.c, t->modelname.c) != 0) {
 	t->modelname = namebuf;
-	t->look_update_counter ++;
+	t->state.look_update_counter ++;
     }
 
 }
@@ -487,7 +503,7 @@ start_user()
 
     for(int i=0; i<MAX_USER; i++)
     {
-	if (shdat.client->user[i].active != 1) {
+	if (shdat.client->user[i].state.active != 1) {
 	    if (new_one == -1 && shdat.client->user[i].session_id == 0)
 		new_one = i;
 	    continue;
@@ -501,14 +517,14 @@ start_user()
 		// Must have died.
 		printf_chat("&SNote: Wiped old session.");
 		shdat.client->generation++;
-		shdat.client->user[i].active = 0;
+		shdat.client->user[i].state.active = 0;
 		shdat.client->user[i].session_id = 0;
 		if (new_one == -1) new_one = i;
 		continue;
 	    }
 	    if (!user_authenticated && !shdat.client->user[i].packet_idle)
 		disconnect_f(0, "User %s is already logged in!", user_id);
-	    shdat.client->user[i].active = 0;
+	    shdat.client->user[i].state.active = 0;
 	    kicked++;
 	}
     }
@@ -529,13 +545,13 @@ start_user()
     my_user_no = new_one;
     client_entry_t t = {0};
     strcpy(t.name.c, user_id);
-    t.active = 1;
-    t.look_update_counter = 1;
+    t.state.active = 1;
+    t.state.look_update_counter = 1;
     t.session_id = getpid();
     t.client_software = client_software;
     t.client_proto_ver = protocol_base_version;
     t.client_cpe = cpe_enabled;
-    t.on_level = -1;
+    t.state.on_level = -1;
     t.summon_level_id = -1;
     t.level_bkp_id = -1;
     t.ip_address = client_ipv4_addr;
@@ -567,7 +583,7 @@ start_user()
     shdat.client->user[my_user_no] = t;
     shdat.client->generation++;
 
-    myuser[my_user_no] = shdat.client->user[my_user_no];
+    myuser[my_user_no] = shdat.client->user[my_user_no].state;
     player_last_move = time(0);
     server->connected_sessions = connected_sessions;
     unlock_fn(system_lock);
@@ -618,9 +634,9 @@ start_level(char * levelname, int backup_id)
 
     // Move me to new level_no.
     if (my_user_no >= 0 && my_user_no < MAX_USER) {
-	shdat.client->user[my_user_no].on_level = level_id;
+	shdat.client->user[my_user_no].state.on_level = level_id;
 	shdat.client->user[my_user_no].level_bkp_id = backup_id;
-	shdat.client->user[my_user_no].posn = (xyzhv_t){0};
+	shdat.client->user[my_user_no].state.posn = (xyzhv_t){0};
 	// Refresh this.
 	shdat.client->levels[level_id].no_unload = 0;
     }
@@ -667,9 +683,9 @@ stop_user()
     if (my_user_no < 0 || my_user_no >= MAX_USER) return;
     if (!shdat.client) return;
 
-    if (shdat.client->user[my_user_no].active) {
+    if (shdat.client->user[my_user_no].state.active) {
 	shdat.client->generation++;
-	shdat.client->user[my_user_no].active = 0;
+	shdat.client->user[my_user_no].state.active = 0;
 	shdat.client->user[my_user_no].session_id = 0;
 	if (server->connected_sessions>0) server->connected_sessions--;
     }
@@ -688,7 +704,7 @@ delete_session_id(int pid, char * killed_user, int len)
     for(int i=0; i<MAX_USER; i++)
     {
 	int wipe_this = 0;
-	if (pid > 0 && shdat.client->user[i].active == 1 &&
+	if (pid > 0 && shdat.client->user[i].state.active == 1 &&
 		       shdat.client->user[i].session_id == pid)
 	    wipe_this = 1;
 
@@ -714,62 +730,12 @@ delete_session_id(int pid, char * killed_user, int len)
 	    printlog("Wiped session %d (%.32s)", i, shdat.client->user[i].name.c);
 	    shdat.client->generation++;
 	    shdat.client->user[i].session_id = 0;
-	    shdat.client->user[i].active = 0;
-	    shdat.client->user[i].on_level = -1;
+	    shdat.client->user[i].state.active = 0;
+	    shdat.client->user[i].state.on_level = -1;
 	    if (server->connected_sessions>0) server->connected_sessions--;
 	    if (pid>0) break;
 	}
     }
     if (flg) stop_client_list();
     return cleaned;
-}
-
-int
-current_user_count()
-{
-    int flg = (shdat.client == 0);
-    if(flg) open_client_list();
-    if (!shdat.client) return 0;
-    int users = 0;
-    for(int i=0; i<MAX_USER; i++) {
-	if (shdat.client->user[i].active == 1)
-	    users ++;
-    }
-    if(flg) stop_client_list();
-    return users;
-}
-
-int
-unique_ip_count()
-{
-    int flg = (shdat.client == 0);
-    if(flg) open_client_list();
-    if (!shdat.client) return 0;
-
-    // No need to lock -- unimportant statistic.
-    int users = 0;
-    int ip_addrs = 0;
-
-    for(int i=0; i<MAX_USER; i++)
-	shdat.client->user[i].ip_dup = 0;
-
-    for(int i=0; i<MAX_USER; i++) {
-	if (shdat.client->user[i].active == 1) {
-	    users ++;
-	    if (shdat.client->user[i].ip_dup == 0) {
-		ip_addrs ++;
-		for(int j = i+1; j<MAX_USER; j++) {
-		    if (shdat.client->user[j].active == 1 &&
-			shdat.client->user[i].ip_address ==
-			shdat.client->user[j].ip_address)
-		    {
-			shdat.client->user[j].ip_dup = 1;
-		    }
-		}
-	    }
-	}
-    }
-
-    if(flg) stop_client_list();
-    return ip_addrs;
 }

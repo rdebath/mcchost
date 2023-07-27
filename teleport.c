@@ -294,15 +294,15 @@ wait_for_forced_unload(char * lvlname, summon_list_t * users_on)
 	for(int i=0; i<MAX_USER; i++)
 	{
 	    client_entry_t c = shdat.client->user[i];
-	    if (!c.active) continue;
-	    if (c.on_level != level_id) continue;
+	    if (!c.state.active) continue;
+	    if (c.state.on_level != level_id) continue;
 	    if (c.level_bkp_id != 0) continue;
 
 	    users_on[uid].player_id = i;
 	    users_on[uid].name = c.name;
-	    users_on[uid].active = c.active;
-	    users_on[uid].on_level = c.on_level;
-	    users_on[uid].posn = c.posn;
+	    users_on[uid].active = c.state.active;
+	    users_on[uid].on_level = c.state.on_level;
+	    users_on[uid].posn = c.state.posn;
 	    if (users_on[uid].active)
 		uid++;
 	}
@@ -358,7 +358,7 @@ summon_userlist(summon_list_t * users_on, int new_level_id)
         if (!locked) { locked = 1; lock_fn(system_lock); }
 
         int id = users_on[uid].player_id;
-        if (!shdat.client->user[id].active) continue;
+        if (!shdat.client->user[id].state.active) continue;
         if (strcmp(shdat.client->user[id].name.c, users_on[uid].name.c) != 0)
             continue;
 

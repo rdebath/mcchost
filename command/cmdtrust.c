@@ -20,7 +20,7 @@ cmd_trust(char * UNUSED(cmd), char *arg)
     if (uid < 0) return;
 
     client_entry_t c = shdat.client->user[uid];
-    if (!c.active) return;
+    if (!c.state.active) return;
 
     int v = !c.trusted;
     shdat.client->user[uid].trusted = v;

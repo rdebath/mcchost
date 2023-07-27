@@ -11,7 +11,7 @@ void
 createmap(char * levelname)
 {
     // Don't recreate a map that seems okay.
-    if (level_prop->version_no == TY_VERSION)
+    if (level_prop->version_no == TY_LVERSION)
 	if (level_prop->cells_x != 0 && level_prop->cells_y != 0 && level_prop->cells_z != 0)
 	    return;
 
@@ -47,7 +47,7 @@ init_map_null()
 {
     *level_prop = (map_info_t){
 	    .magic_no = TY_MAGIC, .magic_no2 = TY_MAGIC2,
-	    .version_no = TY_VERSION,
+	    .version_no = TY_LVERSION,
 	    .cells_x = 0, .cells_y = 0, .cells_z = 0,
 	    .total_blocks = 0,
 	    .weather = 0, -1, -1, -1, -1, -1, -1,

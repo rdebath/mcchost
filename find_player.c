@@ -12,7 +12,7 @@ find_online_player(char * user_txt, int allow_self, int quiet)
 	    if (!allow_self && i == my_user_no) continue; // Me
 	    client_entry_t c = shdat.client->user[i];
 
-	    if (!c.active) continue;
+	    if (!c.state.active) continue;
 
 	    if (mode == 0) {
 		// Exact match
@@ -53,7 +53,7 @@ find_player(char * partname, char * namebuf, int l, int allow_self, int quiet)
     {
 	if (!allow_self && i == my_user_no) continue; // Me
 	client_entry_t c = shdat.client->user[i];
-	if (!c.active) continue;
+	if (!c.state.active) continue;
 
 	// Exact match
 	if (strcasecmp(partname, c.name.c) == 0) {

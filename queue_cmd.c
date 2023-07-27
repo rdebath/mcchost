@@ -127,7 +127,7 @@ process_queued_cmds()
 
 	// To somewhere and not here
 	if (upd.to_level_id >= 0) {
-	    int my_level = shdat.client->user[my_user_no].on_level;
+	    int my_level = shdat.client->user[my_user_no].state.on_level;
 	    if (upd.to_level_id != my_level)
 		continue;
 	}

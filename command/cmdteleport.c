@@ -80,19 +80,19 @@ cmd_tp(char * cmd, char *arg)
 	int uid = find_online_player(str1, 0, 0);
 	if (uid < 0) return;
 
-	int my_level = shdat.client->user[my_user_no].on_level;
+	int my_level = shdat.client->user[my_user_no].state.on_level;
 	client_entry_t c = shdat.client->user[uid];
 
-	if (!c.active) return;
-	if (c.on_level == my_level) {
-	    send_posn_pkt(-1, &player_posn, c.posn);
-	    player_posn = c.posn;
+	if (!c.state.active) return;
+	if (c.state.on_level == my_level) {
+	    send_posn_pkt(-1, &player_posn, c.state.posn);
+	    player_posn = c.state.posn;
 	    return;
 	}
 
 	client_level_t lvl = {0};
-	if (c.on_level >= 0 && c.on_level < MAX_LEVEL)
-	    lvl = shdat.client->levels[c.on_level];
+	if (c.state.on_level >= 0 && c.state.on_level < MAX_LEVEL)
+	    lvl = shdat.client->levels[c.state.on_level];
 
 	if (!lvl.loaded || lvl.backup_id < 0) {
 	    cmd_void("",0);
@@ -100,7 +100,7 @@ cmd_tp(char * cmd, char *arg)
 	}
 
 	xyzhv_t *ppos = 0;
-	if (c.posn.valid) ppos = &c.posn;
+	if (c.state.posn.valid) ppos = &c.state.posn;
 
 	if (!direct_teleport(lvl.level.c, lvl.backup_id, ppos)) {
 	    if (lvl.backup_id == 0)

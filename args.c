@@ -6,6 +6,8 @@
 
 #define SWNAME "MCCHost"
 
+#define TY_SVERSION  0x00000100
+
 // These settings are shared between the servers, they cannot be
 // different for different ports. But they get set immediatly they
 // are changed by the user.
@@ -66,6 +68,12 @@ struct server_t {
     int chat_spam_ban;
 
     int ip_connect_delay;
+
+    uint64_t packets_rcvd;
+    uint64_t packets_sent;
+
+    uint64_t bytes_rcvd;
+    uint64_t bytes_sent;
 
     struct server_ini_t shared_ini_settings;
     int magic2;
@@ -360,9 +368,9 @@ process_args(int argc, char **argv)
 	    server = 0;
 	    open_system_conf();
 
-	    if (server->magic != TY_MAGIC || server->magic2 != TY_MAGIC2 || server->version != TY_VERSION)
+	    if (server->magic != TY_MAGIC || server->magic2 != TY_MAGIC2 || server->version != TY_SVERSION)
 		*server = (server_t){
-		    .magic = TY_MAGIC, .magic2 = TY_MAGIC2, .version = TY_VERSION,
+		    .magic = TY_MAGIC, .magic2 = TY_MAGIC2, .version = TY_SVERSION,
 		    .software = SWNAME,
 		    .name = SWNAME " Server",
 		    .main_level = "main",
