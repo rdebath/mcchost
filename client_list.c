@@ -68,6 +68,7 @@ struct client_data_t {
     int magic_sz;
     uint32_t generation;
     uint32_t cleanup_generation;
+    int highest_used_uid;
     client_entry_t user[MAX_USER];
     client_level_t levels[MAX_LEVEL];
     int magic2;
@@ -76,13 +77,14 @@ struct client_data_t {
 
 typedef struct client_state_entry_t client_state_entry_t;
 struct client_state_entry_t {
+    int on_level;
+    xyzhv_t posn;
+    int32_t range;
     uint8_t active;
     uint8_t visible;
     uint8_t is_afk;
     uint8_t look_update_counter;
     uint8_t model_set;
-    int on_level;
-    xyzhv_t posn;
 };
 #endif
 
@@ -108,48 +110,6 @@ void
 check_other_users()
 {
     if (my_user_no < 0 || my_user_no >= MAX_USER || !shdat.client) return;
-
-    //TODO: Attempt a session upgrade -- call exec().
-    if (server->magic != TY_MAGIC
-        || shdat.client->magic_no != TY_MAGIC
-	|| shdat.client->magic_sz != TY_MAGIC3
-	|| shdat.client->magic2 != TY_MAGIC2
-	|| shdat.client->version != TY_CVERSION)
-	fatal("Session upgrade failure, please reconnect");
-
-    if (!shdat.client->user[my_user_no].state.active) {
-	shdat.client->user[my_user_no].session_id = 0;
-	logout("(Connecting on new session)");
-    }
-
-    if (shdat.client->user[my_user_no].summon_level_id >= 0) {
-	xyzhv_t tp = shdat.client->user[my_user_no].summon_posn, t={0};
-
-	// Just on the same level ?
-	if (shdat.client->user[my_user_no].summon_level_id == shdat.client->user[my_user_no].state.on_level) {
-
-	    shdat.client->user[my_user_no].summon_level_id = -1;
-	    shdat.client->user[my_user_no].summon_posn = t;
-            send_posn_pkt(-1, &player_posn, tp);
-	    player_posn = tp;
-
-	} else {
-
-	    // Full teleport between levels.
-	    nbtstr_t level = {0};
-	    int bkpid = 0;
-
-	    int lv = shdat.client->user[my_user_no].summon_level_id;
-	    if (shdat.client->levels[lv].loaded) {
-		level = shdat.client->levels[lv].level;
-		bkpid = shdat.client->levels[lv].backup_id;
-	    }
-	    shdat.client->user[my_user_no].summon_level_id = -1;
-	    shdat.client->user[my_user_no].summon_posn = t;
-
-	    direct_teleport(level.c, bkpid, &tp);
-	}
-    }
 
     struct timeval now;
     gettimeofday(&now, 0);
@@ -246,6 +206,54 @@ check_other_users()
 	}
 	if (is_dirty)
 	    myuser[i] = c.state;
+    }
+}
+
+void
+check_user_summon()
+{
+    if (my_user_no < 0 || my_user_no >= MAX_USER || !shdat.client) return;
+
+    //TODO: Attempt a session upgrade -- call exec().
+    if (server->magic != TY_MAGIC
+        || shdat.client->magic_no != TY_MAGIC
+	|| shdat.client->magic_sz != TY_MAGIC3
+	|| shdat.client->magic2 != TY_MAGIC2
+	|| shdat.client->version != TY_CVERSION)
+	fatal("Session upgrade failure, please reconnect");
+
+    if (!shdat.client->user[my_user_no].state.active) {
+	shdat.client->user[my_user_no].session_id = 0;
+	logout("(Connecting on new session)");
+    }
+
+    if (shdat.client->user[my_user_no].summon_level_id >= 0) {
+	xyzhv_t tp = shdat.client->user[my_user_no].summon_posn, t={0};
+
+	// Just on the same level ?
+	if (shdat.client->user[my_user_no].summon_level_id == shdat.client->user[my_user_no].state.on_level) {
+
+	    shdat.client->user[my_user_no].summon_level_id = -1;
+	    shdat.client->user[my_user_no].summon_posn = t;
+            send_posn_pkt(-1, &player_posn, tp);
+	    player_posn = tp;
+
+	} else {
+
+	    // Full teleport between levels.
+	    nbtstr_t level = {0};
+	    int bkpid = 0;
+
+	    int lv = shdat.client->user[my_user_no].summon_level_id;
+	    if (shdat.client->levels[lv].loaded) {
+		level = shdat.client->levels[lv].level;
+		bkpid = shdat.client->levels[lv].backup_id;
+	    }
+	    shdat.client->user[my_user_no].summon_level_id = -1;
+	    shdat.client->user[my_user_no].summon_posn = t;
+
+	    direct_teleport(level.c, bkpid, &tp);
+	}
     }
 }
 
@@ -500,6 +508,7 @@ start_user()
     if (!shdat.client) fatal("Connection failed");
 
     int connected_sessions = 0;
+    int highest_uid = 0;
 
     for(int i=0; i<MAX_USER; i++)
     {
@@ -527,6 +536,7 @@ start_user()
 	    shdat.client->user[i].state.active = 0;
 	    kicked++;
 	}
+	highest_uid = i;
     }
 
     if (server->max_players < 1) server->max_players = 1;
@@ -541,6 +551,9 @@ start_user()
 	else
 	    disconnect_f(0, "Too many sessions already connected");
     }
+
+    if (new_one > highest_uid) highest_uid = new_one;
+    shdat.client->highest_used_uid = highest_uid;
 
     my_user_no = new_one;
     client_entry_t t = {0};

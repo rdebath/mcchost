@@ -225,6 +225,7 @@ on_select_timeout()
     }
     if (cpe_pending) return;
 
+    check_user_summon();
     check_other_users();
     check_this_user();
     check_metadata_update();
@@ -266,7 +267,7 @@ remote_received(char *str, int len)
 	int cmd = rcvdpkt[0] & 0xFF;
 	if (msglen[cmd] <= in_rcvd) {
 	    if (msglen[cmd] == 0)
-		fatal("Unknown packet type received");
+		fatal_f("Unknown packet type 0x%02x received by server", cmd);
 	    ticks_with_pending_bytes = 0;
 	    process_client_message(cmd, rcvdpkt);
 	    in_rcvd = 0;
