@@ -18,7 +18,7 @@
 #if INTERFACE
 #include <sys/types.h>
 
-#define MAX_USER	288
+#define MAX_USER	1024
 #define MAX_LEVEL	256
 
 #define TY_MAGIC2    0x557FFF00
@@ -79,7 +79,6 @@ typedef struct client_state_entry_t client_state_entry_t;
 struct client_state_entry_t {
     int on_level;
     xyzhv_t posn;
-    int32_t range;
     uint8_t active;
     uint8_t visible;
     uint8_t is_afk;
@@ -90,7 +89,13 @@ struct client_state_entry_t {
 
 int my_user_no = -1;
 static client_state_entry_t myuser[MAX_USER];
+static client_state_entry_t myuser_stat;
 static struct timeval last_check;
+
+static int uid_ren_mode = -1;
+struct uid_ren_t { int uids; uint64_t range; };
+static struct uid_ren_t uid_ren[MAX_USER];
+static int was_uid_ren[MAX_USER];
 
 xyzhv_t player_posn = {0};
 block_t player_held_block = 1;
@@ -127,32 +132,39 @@ check_other_users()
     int my_level = shdat.client->user[my_user_no].state.on_level;
     if (my_level == -1) my_level = -2; //NOPE
 
-    for(int i=0; i<MAX_USER; i++)
+    reorder_visible_users(my_level);
+
+    // I have a small trick to allow exactly 256 users without invoking the
+    // reordering. But this only works if there is a hole in the IDs sent
+    // to the client for my user id number.
+    int loop_max = 256;
+    if (uid_ren_mode) loop_max = 255;
+
+    for(int i=0; i<loop_max; i++)
     {
-	if (i == my_user_no) continue; // Me
+	int uids = uid_ren[i].uids;
+	if (uids == my_user_no) continue; // Me
+
 	// Note: slurp it so a torn struct is unlikely.
 	// But don't lock as we're not too worried.
-	client_entry_t c = shdat.client->user[i];
+	client_entry_t c = shdat.client->user[uids];
 	int is_dirty = 0;
 
 	// Is this user visible.
 	c.state.visible = (c.state.active && c.authenticated && c.state.posn.valid &&
 		c.state.on_level == my_level && c.level_bkp_id >= 0);
 
-	if (c.state.visible && !myuser[i].visible)
-	    myuser[i].look_update_counter--;
-
 	if (extn_extplayerlist) {
 	    if (!c.state.active && myuser[i].active) {
-		if (i>=0 && i<255)
-		    send_removeplayername_pkt(i);
+		send_removeplayername_pkt(i);
 		myuser[i].active = 0;
 		is_dirty = 1;
 	    } else if (c.state.active &&
 		    (!myuser[i].active ||
 		    myuser[i].look_update_counter != c.state.look_update_counter ||
 		    myuser[i].on_level != c.state.on_level ||
-		    myuser[i].is_afk != c.state.is_afk) ) {
+		    myuser[i].is_afk != c.state.is_afk ||
+		    was_uid_ren[i] != uids) ) {
 
 		char groupname[256] = "Nowhere";
 		if (c.state.on_level >= 0 && c.state.on_level < MAX_LEVEL) {
@@ -176,8 +188,15 @@ check_other_users()
 	}
 
 	int upd_flg = (c.state.look_update_counter != myuser[i].look_update_counter);
+
+	if (c.state.visible && !myuser[i].visible)
+	    upd_flg = 1;
+	if (was_uid_ren[i] != uids)
+	    upd_flg = 1;
+	was_uid_ren[i] = uids;
+
 	if (upd_flg || (!c.state.visible && myuser[i].visible)) {
-	    // User gone.
+	    // User gone. (Or we need to reset it)
 	    send_despawn_pkt(i);
 	    is_dirty = 1;
 	}
@@ -207,6 +226,90 @@ check_other_users()
 	if (is_dirty)
 	    myuser[i] = c.state;
     }
+}
+
+void
+reorder_visible_users(int my_level)
+{
+    // Do we need to switch modes?
+    int f = (shdat.client->highest_used_uid > max_proto_player_id);
+    if (f != uid_ren_mode) {
+	if (uid_ren_mode != -1 || f) {
+	    fprintf_logfile("User %s Switching UID mode TopUID=%d uid_ren_mode=%d from %d",
+		user_id, shdat.client->highest_used_uid, f, uid_ren_mode);
+	    despawn_all_players();
+	}
+	uid_ren_mode = f;
+	for(int i = 0; i<MAX_USER; i++)
+	    uid_ren[i].uids = i;
+    }
+    if (!uid_ren_mode) return;
+
+    int max_id = max_proto_player_id;
+    if (max_proto_player_id == 255) max_proto_player_id = 254;
+
+    uint64_t largest_shown_range = 0;
+    uint64_t smallest_hidden_range = UINT64_MAX;
+    for(int i=0; i<MAX_USER; i++)
+    {
+	int uids = uid_ren[i].uids;
+	client_entry_t *c = &shdat.client->user[uids];
+
+	int visible = (c->state.active && c->authenticated && c->state.posn.valid &&
+		c->state.on_level == my_level && c->level_bkp_id >= 0);
+
+	int64_t range;
+	if (!visible || uids == my_user_no)
+	     range = UINT64_MAX;
+	else {
+	    xyzhv_t posn = c->state.posn;
+
+	    int64_t rx = abs(player_posn.x - posn.x);
+	    int64_t ry = abs(player_posn.y - posn.y);
+	    int64_t rz = abs(player_posn.z - posn.z);
+	    range = rx*rx + ry*ry + rz*rz;
+	    range /= 100;
+	}
+	uid_ren[i].range = range;
+
+	if (i > max_id) {
+	    if (range < smallest_hidden_range) smallest_hidden_range = range;
+	} else {
+	    if (range > largest_shown_range) largest_shown_range = range;
+	}
+    }
+
+    // Use a partial sort, we don't want to change any in the lower
+    // part if we don't need to.
+    if (smallest_hidden_range < largest_shown_range) {
+
+	// Which do we need to sort.
+	int min_off = MAX_USER, max_off = 0;
+	for (int i=0; i<MAX_USER; i++)
+	{
+	    if (uid_ren[i].range >= smallest_hidden_range &&
+		uid_ren[i].range <= largest_shown_range &&
+		(uid_ren[i].range != UINT64_MAX || i < max_id)) {
+
+		if (i>max_off) max_off = i;
+		if (i<min_off) min_off = i;
+	    }
+	}
+
+	if (min_off < max_off)
+	    qsort(uid_ren+min_off, max_off-min_off+1, sizeof(*uid_ren), uid_ren_range_cmp);
+    }
+}
+
+#define UNWRAP(x,y) (((x) > (y)) - ((x) < (y)))
+int
+uid_ren_range_cmp(const void *p1, const void *p2)
+{
+
+    struct uid_ren_t *ps1 = (struct uid_ren_t *)p1;
+    struct uid_ren_t *ps2 = (struct uid_ren_t *)p2;
+
+    return UNWRAP(ps1->range, ps2->range);
 }
 
 void
@@ -324,16 +427,22 @@ int check_level(char * levelname, char * UNUSED(levelfile))
 }
 
 void
-reset_player_list()
+despawn_all_players()
 {
     for(int i=0; i<MAX_USER; i++) {
 	if (myuser[i].visible)
 	    send_despawn_pkt(i);
 	myuser[i].visible = 0;
 	myuser[i].posn.valid = 0;
-	if (shdat.client)
-	    myuser[i].look_update_counter = shdat.client->user[i].state.look_update_counter;
+	myuser[i].look_update_counter = 1;
+	was_uid_ren[i] = -1;
     }
+}
+
+void
+reset_player_list()
+{
+    despawn_all_players();
 
     reset_player_skinname();
     send_changemodel_pkt(-1, my_user.model);
@@ -344,7 +453,7 @@ reset_player_list()
 	player_posn = level_prop->spawn;
 	player_posn.v = -128; // Bots start with flip-head.
 	player_posn.valid = 1;
-	myuser[my_user_no].posn = player_posn;
+	myuser_stat.posn = player_posn;
 	if (shdat.client)
 	    shdat.client->user[my_user_no].state.posn = player_posn;
     }
@@ -392,12 +501,12 @@ update_player_pos(pkt_player_posn pkt)
 
     // No movement, ignore
     xyzhv_t p1 = pkt.pos;
-    xyzhv_t p2 = myuser[my_user_no].posn;
+    xyzhv_t p2 = myuser_stat.posn;
     if (p1.x == p2.x && p1.y == p2.y && p1.z == p2.z &&
         p1.v == p2.v && p1.h == p2.h)
 	return;
 
-    myuser[my_user_no].posn = pkt.pos;
+    myuser_stat.posn = pkt.pos;
     if (shdat.client)
 	shdat.client->user[my_user_no].state.posn = pkt.pos;
 
@@ -596,7 +705,7 @@ start_user()
     shdat.client->user[my_user_no] = t;
     shdat.client->generation++;
 
-    myuser[my_user_no] = shdat.client->user[my_user_no].state;
+    myuser_stat = shdat.client->user[my_user_no].state;
     player_last_move = time(0);
     server->connected_sessions = connected_sessions;
     unlock_fn(system_lock);

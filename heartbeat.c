@@ -105,13 +105,14 @@ send_heartbeat_poll()
     // Occasionally wobble the user count to work around a bug in the
     // registration server.
     int users = unique_ip_count()+(bounded_random(60) == 1);
+    int max_users = server->max_players<MAX_USER?server->max_players:MAX_USER;
 
     if (!ini_settings->use_http_post)
 	saprintf(urlbuf,
 	    "%s?%s%d&%s%d&%s%s&%s%d&%s%d&%s%s&%s%s&%s%s&%s%s",
 	    heartbeat_url,
 	    "port=",tcp_port_no,
-	    "max=",server->max_players,
+	    "max=",max_users,
 	    "public=",ini_settings->private||term_sig?"False":"True",
 	    "version=",7,
 	    "users=",users,
@@ -124,7 +125,7 @@ send_heartbeat_poll()
 	saprintf(postbuf,
 	    "&%s%d&%s%d&%s%s&%s%s&%s%d&%s%s&%s%d&%s%s&%s%s",
 	    "port=",tcp_port_no,
-	    "max=",server->max_players,
+	    "max=",max_users,
 	    "name=",ccnet_cp437_quoteurl(server->name,namebuf,sizeof(namebuf), 1),
 	    "public=",ini_settings->private||term_sig?"False":"True",
 	    "version=",7,
