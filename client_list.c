@@ -43,7 +43,6 @@ struct client_entry_t {
     char name_colour;
     uint8_t client_proto_ver;
     uint8_t client_cpe;
-    uint8_t client_dup;
     uint8_t authenticated;
     uint8_t trusted;
     uint8_t packet_idle;
