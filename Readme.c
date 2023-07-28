@@ -140,10 +140,9 @@ Other notes
  +) NAME: (*) MCCHost
 
  +) INI file: Better way to preserve comments?
- +) lmdb appears with Debian jessie, do I want a fallback ?
 
  +) Crash catcher restarts server process without dropping connection.
-    -- Don't work with web client (unless proxy).
+    -- Won't work with web client (unless proxy).
 
 All files in subdirectories.
     // Real data files.

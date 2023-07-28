@@ -6,6 +6,8 @@ FROM alpine:3.18
 ARG UID=1000
 ARG GID=1000
 ARG MPATH=/home/user
+ARG TICK=
+ARG MAKEARGS=
 
 # Add gdb here, if you want to make the image seven times larger.
 # Note: GDB seems to have a problem with the Alpine abort() functon.
@@ -18,7 +20,7 @@ _ 'apk add --no-cache -t run-packages --repositories-file /dev/null \';\
 _ '    curl tini zlib lmdb $EPACKS';\
 _ '';\
 _ 'git clone https://github.com/rdebath/mcchost.git mcchost';\
-_ 'make -j -C mcchost INSTALLER=install INSTDIR=/usr/local/bin install';\
+_ 'make -j -C mcchost $MAKEARGS INSTALLER=install INSTDIR=/usr/local/bin install';\
 _ 'rm -rf mcchost';\
 _ 'apk del --repositories-file /dev/null build-packages';\
 _ '';\

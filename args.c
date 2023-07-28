@@ -561,9 +561,9 @@ check_reload_server_ini()
     struct stat st = {0};
     if (stat(SERVER_CONF_NAME, &st) < 0) return;
     if (last_serv_ini_mod == 0)
-	last_serv_ini_mod = st.st_mtim.tv_sec;
-    if (last_serv_ini_mod == st.st_mtim.tv_sec) return;
-    last_serv_ini_mod = st.st_mtim.tv_sec;
+	last_serv_ini_mod = st.st_mtime;
+    if (last_serv_ini_mod == st.st_mtime) return;
+    last_serv_ini_mod = st.st_mtime;
 
     printlog("Reloading %s", SERVER_CONF_NAME);
 
