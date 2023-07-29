@@ -358,8 +358,10 @@ try_plant_tree(map_random_t *rng, uint16_t * heightmap, int treerate, int x, int
 
     map_random_t rng2[1];
     seed_rng(rng, rng2);
-    if (y1+7 <= level_prop->cells_y)
-	plant_tree(rng2, x, y1, z);
+    if (y1+7 <= level_prop->cells_y) {
+	level_blocks[World_Pack(x,y1,z)] = Block_Dirt;
+	plant_tree_r(rng2, x, y1+1, z);
+    }
 
     // None too close.
     for(int dx = -4; dx<5; dx++)
@@ -373,13 +375,11 @@ try_plant_tree(map_random_t *rng, uint16_t * heightmap, int treerate, int x, int
 }
 
 LOCAL void
-plant_tree(map_random_t *rng, int x, int y1, int z)
+plant_tree_r(map_random_t *rng, int x, int y, int z)
 {
     int height = 3 + bounded_random_r(rng, 4);
-    int y = y1+1;
 
-    level_blocks[World_Pack(x,y1,z)] = Block_Dirt;
-    for(int i=0; i<height; i++)
+    for(int i=0; i<=height; i++)
 	level_blocks[World_Pack(x,y+i,z)] = Block_Log;
 
     for (int dy = height - 2; dy <= height + 1; dy++) {

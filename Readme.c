@@ -27,7 +27,6 @@ Other notes
     -- command aliases
        -- /map /env /blockprops /os
 
- +) /tree -- Only Notch variant ?
  +) /fill
  +) /undo, /redo
  +) /sendcmd
