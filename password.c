@@ -131,6 +131,14 @@ static char base62[] =
 }
 
 int
+has_passwd_hash()
+{
+    char salt[NB_SLEN], hashpw[NB_SLEN];
+    readpw_file(user_id, salt, hashpw);
+    return (*salt != 0 && *hashpw != 0);
+}
+
+int
 do_pass(char * passwd, int quiet)
 {
     char salt[NB_SLEN], hashpw[NB_SLEN];

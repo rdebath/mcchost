@@ -66,7 +66,7 @@ The dimensions of a cubic block (usually 0..16)
 &TName&S Server name
 &TMotd&S The server level motd
 &TMain&S Which level to use as main.
-&TSalt&S Secret to use for classicube.net
+&TSalt&S Secret to use for classicube.net (&T/help set salt&S)
 &TKeyRotation&S Number of seconds between key rotations.
 &TMaxPlayers&S Players allowed to connect
 &TAFKInterval&S Time til player marked as AFK
@@ -80,6 +80,8 @@ The dimensions of a cubic block (usually 0..16)
 &TUserSuffix&S Added to end of users on this port &W**
 &TDisallowIPAdmin&S Set if Localhost is not an admin &W**
 &TDisallowIPVerify&S Set if Localhost must verify &W**
+&TLocalnet&S A cidr (eg &T192.168.0.0/9&S) of IP addresses treated the same as Localhost.
+&TDisableSaltLogin&S Disable MPPass/Salt verification &W**
 &TAllowPassVerify&S Allow password for verification &W**
 &TUseHttpPost&S Use POST on reg server &W**
 &TUseHttp09Arg&S Allow curl to use http0.9&W**
@@ -91,7 +93,7 @@ See &T/help betacraft&S to configure for that.
 */
 
 /*HELP per_port
-Create an empty file "server.[portno].ini" for each port you wish to configure and start a server for each one.
+Create an empty file "server.[portno].ini" for each port you wish to configure and start a server for each one with the -port option.
 You'll probably want to configure the options with a text editor in each before starting the service.
 */
 
@@ -100,11 +102,19 @@ The following options need to be set for a Betacraft port.
 
 Heartbeat = http://betacraft.uk/heartbeat.jsp
 UseHttpPost = true
-Private = true
+Private = false
 UserSuffix = +
+DisableSaltLogin = true
 AllowPassVerify = true
 
 Use &T/set server [varname] [value]&S for each item or alter the server.ini or server.[portno].ini file to include these.
+*/
+
+/*HELP set_salt
+The &TSalt&S and &TRotation&S options in the server section are used to generate the secret sent to the registration server (eg: Classicube.net or Betacraft)
+If the &TRotation&S option is set to zero the &TSalt&S is used directly.
+When the &TRotation&S is set to a time (eg: &T6h&S) the key sent will be changed that frequently.
+If the &TSalt&S is set to "-" mppass validation will be turned off and a dummy key sent to the registration server.
 */
 
 /*HELP set_system

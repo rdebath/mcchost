@@ -433,6 +433,10 @@ process_client_message(int cmd, char * pktbuf)
 	}
 	break;
 
+    case PKID_IDENT:
+	// MUST ignore this packet.
+	break;
+
     case PKID_EXTINFO:
 	{
 	    char * p = pktbuf+1;

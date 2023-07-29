@@ -99,15 +99,17 @@ struct server_ini_t {
     int use_http_0_9_arg;
     int use_ipv6;
     int omit_software_version;
-    int private;
     int disable_web_client;
+    int private;
+
+    int void_for_login;
+    int no_map_padding;
 
     int disallow_ip_admin;
     int disallow_ip_verify;
     int allow_pass_verify;
     int admin_only_login;
-    int void_for_login;
-    int no_map_padding;
+    int disable_salt_login;
 
     int trusted_localnet;
     char localnet_cidr[64];

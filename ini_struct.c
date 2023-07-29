@@ -186,19 +186,28 @@ system_x_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
 	INI_STRARRAY("Heartbeat", server_ini_tgt->heartbeat_url);
 	INI_BOOLVAL("PollHeartbeat", server_ini_tgt->enable_heartbeat_poll);
+	INI_BOOLVAL("Private", server_ini_tgt->private);
 	INI_BOOLVAL("UseHttpPost", server_ini_tgt->use_http_post);
 	INI_BOOLVAL("UseHttp09Arg", server_ini_tgt->use_http_0_9_arg);
 	INI_BOOLVAL("UseIPv6", server_ini_tgt->use_ipv6);
 	INI_BOOLVAL("OmitSoftwareVersion", server_ini_tgt->omit_software_version);
-	INI_BOOLVAL("Private", server_ini_tgt->private);
 	INI_BOOLVAL("DisableWebClient", server_ini_tgt->disable_web_client);
+
+	if (st->write) fprintf(st->fd, "\n");
+
+	INI_BOOLVAL("NoMapPadding", server_ini_tgt->no_map_padding);
+	INI_BOOLVAL("VoidForLogin", server_ini_tgt->void_for_login);
+	INI_BOOLVAL("AdminOnlyLogin", server_ini_tgt->admin_only_login);
+
+	if (st->write) fprintf(st->fd, "\n");
+
 	INI_STRARRAY("UserSuffix", server_ini_tgt->user_id_suffix);
+#ifdef UCMD_PASS
+	INI_BOOLVAL("AllowPassVerify", server_ini_tgt->allow_pass_verify);
+#endif
+	INI_BOOLVAL("DisableSaltLogin", server_ini_tgt->disable_salt_login);
 	INI_BOOLVAL("DisallowIPAdmin", server_ini_tgt->disallow_ip_admin);
 	INI_BOOLVAL("DisallowIPVerify", server_ini_tgt->disallow_ip_verify);
-	INI_BOOLVAL("AdminOnlyLogin", server_ini_tgt->admin_only_login);
-	INI_BOOLVAL("AllowPassVerify", server_ini_tgt->allow_pass_verify);
-	INI_BOOLVAL("VoidForLogin", server_ini_tgt->void_for_login);
-	INI_BOOLVAL("NoMapPadding", server_ini_tgt->no_map_padding);
 
 	// Do not store in ini file
 	// INI_BOOLVAL("Runonce", server_ini_tgt->server_runonce);
