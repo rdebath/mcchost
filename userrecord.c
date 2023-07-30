@@ -106,8 +106,11 @@ put_userrec(MDB_txn *txn, char * user_key, userrec_t * userrec)
 
 // If user_id arg is zero we use the user_no field so we can load the
 // DB data (specifically the full name) for translation of id to name.
+// load_for: 0 => Only load MDB data into existing rec.
+//           1 => Load all ini data
+//           2 => Load ini for write
 int
-read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
+read_userrec(userrec_t * rec_buf, char * user_id, int load_for)
 {
     if (user_id && *user_id == 0) return -1;
     if (user_id == 0 && rec_buf->user_no == 0) return -1;
@@ -117,7 +120,8 @@ read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
 	copy_user_key(user_key, user_id);
 
     // INI file loaded first, overridden by DB
-    if (user_id && load_ini) {
+    if (user_id && load_for) {
+	if (load_for != 2) *rec_buf = (userrec_t){0};
 	char userini[PATH_MAX];
 	rec_buf->click_distance = -1;  // Map default
 	user_ini_tgt = rec_buf;
@@ -179,10 +183,7 @@ read_userrec(userrec_t * rec_buf, char * user_id, int load_ini)
     read_fld(&p, &bytes, &rec_buf->blocks_placed, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->blocks_deleted, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->blocks_drawn, FLD_I64, 0);
-    if (rec_buf->first_logon == 0) // Set once.
-	read_fld(&p, &bytes, &rec_buf->first_logon, FLD_I64, 0);
-    else
-	read_fld(&p, &bytes, 0, FLD_SKIP, 0);
+    read_fld(&p, &bytes, &rec_buf->first_logon, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->last_logon, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->logon_count, FLD_I64, 0);
     read_fld(&p, &bytes, &rec_buf->kick_count, FLD_I64, 0);

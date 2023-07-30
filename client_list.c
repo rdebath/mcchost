@@ -837,7 +837,7 @@ delete_session_id(int pid, char * killed_user, int len)
 	if (wipe_this)
 	{
 	    // Increment kick count
-	    userrec_t user_rec;
+	    userrec_t user_rec = {0};
 	    if (read_userrec(&user_rec, shdat.client->user[i].name.c, 0) == 0) {
 		user_rec.kick_count++;
 		user_rec.dirty = 1;

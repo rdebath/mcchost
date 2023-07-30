@@ -134,7 +134,6 @@ int tcp_port_no = 25565;
 int enable_heartbeat_poll = 1;
 int server_runonce = 0;
 
-int save_conf = 0;
 char program_name[512];
 char ** program_args = 0;
 int proc_self_exe_ok = 0;
@@ -243,12 +242,6 @@ process_args(int argc, char **argv)
 			break;
 		    }
 #endif
-		}
-
-		if (strcmp(argv[ar], "-saveconf") == 0) {
-		    save_conf = 1;
-		    addarg = 0;
-		    break;
 		}
 
 		if (strcmp(argv[ar], "-inetd") == 0) {
@@ -363,7 +356,7 @@ process_args(int argc, char **argv)
 
 	    // Missing sever.ini means we can check this early.
 	    if (access(SERVER_CONF_NAME, F_OK) != 0)
-		check_something_todo();
+		check_if_default_show_help();
 
 	    init_dirs();
 
@@ -418,7 +411,7 @@ process_args(int argc, char **argv)
 		if (p>0) tcp_port_no = p;
 	    }
 
-	    if (tcp_port_no > 0 && tcp_port_no <= 65535 && !save_conf) {
+	    if (tcp_port_no > 0 && tcp_port_no <= 65535) {
 		char buf[256];
 		saprintf(buf, SERVER_CONF_PORT, tcp_port_no);
 		if (access(buf, F_OK) == 0) {
@@ -443,18 +436,13 @@ process_args(int argc, char **argv)
 	}
     }
 
-    check_something_todo();
+    check_if_default_show_help();
 
-    if (enable_heartbeat_poll && server->secret[0] == 0)
+    if (server->secret[0] == 0)
 	generate_secret();
 
-    if (save_conf) {
-	char pwd[PATH_MAX];
-	save_system_ini_file();
-	char * p = getcwd(pwd, sizeof(pwd));
-	fprintf(stderr, "Configuration saved to '%s/"SERVER_CONF_NAME"'\n", p?p:"");
-	exit(0);
-    }
+    if (access(SERVER_CONF_NAME, F_OK) != 0)
+	save_system_ini_file(1);
 
     // The -dir arg isn't added, make sure we don't go anywhere on restart.
     if (found_dir_arg == 1) {
@@ -482,10 +470,10 @@ process_args(int argc, char **argv)
 }
 
 LOCAL void
-check_something_todo()
+check_if_default_show_help()
 {
     // Check we're supposed to do something.
-    if (!inetd_mode && !start_tcp_server && !save_conf
+    if (!inetd_mode && !start_tcp_server
 	&& !start_heartbeat_task && !start_backup_task
 	&& (isatty(0) || isatty(1)))
 	show_args_help();
@@ -531,7 +519,7 @@ getprogram(char * argv0)
 }
 
 void
-save_system_ini_file()
+save_system_ini_file(int save_conf)
 {
     ini_settings->start_tcp_server = start_tcp_server;
     ini_settings->tcp_port_no = tcp_port_no;
@@ -587,4 +575,7 @@ check_reload_server_ini()
     ini_settings->detach_tcp_server = saved.detach_tcp_server;
     ini_settings->server_runonce = saved.server_runonce;
     ini_settings->inetd_mode = saved.inetd_mode;
+
+    // Repopulate some data copies.
+    convert_localnet_cidr();
 }

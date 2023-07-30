@@ -528,24 +528,26 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAYCP437("Colour", user_ini_tgt->colour);
 	INI_STRARRAYCP437("Skin", user_ini_tgt->skin);
 	INI_STRARRAYCP437("Model", user_ini_tgt->model);
-	INI_INTMAXVAL("BlocksPlaced", user_ini_tgt->blocks_placed);
-	INI_INTMAXVAL("BlocksDeleted", user_ini_tgt->blocks_deleted);
-	INI_INTMAXVAL("BlocksDrawn", user_ini_tgt->blocks_drawn);
 	INI_TIME_T("FirstLogon", user_ini_tgt->first_logon);
 	INI_TIME_T("LastLogon", user_ini_tgt->last_logon);
 	INI_INTMAXVAL("LogonCount", user_ini_tgt->logon_count);
-	INI_INTMAXVAL("KickCount", user_ini_tgt->kick_count);
-	INI_INTMAXVAL("DeathCount", user_ini_tgt->death_count);
-	INI_INTMAXVAL("MessageCount", user_ini_tgt->message_count);
 	INI_INTMAXVAL("CoinCount", user_ini_tgt->coin_count);
 	if (user_ini_tgt->click_distance >= 0 || !st->write)
 	    INI_FIXEDP("ClickDistance", user_ini_tgt->click_distance, 32);
-	INI_DURATION("TimeOnline", user_ini_tgt->time_online_secs);
 	INI_STRARRAY("LastIP", user_ini_tgt->last_ip);
 	INI_STRARRAY("Timezone", user_ini_tgt->timezone);
 
 	INI_STRARRAYCP437("Title", user_ini_tgt->title);
 	INI_STRARRAYCP437("TitleColour", user_ini_tgt->title_colour);
+
+	if (st->write) fprintf(st->fd, "\n");
+	INI_INTMAXVAL("BlocksPlaced", user_ini_tgt->blocks_placed);
+	INI_INTMAXVAL("BlocksDeleted", user_ini_tgt->blocks_deleted);
+	INI_INTMAXVAL("BlocksDrawn", user_ini_tgt->blocks_drawn);
+	INI_INTMAXVAL("KickCount", user_ini_tgt->kick_count);
+	INI_INTMAXVAL("DeathCount", user_ini_tgt->death_count);
+	INI_INTMAXVAL("MessageCount", user_ini_tgt->message_count);
+	INI_DURATION("TimeOnline", user_ini_tgt->time_online_secs);
     }
     return found;
 }

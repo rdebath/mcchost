@@ -18,6 +18,9 @@ Other notes
  +) Use "OnlyBlockArraysFollow" tag to allow early exit on load.
     eg: /mapinfo cwfile
 
+ +) Remove MDB usage by placing "fast" fields in userlevels.dat and updating
+    during "wipe" of old connection if necessary.
+
  +) Message blocks and portals don't need physics process.
 
  +) Improve the /setvar command, more help, option lists.

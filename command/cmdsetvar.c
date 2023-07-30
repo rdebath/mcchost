@@ -206,7 +206,7 @@ setvar(char * section, char * varname, char * value)
 	    server_ini_tgt = 0;
 	}
 
-	save_system_ini_file();
+	save_system_ini_file(0);
 
 	// Send heartbeat immediatly.
 	if (!strcasecmp("private", varname)) {

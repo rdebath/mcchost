@@ -70,17 +70,18 @@ write_current_user(int when)
 
     if (my_user.user_no == 0) {
 	if (*user_id == 0) return;
-	if (read_userrec(&my_user, user_id, 1) < 0)
+	if (read_userrec(&my_user, user_id, 2) < 0)
 	    my_user.user_no = 0;
     }
 
     if (when == 1) {
 	login_time = now;
-	if (!my_user.first_logon) my_user.first_logon = time(0);
+	if (my_user.logon_count == 0) my_user.first_logon = time(0);
 	my_user.last_logon = now;
 	my_user.time_of_last_save = now;
 	my_user.logon_count++;
 	my_user.user_logged_in = 1;
+	my_user.ini_dirty = 1;
 
 	// Datafix. Expires: Tue 14 Nov 22:13:20 GMT 2023
 	if (now < 1700000000)
@@ -103,7 +104,7 @@ write_current_user(int when)
     strcpy(my_user.user_id, user_id);
 
     if (when == 3) my_user.ini_dirty = 1;
-    write_userrec(&my_user, (when>=2));
+    write_userrec(&my_user, (when>=1));
 
     my_user.dirty = 0;
 }
@@ -164,19 +165,19 @@ read_ini_file_fields(userrec_t * userrec)
     load_ini_file(user_ini_fields, userini, 1, 1);
     user_ini_tgt = 0;
 
-    // Preserve the fields that are in the lmdb database.
+    // Preserve the fields that are in the lmdb database (and user_id).
     userrec->user_no = tmp.user_no;
     memcpy(userrec->user_id, tmp.user_id, NB_SLEN);
     userrec->blocks_placed = tmp.blocks_placed;
     userrec->blocks_deleted = tmp.blocks_deleted;
     userrec->blocks_drawn = tmp.blocks_drawn;
-    userrec->first_logon = tmp.first_logon;
-    userrec->last_logon = tmp.last_logon;
-    userrec->logon_count = tmp.logon_count;
+    // userrec->first_logon = tmp.first_logon;
+    // userrec->last_logon = tmp.last_logon;
+    // userrec->logon_count = tmp.logon_count;
     userrec->kick_count = tmp.kick_count;
     userrec->death_count = tmp.death_count;
     userrec->message_count = tmp.message_count;
-    memcpy(userrec->last_ip, tmp.last_ip, NB_SLEN);
+    // memcpy(userrec->last_ip, tmp.last_ip, NB_SLEN);
     userrec->time_online_secs = tmp.time_online_secs;
     userrec->ini_dirty = 0;
 }

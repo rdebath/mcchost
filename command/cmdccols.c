@@ -66,7 +66,7 @@ cmd_textcolour(char * UNUSED(cmd), char *arg)
     }
 
     send_textcolours();
-    save_system_ini_file();
+    save_system_ini_file(0);
 }
 
 void
