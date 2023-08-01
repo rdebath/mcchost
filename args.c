@@ -438,7 +438,7 @@ process_args(int argc, char **argv)
 
     check_if_default_show_help();
 
-    if (server->secret[0] == 0)
+    if (server->secret[0] == 0 && ini_settings->enable_heartbeat_poll)
 	generate_secret();
 
     if (access(SERVER_CONF_NAME, F_OK) != 0)
