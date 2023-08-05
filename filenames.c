@@ -185,9 +185,19 @@ fix_fname(char *buf, int len, char *s)
 	    int uc = cp437rom[(*p) & 0xFF];
 	    int c1, c2, c3;
 
-	    if (uc == '/')  uc = 0x2215; // DIVISION SLASH;
+	    if (uc == '/')  uc = 0x2215; // DIVISION SLASH
 	    if (uc == '\\') uc = 0x2216; // SET MINUS
-	    if (uc == '.')  uc = 0x1390; // ETHIOPIC TONAL MARK YIZET
+	    if (uc == '.') {
+		uc = 0x2024; // ONE DOT LEADER
+		if (p[1] == '.') {
+		    p++;
+		    uc = 0x2025; // TWO DOT LEADER
+		    if (p[1] == '.') {
+			p++;
+			uc = 0x2026; // HORIZONTAL ELLIPSIS
+		    }
+		}
+	    }
 	    if (uc < 0x80)  uc = 0xF000 + (uc&0xFF); // Linux direct to font.
 
 	    c2 = (uc/64);
@@ -222,7 +232,7 @@ unfix_fname(char *buf, int len, char *s)
 
     for(char *p=s;*p;p++) {
 	if (d>=buf+len-1) { *buf=0; return; }
-	int ch = -1;
+	int ch = -1, rep = 0;
 	if (*utfstate>=0) ch= (*p & 0xFF); else { p--; ch = -1; }
 
 	if (ch <= 0x7F && *utfstate == 0) {
@@ -237,7 +247,9 @@ unfix_fname(char *buf, int len, char *s)
 		ch = -1;
 		if (utf == 0x2215) ch = '/';
 		else if (utf == 0x2216) ch = '\\';
-		else if (utf == 0x1390) ch = '.';
+		else if (utf == 0x2024) ch = '.';
+		else if (utf == 0x2025) {ch = '.'; rep=1;}
+		else if (utf == 0x2026) {ch = '.'; rep=2;}
 		else
 		for(int n=0; n<256; n++) {
 		    if (cp437rom[(n+128)&0xFF] == utf)
@@ -248,6 +260,10 @@ unfix_fname(char *buf, int len, char *s)
 
 	if (ch <= 0) { *buf = 0; return; }
 	*d++ = ch;
+	for( ;rep>0; rep--) {
+	    if (d>=buf+len-1) { *buf=0; return; }
+	    *d++ = ch;
+	}
     }
     *d = 0;
 }

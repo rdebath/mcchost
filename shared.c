@@ -232,7 +232,7 @@ create_property_file(char * level_name, char * fixname)
     char sharename[256];
     saprintf(sharename, LEVEL_PROPS_NAME, fixname);
     if (allocate_shared(sharename, sizeof(*level_prop), shdat.dat+SHMID_PROP) < 0) {
-	printf_chat("&WLevel open failed for %s", level_name);
+	printf_chat("#&WLevel open failed for %s", level_name);
 	return;
     }
 
@@ -257,7 +257,7 @@ open_blocks(char * levelname)
     if((uintptr_t)l != l || (off_t)l != l || (size_t)l != l) {
 	errno = EINVAL;
 	perror("Server address space too small for this map");
-	printf_chat("Map \"%s\" is too large (%d,%d,%d) -> %jd cells",
+	printf_chat("#Map \"%s\" is too large (%d,%d,%d) -> %jd cells",
 	    levelname,
 	    level_prop->cells_x, level_prop->cells_y, level_prop->cells_z,
 	    (intmax_t)level_prop->cells_x * level_prop->cells_y * level_prop->cells_z);
@@ -315,7 +315,7 @@ open_tmp_blocks(char * levelname, int cells_x, int cells_y, int cells_z)
     if((uintptr_t)l != l || (off_t)l != l || (size_t)l != l) {
 	errno = EINVAL;
 	perror("Server address space too small for this map");
-	printf_chat("Map \"%s\" is too large (%d,%d,%d) -> %jd cells",
+	printf_chat("#Map \"%s\" is too large (%d,%d,%d) -> %jd cells",
 	    levelname, cells_x, cells_y, cells_z, (intmax_t)cells_x * cells_y * cells_z);
 	return -1;
     }

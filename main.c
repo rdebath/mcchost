@@ -115,15 +115,11 @@ process_connection()
     // But also Classic v7 protocol for c0.28_01 does not support op packet.
     op_enabled = (server->op_flag && protocol_base_version == 7 && cpe_requested);
 
-    if (cpe_requested && !server->cpe_disabled) {
-	send_ext_list();
-	cpe_pending = 1;
-    }
+    if (cpe_requested)
+	send_cpe_ext_list();
 
     if (!cpe_pending)
 	complete_connection();
-
-    cpe_enabled = (cpe_requested && !server->cpe_disabled);
 }
 
 void

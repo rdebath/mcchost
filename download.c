@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 700
 #include <sys/stat.h>
 #include <fcntl.h>
 #if _POSIX_VERSION >= 200112L

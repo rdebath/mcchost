@@ -185,7 +185,14 @@ on_select_timeout()
     // Classicube is around 60ms.
     if (++idle_ticks > TICK_SECS(60) && !cpe_pending)
 	logout("disconnected");
-    else if (idle_ticks == TICK_SECS(10))
+    else if (idle_ticks == TICK_SECS(10)) {
+	if (!cpe_requested && player_posn.valid) {
+	    // If there's gravity there a TP up will get a response.
+	    xyzhv_t tmp_pos = player_posn;
+	    tmp_pos.y+=23;
+	    send_posn_pkt(-1, 0, tmp_pos);
+	}
+    } else if (idle_ticks == TICK_SECS(15))
 	printlog("User %s: connection issue -- long idle", user_id);
 
     update_player_packet_idle();

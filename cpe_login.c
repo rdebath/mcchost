@@ -89,6 +89,9 @@ char *classicube_lasttwo[] = { "ExtendedTextures", "ExtendedBlocks", 0};
 int classicube_match_len = 0;
 int classicube_lastmatch = 0;
 
+// Beware:
+//  If Classic 0.30c is given any id over 127 it treats it like 255.
+//  Classic 0.30c has cosmetic issues with the TAB list if this is over 30.
 int max_proto_player_id = 127;
 
 int extn_blockdefn = 0;
@@ -131,9 +134,14 @@ block_t client_block_limit = Block_CP;	// Unsafe to send to client.
 block_t level_block_limit = Block_CP;	// We need to remap this or higher.
 
 void
-send_ext_list()
+send_cpe_ext_list()
 {
     int i, count = 0;
+    if (server->cpe_disabled) return;
+
+    if (max_proto_player_id < 127) max_proto_player_id = 127;
+    cpe_enabled = cpe_pending = 1;
+
     for(i = 0; extensions[i].version; i++)
 	if (!extensions[i].disabled)
 	    count++;

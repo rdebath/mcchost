@@ -228,7 +228,11 @@ read_maps(maplist_t * maps, int is_backup, DIR *directory, char * matchstr)
 	}
 
 	unfix_fname(nbuf2, sizeof(nbuf2), nbuf);
-	if (*nbuf2 == 0) continue;
+	if (*nbuf2 == 0) {
+	    if (entry->d_name[0] != '.')
+		printlog("Unexpected map file name: %s", entry->d_name);
+	    continue;
+	}
 	l = strlen(nbuf2);
 	if (l>MAXLEVELNAMELEN) continue;
 

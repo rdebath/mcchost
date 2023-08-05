@@ -1874,7 +1874,7 @@ static int ProcessInlineProc(Token *pFirst, int flags, int *pReset){
   pDecl = CreateDecl(pName->zText,pName->nText);
   pDecl->pComment = pFirst->pComment;
   DeclSetProperty(pDecl,TY_Subroutine);
-  pDecl->zDecl = TokensToString(pFirst,pEnd,";\n",0,0);
+  pDecl->zDecl = TokensToString(pFirst,pEnd,"\n",0,0);
   if( (flags & (PS_Static|PS_Local|PS_Local2)) ){
     DeclSetProperty(pDecl,DP_Local);
   }else if( flags & (PS_Export|PS_Export2) ){

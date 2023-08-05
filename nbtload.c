@@ -61,8 +61,6 @@ uint8_t mcg_physics[256] = {
  29, 22, 10, 22, 22, 41, 19, 35, 21, 29, 49, 34, 16, 41,  0, 22
 };
 
-static char mcgalaxy_names[];
-
 int
 load_map_from_file(char * filename, char * level_fname, char * level_name, int backup_id)
 {
@@ -1046,7 +1044,7 @@ define_mcg_physics_blocks()
     }
 }
 
-LOCAL char mcgalaxy_names[] =
+char mcgalaxy_names[] =
     "Air@Stone@Grass@Dirt@Cobblestone@Wood@Sapling@Bedrock@"
     "Active_Water@Water@Active_Lava@Lava@Sand@Gravel@Gold_Ore@Iron_Ore@"
     "Coal@Log@Leaves@Sponge@Glass@Red@Orange@Yellow@"

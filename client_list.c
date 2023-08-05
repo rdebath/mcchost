@@ -367,7 +367,7 @@ check_this_user()
     int my_level = shdat.client->user[my_user_no].state.on_level;
     time_t now = time(0);
 
-    if (server->afk_kick_interval > 60)
+    if (server->afk_kick_interval >= 60)
 	if (player_last_move + server->afk_kick_interval < now) {
 	    my_user.dirty = 1;
 	    my_user.kick_count++;

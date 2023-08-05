@@ -15,6 +15,12 @@ Other notes
 */
 
 /*HELP todo
+ +) Add base URLs for textures and skin names to the server.ini file.
+    The texture prefix is for all relative URIs. The skin ones are for
+    the prefix character '/'. Different prefixes can be specified for
+    different models ? Also include substitution for map name in both
+    texture and skin prefix URIs.
+
  +) Use "OnlyBlockArraysFollow" tag to allow early exit on load.
     eg: /mapinfo cwfile
 

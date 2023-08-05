@@ -25,7 +25,7 @@
 #define STDATOMIC
 #endif
 
-#if defined(__GNUC__) && __GNUC__ > 5
+#if defined(__GNUC__) && __GNUC__ > 5 && !defined(__STRICT_ANSI__)
 // How can I concisely tell this compiler that truncation is the whole damn point!
 // Also as I have to do this, I've added a static assert so that it is known to
 // be a large array not just a pointer

@@ -13,14 +13,17 @@ endif
 endif
 endif
 
+# You may want to add -DEIGHTBITMAP if you're compiling for 32bit
 DEFS=
 # Move the source for install
 DBGSRC=-fwrapv -fdebug-prefix-map='$(shell pwd)'=src
-# Use -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
+# For Clang? -Wno-unknown-warning-option
 # WTH is the point of the "truncation" warnings!
 WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation
-# For Clang? -Wno-unknown-warning-option
-CFLAGS=-Iinclude -O2 -g3 ${PTHREAD} ${LIBLMDBDEF} ${WARN} ${DEFS} ${HEADER} ${DBGSRC}
+# This defines the most recent _XOPEN_SOURCE macro glibc knows about.
+# Using -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
+XXXX=-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+CFLAGS=-Iinclude -O2 -g3 ${PTHREAD} ${LIBLMDBDEF} ${WARN} ${XXXX} ${DEFS} ${HEADER} ${DBGSRC}
 PTHREAD=-pthread
 LIBLMDB=-llmdb
 
