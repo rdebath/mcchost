@@ -1,6 +1,6 @@
 #include <fcntl.h>
 
-#include "password.h"
+#include "cmdpass.h"
 
 /* This is not the best example of password handling.
  *
@@ -33,7 +33,7 @@ Try again or contact the OPs to reset it
 
 #if INTERFACE
 #define UCMD_PASS \
-    {N"pass", &cmd_pass, CMD_HELPARG}, {N"setpass", &cmd_pass, .nodup=1, CMD_ALIAS, CMD_HELPARG}
+    {N"pass", &cmd_pass, CMD_HELPARG}, {N"setpass", &cmd_pass, .nodup=1, CMD_HELPARG}
 #endif
 
 static int testing_just_set_password = 0;

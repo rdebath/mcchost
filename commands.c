@@ -17,8 +17,9 @@ struct command_t {
     cmd_func_t function;
     enum perm_token perm_okay;
     enum perm_token perm_def;
+    uint8_t perm_set;
     uint8_t alias;		// Don't show on /cmds (usually a duplicate)
-    uint8_t nodup;		// This is a subcommand, keep cmd name
+    uint8_t nodup;		// This is a subcommand, not a dup because of "function"
     uint8_t help_if_no_args;
     uint8_t map;		// Error if no map
 };
@@ -26,6 +27,7 @@ struct command_t {
 typedef struct command_limit_t command_limit_t;
 struct command_limit_t {
     int max_user_blocks;
+    int other_cmd_disabled;
 };
 
 #define USER_PERM_ADMIN	0
@@ -34,7 +36,7 @@ struct command_limit_t {
 #define USER_PERM_CNT	3
 #endif
 
-command_limit_t command_limits = {400};
+command_limit_t command_limits = {.max_user_blocks=400};
 
 char * cmd_perms[CMD_PERM_CNT] = { "user", "admin", "level", "disabled" };
 
@@ -50,7 +52,7 @@ run_command(char * msg)
 
     int l = strcspn(msg+1, " ");
     if (l>=MB_STRLEN) {
-	printf_chat("&SUnknown command; see &T/cmds");
+	printf_chat("&SUnknown command%s", has_command("cmds")?"; see &T/cmds":"");
 	return;
     }
     memcpy(cmd, msg+1, l);
@@ -118,7 +120,7 @@ run_command(char * msg)
 	}
 
 	int c = i;
-	while(c>0 && command_list[c].alias && !command_list[c].nodup &&
+	while(c>0 && !command_list[c].nodup &&
 	    command_list[c].function == command_list[c-1].function)
 	    c--;
 
@@ -126,9 +128,6 @@ run_command(char * msg)
 	    // Official cmd name
 	    ncmd = command_list[c].name;
 	    help_if_no_args = command_list[c].help_if_no_args;
-
-	    while(cno>0 && command_list[cno].function == command_list[cno-1].function)
-		cno--;
 
 	    if (command_list[c].perm_okay == perm_token_disabled)
 		continue;
@@ -139,7 +138,7 @@ run_command(char * msg)
     }
 
     if (cno == -1) {
-	printf_chat("&SUnknown command \"%s&S\" -- see &T/cmds", cmd);
+	printf_chat("&SUnknown command \"%s&S\"%s", cmd, has_command("cmds")?" -- see &T/cmds":"");
 	return;
     }
 
@@ -185,9 +184,31 @@ void
 init_cmdset_perms()
 {
     for(int i = 0; command_list[i].name; i++) {
-	command_list[i].perm_okay = command_list[i].perm_def;
+	if(i>0 && !command_list[i].nodup && command_list[i].function == command_list[i-1].function)
+	    continue;
+
+	if (!command_list[i].perm_set) {
+	    if (command_limits.other_cmd_disabled == 1)
+		command_list[i].perm_okay = perm_token_disabled;
+	    else
+		command_list[i].perm_okay = command_list[i].perm_def;
+	    command_list[i].perm_set = 1;
+	}
     }
 }
+
+int
+has_command(char * cmd_name)
+{
+    for(int i = 0; command_list[i].name; i++) {
+	if (command_list[i].name[0] == cmd_name[0]
+	    && command_list[i].perm_okay != perm_token_disabled
+	    && strcmp(command_list[i].name, cmd_name) == 0)
+	    return 1;
+    }
+    return 0;
+}
+
 
 /*HELP quit H_CMD
 &T/quit [Reason]
@@ -226,66 +247,4 @@ cmd_quit(char * cmd, char * arg)
 	logout_f("Left the game: %s", arg);
     else
 	logout("Left the game.");
-}
-
-/*HELP commands,cmds,cmdlist H_CMD
-&T/commands
-List all available commands
-Aliases: /cmds /cmdlist
-*/
-#if INTERFACE
-#define UCMD_COMMANDS \
-    {N"cmds", &cmd_commands}, \
-    {N"commands", &cmd_commands, CMD_ALIAS}, \
-    {N"cmdlist", &cmd_commands, CMD_ALIAS}
-#endif
-void
-cmd_commands(char * UNUSED(cmd), char * arg)
-{
-    char buf[BUFSIZ];
-    int len = 0;
-
-    int listid = my_user.user_group;
-    if (perm_is_admin())
-	listid = USER_PERM_ADMIN;
-    else if (perm_level_check(0, 0, 1))
-	listid = USER_PERM_SUPER;
-    if (!arg || !*arg)
-	;
-    else if (strcasecmp(arg, "all") == 0 || strcasecmp(arg, "admin") == 0)
-	listid = USER_PERM_ADMIN;
-    else if (strcasecmp(arg, "level") == 0)
-	listid = USER_PERM_SUPER;
-    else if (strcasecmp(arg, "user") == 0)
-	listid = USER_PERM_USER;
-
-    for(int i = 0; command_list[i].name; i++) {
-	if (command_list[i].alias)
-	    continue;
-	if (command_list[i].perm_okay == perm_token_disabled)
-	    continue;
-	if (command_list[i].perm_okay == perm_token_none)
-	    ;
-	else if (command_list[i].perm_okay == perm_token_admin &&
-	    listid != USER_PERM_ADMIN)
-	    continue;
-	else if (command_list[i].perm_okay == perm_token_level &&
-	    listid == USER_PERM_USER)
-	    continue;
-
-	int l = strlen(command_list[i].name);
-	if (l + len + 32 < sizeof(buf)) {
-	    if (len) {
-		strcpy(buf+len, ", ");
-		len += 2;
-	    } else {
-		strcpy(buf+len, "&S");
-		len += 2;
-	    }
-	    strcpy(buf+len, command_list[i].name);
-	    len += l;
-	}
-    }
-    printf_chat("&SAvailable commands:");
-    printf_chat("%s", buf);
 }

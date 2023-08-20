@@ -142,8 +142,8 @@ complete_connection()
     create_cmd_queue();
 
     // Permissions.
-    init_cmdset_perms();
     load_ini_file(cmdset_ini_fields, CMDSET_CONF_NAME, 1, 0);
+    init_cmdset_perms();
 
     open_main_level();
 

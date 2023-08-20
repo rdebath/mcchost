@@ -560,22 +560,35 @@ cmdset_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
     section = "cmdlimits";
     INI_INTMAXVAL("MaxUserBlock", command_limits.max_user_blocks);
+    INI_INTMAXVAL("OtherCmdDisabled", command_limits.other_cmd_disabled);
 
     section = "cmdset";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
 	for(int i = 0; command_list[i].name; i++) {
-	    if(i>0 && command_list[i].function == command_list[i-1].function)
+	    if(i>0 && !command_list[i].nodup && command_list[i].function == command_list[i-1].function)
 		continue;
 
-	    if (!st->write || command_list[i].perm_okay != command_list[i].perm_def)
+	    if (!st->write) {
+		// Reading
+		if (!st->all && strcmp(command_list[i].name, fieldname) != 0)
+		    continue;
+
 		INI_INTVAL(command_list[i].name, command_list[i].perm_okay);
-	    else {
-		int x = -1;
-		INI_INTVAL(command_list[i].name, x);
+		command_list[i].perm_set = 1;
+		if (command_list[i].perm_okay == -1)
+		    command_list[i].perm_okay = command_list[i].perm_def;
+	    } else {
+		if (command_limits.other_cmd_disabled == 1 && command_list[i].perm_okay == perm_token_disabled) {
+		    ;
+		} else
+		if (command_list[i].perm_okay != command_list[i].perm_def) {
+		    INI_INTVAL(command_list[i].name, command_list[i].perm_okay);
+		} else if (command_limits.other_cmd_disabled != 0) {
+		    int is_default = -1;
+		    INI_INTVAL(command_list[i].name, is_default);
+		}
 	    }
-	    if (!st->write && command_list[i].perm_okay == -1)
-		command_list[i].perm_okay = command_list[i].perm_def;
 	}
     }
 
