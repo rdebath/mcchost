@@ -51,6 +51,7 @@ function save_text() {
     gsub("\t", "        ", text); # Don't use tabs!!
 
     if (!files) {
+	print "#ifdef UCMD_HELP"
 	t1 = textname; sub(",.*", "", t1);
 	t1 = "static char *lines_" t1 "[] = {"
 
@@ -59,15 +60,17 @@ function save_text() {
 	    gsub("\"", "\\\"", text);
 
 	    gsub("\n", "\",\n    \"", text);
-	    sub("$", "\",\n    0\n};\n", text);
+	    sub("$", "\",\n    0\n};", text);
 
 	    text = t1 "\n    \"" text
 	}
 
-	if (text == "") text = t1 "0};\n";
+	if (text == "") text = t1 "0};";
 
 	print "/* Help for "textname" */"
 	print text
+	print "#endif"
+	print ""
     }
 
     if (files && text != "") {
@@ -84,6 +87,7 @@ function save_text() {
 
 END{
     if (!files) {
+	print "#ifdef UCMD_HELP"
 	print "help_text_t helptext[] = {";
 	for(i=0; i<count; i++) {
 	    t1 = list[i]; sub(",.*", "", t1);
@@ -93,6 +97,7 @@ END{
 	}
 	print "    {0,0,0}"
 	print "};"
+	print "#endif"
 
 	print ""
 	print "#define N .name= /*STFU*/"

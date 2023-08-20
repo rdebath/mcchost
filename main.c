@@ -159,7 +159,9 @@ complete_connection()
 
     read_only_message();
 
+#ifdef UCMD_HELP
     cmd_help("welcome", 0);
+#endif
 
 #ifdef UCMD_PASS
     if (!user_authenticated)

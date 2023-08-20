@@ -1,5 +1,5 @@
 
-#include "help.h"
+#include "cmdhelp.h"
 
 #if INTERFACE
 typedef struct help_text_t help_text_t;
@@ -36,8 +36,7 @@ Other help files: license, chars, inifile, edlin, ...
 #define UCMD_HELP \
     {N"help", &cmd_help}, \
     {N"faq", &cmd_help, CMD_ALIAS, .nodup=1}, \
-    {N"news", &cmd_help, CMD_ALIAS, .nodup=1}, \
-    {N"clear", &cmd_clear}, {N"cls", &cmd_clear, CMD_ALIAS}
+    {N"news", &cmd_help, CMD_ALIAS, .nodup=1}
 #endif
 
 void
@@ -76,16 +75,10 @@ cmd_help(char * prefix, char *cmdargs)
     saprintf(helpbuf, "help/%s.txt", helptopic);
     FILE * hfd = fopen(helpbuf, "r");
     if (hfd) {
-	int ln = 0;
 	while(fgets(helpbuf, sizeof(helpbuf), hfd)) {
 	    int l = strlen(helpbuf);
 	    char * p = helpbuf+l;
 	    if (l != 0 && p[-1] == '\n') { p[-1] = 0; l--; }
-	    if (ln++ == 0) {
-		if (strcasecmp(helpbuf, "!clear") == 0)
-		    return cmd_clear("", 0);
-	    }
-
 	    convert_to_cp437(helpbuf, &l);
 	    post_chat(-1, 0, 0, helpbuf, l);
 	}
@@ -119,19 +112,6 @@ cmd_help(char * prefix, char *cmdargs)
 	printf_chat("&WNo help found for topic '%s'", cmdargs);
     else
 	printf_chat("&WNo %s file found for '%s'", prefix, cmdargs);
-}
-
-/*HELP clear,cls H_CMD
-&T/Clear &SClear your chat.
-Alias: &T/cls
-*/
-
-void
-cmd_clear(char * UNUSED(cmd), char * UNUSED(arg))
-{
-    for(int i = 0; i<30; i++)
-	printf_chat(" ");;
-    printf_chat("&WCleared");;
 }
 
 /*HELP faq H_CMD

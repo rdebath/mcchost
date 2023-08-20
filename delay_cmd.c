@@ -1,5 +1,5 @@
 
-#include "delayed_command.h"
+#include "delay_cmd.h"
 
 #if INTERFACE
 typedef void (*void_func)(void);

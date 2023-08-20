@@ -1,13 +1,16 @@
 
 #include "cmdeightball.h"
 
-/*HELP 8ball H_CMD
+/*HELP 8ball,magic8ball H_CMD
 &T/8ball Yes or no question
 Get an answer from the all-knowing 8-ball
+Alias: &T/magic8ball
 */
 
 #if INTERFACE
-#define UCMD_EIGHTBALL {N"8ball", &cmd_eightball, CMD_HELPARG}
+#define UCMD_EIGHTBALL \
+    {N"magic8ball", &cmd_eightball, CMD_HELPARG}, \
+    {N"8ball", &cmd_eightball, CMD_ALIAS}
 #endif
 
 // These are the classic 8-Ball responses.

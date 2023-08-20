@@ -173,9 +173,13 @@ run_command(char * msg)
     if ((!level_prop || !level_blocks) && command_list[cno].map)
 	printf_chat("&WCommand failed, map is not loaded");
     else
-    if (help_if_no_args && *arg == 0)
+    if (help_if_no_args && *arg == 0) {
+#ifdef UCMD_HELP
 	cmd_help(0, ncmd);
-    else
+#else
+	printf_chat("&WCommand needs arguments");
+#endif
+    } else
 	command_list[cno].function(ncmd, arg);
     return;
 }
