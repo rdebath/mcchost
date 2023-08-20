@@ -15,6 +15,8 @@ Other notes
 */
 
 /*HELP todo
+ +) Should cmd_func_t use const cmd and arg?
+
  +) Add base URLs for textures and skin names to the server.ini file.
     The texture prefix is for all relative URIs. The skin ones are for
     the prefix character '/'. Different prefixes can be specified for

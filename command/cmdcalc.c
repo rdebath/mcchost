@@ -31,6 +31,10 @@ static char *funcs[] = { "atan2", "cos", "exp", "int", "log", "rand", "sin", "sq
 	(access(MAWK, X_OK) == 0) ? MAWK: "awk",
 	bounded_random(0x7fffffff));
 
+    // We're not allowing '&' so if there are any, change them to '%'.
+    // NB this is too late for the command log.
+    for(char * s = arg; *s; s++) if (*s == '&') *s = '%';
+
     // Security: Awk is roo powerful to allow unfiltered access.
     // So only allow words and characters that work and are known safe.
     // Highlights to avoid include 'system("command")' and 'getline'
@@ -102,5 +106,5 @@ static char *funcs[] = { "atan2", "cos", "exp", "int", "log", "rand", "sin", "sq
 
     if ((t = strstr(r, "awk: ")) != 0) r = t+5;
     if ((t = strstr(r, "line 1: ")) == r) r = t+8;
-    printf_chat("#&TResult&f: %s = %s", arg, r);
+    printf_chat("#&TResult&f: %s&f = %s", arg, r);
 }

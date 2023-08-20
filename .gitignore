@@ -19,6 +19,7 @@ gmon.out
 .bash_history
 
 # If you run it in this directory.
+Readme.txt
 model.ini
 server.ini
 backup/
