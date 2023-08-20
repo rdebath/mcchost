@@ -56,14 +56,18 @@ process_chat_message(int message_type, char * msg)
 	msg++;
     } else if (msg[0] == '@') {
 	char * user = strtok(msg+1, " ");
-	msg = strtok(0, "");
-	for(int i=0; i<MAX_USER; i++)
-	{
-	    client_entry_t c = shdat.client->user[i];
-	    if (!c.state.active) continue;
-	    if (strcmp(c.name.c, user) == 0) {
-		to_user = i; break;
+	if (user)
+	    for(int i=0; i<MAX_USER; i++)
+	    {
+		client_entry_t c = shdat.client->user[i];
+		if (!c.state.active) continue;
+		if (strcmp(c.name.c, user) == 0) {
+		    to_user = i; break;
+		}
 	    }
+	if (!(msg = strtok(0, ""))) {
+	    printf_chat("Use: @%s private message", to_user>=0?user:"user");
+	    return;
 	}
 	if (to_user<0) {
 	    printf_chat("No online players equal \"%s\"", user);
@@ -87,7 +91,7 @@ process_chat_message(int message_type, char * msg)
 
     update_player_move_time();
 
-    convert_inbound_chat(to_user, msg);
+    convert_and_post_chat(to_user, msg);
 
     if (pending_chat_size >= 65536) {
 	free(pending_chat);
@@ -98,9 +102,10 @@ process_chat_message(int message_type, char * msg)
     send_queued_chats(1);
 }
 
-void
-convert_inbound_chat(int to_user, char * msg)
+LOCAL void
+convert_and_post_chat(int to_user, char * msg)
 {
+    if (!msg) return;
     char * buf = malloc(strlen(msg) + 256);
     char * p;
 
