@@ -30,9 +30,9 @@ struct command_limit_t {
     int other_cmd_disabled;
 };
 
-#define USER_PERM_ADMIN	0
-#define USER_PERM_USER	1
-#define USER_PERM_SUPER	2
+#define USER_PERM_ADMIN	0	// Server admin
+#define USER_PERM_USER	1	// Normal user
+#define USER_PERM_SUPER	2	// Level admin for all levels
 #define USER_PERM_CNT	3
 #endif
 

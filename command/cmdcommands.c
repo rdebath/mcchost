@@ -31,19 +31,25 @@ cmd_commands(char * UNUSED(cmd), char * arg)
     char buf[BUFSIZ];
     int len = 0;
 
-    int listid = my_user.user_group;
+    int listid = perm_token_none, list_only = 0;
     if (perm_is_admin())
-	listid = USER_PERM_ADMIN;
+	listid = perm_token_admin;
     else if (perm_level_check(0, 0, 1))
-	listid = USER_PERM_SUPER;
+	listid = perm_token_level;
     if (!arg || !*arg)
 	;
-    else if (strcasecmp(arg, "all") == 0 || strcasecmp(arg, "admin") == 0)
-	listid = USER_PERM_ADMIN;
-    else if (strcasecmp(arg, "level") == 0)
-	listid = USER_PERM_SUPER;
-    else if (strcasecmp(arg, "user") == 0)
-	listid = USER_PERM_USER;
+    else if (strcasecmp(arg, "all") == 0) {
+	listid = perm_token_admin;
+    } else if (strcasecmp(arg, "admin") == 0) {
+	listid = perm_token_admin;
+	list_only = 1;
+    } else if (strcasecmp(arg, "level") == 0) {
+	listid = perm_token_level;
+	list_only = 1;
+    } else if (strcasecmp(arg, "user") == 0) {
+	listid = perm_token_none;
+    } else
+	return printf_chat("Lists are: all, admin, level, user");
 
     int cmd_max = 0;
     for(int i = 0; command_list[i].name; i++)
@@ -60,13 +66,16 @@ cmd_commands(char * UNUSED(cmd), char * arg)
 	    continue;
 	if (command_list[i].perm_okay == perm_token_disabled)
 	    continue;
-	if (command_list[i].perm_okay == perm_token_none)
+	if (list_only) {
+	    if (command_list[i].perm_okay != listid)
+		continue;
+	} else if (command_list[i].perm_okay == perm_token_none)
 	    ;
 	else if (command_list[i].perm_okay == perm_token_admin &&
-	    listid != USER_PERM_ADMIN)
+	    listid != perm_token_admin)
 	    continue;
 	else if (command_list[i].perm_okay == perm_token_level &&
-	    listid == USER_PERM_USER)
+	    listid == perm_token_none)
 	    continue;
 
 	cmd_sort[cmd_index++] = command_list+i;

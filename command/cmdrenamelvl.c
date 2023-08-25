@@ -7,7 +7,7 @@ rename a level
 */
 
 #if INTERFACE
-#define UCMD_RENAMELVL {N"renamelvl", &cmd_renamelvl, CMD_PERM_ADMIN, CMD_HELPARG}
+#define UCMD_RENAMELVL {N"renamelvl", &cmd_renamelvl, CMD_HELPARG}
 #endif
 
 void
@@ -19,6 +19,9 @@ cmd_renamelvl(char * UNUSED(cmd), char * arg)
 	printf_chat("&WNeed both old and new level names");
 	return;
     }
+
+    if (!perm_level_check(oldlvlarg, 0, 0)) return;
+    if (!perm_level_check(newlvlarg, 0, 0)) return;
 
     char fixedname[MAXLEVELNAMELEN*4], lvlname[MAXLEVELNAMELEN+1];
     char fixedname2[MAXLEVELNAMELEN*4], lvlname2[MAXLEVELNAMELEN+1];
@@ -105,7 +108,7 @@ do_direct_rename(char * levelname, char * newlevelname)
 int
 do_renamelvl(char * levelname, char * newlevelname)
 {
-    if (level_processor_pid || current_level_backup_id != 0) return -1;
+    if (level_processor_pid) return -1;
     if ((level_processor_pid = fork()) != 0) {
         if (level_processor_pid<0) {
             level_processor_pid = 0;
