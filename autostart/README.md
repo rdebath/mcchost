@@ -17,9 +17,9 @@ Add a line to /etc/inittab of the form:
 
 Signal init to start it with `kill -HUP 1`
 
-The `-no-detach` argument is essential to ensure that init doesn't try to
-start multiple copies. This will start the service as root, so it will
-switch to the user "games" and store data in `/var/games/mcchost/`.
+The `-no-detach` argument is essential to ensure that init doesn't try to start multiple copies. This will start the service as root, so it will switch to the user "games" and store data in `/var/games/mcchost/`.
+
+You can add the argument `-user myuser` or `-user myuser,mygroup` to select the user to use. In this case the working directory will be in that user's home directory.
 
 Starting from FreeBSD /etc/ttys
 ---

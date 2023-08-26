@@ -409,7 +409,7 @@ show_args_help()
     fprintf(f, "  -cleanup   Do saves and backups. Run every 12 minutes or hours.\n");
     fprintf(f, "  -runonce   Accept one connection without forking, for debugging.\n");
     fprintf(f, "  -logstderr Logs to stderr, not log files.\n");
-    fprintf(f, "  -saveconf  Save current system conf then exit\n");
+    fprintf(f, "  -user U,G  Use user \"U\" and group \"G\"\n");
 
     exit(1);
 }

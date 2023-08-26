@@ -233,6 +233,18 @@ process_args(int argc, char **argv)
 			break;
 		    }
 
+		    if (strcmp(argv[ar], "-user") == 0) {
+			if (!pass2) {
+			    char * u = strdup(argv[ar+1]);
+			    char * g = strchr(u, ',');
+			    if (g) *g++ = 0; else g=u;
+			    game_user = u; game_group = g;
+			}
+			ar++;
+			addarg = 0;
+			break;
+		    }
+
 #ifndef __linux__
 		    if (strcmp(argv[ar], "-process-start-time") == 0) {
 			ar++; addarg++;
@@ -445,7 +457,7 @@ process_args(int argc, char **argv)
 	save_system_ini_file(1);
 
     // The -dir arg isn't added, make sure we don't go anywhere on restart.
-    if (found_dir_arg == 1) {
+    if (found_dir_arg != 2) {
 	program_args[bc++] = strdup("-cwd");
 	plen += 5;
     }

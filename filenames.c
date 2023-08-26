@@ -51,6 +51,9 @@
 
 char * Version = VERSION;
 
+char * game_user = 0;
+char * game_group = 0;
+
 static char * dirlist[] = {
     "system",
     "level",
@@ -92,16 +95,11 @@ find_dirs() {
     if (!home_d) vargames = 1;
 
     if (id == 0) {
-	struct passwd *uid = getpwnam("games");
-	if (uid) run_as = uid->pw_uid;
-	struct group * gid = getgrnam("games");
-	if (gid) grun_as = gid->gr_gid;
 	vargames = 1;
-
-	if (!uid || !gid) {
-	    fprintf(stderr, "Unable to switch to user and group \"games\"\n");
-	    exit(9);
-	}
+	fetch_ids(&run_as, &grun_as);
+	if (game_user)
+            home_d = getpwuid(run_as)->pw_dir;
+	if (home_d) vargames = 0;
     }
 
     char dirpath[PATH_MAX];
@@ -138,17 +136,12 @@ find_dirs() {
 void
 init_dirs()
 {
-
     if (getuid() == 0) {
-	// Don't run as root
-	struct group * gid = getgrnam("games");
-	struct passwd *uid = getpwnam("games");
-	if (!uid || !gid) {
-	    fprintf(stderr, "Unable to switch to user and group \"games\"\n");
-	    exit(9);
-	}
-	E(setgid(gid->gr_gid));
-	E(setuid(uid->pw_uid));
+        uid_t run_as = 0;
+	gid_t grun_as = 0;
+	fetch_ids(&run_as, &grun_as);
+	E(setgid(grun_as));
+	E(setuid(run_as));
     }
 
     for(int i = 0; dirlist[i]; i++) {
@@ -166,6 +159,20 @@ init_dirs()
     if (fd) {
 	fprintf(fd, "%s version: %s\n%s", SWNAME, Version, directory_readme);
 	fclose(fd);
+    }
+}
+
+LOCAL void
+fetch_ids(uid_t *p_uid, gid_t *p_gid)
+{
+    struct passwd *uid = getpwnam(game_user);
+    if (uid) *p_uid = uid->pw_uid;
+    struct group * gid = getgrnam(game_group);
+    if (gid) *p_gid = gid->gr_gid;
+
+    if (!uid || !gid) {
+	fprintf(stderr, "Unable to switch to user and group \"%s\" and \"%s\"\n", game_user, game_group);
+	exit(9);
     }
 }
 
