@@ -94,19 +94,34 @@ read_sock_port_no(int sock_fd)
 void
 tcpserver()
 {
+    int early_logger = 0;
+
+    if (!log_to_stderr && !server_runonce) {
+	if (isatty(2)) {
+	    // Don't clutter the console .
+	    char * nm = ttyname(2);
+	    if (!nm || strcmp(nm, "/dev/console") == 0)
+		early_logger = 1;
+	} else
+	    early_logger = 1; // No pipe chats.
+    }
+
+    if (early_logger)
+	logger_process();
+
     listen_socket = start_listen_socket("", tcp_port_no);
 
     if (tcp_port_no == 0)
 	tcp_port_no = read_sock_port_no(listen_socket);
 
-    if (isatty(2) && !log_to_stderr && !server_runonce)
+    if (!log_to_stderr && !server_runonce && !early_logger && isatty(2))
 	fprintf(stderr, "Accepting connections on port %d.\n", tcp_port_no);
 
     if (!server_runonce) {
 	if (detach_tcp_server)
 	    fork_and_detach();
 
-	if (!log_to_stderr)
+	if (!log_to_stderr && !early_logger)
 	    logger_process();
 
 	if (!disable_restart) {
