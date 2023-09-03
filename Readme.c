@@ -15,6 +15,10 @@ Other notes
 */
 
 /*HELP todo
+ +) If .lt. 30 users on all levels show them all on current level.
+    Put users not on this level at -1024 1023 -1024
+    (only for pure classic connections)
+
  +) Should cmd_func_t use const cmd and arg?
 
  +) Add base URLs for textures and skin names to the server.ini file.
