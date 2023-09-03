@@ -22,22 +22,62 @@ DBGSRC=-fwrapv -fdebug-prefix-map='$(shell pwd)'=src
 WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation
 # This defines the most recent _XOPEN_SOURCE macro glibc knows about.
 # Using -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
-XXXX=-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
-CFLAGS=-Iinclude -O2 -g3 ${PTHREAD} ${LIBLMDBDEF} ${WARN} ${XXXX} ${DEFS} ${HEADER} ${DBGSRC}
-PTHREAD=-pthread
-LIBLMDB=-llmdb
+GNULNX=${GNUC99} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
 
-# May be needed for older systems (eg: Debian Etch on x86)
-# CC=c99 -D_GNU_SOURCE
-# Also: LIBLMDB=
+CFLAGS=-Iinclude -O2 -g3 ${PTHREAD} ${LIBLMDBDEF} ${WARN} ${GNULNX} ${DEFS} ${HEADER} ${DBGSRC}
+PTHREAD=-pthread
 
 # Pick one for cross compile, use ODIR and PROG for out of tree binaries.
 #TARGET_ARCH=-m64
 #TARGET_ARCH=-mx32
 #TARGET_ARCH=-m32
+#CC=i686-linux-gnu-gcc
 
-ifeq ($(LIBLMDB),)
+################################################################################
+LOGDEV=/dev/null
+echo = $(1)
+ifeq ($(call echo,ok),) # This checks that gmake is new enough (gmake 3.79+)
+$(OBJECTS): a_newer_version_of_gnu_make
+else
+CALLOK := yes
+endif
+
+ifeq ($(CALLOK),yes)
+TMP :=/tmp/_test-$$$$
+FHASH=\#
+
+try-run = $(shell set -e;               \
+	echo Trying "$(1)" > $(LOGDEV); \
+	if ($(1)) >$(LOGDEV) 2>&1;      \
+	then echo "$(2)";               \
+	else echo "$(3)";               \
+	fi;                             \
+	rm -f $(TMP) $(TMP).o $(TMP).c  )
+
+TRYCC=$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c $(TMP).c
+TRYCC2=$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(TMP).c
+
+################################################################################
+
+GNUC99 := $(call try-run,\
+        { echo '$(FHASH)include <stdio.h>'; \
+          echo 'int main (int argc, char **argv)'; \
+          echo '{for(int i=1; i<10;i++) printf("Hello World!");}'; \
+          } > $(TMP).c ; $(TRYCC2) -w -std=gnu99 -o $(TMP),-std=gnu99)
+
+USE_LMDB := $(call try-run,\
+        { echo '$(FHASH)include <lmdb.h>';                         \
+          echo 'int main(){MDB_env *mcc_mdb_env = 0;return !mcc_mdb_env;}';   \
+          } > $(TMP).c ; $(TRYCC2) -w -o $(TMP) -llmdb,1)
+
+endif
+################################################################################
+
+ifeq ($(USE_LMDB),)
 LIBLMDBDEF=-DDISABLE_LMDB
+LIBLMDB=
+else
+LIBLMDB=-llmdb
 endif
 LDFLAGS=-lz -lm ${LIBLMDB}
 HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
