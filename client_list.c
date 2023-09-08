@@ -759,7 +759,8 @@ start_level(char * levelname, int backup_id)
 	shdat.client->user[my_user_no].level_bkp_id = backup_id;
 	shdat.client->user[my_user_no].state.posn = (xyzhv_t){0};
 	// Refresh this.
-	shdat.client->levels[level_id].no_unload = 0;
+	if (level_id > 0 && level_id < MAX_LEVEL)
+	    shdat.client->levels[level_id].no_unload = 0;
     }
 
     shdat.client->generation++;
