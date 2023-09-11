@@ -58,7 +58,7 @@ git_describe() {
     BUILD=$((BUILD-DIFF))
 
     # Number of modified files.
-    MOD=`git status --porc . | grep "^ M" | wc -l`
+    MOD=`git status --porcelain . 2>&1 | grep "^ M" | wc -l`
     DIFF=$((DIFF)) ; MOD=$((MOD))
 
     # Commentary.

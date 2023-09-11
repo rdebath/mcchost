@@ -24,8 +24,8 @@ WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -W
 # Using -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
 GNULNX=${GNUC99} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
 
-CFLAGS=-Iinclude -O2 -g3 ${PTHREAD} ${LIBLMDBDEF} ${WARN} ${GNULNX} ${DEFS} ${HEADER} ${DBGSRC}
-PTHREAD=-pthread
+CFLAGS1=-Iinclude -O2 -g3 ${GNULNX} ${DEFS} ${HEADER}
+CFLAGS=${CFLAGS1} ${PTHREAD} ${LIBLMDBDEF} ${WARNFLG} ${DBGFLGS}
 
 # Pick one for cross compile, use ODIR and PROG for out of tree binaries.
 #TARGET_ARCH=-m64
@@ -54,8 +54,8 @@ try-run = $(shell set -e;               \
 	fi;                             \
 	rm -f $(TMP) $(TMP).o $(TMP).c  )
 
-TRYCC=$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c $(TMP).c
-TRYCC2=$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(TMP).c
+TRYCC=$(CC) $(CFLAGS1) $(CPPFLAGS) $(TARGET_ARCH) -c $(TMP).c
+TRYCC2=$(CC) $(CFLAGS1) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) $(TMP).c
 
 ################################################################################
 
@@ -70,6 +70,21 @@ USE_LMDB := $(call try-run,\
           echo 'int main(){MDB_env *mcc_mdb_env = 0;return !mcc_mdb_env;}';   \
           } > $(TMP).c ; $(TRYCC2) -w -o $(TMP) -llmdb,1)
 
+USE_PTHREAD := $(call try-run,\
+        { echo '$(FHASH)include <pthread.h>';                         \
+          echo 'int main(){return !PTHREAD_MUTEX_ROBUST;}';   \
+          } > $(TMP).c ; $(TRYCC2) -w -o $(TMP) -pthread,1)
+
+WARNFLG := $(call try-run,\
+        { echo '$(FHASH)include <stdio.h>';                         \
+          echo 's=1; int main(){return !s;}';   \
+          } > $(TMP).c ; $(TRYCC2) $(WARN) -o $(TMP),$(WARN),-w)
+
+DBGFLGS := $(call try-run,\
+        { echo '$(FHASH)include <stdio.h>';                         \
+          echo 'int main(){return 0;}';   \
+          } > $(TMP).c ; $(TRYCC2) $(DBGSRC) -o $(TMP),$(DBGSRC))
+
 endif
 ################################################################################
 
@@ -79,6 +94,13 @@ LIBLMDB=
 else
 LIBLMDB=-llmdb
 endif
+
+ifeq ($(USE_PTHREAD),)
+PTHREAD=
+else
+PTHREAD=-pthread
+endif
+
 LDFLAGS=-lz -lm ${LIBLMDB}
 HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
 
@@ -94,7 +116,8 @@ INSTALLER=rsync -Pax
 
 ${PROG}: ${OBJ} ${OBJADD}
 ifeq ($(findstring s,$(MFLAGS)),)
-	@echo "$(CC) \$${CFLAGS} -o ${PROG} \$${OBJLIST} \$${LDFLAGS}"
+	@[ "$V" = '' ] && echo "$(CC) \$${CFLAGS} -o ${PROG} \$${OBJLIST} \$${LDFLAGS}" ||:
+	@[ "$V" != '' ] && echo "$(CC) $(CFLAGS) -o $(PROG) $(OBJLIST) $(LDFLAGS)" ||:
 endif
 	@$(CC) -o ${PROG} $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) ${OBJ} ${OBJADD} $(LDFLAGS)
 
