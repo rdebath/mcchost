@@ -139,6 +139,10 @@ check_other_users()
     int loop_max = 256;
     if (uid_ren_mode) loop_max = 255;
 
+    int classic_multimap = 0;
+    if (!extn_extplayerlist && !uid_ren_mode && shdat.client->highest_used_uid < 30)
+	classic_multimap = 1;
+
     for(int i=0; i<loop_max; i++)
     {
 	int uids = uid_ren[i].uids;
@@ -147,12 +151,24 @@ check_other_users()
 	// Note: slurp it so a torn struct is unlikely.
 	// But don't lock as we're not too worried.
 	client_entry_t c = shdat.client->user[uids];
+	int hide_location = 0;
+
+	// Using fake multi-level player list
+	if (!classic_multimap) {
+	    // Is this user visible.
+	    c.state.visible =
+		(c.state.active && c.authenticated && c.state.posn.valid &&
+		 c.state.on_level == my_level && c.level_bkp_id >= 0);
+	} else {
+	    c.state.visible = (c.state.active && c.authenticated);
+	    hide_location =
+		!(c.state.posn.valid && c.state.on_level == my_level &&
+		  c.level_bkp_id >= 0);
+	}
+
 	int is_dirty = 0;
 
-	// Is this user visible.
-	c.state.visible = (c.state.active && c.authenticated && c.state.posn.valid &&
-		c.state.on_level == my_level && c.level_bkp_id >= 0);
-
+	// CPE list of players on all levels.
 	if (extn_extplayerlist) {
 	    if (!c.state.active && myuser[i].active) {
 		send_removeplayername_pkt(i);
@@ -208,11 +224,17 @@ check_other_users()
 	    else saprintf(namebuf, "&7%s", c.name.c);
 	    revert_amp_to_perc(namebuf);
 	    send_addentity_pkt(i, namebuf, skin, c.state.posn);
-	    send_posn_pkt(i, 0, c.state.posn);
+	    if (hide_location)
+		send_posn_pkt(i, 0, (xyzhv_t){-1024*32,1023*32,-1024*32,0,0,1});
+	    else
+		send_posn_pkt(i, 0, c.state.posn);
 	    is_dirty = 1;
 	} else if (c.state.visible) {
 	    // Update user
-	    send_posn_pkt(i, &myuser[i].posn, c.state.posn);
+	    if (hide_location)
+		send_posn_pkt(i, 0, (xyzhv_t){-1024*32,1023*32,-1024*32,0,0,1});
+	    else
+		send_posn_pkt(i, &myuser[i].posn, c.state.posn);
 	    is_dirty = 1;
 	}
 	if (upd_flg) {

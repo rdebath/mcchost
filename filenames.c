@@ -157,7 +157,9 @@ init_dirs()
 
     FILE * fd = fopen("Readme.txt", "w");
     if (fd) {
-	fprintf(fd, "%s version: %s\n%s", SWNAME, Version, directory_readme);
+	fprintf(fd, "%s%s%s\n%s", SWNAME,
+	    *Version?" version: ":"", Version,
+	    directory_readme);
 	fclose(fd);
     }
 }
