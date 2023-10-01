@@ -34,7 +34,7 @@ block_t proto_conversion[] = {
 
     // Proto 6
     Block_Stone, Block_Grey, Block_Grey, Block_Red,
-    Block_Red, Block_Wood, Block_Cobble, Block_Cobble
+    Block_Red, Block_Wood, Block_Cobble, Block_Black
 };
 
 static uint32_t metadata_generation = 0;
