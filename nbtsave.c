@@ -163,6 +163,8 @@ save_map_to_file(char * fn, int background)
     if (level_prop->clouds_height != INT_MIN)
 	bc_ent_int32(savefile, "CloudsHeight", level_prop->clouds_height);
 
+    // These floats are *exact* conversions in normal range.
+    // There will be loss of precision for excessively large values.
     bc_ent_float(savefile, "CloudsSpeed", level_prop->clouds_speed/256.0);
     bc_ent_float(savefile, "WeatherSpeed", level_prop->weather_speed/256.0);
     bc_ent_float(savefile, "WeatherFade", level_prop->weather_fade/128.0);
@@ -644,11 +646,29 @@ save_block_def(gzFile ofd, int idno, blockdef_t * blkdef)
 
     bc_ent_string(ofd, "Name", blkdef->name.c);
     bc_ent_int8(ofd, "CollideType", blkdef->collide);
+
     {
-//	double log2 = 0.693147180559945f;
-//	double spl2 = (UB(pkt[p++]) - 128) / 64.0;
-//	double spd = exp(log2 * spl2);
-	bc_ent_float(ofd, "Speed", blkdef->speed/1024.0);
+	// Round the 'speed' value to the nearest byte we would sent to the
+	// client then convert it for the file as CC would.
+
+        // Ugh: speed = 2 ** ((byteval-128)/64)
+        uint8_t conv_speed = 128;
+        double val = blkdef->speed/1024.0;
+        if (val < 0.2) val = 0.2;       // Min is 0.25
+        if (val > 4) val = 4;           // Max is 3.95
+        val = round(64 * log(val) / log(2) + 128);
+        if (val >= 255) conv_speed = 255;
+        else if (val <= 0) conv_speed = 0;
+        else conv_speed = (uint8_t)val;
+
+	// conv_speed is now the byte we would send to the client.
+
+	// So convert it how Classicube does...
+	double log2 = 0.693147180559945f;
+	double spl2 = (conv_speed - 128) / 64.0;
+	double spd = exp(log2 * spl2);
+
+	bc_ent_float(ofd, "Speed", spd);
     }
 
     {

@@ -1,4 +1,4 @@
-
+#include <math.h>
 #include <zlib.h>
 #include <sys/stat.h>
 
@@ -354,25 +354,23 @@ read_element(gzFile ifd, int etype)
 	    V = (V<<8) + (gzgetc(ifd) & 0xFF);
 	}
 	switch(etype) {
-	case NBT_I8: V = (int8_t) V; break;
+	case NBT_I8: V = (int8_t) V; break;	// SIGNED!
 	case NBT_I16: V = (int16_t) V; break;
 	case NBT_I32: V = (int32_t) V; break;
 	}
 	if (etype <= NBT_I64 && etype >= NBT_I8) {
-	    ;
+	    change_int_value(last_sect, last_lbl, V);
 	} else if (etype == NBT_F32) {
 	    union { int32_t i32; float f32; } bad;
 	    bad.i32 = V;
-	    V = bad.f32 * 1024;
+	    change_float_value(last_sect, last_lbl, bad.f32);
 	} else if (etype == NBT_F64) {
 	    union { int64_t i64; double f64; } bad;
 	    bad.i64 = V;
-	    V = bad.f64 * 1048576;
+	    change_float_value(last_sect, last_lbl, bad.f64);
 	} else {
 	    ;
 	}
-
-	change_int_value(last_sect, last_lbl, V);
 
     } else {
 	printlog("Unimplemented tag %s", NbtName[etype]);
@@ -677,12 +675,12 @@ change_int_value(char * section, char * item, int64_t value)
 	if (strcmp(item, "EdgeHeight") == 0) level_prop->side_level = value;
 	if (strcmp(item, "SideOffset") == 0) level_prop->side_offset = value;
 	if (strcmp(item, "CloudsHeight") == 0) level_prop->clouds_height = value;
-	if (strcmp(item, "CloudsSpeed") == 0) level_prop->clouds_speed = value/4;
-	if (strcmp(item, "WeatherSpeed") == 0) level_prop->weather_speed = value/4;
-	if (strcmp(item, "WeatherFade") == 0) level_prop->weather_fade = value/8;
+	if (strcmp(item, "CloudsSpeed") == 0) level_prop->clouds_speed = value;		// Float
+	if (strcmp(item, "WeatherSpeed") == 0) level_prop->weather_speed = value;	// Float
+	if (strcmp(item, "WeatherFade") == 0) level_prop->weather_fade = value;		// Float
 	if (strcmp(item, "ExpFog") == 0) level_prop->exp_fog = value;
-	if (strcmp(item, "SkyboxHor") == 0) level_prop->skybox_hor_speed = value;
-	if (strcmp(item, "SkyboxVer") == 0) level_prop->skybox_ver_speed = value;
+	if (strcmp(item, "SkyboxHor") == 0) level_prop->skybox_hor_speed = value;	// Float
+	if (strcmp(item, "SkyboxVer") == 0) level_prop->skybox_ver_speed = value;	// Float
 
 	if (strcmp(item, "MapProperty0") == 0) level_prop->side_block = value;
 	if (strcmp(item, "MapProperty1") == 0) level_prop->edge_block = value;
@@ -783,7 +781,7 @@ change_int_value(char * section, char * item, int64_t value)
 	} else if (strcmp(item, "CollideType") == 0) {
 	    level_prop->blockdef[current_block].collide = value;
 	} else if (strcmp(item, "Speed") == 0) {
-	    level_prop->blockdef[current_block].speed = value;
+	    level_prop->blockdef[current_block].speed = value;	// Float
 	} else if (strcmp(item, "TransmitsLight") == 0) {
 	    level_prop->blockdef[current_block].transmits_light = value;
 	} else if (strcmp(item, "WalkSound") == 0) {
@@ -859,6 +857,26 @@ change_int_value(char * section, char * item, int64_t value)
 	    if (strcmp(item, "G") == 0) c = 1;
 	    if (strcmp(item, "B") == 0) c = 2;
 	    if (c>=0) set_colour(&level_prop->cuboid[current_cuboid].colour, c, value);
+	}
+    }
+}
+
+LOCAL void
+change_float_value(char * section, char * item, double value)
+{
+    // Values stored in the CW file as floats.
+    if (strcmp(section, "EnvMapAspect") == 0) {
+	if (strcmp(item, "CloudsSpeed") == 0) level_prop->clouds_speed = round(value * 256.0);
+	if (strcmp(item, "WeatherSpeed") == 0) level_prop->weather_speed = round(value * 256.0);
+	if (strcmp(item, "WeatherFade") == 0) level_prop->weather_fade = round(value * 128.0);
+	if (strcmp(item, "SkyboxHor") == 0) level_prop->skybox_hor_speed = round(value * 1024.0);
+	if (strcmp(item, "SkyboxVer") == 0) level_prop->skybox_ver_speed = round(value * 1024.0);
+    } else if (strncmp(section, "Block", 5) == 0) {
+	if (strcmp(item, "Speed") == 0) {
+	    // NB: Commands an ini file use *1024.0 value as it's easy.
+	    // Only convert to byte for transmission.
+	    // Round to byte values when we write back.
+	    level_prop->blockdef[current_block].speed = round(value * 1024.0);
 	}
     }
 }
