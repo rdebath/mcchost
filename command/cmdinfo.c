@@ -288,7 +288,8 @@ cmd_minfo(char * UNUSED(cmd), char * arg)
 	last_bkp = current_backup_file(0, 0, fixname, &last_backup_time);
     }
     char bkp_msg[512];
-    if (last_bkp <= 0) strcpy(bkp_msg, "no backups yet");
+    if (last_bkp <= 0 || last_backup_time == 0)
+	strcpy(bkp_msg, "no backups yet");
     else {
 	conv_duration(timebuf2, now-last_backup_time);
 	saprintf(bkp_msg, "last backup (%s ago): &T%d",

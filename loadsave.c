@@ -144,9 +144,10 @@ current_backup_file(char * bk_name, int bk_len, char * fixedname, time_t * mtime
 	// Find the next unused number
 	struct dirent *entry;
 	DIR *directory = 0;
-	if (i == 0)
+	if (i == 0) {
 	    directory = opendir(LEVEL_BACKUP_DIR_NAME);
-	else {
+	    saprintf(path, "%s", LEVEL_BACKUP_DIR_NAME);
+	} else {
 	    snprintf(path, sizeof(path), LEVEL_BACKUP_DIR_NAME "/%s", fixedname);
 	    directory = opendir(path);
 	}

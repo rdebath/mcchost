@@ -383,7 +383,7 @@ show_args_help()
     fprintf(f, "Usage: %s [-inetd|-tcp|-net] ...\n", program_name);
     fprintf(f, "  -dir X     Change to directory before opening data files.\n");
     fprintf(f, "  -cwd       Use the current directory for data.\n");
-    fprintf(f, "             (The default is ~/.mcchost.)\n\n");
+    fprintf(f, "             (The default is ~/.mcchost. or /var/games/mcchost)\n\n");
 
     fprintf(f, "  -tcp       Open a tcp socket for listening, no default secret.\n");
     fprintf(f, "  -net       Open a socket, register the secret at:\n%16s%s\n",
@@ -409,7 +409,7 @@ show_args_help()
     fprintf(f, "  -cleanup   Do saves and backups. Run every 12 minutes or hours.\n");
     fprintf(f, "  -runonce   Accept one connection without forking, for debugging.\n");
     fprintf(f, "  -logstderr Logs to stderr, not log files.\n");
-    fprintf(f, "  -user U,G  Use user \"U\" and group \"G\"\n");
+    fprintf(f, "  -user U,G  Use user \"U\" and group \"G\" when started as root.\n");
 
     exit(1);
 }

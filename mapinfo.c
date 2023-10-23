@@ -113,7 +113,6 @@ struct map_info_t {
     char seed[MB_STRLEN*2+1];
 
     struct blockdef_t blockdef[BLOCKMAX];
-    uint8_t block_perms[BLOCKMAX];
 
     struct selection_cuboid_t cuboid[MAX_CUBES];
     int magic_no2;

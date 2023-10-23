@@ -320,6 +320,7 @@ init_level_blocks(uint64_t fallback_seed, int pre_zeroed)
 	if (strcasecmp(level_prop->theme, "flat") == 0) {
 	    if (level_prop->seed[0])
 		level_prop->side_level = atoi(level_prop->seed);
+	    level_prop->edge_block = 2;
 	} else {
 	    strcpy(level_prop->theme, "Flat");
 	    level_prop->seed[0] = 0;
