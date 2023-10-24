@@ -178,10 +178,11 @@ cmd_setvar(char * UNUSED(cmd), char * arg)
 	return;
     }
 
-    setvar(section, varname, value);
+    if (setvar(section, varname, value))
+	printf_chat("&SSet %s&S.%s&S=\"%s&S\" ok.", section, varname, value);
 }
 
-void
+int
 setvar(char * section, char * varname, char * value)
 {
     ini_state_t stv = {.no_unsafe=1}, *st = &stv;
@@ -191,13 +192,13 @@ setvar(char * section, char * varname, char * value)
 
 	if (!perm_is_admin()) {
 	    printf_chat("&WPermission denied, need to be admin to update system variables");
-	    return;
+	    return 0;
 	}
 
 	if (!system_ini_fields(st, varname, &value)) {
 	    fprintf_logfile("%s: Setfail %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s&S] %s&S = %s", section, varname, value);
-	    return;
+	    return 0;
 	}
 
 	if (ini_settings->use_port_specific_file) {
@@ -215,7 +216,7 @@ setvar(char * section, char * varname, char * value)
 	}
     } else {
 	if (!perm_level_check(0, 0, 0))
-	    return;
+	    return 0;
 
 	int ro = level_prop->readonly;
 	st->looped_read = 1;
@@ -234,10 +235,9 @@ setvar(char * section, char * varname, char * value)
 	} else {
 	    fprintf_logfile("%s: Setfailed %s %s = %s", user_id, section, varname, value);
 	    printf_chat("&WOption not available &S[%s&S] %s&S = %s&S", section, varname, value);
-	    return;
+	    return 0;
 	}
 
     }
-
-    printf_chat("&SSet %s&S.%s&S=\"%s&S\" ok.", section, varname, value);
+    return 1;
 }

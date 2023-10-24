@@ -5,15 +5,16 @@ void
 open_main_level()
 {
     stop_shared();
+    char * m = main_level();
 
-    if (ini_settings->void_for_login && !user_authenticated) {
+    if (!*m || (ini_settings->void_for_login && !user_authenticated)) {
 	cmd_void(0,0);
     } else {
 	char fixedname[NB_SLEN];
-	fix_fname(fixedname, sizeof(fixedname), main_level());
+	fix_fname(fixedname, sizeof(fixedname), m);
 
-	if (start_level(main_level(), 0))
-	    open_level_files(main_level(), 0, 0, fixedname, 0);
+	if (start_level(m, 0))
+	    open_level_files(m, 0, 0, fixedname, 0);
 
 	if (!level_prop) cmd_void(0, 0);
 

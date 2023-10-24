@@ -120,7 +120,9 @@ cmd_main(char * UNUSED(cmd), char * arg)
             return;
         }
 
-	return setvar("server", "main", arg);
+	if (setvar("server", "main", arg))
+	    printf_chat("Set main level to &T%s", arg);
+	return;
     }
 
     if (current_level_backup_id == 0 && strcmp(main_level(), current_level_name) == 0) {

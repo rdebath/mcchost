@@ -126,7 +126,11 @@ open_level_files(char * level_name, int backup_id, char * cw_name, char * fixnam
 	    saprintf(cwfilename, LEVEL_BACKUP_DIR_NAME "/%s.cw", fixname);
     }
 
-    check_level_name(fixname); // Last check.
+    if (!check_level_name(fixname)) {
+	printlog("Failed attempt to open invalid level name \"%s\"", fixname);
+	return;
+    }
+
     shdat.level_fixed_name = strdup(fixname);
 
     saprintf(sharename, LEVEL_LOCK_NAME, fixname);
@@ -353,13 +357,14 @@ unlink_level(char * levelname, int silent)
 	    perror(sharename);
 }
 
-LOCAL void check_level_name(char * levelname)
+LOCAL int check_level_name(char * levelname)
 {
     if (strchr(levelname, '/') != 0 || levelname[0] == '.' || levelname[0] == 0
 	|| strlen(levelname) >= MAXLEVELNAMELEN*4)
     {
-	fatal_f("Illegal level file name \"%.66s\"", levelname);
+	return 0;
     }
+    return 1;
 }
 
 LOCAL void

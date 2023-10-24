@@ -241,6 +241,11 @@ scan_and_save_levels(int do_timed_save)
 	    nbtstr_t lv = shdat.client->levels[lvid].level;
 	    level_name = lv.c;
 
+	    if (*level_name == '\0') {
+		ignore_broken_level(lvid, &loaded_levels);
+		continue;
+	    }
+
 	    char fixedname[MAXLEVELNAMELEN*4];
 	    fix_fname(fixedname, sizeof(fixedname), level_name);
 	    open_level_files(level_name, 0, 0, fixedname, 1);

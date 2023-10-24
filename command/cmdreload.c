@@ -21,10 +21,13 @@ cmd_reload(char * UNUSED(cmd), char * arg)
 	}
 	check_block_queue(1);
 	send_map_reload();
-    } else if (strcasecmp(arg, "classic") == 0 && extn_blockdefn && customblock_enabled) {
-	level_block_limit = Block_CP;
-	classic_limit_blocks = 1;
-	send_map_reload();
+    } else if (strcasecmp(arg, "classic") == 0) {
+	if (extn_blockdefn && customblock_enabled) {
+	    level_block_limit = Block_CP;
+	    classic_limit_blocks = 1;
+	    send_map_reload();
+	} else
+	    printf_chat("&WYour client is already running in classic mode.");
     } else if (strcasecmp(arg, "all") == 0) {
 	level_block_queue->generation += 2;
     } else
