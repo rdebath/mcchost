@@ -176,14 +176,23 @@ cmd_ascend(char * UNUSED(cmd), char *UNUSED(arg))
 		printf_chat("There are no blocks above to ascend to.");
 		return;
 	    }
-	    if (level_blocks[World_Pack(x, y, z)] != Block_Air)
-		break;
+	    int collide = 2;
+	    block_t b = level_blocks[World_Pack(x, y, z)];
+	    if (b < BLOCKMAX)
+		collide = level_prop->blockdef[b].collide;
+	    if (collide != 0) break;
 	}
 	for(; y<level_prop->cells_y; y++) {
-	    uintptr_t index = World_Pack(x, y, z);
-	    if (level_blocks[index] == Block_Air &&
-		(y+1 == level_prop->cells_y ||
-		    level_blocks[World_Pack(x, y+1, z)] == Block_Air))
+	    int c1 = 2, c2 = 2;
+	    block_t b1, b2;
+	    b1 = level_blocks[World_Pack(x, y, z)];
+	    if (b1 < BLOCKMAX) c1 = level_prop->blockdef[b1].collide;
+	    if (y+1 >= level_prop->cells_y) c2 = 0;
+	    else {
+		b2 = level_blocks[World_Pack(x, y+1, z)];
+		if (b2 < BLOCKMAX) c2 = level_prop->blockdef[b2].collide;
+	    }
+	    if (c1 == 0 && c2 == 0)
 		break;
 	}
     }
@@ -205,27 +214,36 @@ cmd_descend(char * UNUSED(cmd), char *UNUSED(arg))
     int x,y,z;
 
     x = player_posn.x/32; // check range [0..cells_x)
-    y = (player_posn.y+16)/32;// Add half a block for slabs
+    y = (player_posn.y+31)/32;// Add half a block for slabs
     z = player_posn.z/32;
     if (x<0 || z<0 || x >= level_prop->cells_x || z >= level_prop->cells_z) {
 	printf_chat("No free spaces found below you");
 	return;
     } else {
-	if (y> level_prop->cells_y) y = level_prop->cells_y;
-	for(;;) {
-	    y--;
-	    if (y < 1) {
-		printf_chat("No free spaces found below you");
-		return;
+	if (y >= level_prop->cells_y) y = level_prop->cells_y-1;
+	else
+	    for(;;) {
+		y--;
+		if (y < 1) {
+		    printf_chat("No free spaces found below you");
+		    return;
+		}
+		int collide = 2;
+		block_t b = level_blocks[World_Pack(x, y, z)];
+		if (b < BLOCKMAX)
+		    collide = level_prop->blockdef[b].collide;
+		if (collide != 0) break;
 	    }
-	    if (level_blocks[World_Pack(x, y, z)] != Block_Air)
-		break;
-	}
 	for(; y>=0; y--) {
 	    if (y>=1) {
-		uintptr_t index = World_Pack(x, y, z);
-		if (level_blocks[index] == Block_Air &&
-		    level_blocks[World_Pack(x, y-1, z)] == Block_Air)
+		int c1 = 2, c2 = 2;
+		block_t b1, b2;
+		b1 = level_blocks[World_Pack(x, y, z)];
+		if (b1 < BLOCKMAX) c1 = level_prop->blockdef[b1].collide;
+		b2 = level_blocks[World_Pack(x, y-1, z)];
+		if (b2 < BLOCKMAX) c2 = level_prop->blockdef[b2].collide;
+
+		if (c1 == 0 && c2 == 0)
 		    break;
 	    }
 	}
