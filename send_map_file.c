@@ -289,7 +289,7 @@ send_block_array(uintptr_t level_len)
 				 MAX_WBITS | 16, 8,
 				 Z_DEFAULT_STRATEGY);
 	if (zrv != Z_OK)
-	    fatal_f("ZLib:deflateInit2() failed RV=%d.\n", zrv);
+	    fatal_f("ZLib:deflateInit2() failed RV=%d.", zrv);
 
 	strm.next_in = blockbuffer;
 	strm.avail_in = extn_fastmap?0:4;
@@ -330,7 +330,7 @@ send_block_array(uintptr_t level_len)
 
 	    zrv = deflate(&strm, strm.avail_in != 0?Z_NO_FLUSH:Z_FINISH);
 	    if (zrv != Z_OK && zrv != Z_STREAM_END && zrv != Z_BUF_ERROR)
-		fatal_f("ZLib:deflate() failed RV=%d.\n", zrv);
+		fatal_f("ZLib:deflate() failed RV=%d.", zrv);
 
 	    if (strm.avail_out == 0 || (zrv == Z_STREAM_END && sizeof(zblockbuffer) != strm.avail_out)) {
 		send_lvldata_pkt(zblockbuffer, sizeof(zblockbuffer)-strm.avail_out, percent);
@@ -410,7 +410,7 @@ send_padded_block_array()
 			 MAX_WBITS | 16, 8,
 			 Z_DEFAULT_STRATEGY);
     if (zrv != Z_OK)
-	fatal_f("ZLib:deflateInit2() failed RV=%d.\n", zrv);
+	fatal_f("ZLib:deflateInit2() failed RV=%d.", zrv);
 
     strm.next_in = blockbuffer;
     strm.avail_in = extn_fastmap?0:4;
@@ -467,7 +467,7 @@ send_padded_block_array()
 
 	zrv = deflate(&strm, strm.avail_in != 0?Z_NO_FLUSH:Z_FINISH);
 	if (zrv != Z_OK && zrv != Z_STREAM_END && zrv != Z_BUF_ERROR)
-	    fatal_f("ZLib:deflate() failed RV=%d.\n", zrv);
+	    fatal_f("ZLib:deflate() failed RV=%d.", zrv);
 
 	if (strm.avail_out == 0 || (zrv == Z_STREAM_END && sizeof(zblockbuffer) != strm.avail_out)) {
 	    send_lvldata_pkt(zblockbuffer, sizeof(zblockbuffer)-strm.avail_out, percent);

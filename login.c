@@ -192,7 +192,6 @@ login_peek_packet(pkt_player_id *player_p)
 	if (insize >= rqsize && inbuf[0] == 0 && inbuf[1] <= 7)
 	    break;
     }
-    fcntl(line_ifd, F_SETFL, 0);
 
     // Reset for requestloop; which will now read this packet and ignore it.
     if (websocket) websocket = 1;

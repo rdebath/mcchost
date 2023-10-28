@@ -170,6 +170,8 @@ complete_connection()
 #endif
     if (!level_prop)
 	printf_chat("&WMain level failed to load, you are nowhere.");
+
+    printlog("Connection completed for %s", user_id);
 }
 
 void

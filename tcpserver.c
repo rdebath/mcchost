@@ -54,6 +54,7 @@ char localnet_cidr[64];
 uint32_t localnet_addr = 0x7f000001, localnet_mask = ~0;
 
 static inline int E(int n, char * err) { if (n == -1) { perror(err); exit(1); } return n; }
+static inline int W(int n, char * err) { if (n == -1) perror(err); return n; }
 
 void
 handle_signal(int signo)
@@ -216,7 +217,7 @@ tcpserver()
 
 		    int pid = 0;
 		    if (!server_runonce)
-			pid = E(fork(), "Forking failure");
+			pid = W(fork(), "Failed to fork() worker");
 
 		    if (pid == 0)
 		    {
@@ -442,7 +443,7 @@ start_listen_socket(char * listen_addr, int port)
     // For FreeBSD '/etc/sysctl.conf' must have the line "net.inet6.ip6.v6only=0"
     // Or this must be set to allow IPv4 too.
     int flg = 0;
-    E(setsockopt(listen_sock, IPPROTO_IPV6, IPV6_V6ONLY, &flg, sizeof(flg)), "setsockopt ipv6");
+    W(setsockopt(listen_sock, IPPROTO_IPV6, IPV6_V6ONLY, &flg, sizeof(flg)), "setsockopt ipv6");
 
 #else
     listen_sock = E(socket(AF_INET, SOCK_STREAM, 0), "socket");
@@ -456,7 +457,7 @@ start_listen_socket(char * listen_addr, int port)
 #endif
 
     int reuse = 1;
-    E(setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)), "setsockopt");
+    W(setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)), "setsockopt");
 
     // Allow this to retry because of possible issues on restart.
     int c = 0;
@@ -746,7 +747,7 @@ start_backup_process()
 
     lock_restart(system_lock);
 
-    backup_pid = E(fork(),"fork() for backup");
+    backup_pid = W(fork(),"Failed to fork() for backup");
     if (backup_pid != 0) {
 	trigger_backup = trigger_unload = 0;
 	return;
