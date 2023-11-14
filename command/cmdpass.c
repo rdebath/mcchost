@@ -64,6 +64,7 @@ cmd_pass(char * cmd, char * arg)
     user_authenticated = 1;
 
     if (reopen || !level_prop) open_main_level();
+    else send_clickdistance();
 }
 
 void

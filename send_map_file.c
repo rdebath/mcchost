@@ -656,6 +656,9 @@ send_clickdistance()
 	    ? level_prop->click_distance
 	    : 160;
 
+    if (!user_authenticated)
+	click_distance = 0;
+
     send_clickdistance_pkt(click_distance);
 }
 
