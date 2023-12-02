@@ -19,7 +19,7 @@ DEFS=
 DBGSRC=-fwrapv -fdebug-prefix-map='$(shell pwd)'=src
 # For Clang? -Wno-unknown-warning-option
 # WTH is the point of the "truncation" warnings!
-WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation
+WARN=-Wall -Wextra -Wno-sign-compare -Wno-pointer-sign -Wno-format-truncation -Wno-stringop-truncation -Wvla
 # This defines the most recent _XOPEN_SOURCE macro glibc knows about.
 # Using -D_FILE_OFFSET_BITS=64 to allow larger maps with a 32bit compile
 GNULNX=${GNUC99} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64

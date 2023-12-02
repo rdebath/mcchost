@@ -15,6 +15,9 @@ Other notes
 */
 
 /*HELP todo
+ +) Hard ban; allow external routine to see list of currently banned IPs
+    eg: iptables script.
+
  +) Should cmd_func_t use const cmd and arg?
 
  +) Add base URLs for textures and skin names to the server.ini file.
