@@ -406,12 +406,10 @@ scan_and_save_levels(int do_timed_save)
 }
 
 void
-save_level_ini(char * level_name)
+save_level_ini(char * level_fname)
 {
-    char fixedname[MAXLEVELNAMELEN*4];
-    fix_fname(fixedname, sizeof(fixedname), level_name);
     char ini_file[256];
-    saprintf(ini_file, LEVEL_INI_NAME, fixedname);
+    saprintf(ini_file, LEVEL_INI_NAME, level_fname);
     save_ini_file(mcc_level_ini_fields, ini_file);
 }
 
