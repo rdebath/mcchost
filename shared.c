@@ -58,6 +58,7 @@ struct shared_data_t {
 #define level_prop shdat.prop
 #define level_blocks shdat.blocks
 #define level_blocks_zeroed (shdat.dat[SHMID_BLOCKS].zeroed)
+#define level_blocks_len_t ((char*)(shdat.dat[SHMID_BLOCKS].ptr) + shdat.dat[SHMID_BLOCKS].len - sizeof(map_len_t))
 #define level_block_queue shdat.blockq
 #endif
 

@@ -113,8 +113,7 @@ void
 init_block_file(uint64_t fallback_seed, int pre_zeroed)
 {
     map_len_t test_map;
-    memcpy(&test_map, (void*)(level_blocks+level_prop->total_blocks),
-	    sizeof(map_len_t));
+    memcpy(&test_map, level_blocks_len_t, sizeof(map_len_t));
 
     int blocks_valid = 1;
     if (test_map.magic_no != TY_MAGIC) blocks_valid = 0;
@@ -129,8 +128,8 @@ init_block_file(uint64_t fallback_seed, int pre_zeroed)
 	test_map.cells_x = level_prop->cells_x;
 	test_map.cells_y = level_prop->cells_y;
 	test_map.cells_z = level_prop->cells_z;
-	memcpy((void*)(level_blocks+level_prop->total_blocks),
-		&test_map, sizeof(map_len_t));
+	test_map.blksz = sizeof(block_t);
+	memcpy(level_blocks_len_t, &test_map, sizeof(map_len_t));
 
 	init_level_blocks(fallback_seed, pre_zeroed);
     }
@@ -166,33 +165,28 @@ read_blockfile_size(char * levelname, xyzhv_t * oldsize)
     int fd = open(sharename, O_RDONLY|O_NOFOLLOW|O_CLOEXEC, 0600);
     if (fd < 0) return; // Okay, ... weird.
 
-    lseek(fd, -sz, SEEK_END);
-    char buf[sz];
-    int cc = read(fd, buf, sizeof(buf));
-    close(fd);
-    if (cc <= 0) return;
+    lseek(fd, -sizeof(map_len_t), SEEK_END);
 
-    // Clunky search for the size of a map near the end of the block
-    // file. Seems to work.
     union {
 	char buf[sizeof(map_len_t)];
 	map_len_t size;
     } b;
-    for(int i=0; i<sz-sizeof(map_len_t); i++) {
-	memcpy(b.buf, buf+i, sizeof(map_len_t));
-	if (b.size.magic_no == TY_MAGIC) {
-	    unsigned x = b.size.cells_x;
-	    unsigned y = b.size.cells_y;
-	    unsigned z = b.size.cells_z;
-	    if (x>65535||y>65535||z>65535||x==0||y==0||z==0|| (int64_t)x*y*z > INT_MAX)
-		continue;
 
-	    oldsize->x = x;
-	    oldsize->y = y;
-	    oldsize->z = z;
-	    oldsize->valid = 1;
+    int cc = read(fd, b.buf, sizeof(b));
+    close(fd);
+    if (cc <= 0) return;
+
+    if (b.size.magic_no == TY_MAGIC) {
+	unsigned x = b.size.cells_x;
+	unsigned y = b.size.cells_y;
+	unsigned z = b.size.cells_z;
+	if (x>65535||y>65535||z>65535||x==0||y==0||z==0|| (int64_t)x*y*z > INT_MAX)
 	    return;
-	}
+
+	oldsize->x = x;
+	oldsize->y = y;
+	oldsize->z = z;
+	oldsize->valid = 1;
     }
 }
 

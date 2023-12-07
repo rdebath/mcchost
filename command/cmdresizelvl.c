@@ -87,7 +87,8 @@ resize_current_level(int new_x, int new_y, int new_z)
     test_map.cells_x = new_x;
     test_map.cells_y = new_y;
     test_map.cells_z = new_z;
-    memcpy((void*)(level_tmpblocks+total_blocks), &test_map, sizeof(map_len_t));
+    test_map.blksz = sizeof(map_block_t);
+    memcpy(level_blocks_len_t, &test_map, sizeof(map_len_t));
 
     // 2) Copy common level blocks
     copyblocks(

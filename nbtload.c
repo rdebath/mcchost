@@ -402,13 +402,13 @@ read_blockarray(gzFile ifd, uint32_t len)
 	return 0;
     }
 
-    map_len_t test_map;
+    map_len_t test_map = {0};
     test_map.magic_no = TY_MAGIC;
     test_map.cells_x = level_prop->cells_x;
     test_map.cells_y = level_prop->cells_y;
     test_map.cells_z = level_prop->cells_z;
-    memcpy((void*)(level_blocks+level_prop->total_blocks),
-	    &test_map, sizeof(map_len_t));
+    test_map.blksz = sizeof(map_block_t);
+    memcpy(level_blocks_len_t, &test_map, sizeof(map_len_t));
 
     int xbytes = 0;
     if (len > level_prop->total_blocks) { xbytes = len - level_prop->total_blocks; len = level_prop->total_blocks; }

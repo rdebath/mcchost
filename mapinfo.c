@@ -124,6 +124,7 @@ struct map_len_t {
     unsigned cells_x;
     unsigned cells_y;
     unsigned cells_z;
+    unsigned blksz;
 };
 
 #define MAX_CUBES 128
