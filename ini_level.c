@@ -13,7 +13,7 @@
  * known commands all other commands are ignored.
  */
 int
-try_asciimode(gzFile ifd, char * levelfile, char * ini_filename, uint64_t fallback_seed)
+try_asciimode(gzFile ifd, char * levelfile, char * ini_filename, char * ini_filename2, uint64_t fallback_seed)
 {
     int quiet = 0;
     struct timeval start;
@@ -52,6 +52,28 @@ try_asciimode(gzFile ifd, char * levelfile, char * ini_filename, uint64_t fallba
     if (!blocks_opened) {
 	xyzhv_t oldsize = {0};
 	read_blockfile_size(levelfile, &oldsize);
+
+	if (!oldsize.valid && ini_filename2 != 0 && *ini_filename2 &&
+	    (level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)) {
+
+	    if (access(ini_filename2, F_OK) == 0) {
+		printlog("Trying old theme from map ini file.");
+		map_info_t tgt[1] = {0};
+		level_ini_tgt = tgt;
+		load_ini_file(mcc_level_ini_fields, ini_filename2, 1, 0);
+		level_ini_tgt = 0;
+		if (tgt->cells_x > 0 && tgt->cells_y && tgt->cells_z) {
+		    level_prop->cells_x = tgt->cells_x;
+		    level_prop->cells_y = tgt->cells_y;
+		    level_prop->cells_z = tgt->cells_z;
+
+		    memcpy(level_prop->theme, tgt->theme, sizeof(level_prop->theme));
+		    memcpy(level_prop->seed, tgt->seed, sizeof(level_prop->seed));
+		    level_prop->texname = tgt->texname;
+		}
+	    }
+	}
+
 	patch_map_nulls(oldsize);
 
 	if (open_blocks(levelfile) < 0)
