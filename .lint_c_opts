@@ -1,2 +1,3 @@
 -std=gnu99
 -Iinclude
+-D_GNU_SOURCE
