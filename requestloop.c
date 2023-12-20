@@ -407,6 +407,26 @@ process_client_message(int cmd, char * pktbuf)
 	    pkt.pos.y -= 51;
 
 	    update_player_pos(pkt);
+
+	    if (!level_prop && !cpe_requested && !extn_extentityposn) {
+		if (void_map_size.x > 3 && void_map_size.y > 3 && void_map_size.z > 3) {
+		    // TP if outside void map
+		    if (pkt.pos.x < 32 || pkt.pos.x >= void_map_size.x*32-32 ||
+			pkt.pos.y < 16 || pkt.pos.y >= void_map_size.y*32-48 ||
+			pkt.pos.z < 32 || pkt.pos.z >= void_map_size.z*32-32) {
+
+			xyzhv_t spawn = {
+			    void_map_size.x*16+16,
+			    void_map_size.y*16+51,
+			    void_map_size.z*16+16,
+			    .valid = 1
+			};
+
+			send_posn_pkt(-1, &player_posn, spawn);
+			player_posn = spawn;
+		    }
+		}
+	    }
 	}
 	break;
 
