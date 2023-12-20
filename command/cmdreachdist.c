@@ -20,7 +20,7 @@ cmd_reachdist(char * cmd, char *arg)
 
     char * str1 = strarg(arg);
 
-    int rd = strtol(str1, 0, 0);
+    int rd = strtoi(str1, 0, 0);
     if (rd > 1023) rd = 1023;
     if (rd < -1) rd = -1;
     printf_chat("Set your reach distance to %d blocks.", rd);

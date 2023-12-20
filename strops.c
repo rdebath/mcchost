@@ -1,6 +1,18 @@
 
 #include "strops.h"
 
+#if INTERFACE
+inline static int strtoi(const char *nptr, char **endptr, int base)
+{
+    long v = strtol(nptr, endptr, base);
+    if (sizeof(int) != sizeof(long)) {
+	if (v < INT_MIN) { v = INT_MIN; errno = ERANGE; }
+	if (v > INT_MAX) { v = INT_MAX; errno = ERANGE; }
+    }
+    return v;
+}
+#endif
+
 char *
 my_strcasestr(char *haystack, char *needle)
 {

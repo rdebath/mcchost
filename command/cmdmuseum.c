@@ -20,16 +20,16 @@ cmd_museum(char * UNUSED(cmd), char * arg)
     int backup_id = 0;
 
     if (levelid == 0 && lvl != 0) {
-	 backup_id = strtol(lvl, &e, 10);
+	 backup_id = strtoi(lvl, &e, 10);
 	 if (backup_id > 0 && *e == 0) {
 	    levelid = lvl;
 	    lvl = 0;
 	 } else
 	    backup_id = 1;
     } else if (levelid) {
-	backup_id = strtol(levelid, &e, 10);
+	backup_id = strtoi(levelid, &e, 10);
 	if (*e != 0 && lvl) {
-	    int try2 = strtol(lvl, &e, 10);
+	    int try2 = strtoi(lvl, &e, 10);
 	    if (*e == 0) {
 		char * t = levelid; levelid = lvl; lvl = t;
 		backup_id = try2;

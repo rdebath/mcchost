@@ -59,7 +59,7 @@ cmd_textcolour(char * UNUSED(cmd), char *arg)
 	textcolour[c].fallback = *txfallback;
 	int base = 0;
 	if (*txcolour == '#') { base = 16; txcolour++; }
-	textcolour[c].colour = strtol(txcolour, 0, base);
+	textcolour[c].colour = strtoi(txcolour, 0, base);
     } else {
 	printf_chat("&SUse add or remove subcommand");
 	return;

@@ -233,9 +233,7 @@ extra_block_prop(ini_state_t *st, char * varname, char * value, char * v2, char 
 	    }
 	case ep_colour:
 	    {
-		int colour = strtol(value, 0, 0);
-		if (*value == '#')
-		    colour = strtol(value+1, 0, 16);
+		int colour = *value == '#'?strtoi(value+1, 0, 16):strtoi(value, 0, 0);
 		value = tbuf;
 		saprintf(nbuf, "%s.R", extra_props[op].name);
 		saprintf(tbuf, "%d", (colour>>16)&0xFF);

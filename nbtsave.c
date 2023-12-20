@@ -79,7 +79,7 @@ save_map_to_file(char * fn, int background)
 	if (level_prop->seed[0]) {
 	    // CC Only allows an integer here.
 	    char sbuf[sizeof(int)*3+3];
-	    int seed = strtol(level_prop->seed, 0, 0);
+	    int seed = strtoi(level_prop->seed, 0, 0);
 	    sprintf(sbuf, "%d", seed);
 	    if (strcmp(sbuf, level_prop->seed) == 0)
 		bc_ent_int32(savefile, "Seed", seed);

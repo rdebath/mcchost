@@ -76,19 +76,19 @@ cmd_newlvl(char * UNUSED(cmd), char * arg)
     char *e;
 
     if (sz) {
-	x = strtol(sx, &e, 10);
+	x = strtoi(sx, &e, 10);
 	if (*e || x<1 || x>MAPDIMMAX) {
 	    printf_chat("&WValue %s is not a valid dimension", sx);
 	    return;
 	}
 
-	y = strtol(sy, &e, 10);
+	y = strtoi(sy, &e, 10);
 	if (*e || y<1 || y>MAPDIMMAX) {
 	    printf_chat("&WValue %s is not a valid dimension", sy);
 	    return;
 	}
 
-	z = strtol(sz, &e, 10);
+	z = strtoi(sz, &e, 10);
 	if (*e || z<1 || z>MAPDIMMAX) {
 	    printf_chat("&WValue %s is not a valid dimension", sz);
 	    return;

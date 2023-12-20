@@ -221,7 +221,7 @@ read_maps(maplist_t * maps, int is_backup, DIR *directory, char * matchstr)
 	    if (p == 0) backup_id = 1;
 	    else {
 		char *e = "";
-		backup_id = strtol(p+1, &e, 10);
+		backup_id = strtoi(p+1, &e, 10);
 		if (backup_id<=0 || *e) continue;
 		*p = 0;
 	    }
