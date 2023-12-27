@@ -182,12 +182,7 @@ revert_amp_to_perc(char * msg)
 void
 post_chat(int where, int to_id, int type, char * chat, int chat_len)
 {
-    int colour = 'f', ncolour = 'e';
-    pkt_message pkt = {.message_type = type};
     if (chat_len <= 0) chat_len = strlen(chat);
-
-    if (chat_len <= 0 || chat[0] <= ' ' || chat[0] > '~')
-	colour = -1;
 
     if (where >= 0)
 	log_chat_message(chat, chat_len, where, to_id, type);
@@ -201,6 +196,16 @@ post_chat(int where, int to_id, int type, char * chat, int chat_len)
 	else
 	    where = to_id = 0;
     }
+
+    if (where != -1)
+	return queue_chat(where, to_id, type, chat, chat_len);
+
+    pkt_message pkt = {.message_type = type};
+
+    int colour = 'f', ncolour = 'e';
+
+    if (chat_len <= 0 || chat[0] <= ' ' || chat[0] > '~')
+	colour = -1;
 
     int s, d, ws = -1, wd = -1, add_gt = 0, el = 1;
     for(d = s = 0; s<chat_len; s++) {
@@ -270,12 +275,9 @@ post_chat(int where, int to_id, int type, char * chat, int chat_len)
 	// Full buffer gets sent IF it's a normal message
 	// Otherwise, truncate.
 	if (d >= MB_STRLEN) {
-	    if (type == 0) {
-		if (where == -1)
-		    send_message_pkt(0, pkt.message_type, pkt.message);
-		else
-		    update_chat(where, to_id, &pkt);
-	    } else
+	    if (type == 0)
+		send_message_pkt(0, pkt.message_type, pkt.message);
+	    else
 		break;
 
 	    el = d = 0;
@@ -288,10 +290,7 @@ post_chat(int where, int to_id, int type, char * chat, int chat_len)
 
     if (d>0 || el) {
 	while(d<MB_STRLEN) pkt.message[d++] = ' ';
-	if (where == -1)
-	    send_message_pkt(0, pkt.message_type, pkt.message);
-	else
-	    update_chat(where, to_id, &pkt);
+	send_message_pkt(0, pkt.message_type, pkt.message);
     }
 }
 
