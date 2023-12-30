@@ -84,9 +84,26 @@ char *classicube[] = {
     0,
 };
 
+char *classicube2[] = {
+    "ClickDistance", "CustomBlocks", "HeldBlock", "EmoteFix",
+    "TextHotKey", "ExtPlayerList", "EnvColors", "SelectionCuboid",
+    "BlockPermissions", "ChangeModel", "EnvMapAppearance",
+    "EnvWeatherType", "MessageTypes", "HackControl", "PlayerClick",
+    "FullCP437", "LongerMessages", "BlockDefinitions",
+    "BlockDefinitionsExt", "BulkBlockUpdate", "TextColors",
+    "EnvMapAspect", "EntityProperty", "ExtEntityPositions",
+    "TwoWayPing", "InventoryOrder", "InstantMOTD", "FastMap", "SetHotbar",
+    "SetSpawnpoint", "VelocityControl", "CustomParticles",
+    "PluginMessages", "ExtEntityTeleport",
+
+    "CustomModels",
+    0,
+};
+
 // Always last two for CC
 char *classicube_lasttwo[] = { "ExtendedTextures", "ExtendedBlocks", 0};
 int classicube_match_len = 0;
+int classicube_match_id = 0;
 int classicube_lastmatch = 0;
 
 // Beware:
@@ -159,10 +176,14 @@ process_extentry(pkt_extentry * pkt)
     int enabled_extension = 0;
     int disabled_extension = 0;
 
-    if (classicube[classicube_match_len] &&
+    if (classicube[classicube_match_len] && classicube_match_id == 0 &&
 	strcmp(classicube[classicube_match_len], pkt->extname) == 0)
 	classicube_match_len++;
-    else if (cpe_extn_remaining > 0 && cpe_extn_remaining <= 2) {
+    else if (classicube2[classicube_match_len] &&
+	strcmp(classicube2[classicube_match_len], pkt->extname) == 0) {
+	classicube_match_len++;
+	classicube_match_id = 1;
+    } else if (cpe_extn_remaining > 0 && cpe_extn_remaining <= 2) {
 	if (strcmp(classicube_lasttwo[2-cpe_extn_remaining], pkt->extname) == 0)
 	    classicube_lastmatch++;
     }
@@ -342,7 +363,9 @@ process_extentry(pkt_extentry * pkt)
 
 	if (cpe_extn_advertised > 9 && classicube_match_len+classicube_lastmatch == cpe_extn_advertised)
 	    sprintf(descbuf+strlen(descbuf),
-		"Classicube%s (%d extns)", websocket?" web":"", cpe_extn_advertised);
+		"Classicube%s (%d extns%s)", websocket?" web":"",
+		cpe_extn_advertised,
+		classicube_match_id && cpe_extn_advertised == 37 ?"":" old");
 	else
 
 	if (classicube_match_len <= 1)
