@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <assert.h>
 
 #ifndef DISABLE_LMDB
 #include <lmdb.h>
@@ -38,6 +39,7 @@ write_userrec(userrec_t * userrec, int ini_too)
     uint8_t user_key[NB_SLEN*4];
     copy_user_key(user_key, userrec->user_id);
 
+    assert(userrec->saveable);
     if (ini_too) {
 	if (!userrec->ini_dirty)
 	    read_ini_file_fields(userrec);
@@ -106,11 +108,10 @@ put_userrec(MDB_txn *txn, char * user_key, userrec_t * userrec)
 
 // If user_id arg is zero we use the user_no field so we can load the
 // DB data (specifically the full name) for translation of id to name.
-// load_for: 0 => Only load MDB data into existing rec.
-//           1 => Load all ini data
-//           2 => Load ini for write
+// ini_too: 0 => Only load MDB data into existing rec.
+//          1 => Load all MDB and ini data
 int
-read_userrec(userrec_t * rec_buf, char * user_id, int load_for)
+read_userrec(userrec_t * rec_buf, char * user_id, int ini_too)
 {
     if (user_id && *user_id == 0) return -1;
     if (user_id == 0 && rec_buf->user_no == 0) return -1;
@@ -120,8 +121,7 @@ read_userrec(userrec_t * rec_buf, char * user_id, int load_for)
 	copy_user_key(user_key, user_id);
 
     // INI file loaded first, overridden by DB
-    if (user_id && load_for) {
-	if (load_for != 2) *rec_buf = (userrec_t){0};
+    if (user_id && ini_too) {
 	char userini[PATH_MAX];
 	rec_buf->click_distance = -1;  // Map default
 	user_ini_tgt = rec_buf;
@@ -195,6 +195,17 @@ read_userrec(userrec_t * rec_buf, char * user_id, int load_for)
     E(mdb_txn_commit(txn));
 
     return 0;
+}
+
+void
+clear_userrec(userrec_t * rec_buf)
+{
+    if (rec_buf->saveable) {
+	if (rec_buf->ignore_list) {
+	    free(rec_buf->ignore_list);
+	    rec_buf->ignore_list = 0;
+	}
+    }
 }
 
 LOCAL void

@@ -42,7 +42,10 @@ struct userrec_t
     uint8_t banned;
     char ban_message[NB_SLEN];
 
+    char * ignore_list;
+
     // Not saved
+    int saveable;
     int dirty;
     int ini_dirty;
     int user_logged_in;
@@ -50,7 +53,7 @@ struct userrec_t
 }
 #endif
 
-userrec_t my_user = {.user_no = 0, .user_group=1};
+userrec_t my_user = {.user_no = 0, .user_group=1, .saveable=1};
 
 /*
     (when == 0) => Tick
@@ -70,7 +73,7 @@ write_current_user(int when)
 
     if (my_user.user_no == 0) {
 	if (*user_id == 0) return;
-	if (read_userrec(&my_user, user_id, 2) < 0)
+	if (read_userrec(&my_user, user_id, 1) < 0)
 	    my_user.user_no = 0;
     }
 
@@ -82,10 +85,6 @@ write_current_user(int when)
 	my_user.logon_count++;
 	my_user.user_logged_in = 1;
 	my_user.ini_dirty = 1;
-
-	// Datafix. Expires: Tue 14 Nov 22:13:20 GMT 2023
-	if (now < 1700000000)
-	    if (my_user.time_online_secs > 1500000000) my_user.time_online_secs = 0;
 
 	if (*client_ipv4_str) {
 	    snprintf(my_user.last_ip, sizeof(my_user.last_ip), "%s", client_ipv4_str);

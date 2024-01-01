@@ -502,6 +502,14 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 
     if (!user_ini_tgt) return found;
 
+    // If INI_STRPTR item is missing in the file it needs to be freed.
+    if (!st->write && strcmp("#", st->curr_section) == 0) {
+	if (user_ini_tgt->ignore_list) {
+	    free(user_ini_tgt->ignore_list);
+	    user_ini_tgt->ignore_list = 0;
+	}
+    }
+
     section = "user";
     if (st->all || strcmp(section, st->curr_section) == 0)
     {
@@ -524,30 +532,40 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	    user_ini_tgt->banned = 1;
 	    user_ini_tgt->ini_dirty = 1;
 	}
+
 	INI_STRARRAYCP437("Nick", user_ini_tgt->nick);
 	INI_STRARRAYCP437("Colour", user_ini_tgt->colour);
 	INI_STRARRAYCP437("Skin", user_ini_tgt->skin);
 	INI_STRARRAYCP437("Model", user_ini_tgt->model);
+	INI_STRARRAYCP437("Title", user_ini_tgt->title);
+	INI_STRARRAYCP437("TitleColour", user_ini_tgt->title_colour);
+
 	INI_TIME_T("FirstLogon", user_ini_tgt->first_logon);
 	INI_TIME_T("LastLogon", user_ini_tgt->last_logon);
 	INI_INTMAXVAL("LogonCount", user_ini_tgt->logon_count);
-	INI_INTMAXVAL("CoinCount", user_ini_tgt->coin_count);
+	INI_DURATION("TimeOnline", user_ini_tgt->time_online_secs);
+
 	if (user_ini_tgt->click_distance >= 0 || !st->write)
 	    INI_FIXEDP("ClickDistance", user_ini_tgt->click_distance, 32);
 	INI_STRARRAY("LastIP", user_ini_tgt->last_ip);
 	INI_STRARRAY("Timezone", user_ini_tgt->timezone);
 
-	INI_STRARRAYCP437("Title", user_ini_tgt->title);
-	INI_STRARRAYCP437("TitleColour", user_ini_tgt->title_colour);
+	if (user_ini_tgt->saveable) {
+	    INI_STRPTR("IgnoreList", user_ini_tgt->ignore_list);
+	} else {
+	    char tbuf[16] = {0};
+	    INI_STRARRAY("IgnoreList", tbuf);
+	}
 
-	if (st->write) fprintf(st->fd, "\n");
 	INI_INTMAXVAL("BlocksPlaced", user_ini_tgt->blocks_placed);
 	INI_INTMAXVAL("BlocksDeleted", user_ini_tgt->blocks_deleted);
 	INI_INTMAXVAL("BlocksDrawn", user_ini_tgt->blocks_drawn);
-	INI_INTMAXVAL("KickCount", user_ini_tgt->kick_count);
-	INI_INTMAXVAL("DeathCount", user_ini_tgt->death_count);
-	INI_INTMAXVAL("MessageCount", user_ini_tgt->message_count);
-	INI_DURATION("TimeOnline", user_ini_tgt->time_online_secs);
+
+	INI_INTMAXVALNZ("MessageCount", user_ini_tgt->message_count);
+	INI_INTMAXVALNZ("KickCount", user_ini_tgt->kick_count);
+	INI_INTMAXVALNZ("DeathCount", user_ini_tgt->death_count);
+	INI_INTMAXVALNZ("CoinCount", user_ini_tgt->coin_count);
+
     }
     return found;
 }
@@ -887,13 +905,13 @@ ini_read_bytes(char * buf, int len, char *value)
     }
 }
 
-#if 0
 LOCAL void
 ini_write_strptr(ini_state_t *st, char * section, char *fieldname, char **value)
 {
     ini_write_section(st, section);
     char * s = value?*value:"";
-    fprintf(st->fd, "%s =%s%s\n", fieldname, *s?" ":"", s);
+    if (s)
+	fprintf(st->fd, "%s =%s%s\n", fieldname, *s?" ":"", s);
 }
 
 LOCAL void
@@ -901,9 +919,9 @@ ini_read_strptr(char ** buf, char *value)
 {
     if (!buf) return;
     if (*buf) free(*buf);
-    *buf = strdup(value);
+    if (*value == 0) *buf = 0;
+    else *buf = strdup(value);
 }
-#endif
 
 LOCAL void
 ini_write_intmax(ini_state_t *st, char * section, char *fieldname, intmax_t value)
@@ -1085,19 +1103,17 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
         } \
     }while(0)
 
-#if 0
 #define INI_STRPTR(_field, _var) \
     do{\
         fld = _field; \
         if (st->all || strcasecmp(fieldname, fld) == 0) { \
 	    found = 1; \
             if (!st->write) \
-                ini_read_strptr(_var, *fieldvalue); \
+                ini_read_strptr(&(_var), *fieldvalue); \
             else \
-                ini_write_strptr(st, section, fld, _var); \
+                ini_write_strptr(st, section, fld, &(_var)); \
         } \
     }while(0)
-#endif
 
 #define INI_INTVAL(_field, _var) \
     do{\
@@ -1167,6 +1183,18 @@ ini_write_int_time_t(ini_state_t *st, char * section, char *fieldname, time_t va
             if (!st->write) \
                 _var = strtoimax(*fieldvalue, 0, 0); \
             else \
+                ini_write_intmax(st, section, fld, (_var)); \
+        } \
+    }while(0)
+
+#define INI_INTMAXVALNZ(_field, _var) \
+    do{\
+        fld = _field; \
+        if (st->all || strcasecmp(fieldname, fld) == 0) { \
+	    found = 1; \
+            if (!st->write) \
+                _var = strtoimax(*fieldvalue, 0, 0); \
+            else if (_var) \
                 ini_write_intmax(st, section, fld, (_var)); \
         } \
     }while(0)

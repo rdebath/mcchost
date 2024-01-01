@@ -55,7 +55,7 @@ cmd_ban(char * UNUSED(cmd), char *arg)
 	send_ipc_cmd(1, uid, &msg);
     } else {
 	// Set ban data
-	userrec_t user_rec;
+	userrec_t user_rec = {.saveable = 1};
 	if (read_userrec(&user_rec, user_name, 1) == 0) {
 	    user_rec.ini_dirty = 1;
 	    user_rec.banned = 1;
@@ -64,6 +64,7 @@ cmd_ban(char * UNUSED(cmd), char *arg)
 	    printf_chat("&7%s &Sbanned %s", user_id, user_name);
 	} else
 	    printf_chat("User detail for '%s' not found", user_name);
+	clear_userrec(&user_rec);
     }
 }
 
@@ -71,16 +72,21 @@ void
 cmd_unban(char * UNUSED(cmd), char *arg)
 {
     char * str1 = strarg(arg);
-    userrec_t user_rec;
+    userrec_t user_rec = {.saveable = 1};
 
     char user_name[128];
     saprintf(user_name, "%s", str1);
     if (read_userrec(&user_rec, user_name, 1) != 0) {
+	fprintf(stderr, "read one failed");
 	int found = match_user_name(str1, user_name, sizeof(user_name), 0, 0);
-	if (found != 1) return;
+	if (found != 1) {
+	    clear_userrec(&user_rec);
+	    return;
+	}
 
 	if (read_userrec(&user_rec, user_name, 1) != 0) {
 	    printf_chat("User detail for '%s' not found", user_name);
+	    clear_userrec(&user_rec);
 	    return;
 	}
     }
@@ -89,6 +95,7 @@ cmd_unban(char * UNUSED(cmd), char *arg)
     if (!user_rec.banned && user_rec.user_group >= 0) {
 	// Don't touch a user who might be logged in.
 	printf_chat("User '%s' is not banned", user_name);
+	clear_userrec(&user_rec);
 	return;
     }
     user_rec.ini_dirty = 1;
@@ -96,5 +103,6 @@ cmd_unban(char * UNUSED(cmd), char *arg)
     user_rec.banned = 0;
     user_rec.ban_message[0] = 0;
     write_userrec(&user_rec, 1);
+    clear_userrec(&user_rec);
     printf_chat("&7%s &Sunbanned %s", user_id, user_name);
 }

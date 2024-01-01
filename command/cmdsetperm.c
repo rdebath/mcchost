@@ -66,7 +66,7 @@ cmd_setperm(char * UNUSED(cmd), char *arg)
 	return;
 
     if (perm_type == 1) {
-	userrec_t user_rec;
+	userrec_t user_rec = {.saveable=1};
 	if (read_userrec(&user_rec, user_name, 1) == 0) {
 	    user_rec.ini_dirty = 1;
 	    user_rec.user_group = group;
@@ -79,6 +79,7 @@ cmd_setperm(char * UNUSED(cmd), char *arg)
 		send_ipc_cmd(1, uid, &msg);
 	} else
 	    printf_chat("User detail for '%s' not found", user_name);
+	clear_userrec(&user_rec);
 	return;
     }
 

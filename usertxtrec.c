@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <assert.h>
 
 #include "usertxtrec.h"
 
@@ -17,6 +18,7 @@ write_userrec(userrec_t * userrec, int UNUSED(ini_too))
     uint8_t user_key[NB_SLEN*4];
     copy_user_key(user_key, userrec->user_id);
 
+    assert(userrec->saveable);
     if (!userrec->ini_dirty)
 	read_ini_file_fields(userrec);
 
@@ -55,6 +57,17 @@ read_userrec(userrec_t * rec_buf, char * user_id, int UNUSED(load_ini))
     int rv = load_ini_file(user_ini_fields, userini, 1, 0);
     user_ini_tgt = 0;
     return rv;
+}
+
+void
+clear_userrec(userrec_t * rec_buf)
+{
+    if (rec_buf->saveable) {
+	if (rec_buf->ignore_list) {
+	    free(rec_buf->ignore_list);
+	    rec_buf->ignore_list = 0;
+	}
+    }
 }
 
 int

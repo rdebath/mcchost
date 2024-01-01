@@ -202,16 +202,19 @@ check_other_users()
 	    }
 	}
 
-	int upd_flg = (c.state.look_update_counter != myuser[i].look_update_counter);
+	int upd_flg = (myuser[i].visible && c.state.look_update_counter != myuser[i].look_update_counter);
+
 
 	if (c.state.visible && !myuser[i].visible)
 	    upd_flg = 1;
-	if (was_uid_ren[i] != uids)
+	if (was_uid_ren[i] != uids && was_uid_ren[i] != -1)
 	    upd_flg = 1;
+	if (upd_flg) fprintf(stderr, "Trace %d\n", __LINE__);
 	was_uid_ren[i] = uids;
 
 	if (upd_flg || (!c.state.visible && myuser[i].visible)) {
 	    // User gone. (Or we need to reset it)
+	if (upd_flg) fprintf(stderr, "Trace %d\n", __LINE__);
 	    send_despawn_pkt(i);
 	    is_dirty = 1;
 	}
@@ -860,12 +863,13 @@ delete_session_id(int pid, char * killed_user, int len)
 	if (wipe_this)
 	{
 	    // Increment kick count
-	    userrec_t user_rec = {0};
+	    userrec_t user_rec = {.saveable = 1};
 	    if (read_userrec(&user_rec, shdat.client->user[i].name.c, 0) == 0) {
 		user_rec.kick_count++;
 		user_rec.dirty = 1;
 		write_userrec(&user_rec, 0);
 	    }
+	    clear_userrec(&user_rec);
 	    close_userdb(); // We will be fork()ing later.
 
 	    cleaned ++;

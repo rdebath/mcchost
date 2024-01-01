@@ -161,6 +161,13 @@ send_queued_chats(int flush)
 	// To a team ... Not me.
 	if (upd.to_team_id >= 0) continue;
 
+	if (upd.from_player_id >= 0 && upd.from_player_id < MAX_USER) {
+	    int i = upd.from_player_id;
+	    if (shdat.client->user[i].state.active)
+		if (in_strlist(my_user.ignore_list, shdat.client->user[i].name.c))
+		    continue;
+	}
+
 	if (upd.message_len <= CHAT_MSG_LEN && queue_tmp_buf_used == 0) {
 	    post_chat(-1, 0, upd.message_type, upd.message, upd.message_len);
 	} else {
