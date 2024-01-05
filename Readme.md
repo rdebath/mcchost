@@ -13,11 +13,11 @@ apt install build-essential liblmdb-dev zlib1g-dev
 
 To run on Windows, install [Microsoft WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) and choose a Debian or Ubuntu distribution.
 
-Alternatively, the `Dockerfile` can be used to create an image of the repository on either Linux or Windows hosts.
+Alternatively, the `Dockerfile` can be used to create an image from the repository on either Linux or Windows hosts.
 
-Other Unix derived OS's should be possible if the dependancies (ZLib, LMDB) are available. Note if `pthread_mutex.c` fails to compile or gives the error `Lockfile "system/system.lock" failed with EINVAL`, add the option `PTHREAD=` or delete `pthread_mutex.c`, recompiled and try again. (For example FreeBSD's pthread locking does not work)
+Other Unix derived OS's should be possible if the dependancies (ZLib, LMDB) are available. Note if `pthread_mutex.c` fails to compile or gives the error `Lockfile "system/system.lock" failed with EINVAL`, add the option `USE_PTHREAD=` or delete `pthread_mutex.c`, recompiled and try again. (For example FreeBSD's pthread locking does not work)
 
-If LMDB is not available (and disabled with `make DEFS='-DDISABLE_LMDB' LIBLMDB=`) certain commands will fail to work correctly.
+If LMDB is not available (or disabled with `make USE_LMDB=`) certain commands will fail to work correctly.
 
 By default the server supports 10bit block numbers; to reduce the uncompressed map size, and client memory allocation, this can be limited to 8 bits by the define `EIGHTBITMAP` add this in the `DEFS` variable in the form `make DEFS='-DEIGHTBITMAP'`.
 
@@ -31,7 +31,7 @@ FreeBSD
 $ gmake
 
 macosx 11.4.2
-$ make DEFS='-DDISABLE_LMDB' LIBLMDB= WARN=-w PTHREAD= -j install
+$ make WARN=-w -j install
 -->
 
 Starting your server
