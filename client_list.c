@@ -209,12 +209,10 @@ check_other_users()
 	    upd_flg = 1;
 	if (was_uid_ren[i] != uids && was_uid_ren[i] != -1)
 	    upd_flg = 1;
-	if (upd_flg) fprintf(stderr, "Trace %d\n", __LINE__);
 	was_uid_ren[i] = uids;
 
 	if (upd_flg || (!c.state.visible && myuser[i].visible)) {
 	    // User gone. (Or we need to reset it)
-	if (upd_flg) fprintf(stderr, "Trace %d\n", __LINE__);
 	    send_despawn_pkt(i);
 	    is_dirty = 1;
 	}
