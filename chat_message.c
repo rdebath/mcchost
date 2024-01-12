@@ -107,7 +107,7 @@ convert_and_post_chat(int to_user, char * msg)
 {
     if (!msg) return;
     char * buf = malloc(strlen(msg) + 256);
-    char * p;
+    char * p, *p2 = 0;
 
     int to_level = -1;
     if (level_prop && level_prop->level_chat) {
@@ -117,9 +117,10 @@ convert_and_post_chat(int to_user, char * msg)
 	    to_level = -1;
     }
 
-    if (to_user >= 0)
+    if (to_user >= 0) {
 	p = buf + sprintf(buf, "&9[>] &e%s&e: &f", player_list_name.c);
-    else if (to_level >= 0)
+	p2 = p;
+    } else if (to_level >= 0)
 	p = buf + sprintf(buf, "&e<local>%s&e:&f ", player_title_name.c);
     else
 	p = buf + sprintf(buf, "&e%s&e:&f ", player_title_name.c);
@@ -144,9 +145,10 @@ convert_and_post_chat(int to_user, char * msg)
     convert_from_paren(buf, &l);
 
     if (to_user>= 0) {
+	char * buf2 = malloc(strlen(msg) + 256);
 	post_chat(1, to_user, 0, buf, l-1);
-	buf[1] = 'S'; buf[3] = '<';
-	post_chat(-1, 0, 0, buf, l-1);
+	int l2 = sprintf(buf2, "&S[<] &7%s&e: &f%s", shdat.client->user[to_user].name.c, p2);
+	post_chat(-1, 0, 0, buf2, l2);
     } else if (to_level >= 0)
 	post_chat(2, to_level, 0, buf, l-1);
     else

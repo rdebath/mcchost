@@ -24,8 +24,7 @@ By default the server supports 10bit block numbers; to reduce the uncompressed m
 <!--
 Normal
 $ make install
-$ mcchost-server -tcp -detach -saveconf
-$ mcchost-server
+$ mcchost-server -tcp -detach
 
 FreeBSD
 $ gmake
@@ -42,7 +41,6 @@ By default anyone connecting from localhost will be considered and admin. As suc
 The files for the server are normally stored in `~/.mcchost` but if it's started as root it'll change it's user id to `games` and use `/var/games/mcchost`. This directory can be configured by using the `-cwd` or `-dir [directory]` options.
 
 To run the server in the background omit the `-logstderr` option and add `-detach`.
-If you instead add a `-saveconf` option a default configuration file will be saved and the server will exit. Other options can be combined with `-savedconf` and their effect will be saved into the conf file.
 
 Several options can be set from the command line (see: `./server -help`) or more in the `server.ini` file.
 Only the `-dir` option and the `-port` option need to be configured from the command line and only if you are not using the defaults.
