@@ -397,9 +397,9 @@ process_args(int argc, char **argv)
 		    .cmd_spam_count = 25,
 		    .cmd_spam_interval = 1,
 		    .cmd_spam_ban = 30,
-		    .chat_spam_count = 8,
-		    .chat_spam_interval = 5,
-		    .chat_spam_ban = 10,
+		    .chat_spam_count = 0,
+		    .chat_spam_interval = 1,
+		    .chat_spam_ban = 5,
 		    .ip_connect_delay = 5,
 		    .shared_ini_settings.use_http_post = 1,
 		};
