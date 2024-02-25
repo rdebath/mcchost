@@ -167,13 +167,15 @@ init_dirs()
 LOCAL void
 fetch_ids(uid_t *p_uid, gid_t *p_gid)
 {
-    struct passwd *uid = getpwnam(game_user);
+    char * u = game_user?game_user:"games";
+    char * g = game_group?game_group:"games";
+    struct passwd *uid = getpwnam(u);
     if (uid) *p_uid = uid->pw_uid;
-    struct group * gid = getgrnam(game_group);
+    struct group * gid = getgrnam(g);
     if (gid) *p_gid = gid->gr_gid;
 
     if (!uid || !gid) {
-	fprintf(stderr, "Unable to switch to user and group \"%s\" and \"%s\"\n", game_user, game_group);
+	fprintf(stderr, "Unable to switch to user and group \"%s\" and \"%s\"\n", u, g);
 	exit(9);
     }
 }
