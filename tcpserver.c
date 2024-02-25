@@ -46,6 +46,7 @@ int restart_on_unload = 0, restart_needed = 0;
 static time_t last_execheck = 0;
 static time_t last_inicheck = 0;
 static int trigger_backup = 0, trigger_unload = 0;
+static int exe_generation = -1;
 
 pid_t alarm_handler_pid = 0;
 
@@ -768,6 +769,11 @@ start_backup_process()
 void
 check_new_exe()
 {
+    if (exe_generation < 0)
+	exe_generation = server->exe_generation;
+    if (exe_generation != server->exe_generation)
+	restart_sig = 1;
+
     if (!proc_self_exe_ok) return;
 
     if (server->magic != TY_MAGIC)

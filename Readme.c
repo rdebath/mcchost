@@ -49,9 +49,6 @@ Other notes
  +) /undo, /redo
  +) /sendcmd
 
- +) Command line to send HUP to server; for non-Linux updates.
-    -- Or just time on exe ?
-
  +) Update walkthrough for default server setup. (Readme.md)
     -- Including setting user to Admin with remote GUI.
     -- Include mini_chat for localhost processing.

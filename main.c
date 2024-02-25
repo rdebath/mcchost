@@ -13,6 +13,7 @@ int user_logged_in = 0;
 int inetd_mode = 0;
 int start_heartbeat_task = 0;
 int start_backup_task = 0;
+int trigger_restart = 0;
 
 nbtstr_t client_software;
 
@@ -46,10 +47,16 @@ main(int argc, char **argv)
 
     lock_start(system_lock);
 
+    if (trigger_restart)
+	server->exe_generation ++;
+
     if (start_heartbeat_task || start_backup_task)
         run_timer_tasks();
 
     delete_session_id(0, 0, 0);
+
+    if (trigger_restart)
+	exit(0);
 
     if (start_tcp_server) {
 	proctitle("%s server", SWNAME);
@@ -409,6 +416,7 @@ show_args_help()
     fprintf(f, "  -cron      Run periodic tasks, heartbeat and backups then exit.\n");
     fprintf(f, "  -register  Register at heartbeat and exit. Run every 30 seconds.\n");
     fprintf(f, "  -cleanup   Do saves and backups. Run every 12 minutes or hours.\n");
+    fprintf(f, "  -restart   Message to running listen processes to restart.\n");
     fprintf(f, "  -runonce   Accept one connection without forking, for debugging.\n");
     fprintf(f, "  -logstderr Logs to stderr, not log files.\n");
     fprintf(f, "  -user U,G  Use user \"U\" and group \"G\" when started as root.\n");

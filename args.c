@@ -27,6 +27,7 @@ struct server_t {
     uint8_t no_unload_main;
     uint8_t no_save_inuse;
     uint8_t use_utc_zone;
+    uint8_t exe_generation;
 
     int op_flag;
     int cpe_disabled;
@@ -345,6 +346,11 @@ process_args(int argc, char **argv)
 		    break;
 		}
 
+		if (strcmp(argv[ar], "-restart") == 0) {
+		    trigger_restart = 1;
+		    break;
+		}
+
 		fprintf(stderr, "Invalid argument '%s'\n", argv[ar]);
 		exit(1);
 	    } while(0);
@@ -486,7 +492,7 @@ check_if_default_show_help()
 {
     // Check we're supposed to do something.
     if (!inetd_mode && !start_tcp_server
-	&& !start_heartbeat_task && !start_backup_task
+	&& !start_heartbeat_task && !start_backup_task && !trigger_restart
 	&& (isatty(0) || isatty(1)))
 	show_args_help();
 
