@@ -1,4 +1,3 @@
-#include <zlib.h>
 
 #include "ini_level.h"
 
@@ -13,24 +12,47 @@
  * known commands all other commands are ignored.
  */
 int
-try_asciimode(gzFile ifd, char * levelfile, char * ini_filename, char * ini_filename2, uint64_t fallback_seed)
+try_asciimode(char * levelfile, char * ini_filename, char * ini_filename2, uint64_t fallback_seed)
 {
     int quiet = 0;
     struct timeval start;
     gettimeofday(&start, 0);
 
-    ini_state_t st = {.quiet = 0, .filename = levelfile};
+    ini_state_t st[1] = {{.quiet = 0, .filename = levelfile}};
     int blocks_opened = 0;
 
     printlog("Trying to load \"%s\" as an ini file", ini_filename);
 
     init_map_null();
 
-    char ibuf[BUFSIZ];
-    while(gzgets(ifd, ibuf, sizeof(ibuf))) {
-	char * p = ibuf;
-	while (*p == ' ' || *p == '\t') p++;
-	if (*p == '/' ) {
+    ini_file_t ini[1] = {0};
+    if (load_ini_txt_file(ini, ini_filename, 1) < 0 || ini->count == 0) {
+        clear_ini_txt(ini);
+        return 0;
+    }
+
+    for(int lno = 0; lno < ini->count; lno++) {
+	if ((ini->lines[lno].line_type & ini_section) == ini_section) {
+	    st->curr_section = ini->lines[lno].section;
+	}
+	if ((ini->lines[lno].line_type & ini_item) == ini_item) {
+	    char * label = ini->lines[lno].name;
+	    char * value = ini->lines[lno].value;
+	    if (!st->curr_section || !level_ini_fields(st, label, &value))
+		printlog("Unknown item \"%s\" in file \"%s\" section \"%s\" -- label \"%s\" value \"%s\"",
+		    ini->lines[lno].text_line, st->filename, st->curr_section?:"-", label, value);
+	}
+    }
+
+    // Now we abuse lines that begin with '/' for build commands.
+    // For some variants of ini files these are comments.
+    for(int lno = 0; lno < ini->count; lno++) {
+	if (ini->lines[lno].line_type == ini_comment) {
+	    char * p = ini->lines[lno].text_line;
+	    if (!p) continue;
+	    for(; *p == ' ' || *p == '\t'; p++);
+	    if (*p != '/') continue;
+
 	    if (!blocks_opened) {
 		blocks_opened = 1;
 		xyzhv_t oldsize = {0};
@@ -39,15 +61,11 @@ try_asciimode(gzFile ifd, char * levelfile, char * ini_filename, char * ini_file
 		if (open_blocks(levelfile) < 0)
 		    return 0;
 	    }
-	    st.no_unsafe = 1;
 	    apply_ini_command(p+1);
-	    continue;
-	}
-        if (load_ini_line(&st, level_ini_fields, ibuf) != 0) {
-	    level_prop->version_no = level_prop->magic_no = 0;
-	    return 0;
 	}
     }
+
+    clear_ini_txt(ini);
 
     if (!blocks_opened) {
 	xyzhv_t oldsize = {0};

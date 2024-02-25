@@ -95,13 +95,15 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
     int cw_loaded = load_cwfile(ifd, level_fname, level_name, filename);
 
     loading_level_fname = 0;
+    int rv = gzclose(ifd);
+    if (rv) printlog("Load '%s' failed error (gzclose) Z%d", filename, rv);
 
     if (cw_loaded == 0) {
 	// Looks like it might be a text file.
 	quiet = 1;
 	struct stat st = {0};
 	(void)stat(filename, &st);
-	if (!try_asciimode(ifd, level_fname, filename, ini_name, (uint64_t)st.st_mtime)) {
+	if (!try_asciimode(level_fname, filename, ini_name, (uint64_t)st.st_mtime)) {
 	    printlog("Level file \"%s\" NBT and INI load failed.", filename);
 	    cw_loaded = -1;
 	} else {
@@ -110,8 +112,6 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
 	}
     }
 
-    int rv = gzclose(ifd);
-    if (rv) printlog("Load '%s' failed error (gzclose) Z%d", filename, rv);
     if (cw_loaded != 1 || !level_prop)
 	return -1;
 

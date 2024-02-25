@@ -15,6 +15,10 @@ Other notes
 */
 
 /*HELP todo
+ +) Level Owner list should be populated with owner of name+ levels.
+    Add ini file for default new user setup.
+    There's a plugin for the user name so multiple levels can be created/OP'd.
+
  +) Hard ban; allow external routine to see list of currently banned IPs
     eg: iptables script.
 
@@ -151,8 +155,6 @@ Other notes
     -- Should this be an IRC server?
 
  +) NAME: (*) MCCHost
-
- +) INI file: Better way to preserve comments?
 
  +) Crash catcher restarts server process without dropping connection.
     -- Won't work with web client (unless proxy).
