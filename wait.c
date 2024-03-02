@@ -94,21 +94,34 @@ process_status_message(int status, int pid, char * id)
 	// If there was a core dump try to spit out something.
 	if (WCOREDUMP_X(status)) {
 	    char buf[1024];
+	    char * gdb = "/usr/bin/gdb";
+	    char * core = "core";
 
 	    // Are the programs and core file likely okay?
 	    int pgmok = 0;
 	    if (program_args[0][0] == '/' || strchr(program_args[0], '/') == 0)
 		pgmok = 1;
-	    if (pgmok && access("core", F_OK) != 0)
-		pgmok = 0;
-	    if (pgmok && access("/usr/bin/gdb", X_OK) != 0)
-		pgmok = 0;
+	    if (pgmok) {
+		if (access(core, F_OK) != 0) {
+		    core = "mcchost-server.core"; // Hummm.
+		    if (access(core, F_OK) != 0)
+			pgmok = 0;
+		}
+	    }
+	    if (pgmok) {
+		if (access(gdb, X_OK) != 0) {
+		    gdb = "/usr/local/bin/gdb";
+		    if (access(gdb, X_OK) != 0)
+			pgmok = 0;
+		}
+	    }
 
-	    if (pgmok && sizeof(buf) > snprintf(buf, sizeof(buf),
-		"/usr/bin/gdb -batch -ex 'backtrace full' -c core '%s'", program_args[0]))
+	    if (pgmok && sizeof(buf) >
+		snprintf(buf, sizeof(buf),
+		    "%s -batch -ex 'backtrace full' -c '%s' '%s'", gdb, core, program_args[0]))
 		system(buf);
 	    else
-		printlog("Skipped running /usr/bin/gdb; checking exe and core files failed.");
+		printlog("Skipped running gdb; checking exe and core files failed.");
 	}
     }
 
