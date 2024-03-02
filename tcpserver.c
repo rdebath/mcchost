@@ -67,13 +67,6 @@ handle_signal(int signo)
     if (signo == SIGINT) term_sig = 1;
 }
 
-void
-dont_panic()
-{
-    assert(!disable_restart && signal_available);
-    restart_sig = 1;
-}
-
 int
 read_sock_port_no(int sock_fd)
 {
@@ -771,13 +764,19 @@ check_new_exe()
 {
     if (exe_generation < 0)
 	exe_generation = server->exe_generation;
-    if (exe_generation != server->exe_generation)
+    if (exe_generation != server->exe_generation) {
+	if (!restart_sig)
+	    printlog("Schedule restart due to -restart option.");
 	restart_sig = 1;
+    }
 
     if (!proc_self_exe_ok) return;
 
-    if (server->magic != TY_MAGIC)
+    if (server->magic != TY_MAGIC) {
+	if (!restart_sig)
+	    printlog("Schedule restart due to incorrect system.dat");
 	restart_sig = 1;
+    }
 
     // Normally check FREQUENT_CHECK seconds
     time_t now;
@@ -808,13 +807,20 @@ check_new_exe()
     if (!shdat.client) return;
     lock_fn(system_lock);
 
-    if (server->loaded_levels == 0)
+    if (server->loaded_levels == 0) {
+	if (!restart_sig)
+	    printlog("Scheduled restart due to executable change.");
 	restart_sig = 1;
-    else if (server->connected_sessions == 0) {
+    } else if (server->connected_sessions == 0) {
+	if (!restart_on_unload)
+	    printlog("Restart due to executable change scheduled when levels unload.");
 	restart_on_unload = 1;
 	trigger_backup = 1;
-    } else
+    } else {
+	if (!restart_needed)
+	    printlog("Restart due to executable change scheduled when users disconnect.");
 	restart_needed = 1;
+    }
 
     unlock_fn(system_lock);
 }
