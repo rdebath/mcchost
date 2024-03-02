@@ -228,12 +228,17 @@ Logout with RAGEQUIT!!
 Perform various server hacks, OPERATORS ONLY!
 Aliases: /hacks
 */
+/*HELP crashserver,servercrash H_CMD
+&T/CrashServer
+Crash the server with a generic error
+*/
+
 #if INTERFACE
 #define UCMD_QUITS  {N"quit", &cmd_quit}, \
     {N"rq", &cmd_quit, .nodup=1 }, \
     {N"hax", &cmd_quit, CMD_ALIAS, .nodup=1 }, {N"hacks", &cmd_quit, CMD_ALIAS}, \
-    {N"crashserver", &cmd_quit, CMD_ALIAS, .nodup=1}, \
-    {N"servercrash", &cmd_quit, CMD_ALIAS}
+    {N"crashserver", &cmd_crashserver}, \
+    {N"servercrash", &cmd_crashserver, CMD_ALIAS}
 #endif
 
 void
@@ -244,11 +249,18 @@ cmd_quit(char * cmd, char * arg)
     if (strcasecmp(cmd, "hax") == 0)
 	logout("Your IP has been backtraced + reported to FBI Cyber Crimes Unit.");
 
-    if (strcasecmp(cmd, "crashserver") == 0)
-	logout("Server crash! Error code 0xD482776B");
-
     if (arg&&*arg)
 	logout_f("Left the game: %s", arg);
     else
 	logout("Left the game.");
+}
+
+void
+cmd_crashserver(char * UNUSED(cmd), char * UNUSED(arg))
+{
+    char cbuf[1024];
+    // NB: bounded_random maxes at 2^31-1 (and the bias)
+    saprintf(cbuf, "Server crash! Error code 0x%04x%04x",
+	bounded_random(65536), bounded_random(65536));
+    logout(cbuf);
 }
