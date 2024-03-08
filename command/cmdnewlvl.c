@@ -73,9 +73,9 @@ cmd_newlvl(char * UNUSED(cmd), char * arg)
     }
 
     int x=0,y=0,z=0;
-    char *e;
 
     if (sz) {
+	char *e;
 	x = strtoi(sx, &e, 10);
 	if (*e || x<1 || x>MAPDIMMAX) {
 	    printf_chat("&WValue %s is not a valid dimension", sx);
@@ -101,8 +101,10 @@ cmd_newlvl(char * UNUSED(cmd), char * arg)
 	}
     }
 
-    int themeid = DEFAULT_THEME;
+    char * theme = 0;
+    char * seed = 0;
     if (th) {
+	int themeid = DEFAULT_THEME;
 	for(int i=0; themelist[i].name; i++) {
 	    if (strcasecmp(th, themelist[i].name) == 0) {
 		themeid = i;
@@ -114,49 +116,53 @@ cmd_newlvl(char * UNUSED(cmd), char * arg)
 	    printf_chat("&STheme '%s' was not found", th);
 	    return;
 	}
-    }
-
-    FILE *ifd, *ofd;
-    ofd = fopen(buf2, "w");
-
-    // INI file to alter default setup of levels.
-    // Define blocks, etc.
-    ifd = fopen(MODEL_INI_NAME, "r");
-    if (ifd) {
-	char buf[4096];
-	int c;
-	while((c=fread(buf, 1, sizeof(buf), ifd)) > 0)
-	    fwrite(buf, 1, c, ofd);
-	fclose(ifd);
-    }
-
-    fprintf(ofd, "\n[level]\n");
-
-    if (x>0) {
-	fprintf(ofd, "Size.X = %d\n", x);
-	fprintf(ofd, "Size.Y = %d\n", y);
-	fprintf(ofd, "Size.Z = %d\n", z);
-    }
-
-    if (themeid >= 0) {
-	fprintf(ofd, "Theme = %s\n", themelist[themeid].name);
+	theme = themelist[themeid].name;
 
 	if (se) {
 	    int l = strlen(se)*4+4;
-	    char * buf = malloc(l);
-	    convert_to_utf8(buf, l, se);
-	    fprintf(ofd, "Seed = %s\n", buf);
-	    free(buf);
+	    seed = malloc(l);
+	    convert_to_utf8(seed, l, se);
 	} else if (themelist[themeid].setrandom) {
-	    char sbuf[MB_STRLEN*2+1] = "";
-	    populate_map_seed(sbuf, 0);
-	    fprintf(ofd, "Seed = %s\n", sbuf);
+	    seed = malloc(MB_STRLEN*2+1);
+	    *seed = 0;
+	    populate_map_seed(seed, 0);
 	}
     }
 
-    fclose(ofd);
+    int rv = create_level(buf2, theme, seed, x, y, z);
+    if (seed) free(seed);
+    if (!rv) return;
 
     printf_chat("&SLevel '%s' created", levelname);
 
     direct_teleport(levelname, 0, 0);
+}
+
+LOCAL int
+create_level(char * filename, char * theme, char * seed, int x, int y, int z)
+{
+    char *levelsect = "level";
+    char value[256];
+
+    ini_file_t ini[1] = {0};
+    (void) load_ini_txt_file(ini, MODEL_INI_NAME, 1);
+
+    if (x>0) {
+	saprintf(value, "%d", x);
+	add_ini_txt_line(ini, levelsect, "Size.X", value);
+	saprintf(value, "%d", y);
+	add_ini_txt_line(ini, levelsect, "Size.Y", value);
+	saprintf(value, "%d", z);
+	add_ini_txt_line(ini, levelsect, "Size.Z", value);
+    }
+
+    if (theme) {
+	add_ini_txt_line(ini, levelsect, "Theme", theme);
+	if (seed)
+	    add_ini_txt_line(ini, levelsect, "Seed", seed);
+    }
+
+    int rv = (save_ini_txt_file(ini, filename) >= 0);
+    clear_ini_txt(ini);
+    return rv;
 }
