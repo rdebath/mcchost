@@ -19,6 +19,8 @@ struct server_t {
     char motd[MB_STRLEN*2+1];
     char main_level[NB_SLEN];
 
+    char auto_load_list[MB_STRLEN*2+1];
+
     char secret[NB_SLEN];
     time_t key_rotation;
 

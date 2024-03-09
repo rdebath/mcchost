@@ -10,6 +10,7 @@
 typedef struct fcntl_filelock_t fcntl_filelock_t;
 struct fcntl_filelock_t {
     char * name;
+    int have_lock;
     int fcntl_fd;
 };
 #endif
@@ -17,13 +18,17 @@ struct fcntl_filelock_t {
 void lock_fn(fcntl_filelock_t * ln)
 {
     if (!ln->fcntl_fd) return;
+    if (ln->have_lock) return;
     share_lock(ln->fcntl_fd, F_SETLKW, F_WRLCK);
+    ln->have_lock = 1;
 }
 
 void unlock_fn(fcntl_filelock_t * ln)
 {
     if (!ln->fcntl_fd) return;
+    if (!ln->have_lock) return;
     share_lock(ln->fcntl_fd, F_SETLK, F_UNLCK);
+    ln->have_lock = 0;
 }
 
 #if INTERFACE
@@ -46,6 +51,7 @@ int lock_start_try(fcntl_filelock_t * ln)
 	return 0;
     }
     ln->fcntl_fd = fd;
+    ln->have_lock = 0;
     return 1;
 }
 
@@ -54,6 +60,7 @@ void lock_stop(fcntl_filelock_t * ln)
     if (!ln->fcntl_fd) return;
     close(ln->fcntl_fd);
     ln->fcntl_fd = 0;
+    ln->have_lock = 0;
 }
 
 void lock_restart(fcntl_filelock_t * ln)

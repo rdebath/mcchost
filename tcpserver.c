@@ -161,8 +161,7 @@ tcpserver()
     stop_chat_queue();
     close_logfile();
 
-    if (server->no_unload_main)
-	auto_load_main(0);
+    auto_load_main(0);
 
     while(!term_sig)
     {
@@ -332,7 +331,7 @@ logger_process()
     stop_system_conf();
     stop_client_list();
 
-    proctitle("MCCHost logger");
+    proctitle(SWNAME " logger");
 
     // Logger
     E(close(pipefd[1]), "close(pipe)");
@@ -748,7 +747,7 @@ start_backup_process()
     }
     if (listen_socket>=0) { close(listen_socket); listen_socket = -1; }
 
-    proctitle("MCCHost saver");
+    proctitle(SWNAME " saver");
 
     if (trigger_unload)
 	trigger_backup |= scan_and_save_levels(0);
@@ -850,23 +849,56 @@ auto_load_main(int user_load)
 
     if (listen_socket>=0) { close(listen_socket); listen_socket = -1; }
 
-    proctitle("MCCHost load main");
+    proctitle(SWNAME " loader");
 
     // If "user_load" the client usually loads the map first.
     if (user_load) msleep(200); else msleep(2000);
 
     open_client_list();
 
-    // If not user_load we load the map to ensure it's ok and unload
-    // it only if NoUnloadMain is unset.
-    if (!user_load || current_user_count() > 0) {
+    // If user_load is not set we load main if no_unload_main is set or
+    // there are currently users.
+    int do_main_load = (!user_load && server->no_unload_main);
+    if (!do_main_load)
+	do_main_load = (current_user_count() > 0);
+
+    if (do_main_load) {
+	proctitle(SWNAME " load '%s'", main_level());
+
 	// Open level mmap files.
 	char fixname[MAXLEVELNAMELEN*4];
 	fix_fname(fixname, sizeof(fixname), main_level());
 	if (!start_level(main_level(), 0)) exit(1);
 
 	open_level_files(main_level(), 0, 0, fixname, 0);
+	stop_shared();
     }
+
+    if (!user_load) {
+	lock_restart(level_save_lock);
+	lock_fn(level_save_lock);	// Lock out save while we're loading
+
+	char buf[sizeof(server->auto_load_list)];
+	strcpy(buf, server->auto_load_list);
+
+	for(char * level = strtok(buf, " "); level; level = strtok(0, " ")) {
+	    proctitle(SWNAME " load '%s'", level);
+
+	    // Open level mmap files.
+	    char fixname[MAXLEVELNAMELEN*4];
+	    fix_fname(fixname, sizeof(fixname), level);
+	    if (start_level(level, 0)) {
+		open_level_files(level, 0, 0, fixname, 0);
+		if (level_prop)
+		    level_prop->no_unload = 1;
+		stop_shared();
+	    }
+	}
+
+	unlock_fn(level_save_lock);
+    }
+
+    proctitle(SWNAME " loader");
 
     stop_client_list();
     msleep(1000);

@@ -51,6 +51,7 @@ system_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	INI_STRARRAYCP437("Name", server->name);
 	INI_STRARRAYCP437("Motd", server->motd);
 	INI_STRARRAYCP437("Main", server->main_level);
+	INI_STRARRAYCP437("AutoLoadList", server->auto_load_list);
 
 	if (!st->no_unsafe)
 	    INI_STRARRAY("Salt", server->secret);	//Base62

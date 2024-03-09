@@ -15,6 +15,14 @@ Other notes
 */
 
 /*HELP todo
+ +) AutoLoadList needs way of locking out save process from loading level
+    without locking the save process completely.
+
+    Owner process ID on shared level record ?
+	Start_level locks level ?
+
+    Extend level lock to before open of shared files ?
+
  +) Level Owner list should be populated with owner of name+ levels.
     Add ini file for default new user setup.
     There's a plugin for the user name so multiple levels can be created/OP'd.
