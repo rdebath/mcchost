@@ -78,6 +78,29 @@ load_ini_txt_file(ini_file_t * ini_file_p, char * filename, int load_opts)
     return rv;
 }
 
+int
+load_ini_txt_array(ini_file_t * ini_file_p, char ** textarray)
+{
+    if (!textarray) return -1;
+
+    ini_file_p->quiet = 1;
+    ini_file_p->read_only = 0;
+    ini_file_p->filename = "<array>";
+
+    int rv = 0;
+    for(char **p = textarray; p && *p; p++) {
+	if (load_ini_txt_line(ini_file_p, *p) != 0) {
+	    rv++;
+	}
+    }
+
+    ini_file_p->filename = 0;
+    ini_file_p->last_section = 0;
+    ini_file_p->quiet = 0;
+
+    return rv;
+}
+
 // Load one ini line
 // RV 0=> Line okay, 1=> Unknown option, 2=> Bad line, 3=> Bad file.
 LOCAL int
@@ -153,6 +176,12 @@ load_ini_txt_line(ini_file_t * ini, char *ibuf)
 void
 add_ini_txt_line(ini_file_t * ini_file_p, char * section, char * label, char * value)
 {
+    add_ini_txt_line_or_nil(ini_file_p, section, label, value, (value==0));
+}
+
+void
+add_ini_txt_line_or_nil(ini_file_t * ini_file_p, char * section, char * label, char * value, int nilok)
+{
     if (!ini_file_p) return;
     int lno, sectlno = -1;
     int insect = (section == 0 || *section == 0);
@@ -198,7 +227,7 @@ add_ini_txt_line(ini_file_t * ini_file_p, char * section, char * label, char * v
 	}
     }
 
-    if (value == 0) return;
+    if (nilok || value == 0) return;
 
     if (sectlno < 0) {
 	sectlno = insert_ini_txt_lines(ini_file_p, ini_file_p->count, 3);
@@ -229,22 +258,6 @@ add_ini_txt_line(ini_file_t * ini_file_p, char * section, char * label, char * v
 	ini_file_p->lines[sectlno].name = strdup(label);
 	ini_file_p->lines[sectlno].value = strdup(value);
     }
-}
-
-/* This adds a comment just before the last item appended. */
-void
-add_ini_text_comment(ini_file_t * ini_file_p, char * comment)
-{
-    if (!ini_file_p) return;
-    if (ini_file_p->size != 0 && !ini_file_p->appended) return;
-    int lno;
-    if (ini_file_p->count == 0 || ini_file_p->lines[ini_file_p->count-1].line_type == ini_comment)
-	lno = insert_ini_txt_lines(ini_file_p, ini_file_p->count, 1);
-    else
-	lno = insert_ini_txt_lines(ini_file_p, ini_file_p->count-1, 1);
-    ini_file_p->lines[lno].line_type = ini_comment;
-    ini_file_p->lines[lno].text_line = strdup(comment);
-    ini_file_p->appended = 1;
 }
 
 int

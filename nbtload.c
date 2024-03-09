@@ -120,7 +120,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
 	    load_ini_file(mcc_level_ini_fields, ini_name, 1, 1);
 	if (backup_id == 0) {
 	    level_prop->last_loaded = time(0);
-	    save_ini_file(mcc_level_ini_fields, ini_name);
+	    save_ini_file(mcc_level_ini_fields, ini_name, default_ini_mcc_level);
 	}
     }
 

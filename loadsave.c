@@ -405,12 +405,42 @@ scan_and_save_levels(int do_timed_save)
     return trigger_full_run;
 }
 
+/*TEXT default_ini_mcc_level
+# This file contains metadata about the cw file, the first section
+# is loaded when the map is loaded and may be used to override values
+# stored in the CW file. The second section is only for information.
+
+[level]
+NoUnload =
+AnnounceMotd =
+OtherUserOp =
+LevelOwnerList =
+LastBackup =
+
+ResetHotbar =
+LevelChat =
+ReadOnly =
+DisallowChange =
+
+# These are the "for information only" fields.
+Software =
+Theme =
+Seed =
+Size.X =
+Size.Y =
+Size.Z =
+Texture =
+TimeCreated =
+LastModified =
+LastLoaded =
+*/
+
 void
 save_level_ini(char * level_fname)
 {
     char ini_file[256];
     saprintf(ini_file, LEVEL_INI_NAME, level_fname);
-    save_ini_file(mcc_level_ini_fields, ini_file);
+    save_ini_file(mcc_level_ini_fields, ini_file, default_ini_mcc_level);
 }
 
 LOCAL void

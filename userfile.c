@@ -53,6 +53,45 @@ struct userrec_t
 }
 #endif
 
+/*TEXT default_ini_user
+# User options and configurations.
+[user]
+# A unique id number for this user.
+UserNo =
+# The unique name of this user.
+UserId =
+# UserGroup is 0 for an admin user.
+UserGroup =
+
+# Visual attributes for the user.
+Model =
+Skin =
+Nick =
+Colour =
+Title =
+TitleColour =
+
+# CSV of users being ignored.
+IgnoreList =
+
+# General attributes for the user
+FirstLogon =
+LastLogon =
+LastIP =
+Timezone =
+Banned =
+BanMessage =
+
+# Statistics for the user.
+LogonCount =
+TimeOnline =
+BlocksPlaced =
+BlocksDeleted =
+BlocksDrawn =
+MessageCount =
+KickCount =
+*/
+
 userrec_t my_user = {.user_no = 0, .user_group=1, .saveable=1};
 
 /*

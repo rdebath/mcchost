@@ -410,10 +410,6 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
     map_info_t nil_tgt[1], *tgt = level_prop;
     if (level_ini_tgt) tgt = level_ini_tgt;
 
-    add_ini_text_comment(st->ini, "# This file contains metadata about the cw file, the first section");
-    add_ini_text_comment(st->ini, "# is loaded when the map is loaded and may be used to override values");
-    add_ini_text_comment(st->ini, "# stored in the CW file. The second section is only for information.");
-
     // These are read/written on iload/isave, in the level.ini and info cmds.
     section = "level";
     if (st->all || strcmp(section, st->curr_section) == 0)
@@ -442,9 +438,6 @@ mcc_level_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	if (st->no_unsafe || st->looped_read) tgt = nil_tgt;
 
 	INI_TIME_T("TimeCreated", tgt->time_created);
-	add_ini_text_comment(st->ini, "");
-	add_ini_text_comment(st->ini, "# These fields are used by /minfo only");
-
 	INI_TIME_T("LastModified", tgt->last_modified);
 	INI_TIME_T("LastLoaded", tgt->last_loaded);
 	INI_INTVAL("Size.X", tgt->cells_x);
@@ -498,8 +491,7 @@ user_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 	}
 	INI_INTVAL("UserGroup", user_ini_tgt->user_group);
 	INI_INTVAL("Banned", user_ini_tgt->banned);
-	if (user_ini_tgt->user_group < 0 || user_ini_tgt->banned || !st->write)
-	    INI_STRARRAYCP437("BanMessage", user_ini_tgt->ban_message);
+	INI_STRARRAYCP437("BanMessage", user_ini_tgt->ban_message);
 	if (user_ini_tgt->user_group < 0) {
 	    user_ini_tgt->user_group = 1;
 	    user_ini_tgt->banned = 1;
@@ -588,10 +580,13 @@ cmdset_ini_fields(ini_state_t *st, char * fieldname, char **fieldvalue)
 }
 
 int
-save_ini_file(ini_func_t filetype, char * filename)
+save_ini_file(ini_func_t filetype, char * filename, char ** default_text)
 {
     ini_file_t ini[1] = {0};
-    load_ini_txt_file(ini, filename, 1);
+    if (load_ini_txt_file(ini, filename, 1) < 0) {
+	if (default_text)
+	    load_ini_txt_array(ini, default_text);
+    }
 
     ini_state_t st = (ini_state_t){.all=1, .write=1, .ini=ini};
     filetype(&st,0,0);
@@ -806,7 +801,7 @@ ini_write_bool(ini_state_t *st, char * section, char *fieldname, int value)
 	    sprintf(sbuf, "%d", value);
 	else
 	    sprintf(sbuf, "%s", value?"true":"false");
-	add_ini_txt_line(st->ini, section, fieldname, sbuf);
+	add_ini_txt_line_or_nil(st->ini, section, fieldname, sbuf, !value);
     }
 }
 

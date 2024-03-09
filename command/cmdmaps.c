@@ -128,9 +128,12 @@ cmd_maps(char * UNUSED(cmd), char * arg)
 	return;
     }
 
-    if (!backups)
-	printf_chat("&SShowing levels %d-%d (out of %d)", start+1,end,maps.count);
-    else if (backups == 2)
+    if (!backups) {
+	if (start+1 == 1 && end == 1 && maps.count == 1)
+	    printf_chat("&SOnly one level present...");
+	else
+	    printf_chat("&SShowing levels %d-%d (out of %d)", start+1,end,maps.count);
+    } else if (backups == 2)
 	printf_chat("&SShowing %d backups for %s", maps.count, ar2);
     else
 	printf_chat("&SShowing %d backups", maps.count);

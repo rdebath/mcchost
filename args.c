@@ -117,6 +117,77 @@ struct server_ini_t {
 };
 #endif
 
+/*TEXT default_ini_server
+# This file is for server wide configurations.
+[server]
+Software =
+Name =
+Motd =
+Main =
+
+# If KeyRotation is zero the "salt" is sent to the Heartbeat server.
+# If it's non-zero a key is generated from that and the time slice such
+# that the key lasts at least the key rotation period (up to twice).
+Salt =
+KeyRotation =
+
+# Connection details. The Heartbeat URL defaults to classicube.net.
+tcp =
+Port =
+Detach =
+Private =
+PollHeartbeat =
+Heartbeat =
+UseHttpPost =
+UserSuffix =
+
+NoMapPadding =
+VoidForLogin =
+AdminOnlyLogin =
+AllowPassVerify =
+DisableSaltLogin =
+DisallowIPAdmin =
+DisallowIPVerify =
+
+MaxPlayers =
+Localnet =
+Logfile =
+SaveInterval =
+BackupInterval =
+NoUnloadMain =
+NoSaveInuse =
+AllowUserLevels =
+AllLevelsOwned =
+UseUTCZone =
+
+AFKInterval =
+AFKKickInterval =
+PlayerUpdateMS =
+IPConnectDelay =
+
+BlockSpamCount =
+BlockSpamInterval =
+BlockSpamKick =
+CmdSpamCount =
+CmdSpamInterval =
+CmdSpamBan =
+ChatSpamCount =
+ChatSpamInterval =
+ChatSpamBan =
+
+FlagLogCommands =
+FlagLogPlaceCommands =
+FlagLogChat =
+
+OPFlag =
+NoCPE =
+DisableWebServer =
+CheckWebClientIP =
+OmitSoftwareVersion =
+DisableWebClient =
+
+*/
+
 // Shared settings, stored in memory shared between all processes
 server_t *server = 0;
 // Per server settings, not shared across instance
@@ -553,13 +624,13 @@ save_system_ini_file(int save_conf)
     // inetd_mode = ini_settings->inetd_mode;
     // server_runonce = ini_settings->server_runonce;
 
-    save_ini_file(system_ini_fields, SERVER_CONF_NAME);
+    save_ini_file(system_ini_fields, SERVER_CONF_NAME, default_ini_server);
 
     if (ini_settings->use_port_specific_file) {
 	char buf[256];
 	saprintf(buf, SERVER_CONF_PORT, tcp_port_no);
 
-	save_ini_file(system_x_ini_fields, buf);
+	save_ini_file(system_x_ini_fields, buf, 0);
     }
 }
 

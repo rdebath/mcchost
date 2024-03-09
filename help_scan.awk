@@ -10,6 +10,7 @@
 
 BEGIN{
     flg=0;count=0;ifzero=0;
+    # Use -v files=1 to create help files in help/*.txt
     if (files < 1) files=0;
     if (!files) {
 	print "/* ⇉⇉⇉ This file was automatically generated.  Do not edit! ⇇⇇⇇ */"
@@ -17,11 +18,13 @@ BEGIN{
     }
 }
 
+# Allow files to be disabled with '#if 0'
 /^#if 0/ { ifzero++; next; }
 ifzero && /^#if/ { ifzero++; next; }
 ifzero && /^#endif/ { ifzero--; next; }
 ifzero { next; }
 
+# Help files, including a single line marker for an empty file.
 /^\/\*HELP/ {
     if (flg) save_text();
     flg = 1;
@@ -36,17 +39,40 @@ ifzero { next; }
 }
 /^\/\*HELP/ {next;}
 
+# Multi-line texts. Generate an array of char strings.
+/^\/\*TEXT/ {
+    if (flg) save_text();
+    flg = 2;
+    textname=$2;
+    class="";
+    text="";
+}
+/\*\// {
+    if (flg) save_text();
+    flg = 0;
+}
+/^\/\*TEXT/ {next;}
+
+# Save up UCMD_ names
 /^#define *UCMD_[A-Z0-9]*[	 ]*[\\{]/ {
     cmdlist = cmdlist "#ifdef " $2 "\n"
     cmdlist = cmdlist "    " $2 ",\n"
     cmdlist = cmdlist "#endif\n"
 }
 
+# Are we collecting text ?
 flg==0 {next;}
 
 { text=text $0 "\n"; next }
 
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
 function save_text() {
+    if (flg == 1) save_help_text();
+    if (flg == 2) save_data_text();
+}
+
+function save_help_text() {
     gsub("\n*$", "", text);
     gsub("\t", "        ", text); # Don't use tabs!!
 
@@ -67,7 +93,7 @@ function save_text() {
 
 	if (text == "") text = t1 "0};";
 
-	print "/* Help for "textname" */"
+	print "/* Help for "textname" from "FILENAME" */"
 	print text
 	print "#endif"
 	print ""
@@ -83,6 +109,31 @@ function save_text() {
     list[count] = textname;
     aclass[count] = class;
     count++;
+}
+
+function save_data_text() {
+    if (files) return;
+    gsub("\n*$", "", text);
+    gsub("\t", "        ", text); # Don't use tabs!!
+
+    t1 = textname; sub(",.*", "", t1);
+    t1 = "char *" t1 "[] = {"
+
+    if (text != "") {
+	gsub("\\\\", "\\\\\\\\", text); # Seriously!?
+	gsub("\"", "\\\"", text);
+
+	gsub("\n", "\",\n    \"", text);
+	sub("$", "\",\n    0\n};", text);
+
+	text = t1 "\n    \"" text
+    }
+
+    if (text == "") text = t1 "0};";
+
+    print "/* Text constant "textname" in "FILENAME" */"
+    print text
+    print ""
 }
 
 END{
