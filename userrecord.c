@@ -47,6 +47,7 @@ write_userrec(userrec_t * userrec, int ini_too)
 	char userini[PATH_MAX];
 	saprintf(userini, USER_INI_NAME, user_key);
 
+	check_mkdir(userini);
 	user_ini_tgt = userrec;
 	save_ini_file(user_ini_fields, userini, default_ini_user);
 	user_ini_tgt = 0;

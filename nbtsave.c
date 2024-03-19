@@ -28,6 +28,8 @@ save_map_to_file(char * fn, int background)
 {
     if (!fn || *fn == 0) return -1;
 
+    check_mkdir(fn);
+
     // Documented limit is 2**31-1 blocks
     // CC works with 2**31 blocks (with cosmetic errors)
     // For MCGalaxy the size must not exceed (2**31-2**16) or [4228,128,3968]

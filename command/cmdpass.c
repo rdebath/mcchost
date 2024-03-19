@@ -114,6 +114,7 @@ static char base62[] =
     char passfile[NB_SLEN*4];
     saprintf(passfile, SECRET_PW_NAME, user_key);
 
+    check_mkdir(passfile);
     int fd = open(passfile, O_WRONLY|O_CREAT|O_TRUNC, 0600);
     if (fd < 0) {
 	printf_chat("&WUnable to save password\n");

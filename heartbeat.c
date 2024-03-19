@@ -169,6 +169,7 @@ send_heartbeat_poll()
 	}
 	a[i] = 0;
 
+	check_mkdir(cmdfilebuf);
 	FILE * fd = fopen(cmdfilebuf, "w");
 	if (fd) {
 	    for(int j = 0; a[j]; j++)
@@ -199,6 +200,7 @@ log_heartbeat_response()
     sprintf(logbuf, "log/curl-%d.txt", tcp_port_no);
     int rdlen = 0;
 
+    check_mkdir(logbuf);
     FILE * fd = fopen(logbuf, "r");
     if (fd) {
 	int ch;

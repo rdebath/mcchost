@@ -112,6 +112,7 @@ copy_backup_to_map(char * source, char * dest, char * lvlname, int backup_id, ch
     char tmp_fn[256];
     saprintf(tmp_fn, LEVEL_TMP_NAME, fixedname);
 
+    check_mkdir(tmp_fn);
     FILE *ifd, *ofd;
     ifd = fopen(source, "r");
     if (ifd) {

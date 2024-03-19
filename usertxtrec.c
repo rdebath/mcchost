@@ -28,6 +28,7 @@ write_userrec(userrec_t * userrec, int UNUSED(ini_too))
     if (userrec->user_no == 0)
 	userrec->user_no = scan_user_dir() + 1;
 
+    check_mkdir(userini);
     user_ini_tgt = userrec;
     save_ini_file(user_ini_fields, userini, default_ini_user);
     user_ini_tgt = 0;

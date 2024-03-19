@@ -51,6 +51,7 @@ open_logfile()
     }
 
     if (logfile) fclose(logfile);
+    check_mkdir(fname);
     logfile = fopen(fname, "a");
     // setlinebuf(logfile); // Sigh: BSD not Posix
     setvbuf(logfile, NULL, _IOLBF, 0);

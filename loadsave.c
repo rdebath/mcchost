@@ -88,6 +88,7 @@ move_file_to_backups(char * bak_fn, char * level_fname, char * level_name)
     char hst_fn[256];
     current_backup_file(hst_fn, sizeof(hst_fn), level_fname, 0);
 
+    check_mkdir(hst_fn);
     // rename or copy/del bak_fn to hst_fn
     if (rename(bak_fn, hst_fn) < 0) {
 	int txok = 1;

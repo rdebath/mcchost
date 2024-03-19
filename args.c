@@ -445,11 +445,13 @@ process_args(int argc, char **argv)
 	    if (!found_dir_arg)
 		find_dirs();
 
+	    check_not_root_user();
+
 	    // Missing sever.ini means we can check this early.
 	    if (access(SERVER_CONF_NAME, F_OK) != 0)
 		check_if_default_show_help();
 
-	    init_dirs();
+	    update_data_readme();
 
 	    server = 0;
 	    open_system_conf();

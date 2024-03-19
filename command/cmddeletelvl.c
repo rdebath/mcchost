@@ -63,6 +63,7 @@ do_direct_delete(char * levelname)
     char hst_fn[256];
     current_backup_file(hst_fn, sizeof(hst_fn), fixedname, 0);
 
+    check_mkdir(hst_fn);
     if (rename(buf2, hst_fn) < 0) {
 	perror("Delete rename failed");
 	unlock_fn(system_lock);

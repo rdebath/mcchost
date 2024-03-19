@@ -29,19 +29,19 @@
 #define USER_DIR "user"
 #define USER_INI_NAME USER_DIR "/%s.ini"
 
-#define SECRET_DIR "secret"
 #define SECRET_PW_NAME "secret/%s.pwl"
 
 #define MODEL_INI_NAME "model.ini"
-#define SYS_CONF_NAME "system/system.dat"
-#define SYS_STAT_NAME "system/userlevels.dat"
-#define CHAT_QUEUE_NAME "system/chat.queue"
-#define CMD_QUEUE_NAME "system/cmd.queue"
+#define SYS_DIR "system"
+#define SYS_CONF_NAME SYS_DIR "/system.dat"
+#define SYS_STAT_NAME SYS_DIR "/userlevels.dat"
+#define CHAT_QUEUE_NAME SYS_DIR "/chat.queue"
+#define CMD_QUEUE_NAME SYS_DIR "/cmd.queue"
 
-#define SYS_LOCK_NAME "system/system.lock"
-#define CHAT_LOCK_NAME "system/chat.lock"
-#define CMD_LOCK_NAME "system/cmd.lock"
-#define SAVE_LOCK_NAME "system/saving.lock"
+#define SYS_LOCK_NAME SYS_DIR "/system.lock"
+#define CHAT_LOCK_NAME SYS_DIR "/chat.lock"
+#define CMD_LOCK_NAME SYS_DIR "/cmd.lock"
+#define SAVE_LOCK_NAME SYS_DIR "/saving.lock"
 #define LEVEL_LOCK_NAME "level/%s.lock"
 
 #define CMDSET_CONF_NAME "cmdset.ini"
@@ -53,20 +53,6 @@ char * Version = VERSION;
 
 char * game_user = 0;
 char * game_group = 0;
-
-static char * dirlist[] = {
-    "system",
-    "level",
-    LEVEL_MAP_DIR_NAME,
-    LEVEL_BACKUP_DIR_NAME,
-    USER_DIR,
-    SECRET_DIR,
-    "texture",
-    "help",
-    "log",
-    "ini",
-    0
-};
 
 #define E(_x) ERR((_x), #_x)
 static inline void ERR(int n, char * tn)
@@ -134,34 +120,35 @@ find_dirs() {
 }
 
 void
-init_dirs()
+check_not_root_user()
 {
-    if (getuid() == 0) {
-        uid_t run_as = 0;
-	gid_t grun_as = 0;
-	fetch_ids(&run_as, &grun_as);
-	E(setgid(grun_as));
-	E(setuid(run_as));
-    }
+    if (getuid() != 0) return;
 
-    for(int i = 0; dirlist[i]; i++) {
-	if (mkdir(dirlist[i], 0777) < 0 && errno != EEXIST) {
-	    char buf[256];
-	    saprintf(buf, "Failure creating directory: \"%s\"", dirlist[i]);
-	    perror(buf);
-	    // System is rather essential, but ...
-	    if (!i) exit(127);
-	    // Just complain as later processes will error.
-	}
-    }
+    uid_t run_as = 0;
+    gid_t grun_as = 0;
+    fetch_ids(&run_as, &grun_as);
+    E(setgid(grun_as));
+    E(setuid(run_as));
+}
 
-    FILE * fd = fopen("Readme.txt", "w");
-    if (fd) {
-	fprintf(fd, "%s%s%s\n%s", SWNAME,
-	    *Version?" version: ":"", Version,
-	    directory_readme);
-	fclose(fd);
+/*
+ * Check for a directoy and make it if it's not present.
+ * Beware: array must be writeable.
+ */
+void
+check_mkdir(char * new_file)
+{
+    // Only relative paths, ie: in our working directory
+    if (!new_file || *new_file == 0 || *new_file == '/') return;
+    char * p = strrchr(new_file, '/');
+    if (!p) return;
+    *p = 0;
+    struct stat st[1];
+    if (stat(new_file, st) < 0) {
+	// Missing or broken.
+	(void)mkdir(new_file, 0777);
     }
+    *p = '/';
 }
 
 LOCAL void
@@ -282,26 +269,37 @@ unfix_fname(char *buf, int len, char *s)
 #if INTERFACE
 // lmdb has terrible compatibility
 #if defined(__LP64__) && defined(__x86_64__)
-#define USERDB_FILE "system/userdb64.mdb"
+#define USERDB_FILE SYS_DIR "/userdb64.mdb"
 #define USERDB_RECREATE	0
 #endif
 
 #if defined(__ILP32__) && defined(__x86_64__)
-#define USERDB_FILE "system/userdbx32.mdb"
+#define USERDB_FILE SYS_DIR "/userdbx32.mdb"
 #define USERDB_RECREATE	0
 #endif
 
 #if defined(__i386__)
-#define USERDB_FILE "system/userdb32.mdb"
+#define USERDB_FILE SYS_DIR "/userdb32.mdb"
 #define USERDB_RECREATE	0
 #endif
 
 #if !defined(__x86_64__) && !defined(__i386__)
-#define USERDB_FILE "system/userdb.mdb"
+#define USERDB_FILE SYS_DIR "/userdb.mdb"
 #define USERDB_RECREATE	1
 #endif
 
 #endif
+
+void
+update_data_readme() {
+    FILE * fd = fopen("Readme.txt", "w");
+    if (fd) {
+	fprintf(fd, "%s%s%s\n%s", SWNAME,
+	    *Version?" version: ":"", Version,
+	    directory_readme);
+	fclose(fd);
+    }
+}
 
 char directory_readme[] =
 "\n"	"Contents of working directory."

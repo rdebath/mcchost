@@ -95,6 +95,8 @@ do_direct_copy(char * levelname, char * newlevelname)
     char tmp_fn[256];
     saprintf(tmp_fn, LEVEL_TMP_NAME, fixedname2);
 
+    check_mkdir(tmp_fn);
+
     int txok = 1;
     FILE *ifd, *ofd;
     ifd = fopen(buf2, "r");

@@ -162,6 +162,7 @@ create_level(char * filename, char * theme, char * seed, int x, int y, int z)
 	    add_ini_txt_line(ini, levelsect, "Seed", seed);
     }
 
+    check_mkdir(filename);
     int rv = (save_ini_txt_file(ini, filename) >= 0);
     clear_ini_txt(ini);
     return rv;

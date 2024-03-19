@@ -73,6 +73,7 @@ http_download(uint8_t * buf, int buflen)
     char filename[256];
     saprintf(filename, "texture/%s", fn);
 
+    check_mkdir(filename);
     struct stat st;
     if (stat(filename, &st) < 0) return http_error(404);
     if ((st.st_mode & S_IFMT) != S_IFREG) {

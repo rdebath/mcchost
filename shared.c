@@ -136,6 +136,7 @@ open_level_files(char * level_name, int backup_id, char * cw_name, char * fixnam
 
     saprintf(sharename, LEVEL_LOCK_NAME, fixname);
     level_lock->name = strdup(sharename);
+    check_mkdir(sharename);
     if (!lock_start_try(level_lock)) {
 	fprintf_logfile("Unable to lock level %s", level_name);
 	return;
@@ -647,6 +648,7 @@ allocate_shared(char * share_name, uintptr_t share_size, shmem_t *shm)
     shm->zeroed = 0;
     shm->lock_fd = -1;
 
+    check_mkdir(share_name);
     shared_fd = open(share_name, O_CREAT|O_RDWR|O_NOFOLLOW|O_CLOEXEC, 0600);
     if (shared_fd < 0) { perror(share_name); return -1; }
 
