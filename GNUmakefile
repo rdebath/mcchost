@@ -106,7 +106,7 @@ HEADER=$(if $(findstring .c,$<),-DHEADERFILE='"$(patsubst %.c,%.h,$<)"')
 
 SRC=$(wildcard *.c command/*.c)
 OBJ:=$(patsubst %.c,${ODIR}/%.o,$(shell echo ${SRC} | sed 's@[^ ]*/@@g'))
-OBJADD=${ODIR}/lib_text.o ${ODIR}/lib_md5.o
+OBJADD=${ODIR}/lib_text.o ${ODIR}/lib_md5.o ${ODIR}/classicmap.o
 
 # We like a longer name so the command line is bigger for our argv mangling.
 INAME=mcchost-server
@@ -162,10 +162,12 @@ makeheaders: ${ODIR}/makeheaders
 	@sh version.sh include/version.h
 	${ODIR}/makeheaders lib/lib_md5.c:include/lib_md5.h
 	${ODIR}/makeheaders -H >include/md5.h lib/lib_md5.c
+	${ODIR}/makeheaders lib/classicmap.c:include/classicmap.h
+	${ODIR}/makeheaders -H >include/buildclassicmap.h lib/classicmap.c
 ifeq ($(findstring s,$(MFLAGS)),)
-	@echo "${ODIR}/makeheaders \$${FILES} include/md5.h include/version.h"
+	@echo "${ODIR}/makeheaders \$${FILES} include/md5.h include/version.h include/buildclassicmap.h"
 endif
-	@${ODIR}/makeheaders ${MKHDRARG} include/md5.h include/version.h
+	@${ODIR}/makeheaders ${MKHDRARG} include/md5.h include/version.h include/buildclassicmap.h
 
 ${ODIR}/makeheaders: lib/makeheaders.c
 	@mkdir -p ${ODIR}
@@ -173,6 +175,7 @@ ${ODIR}/makeheaders: lib/makeheaders.c
 
 ${ODIR}/lib_text.o: lib/lib_text.c include/lib_text.h
 ${ODIR}/lib_md5.o: lib/lib_md5.c include/lib_md5.h
+${ODIR}/classicmap.o: lib/classicmap.c include/classicmap.h
 
 .SUFFIXES:
 
@@ -217,8 +220,9 @@ rebuild:
 #
 ZIPF1=LICENSE LICENSE.mcchost GNUmakefile
 ZIPF2=Makefile help_scan.awk version.sh include/version.h
-ZIPF3=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html lib/lib_md5.c
-ZIPF=${ZIPF1} ${SRC} ${ZIPF2} ${ZIPF3}
+ZIPF3=lib/Readme.txt lib/makeheaders.c lib/makeheaders.html
+ZIPF4=lib/lib_md5.c lib/classicmap.c
+ZIPF=${ZIPF1} ${SRC} ${ZIPF2} ${ZIPF3} ${ZIPF4}
 
 zip:
 	-@rm -rf tmp.tgz tmp.d

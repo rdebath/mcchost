@@ -6,10 +6,11 @@
 Create a new level, if size is not set it uses the default.
 The name "+" is a shorthand for your personal level which will be named after your user name with an "+" appended.
 
-Themes are flat, general, plain, pixel, empty, space, rainbow
+Themes are flat, classic, general, plain, pixel, empty, space, rainbow
 Seed is:
     for flat: level of grass
-    for general, plain, space, rainbow: Random seed.
+    for classic: Signed integer random seed
+    for general, plain, space, rainbow: Uuid or integer random seed.
 */
 
 #if INTERFACE
@@ -26,6 +27,7 @@ struct lvltheme_t {
 
 lvltheme_t themelist[] = {
     {"flat", 0},	// seed defaults to Y/2
+    {"classic", 0},
     {"general", 1},
     {"plain", 1},
     {"plasma", 1},
@@ -47,6 +49,12 @@ cmd_newlvl(char * UNUSED(cmd), char * arg)
     char * sz = strarg(0);
     char * th = strarg(0);
     char * se = strarg_rest();
+
+    if (!sz && sx) {
+	char *e;
+        (void) strtoi(sx, &e, 10);
+	if (*e != 0) { th = sx; se = sy; sx = sy = 0; }
+    }
 
     if (!lvlarg || (sx && !sz)) {
 	printf_chat("&WNeed more arguments to specify level size");

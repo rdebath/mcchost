@@ -303,6 +303,24 @@ init_level_blocks(uint64_t fallback_seed, int pre_zeroed)
 	    populate_map_seed(level_prop->seed, fallback_seed);
 	gen_plain_map(level_prop->seed);
 
+	shift_spawn_to_land();
+
+    } else if (strcasecmp(level_prop->theme, "classic") == 0) {
+	if (*level_prop->seed == 0)
+	    saprintf(level_prop->seed, "%jd", fallback_seed);
+	int64_t seed = strtoimax(level_prop->seed, 0, 0);
+	saprintf(level_prop->seed, "0x%jx", seed & (((uint64_t)1<<48)-1));
+	level_prop->dirty_save = 1;
+
+	build_classic_map(
+	    level_blocks,
+	    seed,
+	    level_prop->cells_x,
+	    level_prop->cells_y,
+	    level_prop->cells_z);
+
+	shift_spawn_to_land();
+
     } else if (strcasecmp(level_prop->theme, "plasma") == 0) {
 	level_prop->dirty_save |=
 	    populate_map_seed(level_prop->seed, fallback_seed);
@@ -364,4 +382,89 @@ conv_ms_a(double ms)
     else
 	snprintf(prtbuf, sizeof(prtbuf), "%.2fms", ms);
     return prtbuf;
+}
+
+static
+inline
+block_t
+get_block_checked(block_t b, int x, int y, int z) {
+    if (x < 0 || z < 0 || x >= level_prop->cells_x || z >= level_prop->cells_z)
+	return b;
+    if (y < 0 || y >= level_prop->cells_y )
+	return b;
+    return level_blocks[World_Pack(x,y,z)];
+}
+
+void
+shift_spawn_to_land()
+{
+    // Move spawn to a dry spot nearby.
+    if(!level_prop || !level_blocks) return;
+
+    int x = (level_prop->spawn.x-16)/32;
+    int y = (level_prop->spawn.y-16)/32;
+    int z = (level_prop->spawn.z-16)/32;
+
+    // Off the map, centre it.
+    if (x < 0 || z < 0 || x >= level_prop->cells_x || z >= level_prop->cells_z) {
+	x = level_prop->cells_x/2;
+	z = level_prop->cells_z/2;
+    }
+
+    // Too high/low, drop from top.
+    if (y < 0 || y >= level_prop->cells_y ) y = level_prop->cells_y;
+
+    int offset = 0, dir = 0, fc = 0;
+    for(;;) {
+	int dx = 0, dz = 0;
+	// Seems to be enough to just do lines.
+	if (dir == 0) { dx = offset; fc = 0; }
+	if (dir == 1) dx = -offset;
+	if (dir == 2) dz = offset;
+	if (dir == 3) dz = -offset;
+	if (dir == 4) { dx = offset; dz = offset; }
+	if (dir == 5) { dx = -offset; dz = offset; }
+	if (dir == 6) { dx = -offset; dz = -offset; }
+	if (dir == 7) { dx = offset; dz = -offset; }
+
+	int nextspot = 0;
+	if (get_block_checked(BLOCKNIL, x+dx, 0, z+dz) == BLOCKNIL) {
+	    nextspot = 1;
+	    fc++;
+	    if (fc == 8) break;
+	}
+
+	block_t b1 = get_block_checked(Block_Air, x+dx, y, z+dz);
+	block_t b2 = get_block_checked(Block_Air, x+dx, y+1, z+dz);
+	block_t b3 = get_block_checked(Block_Bedrock, x+dx, y-1, z+dz);
+	if (!nextspot) {
+	    if (b1 != Block_Air || b2 != Block_Air) { y++; continue; }
+	    if (b3 == Block_Air) { y--; continue; }
+	    if (b3 == Block_StillWater || b3 == Block_ActiveWater ||
+		b3 == Block_StillLava || b3 == Block_ActiveLava) nextspot = 1;
+	}
+
+	// Some flat space around us.
+	for (int dy2 = -1; dy2 < 2 && !nextspot; dy2++) {
+	    for (int dx2 = -1; dx2 < 2 && !nextspot; dx2++) {
+		for (int dz2 = -1; dz2 < 2; dz2++) {
+		    if ((get_block_checked(Block_Air, x+dx+dx2, y+dy2, z+dz+dz2) != Block_Air) == (dy2 != -1))
+		    {
+			nextspot = 1; break;
+		    }
+		}
+	    }
+	}
+
+	if (!nextspot && b1 == 0 && b2 == 0) {
+	    level_prop->spawn.x = (x+dx) *32+16;
+	    level_prop->spawn.y = (y   ) *32+16;
+	    level_prop->spawn.z = (z+dz) *32+16;
+	    return;
+	}
+
+	// Next direction, then one out.
+	dir = (dir+1)%8;
+	if(!dir) offset++;
+    }
 }

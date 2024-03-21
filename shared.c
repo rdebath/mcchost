@@ -201,7 +201,12 @@ open_level_files(char * level_name, int backup_id, char * cw_name, char * fixnam
 	level_prop->cells_x == 0 || level_prop->cells_y == 0 || level_prop->cells_z == 0)
     {
 	fprintf_logfile("Level \"%s\" does not have valid file, creating map", level_name);
-	createmap(fixname);
+	if (access(MODEL_INI_NAME, R_OK) == 0) {
+	    // We have a model file. Load that instead.
+	    if (!try_asciimode(fixname, MODEL_INI_NAME, 0, time(0)))
+		createmap(fixname);
+	} else
+	    createmap(fixname);
     } else
         // NB: Missing file here makes an Air map.
         if (open_blocks(fixname) < 0)
