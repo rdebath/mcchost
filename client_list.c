@@ -833,6 +833,7 @@ stop_user()
 	shdat.client->user[my_user_no].state.active = 0;
 	shdat.client->user[my_user_no].session_id = 0;
 	if (server->connected_sessions>0) server->connected_sessions--;
+	server->pinned_levels++; // Trigger a rescan.
     }
 }
 
