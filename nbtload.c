@@ -101,9 +101,7 @@ load_map_from_file(char * filename, char * level_fname, char * level_name, int b
     if (cw_loaded == 0) {
 	// Looks like it might be a text file.
 	quiet = 1;
-	struct stat st = {0};
-	(void)stat(filename, &st);
-	if (!try_asciimode(level_fname, filename, ini_name, (uint64_t)st.st_mtime)) {
+	if (!try_asciimode(level_fname, filename, ini_name)) {
 	    printlog("Level file \"%s\" NBT and INI load failed.", filename);
 	    cw_loaded = -1;
 	} else {

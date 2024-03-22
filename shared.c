@@ -203,7 +203,7 @@ open_level_files(char * level_name, int backup_id, char * cw_name, char * fixnam
 	fprintf_logfile("Level \"%s\" does not have valid file, creating map", level_name);
 	if (access(MODEL_INI_NAME, R_OK) == 0) {
 	    // We have a model file. Load that instead.
-	    if (!try_asciimode(fixname, MODEL_INI_NAME, 0, time(0)))
+	    if (!try_asciimode(fixname, MODEL_INI_NAME, 0))
 		createmap(fixname);
 	} else
 	    createmap(fixname);

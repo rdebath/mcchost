@@ -1,5 +1,6 @@
 
 #include "ini_level.h"
+#include <sys/stat.h>
 
 /* ASCII mode for CW files is basically an ini file as saved by /isave
  * But in addition it has the ability to run /place and plain /cuboid
@@ -12,11 +13,27 @@
  * known commands all other commands are ignored.
  */
 int
-try_asciimode(char * levelfile, char * ini_filename, char * ini_filename2, uint64_t fallback_seed)
+try_asciimode(char * levelfile, char * ini_filename, char * ini_filename2)
 {
     int quiet = 0;
+    uint64_t fallback_seed = 0;
     struct timeval start;
     gettimeofday(&start, 0);
+
+    {
+	struct stat st = {0};
+	if (stat(ini_filename, &st) >= 0) {
+    #if _POSIX_VERSION >= 200809L
+	    fallback_seed = (uint64_t)st.st_mtim.tv_sec * 1000000000 + st.st_mtim.tv_nsec;
+    #else
+	    fallback_seed = (uint64_t)st.st_mtime;
+    #endif
+	    for(char *s = levelfile; s&&*s; s++) {
+		fallback_seed += (fallback_seed >> 16);
+		fallback_seed += (*s & 0xff);
+	    }
+	}
+    }
 
     ini_state_t st[1] = {{.quiet = 0, .filename = levelfile}};
     int blocks_opened = 0;
