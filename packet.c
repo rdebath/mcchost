@@ -126,7 +126,7 @@ struct pkt_playerclick {
 /* Message packet sizes, send and receive use the same list.
  * Note that the protocol does NOT include length fields.
  *
- * This is all defined base and CPE packets, but I haven't named them all.
+ * This is all defined base and CPE packets.
  */
 int msglen[256] = {
 #define PKID_IDENT	0x00	/*ClientSend&Rcv*/
@@ -239,6 +239,8 @@ int msglen[256] = {
     /* 0x35 */ 66,
 #define PKID_TELEPORT   0x36
     /* 0x36 */ 12,
+#define PKID_LIGHTINGMODE 0x37
+    /* 0x37 */ 3,
 
     0
 };

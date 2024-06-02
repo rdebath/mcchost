@@ -63,6 +63,7 @@ static struct ext_list_t extensions[] = {
     { N"CustomModels",        2 },
     { N"PluginMessages",      1 },
     { N"ExtEntityTeleport",   1 },
+    { N"LightingMode",        1, .disabled=1 },
 
     { N"EvilBastard" ,        1, &extn_evilbastard },
     {0}
@@ -79,7 +80,7 @@ char *classicube[] = {
     "EnvMapAspect", "EntityProperty", "ExtEntityPositions",
     "TwoWayPing", "InventoryOrder", "InstantMOTD", "FastMap", "SetHotbar",
     "SetSpawnpoint", "VelocityControl", "CustomParticles", "CustomModels",
-    "PluginMessages", "ExtEntityTeleport",
+    "PluginMessages", "ExtEntityTeleport", "LightingMode",
 
     0,
 };
@@ -94,7 +95,7 @@ char *classicube2[] = {
     "EnvMapAspect", "EntityProperty", "ExtEntityPositions",
     "TwoWayPing", "InventoryOrder", "InstantMOTD", "FastMap", "SetHotbar",
     "SetSpawnpoint", "VelocityControl", "CustomParticles",
-    "PluginMessages", "ExtEntityTeleport",
+    "PluginMessages", "ExtEntityTeleport", "LightingMode",
 
     "CustomModels",
     0,
@@ -363,9 +364,8 @@ process_extentry(pkt_extentry * pkt)
 
 	if (cpe_extn_advertised > 9 && classicube_match_len+classicube_lastmatch == cpe_extn_advertised)
 	    sprintf(descbuf+strlen(descbuf),
-		"Classicube%s (%d extns%s)", websocket?" web":"",
-		cpe_extn_advertised,
-		classicube_match_id && cpe_extn_advertised == 37 ?"":" old");
+		"Classicube%s (%d extns)", websocket?" web":"",
+		cpe_extn_advertised);
 	else
 
 	if (classicube_match_len <= 1)
