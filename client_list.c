@@ -224,11 +224,14 @@ check_other_users()
 	    if (c.name_colour) saprintf(namebuf, "&%c%s", c.name_colour, c.name.c);
 	    else saprintf(namebuf, "&7%s", c.name.c);
 	    revert_amp_to_perc(namebuf);
-	    send_addentity_pkt(i, namebuf, skin, c.state.posn);
-	    if (hide_location)
-		send_posn_pkt(i, 0, (xyzhv_t){-1024*32,1023*32,-1024*32,0,0,1});
-	    else
+	    if (hide_location) {
+		xyzhv_t hide = {-1024*32,1023*32,-1024*32,0,0,1};
+		send_addentity_pkt(i, namebuf, skin, hide);
+		send_posn_pkt(i, 0, hide);
+	    } else {
+		send_addentity_pkt(i, namebuf, skin, c.state.posn);
 		send_posn_pkt(i, 0, c.state.posn);
+	    }
 	    is_dirty = 1;
 	} else if (c.state.visible) {
 	    // Update user

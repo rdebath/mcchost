@@ -581,9 +581,13 @@ process_client_message(int cmd, char * pktbuf)
 	    char * p = pktbuf+1;
 	    pkt_message pkt;
 	    pkt.message_type = *p++;
-	    pkt.player_id = 0xFF;
+	    pkt.player_id = my_user_no;
 	    sanitise_nbstring(pkt.message, p, 0);
-	    fprintf_logfile("Plugin msg ch%d \"%s\"", pkt.message_type, pkt.message);
+
+	    fprintf_logfile("Plugin msg type:%d \"%s\"", pkt.message_type, pkt.message);
+	    for(int i = 0; i<64; i++)
+		hex_logfile(p[i]);
+	    hex_logfile(EOF);
 	}
 	break;
     }

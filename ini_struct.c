@@ -8,7 +8,6 @@ typedef int (*ini_func_t)(ini_state_t *st, char * fieldname, char **value);
 
 typedef ini_state_t ini_state_t;
 struct ini_state_t {
-    FILE * fd;
     ini_file_t * ini;
     char * filename;
 

@@ -15,6 +15,10 @@
 #define OPCODE_PONG	10
 /* 3..7,11..15 Reserved */
 
+static char* opcodes[] = {
+    "NOP", "TEXT", "BINARY", "3", "4", "5", "6", "7",
+    "DISCON", "PING", "PONG", "11", "12", "13", "14", "15"
+};
 /* TODO: Fragments, PING/PONG */
 
 int browser_blocked_ports[] = {
@@ -269,16 +273,19 @@ websocket_translate(char * inbuf, int * insize)
 	    }
 
 	    // Ignore unexpected zero length packets; hopefully that's the right thing to do.
-	    if (op != OPCODE_BINARY && op != OPCODE_TEXT && packet_len != 0) {
-		printlog("Websocket error opcode %d, len = %jd", op, (intmax_t)packet_len);
-		for(int i = 0; i<header_size; i++)
-		    hex_logfile(websocket_buffer[i]);
-		for(int i = 0; i<*insize; i++) {
-		    hex_logfile((inbuf[i] ^ mask_value[mask_id]));
-		    mask_id = ((mask_id+1)&3);
-		}
-		hex_logfile(EOF);
-		fatal_f("Unexpected websocket opcode %d", op);
+	    if (op != OPCODE_BINARY && op != OPCODE_TEXT) {
+		if (packet_len != 0) {
+		    printlog("Websocket error opcode %s, len = %jd", opcodes[op], (intmax_t)packet_len);
+		    for(int i = 0; i<header_size; i++)
+			hex_logfile(websocket_buffer[i]);
+		    for(int i = 0; i<*insize; i++) {
+			hex_logfile((inbuf[i] ^ mask_value[mask_id]));
+			mask_id = ((mask_id+1)&3);
+		    }
+		    hex_logfile(EOF);
+		    fatal_f("Unexpected websocket opcode %s", opcodes[op]);
+		} else
+		    printlog("Note: Websocket packet opcode %s, len = %jd", opcodes[op], (intmax_t)packet_len);
 	    }
 	}
 

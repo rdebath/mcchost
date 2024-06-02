@@ -238,7 +238,7 @@ int msglen[256] = {
 #define PKID_PLUGINMSG  0x35
     /* 0x35 */ 66,
 #define PKID_TELEPORT   0x36
-    /* 0x36 */ 12,
+    /* 0x36 */ 11,
 #define PKID_LIGHTINGMODE 0x37
     /* 0x37 */ 3,
 
