@@ -84,7 +84,11 @@ run_command(char * msg)
 	while (*arg2 == ' ') arg2++;
     }
 
-    if (strcmp(cmd, "womid") == 0) { player_last_move = time(0); return; }
+    if (strcmp(cmd, "womid") == 0) {
+	player_last_move = time(0);
+	fprintf_logfile("%s used /%s%s%s", user_id, cmd, *arg?" ":"",arg);
+	return;
+    }
     if (!user_authenticated) {
 	if (strcmp(cmd, "pass") != 0 && strcmp(cmd, "setpass") != 0 &&
 	    strcmp(cmd, "quit") != 0 && strcmp(cmd, "rq") != 0)
